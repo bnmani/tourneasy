@@ -7,6 +7,14 @@ packages:
 # (next → react-dom, @prisma/client → .prisma/client).
 nodeLinker: hoisted
 
+# Security overrides for transitive dependencies whose parents still pin vulnerable versions
+# (see DECISIONS.md D24). Remove once the parent packages ship the fix themselves.
+overrides:
+  # next 15.5.x pins postcss 8.4.31 (GHSA-fxqj-rqcc-2cmp and related; build-time only)
+  postcss: ^8.5.23
+  # @prisma/config pins deepmerge-ts 7.x (stack exhaustion; Prisma CLI only)
+  deepmerge-ts: ^8.0.0
+
 # Dependencies allowed to run install scripts (pnpm 11).
 allowBuilds:
   '@prisma/client': true
