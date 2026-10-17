@@ -1,3 +1,4 @@
+import path from 'node:path';
 import type { NextConfig } from 'next';
 import createNextIntlPlugin from 'next-intl/plugin';
 
@@ -16,6 +17,15 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  // Self-contained server in .next/standalone (own server.js + real node_modules), so hosts
+  // that copy the build elsewhere (Hostinger) don't depend on pnpm's workspace symlinks.
+  // Tracing starts at the monorepo root so workspace packages are included.
+  output: 'standalone',
+  outputFileTracingRoot: path.join(__dirname, '../..'),
+  // File tracing misses Prisma's generated client and native query engine under pnpm.
+  outputFileTracingIncludes: {
+    '/**/*': ['../../node_modules/.pnpm/@prisma+client@*/node_modules/.prisma/client/**/*'],
+  },
   transpilePackages: ['@tourneasy/shared', '@tourneasy/db'],
   async headers() {
     return [{ source: '/:path*', headers: securityHeaders }];

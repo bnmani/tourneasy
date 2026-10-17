@@ -4,13 +4,14 @@
   "private": true,
   "scripts": {
     "dev": "dotenv -e ../../.env -- next dev --turbopack",
-    "build": "pnpm --filter @tourneasy/db db:generate && dotenv -e ../../.env -- next build",
-    "start": "dotenv -e ../../.env -- next start",
+    "build": "pnpm --filter @tourneasy/db db:generate && dotenv -e ../../.env -- next build && node scripts/prepare-standalone.mjs",
+    "start": "dotenv -e ../../.env -- node .next/standalone/apps/web/server.js",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },
   "dependencies": {
+    "@prisma/client": "^6.19.3",
     "@radix-ui/react-slot": "^1.1.1",
     "@tourneasy/db": "workspace:*",
     "@tourneasy/shared": "workspace:*",
