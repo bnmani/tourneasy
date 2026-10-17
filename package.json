@@ -1,0 +1,38 @@
+{
+  "name": "tourneasy",
+  "private": true,
+  "packageManager": "pnpm@9.15.4",
+  "engines": {
+    "node": ">=22.11.0"
+  },
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "db:generate": "pnpm --filter @tourneasy/db db:generate",
+    "db:migrate": "pnpm --filter @tourneasy/db db:migrate",
+    "db:deploy": "pnpm --filter @tourneasy/db db:deploy",
+    "db:seed": "pnpm --filter @tourneasy/db db:seed",
+    "db:reset": "pnpm --filter @tourneasy/db db:reset",
+    "db:studio": "pnpm --filter @tourneasy/db db:studio"
+  },
+  "devDependencies": {
+    "prettier": "^3.4.2",
+    "prettier-plugin-tailwindcss": "^0.6.9",
+    "turbo": "^2.3.3",
+    "typescript": "^5.7.2"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@prisma/client",
+      "@prisma/engines",
+      "esbuild",
+      "prisma",
+      "sharp"
+    ]
+  }
+}
