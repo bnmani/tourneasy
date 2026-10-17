@@ -1,0 +1,44 @@
+{
+  "Metadata": {
+    "siteName": "Tourneasy",
+    "title": "Tourneasy — badmintontoernooien in Nederland",
+    "description": "Vind badmintontoernooien, schrijf je in, betaal met iDEAL en volg wedstrijden en uitslagen live."
+  },
+  "Common": {
+    "skipToContent": "Ga naar de inhoud",
+    "comingSoon": "Binnenkort beschikbaar"
+  },
+  "Header": {
+    "homeLink": "Tourneasy, naar de startpagina",
+    "mainNav": "Hoofdmenu",
+    "tournaments": "Toernooien",
+    "login": "Inloggen"
+  },
+  "LanguageSwitcher": {
+    "label": "Taal kiezen",
+    "nl": "Nederlands",
+    "en": "English"
+  },
+  "Home": {
+    "heroTitle": "Badmintontoernooien, zonder gedoe",
+    "heroText": "Zoek een toernooi, schrijf je in voor enkel, dubbel of gemengd dubbel, betaal met iDEAL en volg je wedstrijden live.",
+    "ctaBrowse": "Bekijk toernooien",
+    "ctaRegister": "Account aanmaken",
+    "featuresTitle": "Alles voor spelers en organisatoren",
+    "featureFindTitle": "Toernooien vinden",
+    "featureFindText": "Filter op datum, provincie, niveau en onderdeel.",
+    "featureRegisterTitle": "Inschrijven en betalen",
+    "featureRegisterText": "Schrijf je in met je partner en betaal veilig met iDEAL.",
+    "featureFollowTitle": "Uitslagen volgen",
+    "featureFollowText": "Ontvang meldingen over je eigen wedstrijden en die van spelers die je volgt."
+  },
+  "Footer": {
+    "tagline": "Badmintontoernooien in Nederland",
+    "copyright": "© {year} Tourneasy"
+  },
+  "NotFound": {
+    "title": "Pagina niet gevonden",
+    "text": "Deze pagina bestaat niet (meer).",
+    "backHome": "Terug naar de startpagina"
+  }
+}

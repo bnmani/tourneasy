@@ -1,0 +1,44 @@
+{
+  "Metadata": {
+    "siteName": "Tourneasy",
+    "title": "Tourneasy — badminton tournaments in the Netherlands",
+    "description": "Find badminton tournaments, enter online, pay with iDEAL and follow matches and results live."
+  },
+  "Common": {
+    "skipToContent": "Skip to content",
+    "comingSoon": "Coming soon"
+  },
+  "Header": {
+    "homeLink": "Tourneasy, go to home page",
+    "mainNav": "Main menu",
+    "tournaments": "Tournaments",
+    "login": "Log in"
+  },
+  "LanguageSwitcher": {
+    "label": "Choose language",
+    "nl": "Nederlands",
+    "en": "English"
+  },
+  "Home": {
+    "heroTitle": "Badminton tournaments, made easy",
+    "heroText": "Find a tournament, enter singles, doubles or mixed, pay with iDEAL and follow your matches live.",
+    "ctaBrowse": "Browse tournaments",
+    "ctaRegister": "Create account",
+    "featuresTitle": "Everything for players and organisers",
+    "featureFindTitle": "Find tournaments",
+    "featureFindText": "Filter by date, province, level and event.",
+    "featureRegisterTitle": "Enter and pay",
+    "featureRegisterText": "Enter together with your partner and pay securely with iDEAL.",
+    "featureFollowTitle": "Follow results",
+    "featureFollowText": "Get notified about your own matches and those of players you follow."
+  },
+  "Footer": {
+    "tagline": "Badminton tournaments in the Netherlands",
+    "copyright": "© {year} Tourneasy"
+  },
+  "NotFound": {
+    "title": "Page not found",
+    "text": "This page does not exist (anymore).",
+    "backHome": "Back to the home page"
+  }
+}
