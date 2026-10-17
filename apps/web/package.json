@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "dotenv -e ../../.env -- next dev --turbopack",
-    "build": "dotenv -e ../../.env -- next build",
+    "build": "pnpm --filter @tourneasy/db db:generate && dotenv -e ../../.env -- next build",
     "start": "dotenv -e ../../.env -- next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",

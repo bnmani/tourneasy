@@ -34,18 +34,22 @@ Delete these rows from the platform form (they are for local development only):
 
 ## 3. Build settings
 
-| Setting          | Value                                     |
-| ---------------- | ----------------------------------------- |
-| Framework preset | **Next.js** if offered, otherwise Other   |
-| Branch           | `main`                                    |
-| Node version     | 22.x                                      |
-| Root directory   | `./` (repository root — it is a monorepo) |
-| Install command  | `pnpm install --frozen-lockfile`          |
-| Build command    | `pnpm build`                              |
-| Start command    | `pnpm --filter @tourneasy/web start`      |
-| Output directory | `apps/web/.next`                          |
+Hostinger → Websites → Web Apps → the app → Deployments / build settings:
 
-The app listens on the `PORT` the platform provides.
+| Setting          | Value                 |
+| ---------------- | --------------------- |
+| Application type | **Next.js**           |
+| Branch           | `main`                |
+| Node version     | 22.x                  |
+| Package manager  | pnpm (auto-detected)  |
+| Root directory   | `apps/web`            |
+| Build script     | `build`               |
+| Output directory | `.next`               |
+| Entry file       | leave empty (ignored) |
+
+Running `pnpm install` inside `apps/web` installs the whole workspace, and the web app's own
+`build` script generates the Prisma client before `next build`. Hostinger then runs `next start`
+in `apps/web` on the `PORT` it provides. Auto-deployment rebuilds on every push to `main`.
 
 ## 4. Check it works
 
