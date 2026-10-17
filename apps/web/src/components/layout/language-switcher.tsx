@@ -26,7 +26,7 @@ export function LanguageSwitcher() {
                 aria-current={active ? 'true' : undefined}
                 className={cn(
                   'inline-flex h-10 min-w-10 items-center justify-center rounded-md px-2 text-sm font-semibold uppercase',
-                  'focus-visible:ring-ring focus-visible:outline-none focus-visible:ring-2',
+                  'focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
                   active
                     ? 'bg-primary text-primary-foreground'
                     : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',

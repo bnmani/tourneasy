@@ -8,7 +8,7 @@ export default async function NotFound() {
   return (
     <div className="mx-auto max-w-2xl px-4 py-24 text-center">
       <h1 className="text-3xl font-bold">{t('title')}</h1>
-      <p className="text-muted-foreground mt-4">{t('text')}</p>
+      <p className="mt-4 text-muted-foreground">{t('text')}</p>
       <Button asChild className="mt-8">
         <Link href="/">{t('backHome')}</Link>
       </Button>
