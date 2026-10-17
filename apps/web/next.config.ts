@@ -4,9 +4,28 @@ import createNextIntlPlugin from 'next-intl/plugin';
 
 const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 
-// Baseline security headers. A strict Content-Security-Policy is added in Phase 8
-// once all third-party origins (Stripe, Sentry, R2, maps) are known.
+const isDev = process.env.NODE_ENV === 'development';
+
+// Baseline Content-Security-Policy: only our own origin may serve scripts, styles, images,
+// fonts and API calls; no plugins, framing or foreign form targets. Next.js App Router emits
+// inline bootstrap scripts, so 'unsafe-inline' is needed until a nonce-based policy replaces it
+// in Phase 8 (together with the Stripe, Sentry, R2 and map origins). Dev adds eval + HMR socket.
+const contentSecurityPolicy = [
+  "default-src 'self'",
+  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ''}`,
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: blob:",
+  "font-src 'self' data:",
+  `connect-src 'self'${isDev ? ' ws: wss:' : ''}`,
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "frame-ancestors 'none'",
+  ...(isDev ? [] : ['upgrade-insecure-requests']),
+].join('; ');
+
 const securityHeaders = [
+  { key: 'Content-Security-Policy', value: contentSecurityPolicy },
   { key: 'X-Content-Type-Options', value: 'nosniff' },
   { key: 'X-Frame-Options', value: 'DENY' },
   { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
