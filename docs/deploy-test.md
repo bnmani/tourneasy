@@ -34,22 +34,31 @@ Delete these rows from the platform form (they are for local development only):
 
 ## 3. Build settings
 
-Hostinger → Websites → Web Apps → the app → Deployments / build settings:
+Hostinger → Websites → Web Apps → the app → Deployments → Redeploy (Settings and redeploy):
 
-| Setting          | Value                 |
-| ---------------- | --------------------- |
-| Application type | **Next.js**           |
-| Branch           | `main`                |
-| Node version     | 22.x                  |
-| Package manager  | pnpm (auto-detected)  |
-| Root directory   | `apps/web`            |
-| Build script     | `build`               |
-| Output directory | `.next`               |
-| Entry file       | leave empty (ignored) |
+| Setting          | Value                                 |
+| ---------------- | ------------------------------------- |
+| Framework preset | **Other**                             |
+| Branch           | `main`                                |
+| Node version     | 22.x                                  |
+| Root directory   | `apps/web`                            |
+| Build command    | `pnpm run build`                      |
+| Package manager  | pnpm                                  |
+| Output directory | leave empty (ignored with an entry)   |
+| Entry file       | `.next/standalone/apps/web/server.js` |
 
-Running `pnpm install` inside `apps/web` installs the whole workspace, and the web app's own
-`build` script generates the Prisma client before `next build`. Hostinger then runs `next start`
-in `apps/web` on the `PORT` it provides. Auto-deployment rebuilds on every push to `main`.
+How it works:
+
+- `pnpm install` inside `apps/web` installs the whole workspace. `nodeLinker: hoisted` in
+  `pnpm-workspace.yaml` gives real, flat `node_modules` — Hostinger copies the build with symlinks
+  dereferenced, which breaks pnpm's default symlinked layout.
+- The web app's `build` script generates the Prisma client, runs `next build` with
+  `output: 'standalone'`, and copies static assets next to the standalone `server.js`.
+- Hostinger runs that `server.js` on the `PORT` it provides.
+- Auto-deployment rebuilds on every push to `main`. Runtime errors appear under **Runtime logs**.
+
+Don't use the **Next.js** preset: it starts the app with Hostinger's own `server.js`, which
+can't find `next` in a monorepo.
 
 ## 4. Check it works
 

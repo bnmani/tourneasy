@@ -2,6 +2,11 @@ packages:
   - 'apps/*'
   - 'packages/*'
 
+# Flat, real node_modules (no .pnpm symlink farm). Hostinger copies the standalone build with
+# symlinks dereferenced, which breaks packages that find their peers through pnpm's layout
+# (next → react-dom, @prisma/client → .prisma/client).
+nodeLinker: hoisted
+
 # Dependencies allowed to run install scripts (pnpm 11).
 allowBuilds:
   '@prisma/client': true

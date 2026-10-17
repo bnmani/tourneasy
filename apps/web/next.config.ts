@@ -22,9 +22,9 @@ const nextConfig: NextConfig = {
   // Tracing starts at the monorepo root so workspace packages are included.
   output: 'standalone',
   outputFileTracingRoot: path.join(__dirname, '../..'),
-  // File tracing misses Prisma's generated client and native query engine under pnpm.
+  // File tracing misses Prisma's generated client and native query engine.
   outputFileTracingIncludes: {
-    '/**/*': ['../../node_modules/.pnpm/@prisma+client@*/node_modules/.prisma/client/**/*'],
+    '/**/*': ['../../node_modules/.prisma/client/**/*'],
   },
   transpilePackages: ['@tourneasy/shared', '@tourneasy/db'],
   async headers() {
