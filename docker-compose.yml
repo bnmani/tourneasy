@@ -13,7 +13,7 @@ services:
       POSTGRES_DB: tourneasy
       TZ: UTC
     ports:
-      - '5432:5432'
+      - '127.0.0.1:5432:5432' # localhost only — dev credentials are not secret
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -26,8 +26,8 @@ services:
     image: axllent/mailpit:v1.21
     restart: unless-stopped
     ports:
-      - '1025:1025' # SMTP
-      - '8025:8025' # Web UI → http://localhost:8025
+      - '127.0.0.1:1025:1025' # SMTP (localhost only)
+      - '127.0.0.1:8025:8025' # Web UI → http://localhost:8025
 
   app:
     profiles: ['app']
@@ -39,7 +39,7 @@ services:
       DATABASE_URL: postgresql://tourneasy:tourneasy@postgres:5432/tourneasy?schema=public
       SMTP_HOST: mailpit
     ports:
-      - '3000:3000'
+      - '127.0.0.1:3000:3000'
     volumes:
       - .:/app
       # Keep Linux node_modules inside the container, separate from the host's.

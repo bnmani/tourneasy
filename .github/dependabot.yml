@@ -1,0 +1,24 @@
+# Weekly dependency and GitHub Actions updates.
+# The cooldown matches pnpm 11's minimumReleaseAge (packages younger than 24 h are refused),
+# so Dependabot doesn't open PRs that CI and Hostinger would reject.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      timezone: Europe/Amsterdam
+    cooldown:
+      default-days: 2
+    open-pull-requests-limit: 5
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      timezone: Europe/Amsterdam
