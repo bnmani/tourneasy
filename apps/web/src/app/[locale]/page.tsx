@@ -1,6 +1,8 @@
 import { Bell, CalendarSearch, CreditCard } from 'lucide-react';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Button } from '@/components/ui/button';
+import { Link } from '@/i18n/navigation';
+import { getActor } from '@/server/auth/web';
 import type { AppLocale } from '@tourneasy/shared/i18n';
 
 type Props = { params: Promise<{ locale: string }> };
@@ -11,6 +13,7 @@ export default async function HomePage({ params }: Props) {
   setRequestLocale(locale as AppLocale);
   const t = await getTranslations('Home');
   const tc = await getTranslations('Common');
+  const actor = await getActor();
 
   const features = [
     { icon: CalendarSearch, title: t('featureFindTitle'), text: t('featureFindText') },
@@ -26,18 +29,22 @@ export default async function HomePage({ params }: Props) {
             {t('heroTitle')}
           </h1>
           <p className="mt-4 max-w-2xl text-lg text-muted-foreground">{t('heroText')}</p>
-          {/* Targets arrive in Phase 1 (account) and Phase 3 (tournaments). */}
-          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-            <Button size="lg" disabled aria-describedby="cta-soon">
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
+            <Button asChild size="lg">
+              {actor ? (
+                <Link href="/account">{t('ctaDashboard')}</Link>
+              ) : (
+                <Link href="/register">{t('ctaRegister')}</Link>
+              )}
+            </Button>
+            {/* Tournament pages arrive in Phase 3. */}
+            <Button size="lg" variant="outline" disabled aria-describedby="cta-soon">
               {t('ctaBrowse')}
             </Button>
-            <Button size="lg" variant="outline" disabled aria-describedby="cta-soon">
-              {t('ctaRegister')}
-            </Button>
+            <span id="cta-soon" className="text-sm text-muted-foreground">
+              {tc('comingSoon')}
+            </span>
           </div>
-          <p id="cta-soon" className="mt-2 text-sm text-muted-foreground">
-            {tc('comingSoon')}
-          </p>
         </div>
       </section>
 
