@@ -1,6 +1,8 @@
--- DRAFT — not a migration. Found untracked in prisma/migrations on 2026-10-17 with no matching
--- model in schema.prisma, so it was parked here to avoid schema drift. Phase 1 (auth rate limiting)
--- should add a RateLimitBucket model to schema.prisma and generate the migration from it.
+-- AlterTable
+ALTER TABLE "PlayerProfile" ADD COLUMN     "preferredDisciplines" "Discipline"[] DEFAULT ARRAY[]::"Discipline"[];
+
+-- AlterTable
+ALTER TABLE "UserSession" ADD COLUMN     "tokenHash" TEXT;
 
 -- CreateTable
 CREATE TABLE "RateLimitBucket" (
@@ -14,3 +16,7 @@ CREATE TABLE "RateLimitBucket" (
 
 -- CreateIndex
 CREATE INDEX "RateLimitBucket_expiresAt_idx" ON "RateLimitBucket"("expiresAt");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "UserSession_tokenHash_key" ON "UserSession"("tokenHash");
+

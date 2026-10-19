@@ -241,40 +241,40 @@ enum DevicePlatform {
 // ─────────────────────────────────────────────────────────────────────────────
 
 model User {
-  id                String    @id @default(uuid()) @db.Uuid
-  email             String    @unique @db.Citext
-  emailVerifiedAt   DateTime?
-  passwordHash      String? // argon2id; null for magic-link-only users
-  name              String
-  locale            Locale    @default(nl)
-  image             String? // R2 object key
-  isActive          Boolean   @default(true)
-  lastLoginAt       DateTime?
-  failedLoginCount  Int       @default(0)
-  lockedUntil       DateTime?
-  anonymisedAt      DateTime? // GDPR erasure: PII scrubbed, row kept for referential integrity
-  deletedAt         DateTime?
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  id               String    @id @default(uuid()) @db.Uuid
+  email            String    @unique @db.Citext
+  emailVerifiedAt  DateTime?
+  passwordHash     String? // argon2id; null for magic-link-only users
+  name             String
+  locale           Locale    @default(nl)
+  image            String? // R2 object key
+  isActive         Boolean   @default(true)
+  lastLoginAt      DateTime?
+  failedLoginCount Int       @default(0)
+  lockedUntil      DateTime?
+  anonymisedAt     DateTime? // GDPR erasure: PII scrubbed, row kept for referential integrity
+  deletedAt        DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
-  roles                UserRole[]             @relation("UserRoles")
-  rolesGranted         UserRole[]             @relation("RoleGrantedBy")
-  accounts             Account[]
-  sessions             UserSession[]
-  passwordResetTokens  PasswordResetToken[]
-  consents             Consent[]
-  deviceTokens         DeviceToken[]
-  playerProfile        PlayerProfile?
-  organiserOf          TournamentOrganiser[]
-  orders               Order[]
-  notifications        Notification[]
-  notificationPrefs    NotificationPreference[]
-  auditLogs            AuditLog[]
-  refundsRequested     Refund[]               @relation("RefundRequestedBy")
-  refundsProcessed     Refund[]               @relation("RefundProcessedBy")
-  checkIns             RegistrationParticipant[] @relation("CheckedInBy")
-  idempotencyKeys      IdempotencyKey[]
-  following            PlayerFollow[]
+  roles               UserRole[]                @relation("UserRoles")
+  rolesGranted        UserRole[]                @relation("RoleGrantedBy")
+  accounts            Account[]
+  sessions            UserSession[]
+  passwordResetTokens PasswordResetToken[]
+  consents            Consent[]
+  deviceTokens        DeviceToken[]
+  playerProfile       PlayerProfile?
+  organiserOf         TournamentOrganiser[]
+  orders              Order[]
+  notifications       Notification[]
+  notificationPrefs   NotificationPreference[]
+  auditLogs           AuditLog[]
+  refundsRequested    Refund[]                  @relation("RefundRequestedBy")
+  refundsProcessed    Refund[]                  @relation("RefundProcessedBy")
+  checkIns            RegistrationParticipant[] @relation("CheckedInBy")
+  idempotencyKeys     IdempotencyKey[]
+  following           PlayerFollow[]
 
   @@index([deletedAt])
 }
@@ -320,16 +320,18 @@ model Account {
 /// Web: the Auth.js JWT carries this id and is rejected once revokedAt is set.
 /// Mobile: refresh tokens rotate within this session (see RefreshToken).
 model UserSession {
-  id          String      @id @default(uuid()) @db.Uuid
-  userId      String      @db.Uuid
-  kind        SessionKind
-  deviceName  String?
-  userAgent   String?
-  ipAddress   String?
-  lastSeenAt  DateTime    @default(now())
-  expiresAt   DateTime
-  revokedAt   DateTime?
-  createdAt   DateTime    @default(now())
+  id         String      @id @default(uuid()) @db.Uuid
+  userId     String      @db.Uuid
+  kind       SessionKind
+  /// WEB only: SHA-256 of the opaque session cookie value. MOBILE sessions use RefreshToken.
+  tokenHash  String?     @unique
+  deviceName String?
+  userAgent  String?
+  ipAddress  String?
+  lastSeenAt DateTime    @default(now())
+  expiresAt  DateTime
+  revokedAt  DateTime?
+  createdAt  DateTime    @default(now())
 
   user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   refreshTokens RefreshToken[]
@@ -377,14 +379,14 @@ model PasswordResetToken {
 
 /// Versioned consent records (GDPR proof of consent). Withdrawal = new row with granted=false.
 model Consent {
-  id          String      @id @default(uuid()) @db.Uuid
-  userId      String      @db.Uuid
-  type        ConsentType
-  version     String // e.g. privacy policy version "2026-10"
-  granted     Boolean
-  grantedBy   String? // for PARENTAL_CONSENT: guardian name
-  ipAddress   String?
-  createdAt   DateTime    @default(now())
+  id        String      @id @default(uuid()) @db.Uuid
+  userId    String      @db.Uuid
+  type      ConsentType
+  version   String // e.g. privacy policy version "2026-10"
+  granted   Boolean
+  grantedBy String? // for PARENTAL_CONSENT: guardian name
+  ipAddress String?
+  createdAt DateTime    @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -413,49 +415,51 @@ model DeviceToken {
 /// A player. May exist without a User (added/imported by an admin, e.g. a partner who
 /// has no account yet); linked to a User when that person signs up / claims it.
 model PlayerProfile {
-  id                  String    @id @default(uuid()) @db.Uuid
-  userId              String?   @unique @db.Uuid
+  id                   String       @id @default(uuid()) @db.Uuid
+  userId               String?      @unique @db.Uuid
   /// Platform member number, generated from a Postgres sequence, e.g. "TE100245". Login identifier.
-  memberNumber        String    @unique
+  memberNumber         String       @unique
   /// Badminton Nederland bondsnummer (optional).
-  federationId        String?   @unique
-  firstName           String
-  lastNamePrefix      String? // Dutch "tussenvoegsel": van, de, van der…
-  lastName            String
-  dateOfBirth         DateTime  @db.Date
-  gender              Gender
-  nationality         String?   @db.Char(2) // ISO 3166-1 alpha-2
-  phone               String?
-  clubId              String?   @db.Uuid
-  levelSinglesId      String?   @db.Uuid
-  levelDoublesId      String?   @db.Uuid
-  levelMixedId        String?   @db.Uuid
-  photoKey            String?
-  emergencyName       String?
-  emergencyPhone      String?
+  federationId         String?      @unique
+  firstName            String
+  lastNamePrefix       String? // Dutch "tussenvoegsel": van, de, van der…
+  lastName             String
+  dateOfBirth          DateTime     @db.Date
+  gender               Gender
+  nationality          String?      @db.Char(2) // ISO 3166-1 alpha-2
+  phone                String?
+  clubId               String?      @db.Uuid
+  levelSinglesId       String?      @db.Uuid
+  levelDoublesId       String?      @db.Uuid
+  levelMixedId         String?      @db.Uuid
+  photoKey             String?
+  emergencyName        String?
+  emergencyPhone       String?
   /// Under-16: data minimised and parental consent required (see Consent PARENTAL_CONSENT).
-  isMinor             Boolean   @default(false)
-  parentalConsentAt   DateTime?
-  publicProfile       Boolean   @default(true) // show in public player search (public-safe fields only)
-  mergedIntoId        String?   @db.Uuid // set when an admin merges a duplicate into another profile
-  deletedAt           DateTime?
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
+  isMinor              Boolean      @default(false)
+  parentalConsentAt    DateTime?
+  publicProfile        Boolean      @default(true) // show in public player search (public-safe fields only)
+  /// Disciplines the player usually wants to enter (sign-up checkboxes; used to pre-fill entries).
+  preferredDisciplines Discipline[] @default([])
+  mergedIntoId         String?      @db.Uuid // set when an admin merges a duplicate into another profile
+  deletedAt            DateTime?
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
 
-  user          User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
-  club          Club?        @relation(fields: [clubId], references: [id], onDelete: SetNull)
-  levelSingles  LevelClass?  @relation("LevelSingles", fields: [levelSinglesId], references: [id], onDelete: SetNull)
-  levelDoubles  LevelClass?  @relation("LevelDoubles", fields: [levelDoublesId], references: [id], onDelete: SetNull)
-  levelMixed    LevelClass?  @relation("LevelMixed", fields: [levelMixedId], references: [id], onDelete: SetNull)
-  mergedInto    PlayerProfile?  @relation("PlayerMerge", fields: [mergedIntoId], references: [id], onDelete: SetNull)
-  mergedFrom    PlayerProfile[] @relation("PlayerMerge")
+  user         User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
+  club         Club?           @relation(fields: [clubId], references: [id], onDelete: SetNull)
+  levelSingles LevelClass?     @relation("LevelSingles", fields: [levelSinglesId], references: [id], onDelete: SetNull)
+  levelDoubles LevelClass?     @relation("LevelDoubles", fields: [levelDoublesId], references: [id], onDelete: SetNull)
+  levelMixed   LevelClass?     @relation("LevelMixed", fields: [levelMixedId], references: [id], onDelete: SetNull)
+  mergedInto   PlayerProfile?  @relation("PlayerMerge", fields: [mergedIntoId], references: [id], onDelete: SetNull)
+  mergedFrom   PlayerProfile[] @relation("PlayerMerge")
 
-  teamMemberships    TeamMember[]
-  participations     RegistrationParticipant[]
-  invitesSent        PartnerInvite[]  @relation("InviteFrom")
-  invitesReceived    PartnerInvite[]  @relation("InviteTo")
-  partnerRequests    PartnerRequest[]
-  followers          PlayerFollow[]   @relation("Followed")
+  teamMemberships TeamMember[]
+  participations  RegistrationParticipant[]
+  invitesSent     PartnerInvite[]           @relation("InviteFrom")
+  invitesReceived PartnerInvite[]           @relation("InviteTo")
+  partnerRequests PartnerRequest[]
+  followers       PlayerFollow[]            @relation("Followed")
 
   @@index([lastName, firstName])
   @@index([clubId])
@@ -472,7 +476,7 @@ model PlayerFollow {
   createdAt        DateTime @default(now())
 
   follower User          @relation(fields: [followerUserId], references: [id], onDelete: Cascade)
-  followed PlayerProfile @relation("Followed",fields: [followedPlayerId], references: [id], onDelete: Cascade)
+  followed PlayerProfile @relation("Followed", fields: [followedPlayerId], references: [id], onDelete: Cascade)
 
   @@unique([followerUserId, followedPlayerId])
   @@index([followedPlayerId])
@@ -573,26 +577,26 @@ model LevelClass {
 // ─────────────────────────────────────────────────────────────────────────────
 
 model Venue {
-  id                    String    @id @default(uuid()) @db.Uuid
-  name                  String
-  slug                  String    @unique
-  street                String
-  houseNumber           String
-  postcode              String // "1234 AB"
-  city                  String
-  province              Province
-  country               String    @default("NL") @db.Char(2)
-  latitude              Decimal?  @db.Decimal(9, 6)
-  longitude             Decimal?  @db.Decimal(9, 6)
-  numberOfCourts        Int
-  facilities            Json? // { nl, en } free text or tag list
-  parkingInfo           Json?
-  publicTransportInfo   Json?
-  phone                 String?
-  website               String?
-  deletedAt             DateTime?
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
+  id                  String    @id @default(uuid()) @db.Uuid
+  name                String
+  slug                String    @unique
+  street              String
+  houseNumber         String
+  postcode            String // "1234 AB"
+  city                String
+  province            Province
+  country             String    @default("NL") @db.Char(2)
+  latitude            Decimal?  @db.Decimal(9, 6)
+  longitude           Decimal?  @db.Decimal(9, 6)
+  numberOfCourts      Int
+  facilities          Json? // { nl, en } free text or tag list
+  parkingInfo         Json?
+  publicTransportInfo Json?
+  phone               String?
+  website             String?
+  deletedAt           DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 
   tournaments Tournament[]
   clubs       Club[]
@@ -603,37 +607,37 @@ model Venue {
 }
 
 model Tournament {
-  id                     String             @id @default(uuid()) @db.Uuid
-  slug                   String             @unique
-  name                   String
-  description            Json? // { nl, en } (markdown)
-  venueId                String?            @db.Uuid
-  startsOn               DateTime           @db.Date
-  endsOn                 DateTime           @db.Date
-  registrationOpensAt    DateTime
-  registrationClosesAt   DateTime
+  id                   String             @id @default(uuid()) @db.Uuid
+  slug                 String             @unique
+  name                 String
+  description          Json? // { nl, en } (markdown)
+  venueId              String?            @db.Uuid
+  startsOn             DateTime           @db.Date
+  endsOn               DateTime           @db.Date
+  registrationOpensAt  DateTime
+  registrationClosesAt DateTime
   /// Last moment entries/partner changes are accepted (may equal registrationClosesAt).
-  entryDeadline          DateTime
-  withdrawalDeadline     DateTime
-  status                 TournamentStatus   @default(DRAFT)
-  coverImageKey          String?
-  logoKey                String?
-  contactName            String?
-  contactEmail           String?
-  contactPhone           String?
-  maxParticipants        Int?
-  maxEventsPerPlayer     Int                @default(3)
-  requiresApproval       Boolean            @default(false) // organiser approves entries before confirmation
-  partnerPaymentMode     PartnerPaymentMode @default(EACH_PAYS_OWN_SHARE)
-  refundPolicy           RefundPolicy       @default(ADMIN_APPROVAL)
+  entryDeadline        DateTime
+  withdrawalDeadline   DateTime
+  status               TournamentStatus   @default(DRAFT)
+  coverImageKey        String?
+  logoKey              String?
+  contactName          String?
+  contactEmail         String?
+  contactPhone         String?
+  maxParticipants      Int?
+  maxEventsPerPlayer   Int                @default(3)
+  requiresApproval     Boolean            @default(false) // organiser approves entries before confirmation
+  partnerPaymentMode   PartnerPaymentMode @default(EACH_PAYS_OWN_SHARE)
+  refundPolicy         RefundPolicy       @default(ADMIN_APPROVAL)
   /// Percentage refunded under the automatic policy (0–100). Fee kept for admin costs.
-  refundPercent          Int                @default(100)
-  vatRateBasisPoints     Int                @default(0) // 2100 = 21%. Sports entries are often VAT-exempt; configurable.
-  isPublished            Boolean            @default(false)
-  createdById            String?            @db.Uuid
-  deletedAt              DateTime?
-  createdAt              DateTime           @default(now())
-  updatedAt              DateTime           @updatedAt
+  refundPercent        Int                @default(100)
+  vatRateBasisPoints   Int                @default(0) // 2100 = 21%. Sports entries are often VAT-exempt; configurable.
+  isPublished          Boolean            @default(false)
+  createdById          String?            @db.Uuid
+  deletedAt            DateTime?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
 
   venue         Venue?                @relation(fields: [venueId], references: [id], onDelete: SetNull)
   organisers    TournamentOrganiser[]
@@ -684,34 +688,34 @@ model TournamentDocument {
 /// An event within a tournament, e.g. "HE U17 B". Gender eligibility follows from the discipline
 /// (HE/HD male, DE/DD female, GD one of each); `allowOtherGender` relaxes this for OTHER.
 model TournamentEvent {
-  id                String     @id @default(uuid()) @db.Uuid
-  tournamentId      String     @db.Uuid
-  discipline        Discipline
-  ageCategoryId     String?    @db.Uuid
-  levelClassId      String?    @db.Uuid
-  name              Json? // optional override; otherwise generated from discipline/age/level
-  feeCents          Int // per player
-  maxEntries        Int? // entries = singles players or doubles pairs
-  drawType          DrawType   @default(KNOCKOUT)
-  groupSize         Int? // for GROUPS_KNOCKOUT
-  advancePerGroup   Int?
+  id               String     @id @default(uuid()) @db.Uuid
+  tournamentId     String     @db.Uuid
+  discipline       Discipline
+  ageCategoryId    String?    @db.Uuid
+  levelClassId     String?    @db.Uuid
+  name             Json? // optional override; otherwise generated from discipline/age/level
+  feeCents         Int // per player
+  maxEntries       Int? // entries = singles players or doubles pairs
+  drawType         DrawType   @default(KNOCKOUT)
+  groupSize        Int? // for GROUPS_KNOCKOUT
+  advancePerGroup  Int?
   // Eligibility (ranks refer to LevelClass.rank; null = no limit)
-  minLevelRank      Int?
-  maxLevelRank      Int?
-  allowOtherGender  Boolean    @default(true)
+  minLevelRank     Int?
+  maxLevelRank     Int?
+  allowOtherGender Boolean    @default(true)
   // Scoring (BWF default: best of 3 games to 21, rally point, cap 30)
-  bestOf            Int        @default(3)
-  pointsToWin       Int        @default(21)
-  pointsCap         Int        @default(30)
-  sortOrder         Int        @default(0)
-  isOpen            Boolean    @default(true)
-  deletedAt         DateTime?
-  createdAt         DateTime   @default(now())
-  updatedAt         DateTime   @updatedAt
+  bestOf           Int        @default(3)
+  pointsToWin      Int        @default(21)
+  pointsCap        Int        @default(30)
+  sortOrder        Int        @default(0)
+  isOpen           Boolean    @default(true)
+  deletedAt        DateTime?
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
 
-  tournament      Tournament      @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
-  ageCategory     AgeCategory?    @relation(fields: [ageCategoryId], references: [id], onDelete: SetNull)
-  levelClass      LevelClass?     @relation(fields: [levelClassId], references: [id], onDelete: SetNull)
+  tournament      Tournament       @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  ageCategory     AgeCategory?     @relation(fields: [ageCategoryId], references: [id], onDelete: SetNull)
+  levelClass      LevelClass?      @relation(fields: [levelClassId], references: [id], onDelete: SetNull)
   registrations   Registration[]
   partnerRequests PartnerRequest[]
   draws           Draw[]
@@ -745,21 +749,21 @@ model Announcement {
 /// One entry in one event: a single player (singles) or a pair (doubles/mixed).
 /// Capacity is counted on Registration rows with status in (PENDING, CONFIRMED).
 model Registration {
-  id                String             @id @default(uuid()) @db.Uuid
-  eventId           String             @db.Uuid
-  status            RegistrationStatus @default(PENDING)
-  approval          ApprovalStatus     @default(NOT_REQUIRED)
-  waitlistPosition  Int?
+  id               String             @id @default(uuid()) @db.Uuid
+  eventId          String             @db.Uuid
+  status           RegistrationStatus @default(PENDING)
+  approval         ApprovalStatus     @default(NOT_REQUIRED)
+  waitlistPosition Int?
   /// Capacity hold for unpaid entries; released by the expiry job (30 min).
-  holdExpiresAt     DateTime?
-  seed              Int?
-  notes             String? // organiser-only
-  createdById       String?            @db.Uuid
-  confirmedAt       DateTime?
-  cancelledAt       DateTime?
-  cancelReason      String?
-  createdAt         DateTime           @default(now())
-  updatedAt         DateTime           @updatedAt
+  holdExpiresAt    DateTime?
+  seed             Int?
+  notes            String? // organiser-only
+  createdById      String?            @db.Uuid
+  confirmedAt      DateTime?
+  cancelledAt      DateTime?
+  cancelReason     String?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
 
   event        TournamentEvent           @relation(fields: [eventId], references: [id], onDelete: Restrict)
   participants RegistrationParticipant[]
@@ -846,20 +850,20 @@ model PartnerRequest {
 
 /// A checkout cart: one or more event fees for one tournament, paid by one user.
 model Order {
-  id               String      @id @default(uuid()) @db.Uuid
-  orderNumber      String      @unique // human-readable, e.g. "2026-000123"
-  userId           String      @db.Uuid
-  tournamentId     String      @db.Uuid
-  status           OrderStatus @default(PENDING)
-  currency         String      @default("EUR") @db.Char(3)
-  subtotalCents    Int
-  vatCents         Int         @default(0)
-  totalCents       Int
-  expiresAt        DateTime // 30 min after creation while PENDING
-  idempotencyKey   String      @unique
-  paidAt           DateTime?
-  createdAt        DateTime    @default(now())
-  updatedAt        DateTime    @updatedAt
+  id             String      @id @default(uuid()) @db.Uuid
+  orderNumber    String      @unique // human-readable, e.g. "2026-000123"
+  userId         String      @db.Uuid
+  tournamentId   String      @db.Uuid
+  status         OrderStatus @default(PENDING)
+  currency       String      @default("EUR") @db.Char(3)
+  subtotalCents  Int
+  vatCents       Int         @default(0)
+  totalCents     Int
+  expiresAt      DateTime // 30 min after creation while PENDING
+  idempotencyKey String      @unique
+  paidAt         DateTime?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
 
   user       User        @relation(fields: [userId], references: [id], onDelete: Restrict)
   tournament Tournament  @relation(fields: [tournamentId], references: [id], onDelete: Restrict)
@@ -897,19 +901,19 @@ model OrderItem {
 /// Stripe PaymentIntent (shared by web Checkout/Payment Element and mobile Payment Sheet).
 /// The webhook is the source of truth for `status`.
 model Payment {
-  id                    String         @id @default(uuid()) @db.Uuid
-  orderId               String         @db.Uuid
-  stripePaymentIntentId String?        @unique
-  stripeCheckoutSessionId String?      @unique
-  amountCents           Int
-  currency              String         @default("EUR") @db.Char(3)
-  status                PaymentStatus  @default(REQUIRES_PAYMENT)
-  method                PaymentMethod?
-  failureReason         String?
-  succeededAt           DateTime?
-  recordedById          String?        @db.Uuid // MANUAL payments marked paid by an admin
-  createdAt             DateTime       @default(now())
-  updatedAt             DateTime       @updatedAt
+  id                      String         @id @default(uuid()) @db.Uuid
+  orderId                 String         @db.Uuid
+  stripePaymentIntentId   String?        @unique
+  stripeCheckoutSessionId String?        @unique
+  amountCents             Int
+  currency                String         @default("EUR") @db.Char(3)
+  status                  PaymentStatus  @default(REQUIRES_PAYMENT)
+  method                  PaymentMethod?
+  failureReason           String?
+  succeededAt             DateTime?
+  recordedById            String?        @db.Uuid // MANUAL payments marked paid by an admin
+  createdAt               DateTime       @default(now())
+  updatedAt               DateTime       @updatedAt
 
   order   Order    @relation(fields: [orderId], references: [id], onDelete: Restrict)
   refunds Refund[]
@@ -943,11 +947,11 @@ model Refund {
 
 /// Receipt / invoice (PDF stored in R2). Sequential number per year, no gaps.
 model Invoice {
-  id        String   @id @default(uuid()) @db.Uuid
-  orderId   String   @unique @db.Uuid
-  number    String   @unique // "TE-2026-00001"
-  pdfKey    String?
-  issuedAt  DateTime @default(now())
+  id       String   @id @default(uuid()) @db.Uuid
+  orderId  String   @unique @db.Uuid
+  number   String   @unique // "TE-2026-00001"
+  pdfKey   String?
+  issuedAt DateTime @default(now())
 
   order Order @relation(fields: [orderId], references: [id], onDelete: Restrict)
 }
@@ -1045,23 +1049,23 @@ model DrawEntry {
 /// A match. Knockout winners advance into `nextMatchId` at `nextMatchSlot` (A or B).
 /// Round-robin standings are computed from completed matches (not stored).
 model Match {
-  id            String      @id @default(uuid()) @db.Uuid
-  drawId        String      @db.Uuid
-  round         Int // 1 = first round; for RR the round number
-  matchNumber   Int // order within the draw
-  entryAId      String?     @db.Uuid
-  entryBId      String?     @db.Uuid
-  winnerEntryId String?     @db.Uuid
-  status        MatchStatus @default(SCHEDULED)
-  nextMatchId   String?     @db.Uuid
-  nextMatchSlot String?     @db.Char(1) // "A" | "B"
-  umpireName    String?
-  startedAt     DateTime?
-  completedAt   DateTime?
-  resultEnteredById String? @db.Uuid
-  version       Int         @default(0) // optimistic locking for concurrent score entry
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  id                String      @id @default(uuid()) @db.Uuid
+  drawId            String      @db.Uuid
+  round             Int // 1 = first round; for RR the round number
+  matchNumber       Int // order within the draw
+  entryAId          String?     @db.Uuid
+  entryBId          String?     @db.Uuid
+  winnerEntryId     String?     @db.Uuid
+  status            MatchStatus @default(SCHEDULED)
+  nextMatchId       String?     @db.Uuid
+  nextMatchSlot     String?     @db.Char(1) // "A" | "B"
+  umpireName        String?
+  startedAt         DateTime?
+  completedAt       DateTime?
+  resultEnteredById String?     @db.Uuid
+  version           Int         @default(0) // optimistic locking for concurrent score entry
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
 
   draw      Draw       @relation(fields: [drawId], references: [id], onDelete: Cascade)
   entryA    DrawEntry? @relation("EntryA", fields: [entryAId], references: [id], onDelete: SetNull)
@@ -1120,21 +1124,21 @@ model CourtSlot {
 
 /// One row per (recipient, channel) delivery. IN_APP rows are the user's inbox.
 model Notification {
-  id         String              @id @default(uuid()) @db.Uuid
-  userId     String              @db.Uuid
-  type       NotificationType
-  channel    NotificationChannel
-  status     NotificationStatus  @default(QUEUED)
-  locale     Locale
+  id        String              @id @default(uuid()) @db.Uuid
+  userId    String              @db.Uuid
+  type      NotificationType
+  channel   NotificationChannel
+  status    NotificationStatus  @default(QUEUED)
+  locale    Locale
   /// Data for the template (ids, names); rendered per locale at send time.
-  payload    Json
+  payload   Json
   /// Stable deep link path, e.g. "/registrations/{id}".
-  linkPath   String?
-  dedupeKey  String? // avoid duplicate sends, e.g. "MATCH_RESULT:{matchId}:{userId}"
-  sentAt     DateTime?
-  readAt     DateTime?
-  error      String?
-  createdAt  DateTime            @default(now())
+  linkPath  String?
+  dedupeKey String? // avoid duplicate sends, e.g. "MATCH_RESULT:{matchId}:{userId}"
+  sentAt    DateTime?
+  readAt    DateTime?
+  error     String?
+  createdAt DateTime            @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -1174,4 +1178,16 @@ model AuditLog {
   @@index([entityType, entityId])
   @@index([actorId, createdAt])
   @@index([createdAt])
+}
+
+/// Fixed-window rate-limit counters (login, sign-up, password reset …), shared by all app
+/// instances. Expired rows are pruned opportunistically; `key` is e.g. "login:ip:1.2.3.4".
+model RateLimitBucket {
+  key         String
+  windowStart DateTime
+  count       Int      @default(0)
+  expiresAt   DateTime
+
+  @@id([key, windowStart])
+  @@index([expiresAt])
 }
