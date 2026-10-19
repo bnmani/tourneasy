@@ -6,7 +6,9 @@
   "exports": {
     ".": "./src/index.ts",
     "./i18n": "./src/i18n/index.ts",
-    "./format": "./src/format.ts"
+    "./format": "./src/format.ts",
+    "./rules": "./src/rules/index.ts",
+    "./schemas": "./src/schemas/auth.ts"
   },
   "scripts": {
     "lint": "eslint .",
