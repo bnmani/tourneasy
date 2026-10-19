@@ -27,7 +27,9 @@ pnpm dev                      # http://localhost:3000 → redirects to /nl
 ```
 
 Seed logins use the `SEED_*` values from `.env` (admin: `admin@tourneasy.test`; players:
-`<first>.<last>@tourneasy.test`, e.g. `daan.jansen@tourneasy.test`). Logging in arrives in Phase 1.
+`<first>.<last>@tourneasy.test`, e.g. `daan.jansen@tourneasy.test`, or their member number
+`TE100001`…). Emails (verification, password reset) land in Mailpit at http://localhost:8025.
+Set `AUTH_SECRET` in `.env` (`openssl rand -base64 48`) for the mobile token endpoints.
 
 ## Scripts
 
@@ -49,6 +51,19 @@ apps/mobile       reserved for the Expo app (Phase 9)
 packages/db       Prisma schema, migrations, seed, client
 packages/shared   translations (nl/en), formatting, Zod schemas, business rules
 ```
+
+## Verifying Phase 1 (auth & profiles)
+
+1. `pnpm test` — shared rules/schemas plus service tests against a `tourneasy_test` database
+   (created and migrated automatically; Docker Postgres must be running).
+2. Register at <http://localhost:3000/nl/register> → you land on the dashboard; the confirmation
+   email (with member number) is in Mailpit; its link confirms the address.
+3. Log out, log in with the member number; try 5 wrong passwords → account locked for 15 minutes.
+4. Profile, Security (change password, devices) and Privacy (download data, delete account) under
+   “Mijn account”.
+5. Log in as admin → admin portal → “Gebruikers en rollen”: grant/revoke Admin or Organiser; removing
+   the last admin is refused.
+6. Mobile API: see `docs/api.md` (`POST /api/v1/auth/token`, `GET /api/v1/me`, …).
 
 ## Verifying Phase 0
 
