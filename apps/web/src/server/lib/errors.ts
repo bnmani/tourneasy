@@ -1,0 +1,59 @@
+/**
+ * Domain errors raised by the service layer. `code` doubles as the translation key under
+ * `Errors.*`; the REST API exposes it as SCREAMING_SNAKE_CASE (docs/api.md).
+ */
+export type ErrorCode =
+  | 'validation'
+  | 'invalidCredentials'
+  | 'accountLocked'
+  | 'rateLimited'
+  | 'emailTaken'
+  | 'tokenInvalid'
+  | 'wrongPassword'
+  | 'lastAdmin'
+  | 'notFound'
+  | 'forbidden'
+  | 'unauthorized'
+  | 'unexpected';
+
+const HTTP_STATUS: Record<ErrorCode, number> = {
+  validation: 422,
+  invalidCredentials: 401,
+  accountLocked: 423,
+  rateLimited: 429,
+  emailTaken: 409,
+  tokenInvalid: 400,
+  wrongPassword: 400,
+  lastAdmin: 409,
+  notFound: 404,
+  forbidden: 403,
+  unauthorized: 401,
+  unexpected: 500,
+};
+
+export class AppError extends Error {
+  constructor(
+    readonly code: ErrorCode,
+    /** Safe to show to the client: field errors, retry hints, message params. */
+    readonly details: Record<string, unknown> = {},
+  ) {
+    super(code);
+    this.name = 'AppError';
+  }
+
+  get status(): number {
+    return HTTP_STATUS[this.code];
+  }
+}
+
+export function isAppError(error: unknown): error is AppError {
+  return error instanceof AppError;
+}
+
+export function validationError(fields: Record<string, string>): AppError {
+  return new AppError('validation', { fields });
+}
+
+export function toApiCode(code: ErrorCode): string {
+  return code.replace(/([a-z])([A-Z])/g, '$1_$2').toUpperCase();
+}

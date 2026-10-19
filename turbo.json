@@ -9,7 +9,9 @@
     "EMAIL_FROM",
     "SEED_*",
     "SKIP_ENV_VALIDATION",
-    "CI"
+    "CI",
+    "EMAIL_TRANSPORT",
+    "TEST_DATABASE_URL"
   ],
   "tasks": {
     "db:generate": {

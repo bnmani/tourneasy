@@ -41,10 +41,12 @@ const nextConfig: NextConfig = {
   // Tracing starts at the monorepo root so workspace packages are included.
   output: 'standalone',
   outputFileTracingRoot: path.join(__dirname, '../..'),
-  // File tracing misses Prisma's generated client and native query engine.
+  // File tracing misses Prisma's generated client/query engine and argon2's platform binary
+  // (loaded by a runtime-computed require).
   outputFileTracingIncludes: {
-    '/**/*': ['../../node_modules/.prisma/client/**/*'],
+    '/**/*': ['../../node_modules/.prisma/client/**/*', '../../node_modules/@node-rs/argon2*/**/*'],
   },
+  serverExternalPackages: ['@node-rs/argon2'],
   transpilePackages: ['@tourneasy/shared', '@tourneasy/db'],
   async headers() {
     return [{ source: '/:path*', headers: securityHeaders }];
