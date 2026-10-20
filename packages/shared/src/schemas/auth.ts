@@ -200,4 +200,12 @@ export const KNOWN_ERROR_KEYS = new Set([
   'mustAccept',
   'parentalConsentRequired',
   'tokenInvalid',
+  'postcodeInvalid',
+  'timeInvalid',
+  'endBeforeStart',
+  'deadlineOrder',
+  'deadlineAfterStart',
+  'feeInvalid',
+  'duplicate',
+  'emailTaken',
 ]);
