@@ -16,7 +16,7 @@ export function AccountNav({ isAdmin }: { isAdmin: boolean }) {
     ...(isAdmin ? [{ href: '/admin', label: ta('nav') }] : []),
   ];
   return (
-    <nav aria-label={t('nav')}>
+    <nav aria-label={t('nav')} className="min-w-0">
       <ul className="flex gap-2 overflow-x-auto pb-2 lg:flex-col lg:overflow-visible lg:pb-0">
         {items.map((item) => {
           const active =

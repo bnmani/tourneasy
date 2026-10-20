@@ -96,7 +96,17 @@ export function Field({ name, label, state, hint, required, children }: FieldPro
 }
 
 type TextFieldProps = Omit<FieldProps, 'children'> & {
-  type?: 'text' | 'email' | 'password' | 'tel' | 'date' | 'search';
+  type?:
+    | 'text'
+    | 'email'
+    | 'password'
+    | 'tel'
+    | 'date'
+    | 'datetime-local'
+    | 'time'
+    | 'number'
+    | 'url'
+    | 'search';
   autoComplete?: string;
   defaultValue?: string;
   minLength?: number;
@@ -131,6 +141,30 @@ export function TextField({
           maxLength={maxLength}
           inputMode={inputMode}
           className={inputClass}
+        />
+      )}
+    </Field>
+  );
+}
+
+export function TextAreaField({
+  defaultValue,
+  rows = 4,
+  maxLength,
+  ...field
+}: Omit<FieldProps, 'children'> & { defaultValue?: string; rows?: number; maxLength?: number }) {
+  const value = valueOf(field.state, field.name) ?? defaultValue ?? '';
+  return (
+    <Field key={value} {...field}>
+      {(a11y) => (
+        <textarea
+          {...a11y}
+          name={field.name}
+          required={field.required}
+          defaultValue={value}
+          rows={rows}
+          maxLength={maxLength}
+          className={cn(inputClass, 'h-auto py-2')}
         />
       )}
     </Field>
