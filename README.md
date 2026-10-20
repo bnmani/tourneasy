@@ -52,6 +52,19 @@ packages/db       Prisma schema, migrations, seed, client
 packages/shared   translations (nl/en), formatting, Zod schemas, business rules
 ```
 
+## Verifying Phase 2 (admin core)
+
+1. Log in as admin → **Beheer**: overview with counts, tournaments per status, upcoming tournaments and recent changes.
+2. **Toernooien → Nieuw toernooi**: choose _Externe organisator_ and enter an email. An existing account becomes
+   organiser of that tournament only; an unknown email becomes an invite that activates at sign-up/login.
+3. On the tournament page: add events (category, age, level, fee, max entries, match format incl. hybrid groups),
+   then _Inschrijving open_ (refused without an open event), publish/unpublish.
+4. **Spelers**: filter (gender, preferred event, club, with/without account), add a player without account,
+   export CSV, import CSV (template on the import page), merge a duplicate by member number.
+5. **Locaties / Clubs**: create, edit, archive (a venue with upcoming tournaments can't be archived).
+6. **Auditlog**: every action above is listed.
+7. Log in as the organiser: the portal shows only their tournament(s).
+
 ## Verifying Phase 1 (auth & profiles)
 
 1. `pnpm test` — shared rules/schemas plus service tests against a `tourneasy_test` database
