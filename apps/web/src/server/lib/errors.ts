@@ -14,7 +14,15 @@ export type ErrorCode =
   | 'notFound'
   | 'forbidden'
   | 'unauthorized'
-  | 'unexpected';
+  | 'unexpected'
+  | 'duplicateEvent'
+  | 'hasRegistrations'
+  | 'statusTransition'
+  | 'mergeSelf'
+  | 'mergeTwoAccounts'
+  | 'csvInvalid'
+  | 'inUse'
+  | 'noOpenEvents';
 
 const HTTP_STATUS: Record<ErrorCode, number> = {
   validation: 422,
@@ -29,6 +37,14 @@ const HTTP_STATUS: Record<ErrorCode, number> = {
   forbidden: 403,
   unauthorized: 401,
   unexpected: 500,
+  duplicateEvent: 409,
+  hasRegistrations: 409,
+  statusTransition: 409,
+  mergeSelf: 422,
+  mergeTwoAccounts: 409,
+  csvInvalid: 422,
+  inUse: 409,
+  noOpenEvents: 409,
 };
 
 export class AppError extends Error {

@@ -27,6 +27,7 @@ import { enforce, LIMITS } from '../lib/rate-limit';
 import type { RequestMeta } from '../lib/request-meta';
 import { appUrl } from '../lib/urls';
 import { type Actor, revokeAllSessions } from './session-service';
+import { acceptOrganiserInvites } from './tournament-service';
 
 /** Version stamped on consent records; bump when the terms/privacy texts change. */
 export const POLICY_VERSION = '2026-10';
@@ -60,9 +61,29 @@ export async function signUp(input: unknown, meta: RequestMeta) {
   let created: { userId: string; memberNumber: string };
   try {
     created = await prisma.$transaction(async (tx) => {
-      const [row] = await tx.$queryRaw<{ value: bigint }[]>`
-        SELECT nextval('member_number_seq') AS value`;
-      const memberNumber = `TE${row!.value.toString()}`;
+      // A player an admin added earlier with this email is claimed instead of duplicated (D5).
+      const claimable = await tx.playerProfile.findFirst({
+        where: { contactEmail: data.email, userId: null, deletedAt: null, mergedIntoId: null },
+      });
+      let memberNumber = claimable?.memberNumber;
+      if (!memberNumber) {
+        const [row] = await tx.$queryRaw<{ value: bigint }[]>`
+          SELECT nextval('member_number_seq') AS value`;
+        memberNumber = `TE${row!.value.toString()}`;
+      }
+      const profileFields = {
+        firstName: data.firstName,
+        lastNamePrefix: data.lastNamePrefix ?? null,
+        lastName: data.lastName,
+        dateOfBirth,
+        gender: data.gender,
+        phone: data.phone,
+        preferredDisciplines: data.preferredDisciplines,
+        isMinor: minor,
+        parentalConsentAt: minor ? now : null,
+        // Privacy by default: players opt in to public listings later.
+        publicProfile: false,
+      };
 
       const consents: Prisma.ConsentCreateWithoutUserInput[] = [
         { type: ConsentType.TERMS, version: POLICY_VERSION, granted: true, ipAddress: meta.ip },
@@ -91,27 +112,18 @@ export async function signUp(input: unknown, meta: RequestMeta) {
           locale: data.locale as Locale,
           roles: { create: [{ role: Role.PLAYER }] },
           consents: { create: consents },
-          playerProfile: {
-            create: {
-              memberNumber,
-              firstName: data.firstName,
-              lastNamePrefix: data.lastNamePrefix,
-              lastName: data.lastName,
-              dateOfBirth,
-              gender: data.gender,
-              phone: data.phone,
-              preferredDisciplines: data.preferredDisciplines,
-              isMinor: minor,
-              parentalConsentAt: minor ? now : null,
-              // Privacy by default: players opt in to public listings later.
-              publicProfile: false,
-            },
-          },
+          ...(claimable ? {} : { playerProfile: { create: { memberNumber, ...profileFields } } }),
         },
       });
+      if (claimable) {
+        await tx.playerProfile.update({
+          where: { id: claimable.id },
+          data: { ...profileFields, userId: user.id, contactEmail: null },
+        });
+      }
       await writeAudit(tx, {
         actorId: user.id,
-        action: 'user.signup',
+        action: claimable ? 'user.signup.claim' : 'user.signup',
         entityType: 'User',
         entityId: user.id,
         meta,
@@ -125,6 +137,7 @@ export async function signUp(input: unknown, meta: RequestMeta) {
     throw error;
   }
 
+  await acceptOrganiserInvites(created.userId, data.email);
   await sendVerificationEmail(created.userId);
   return created;
 }
@@ -185,6 +198,8 @@ export async function authenticate(input: unknown, meta: RequestMeta) {
     where: { id: user.id },
     data: { failedLoginCount: 0, lockedUntil: null, lastLoginAt: new Date() },
   });
+  // Organiser invites sent to this email before the account existed.
+  await acceptOrganiserInvites(user.id, user.email);
   return { userId: user.id, rememberMe: data.rememberMe, locale: user.locale as AppLocale };
 }
 

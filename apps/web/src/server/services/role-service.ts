@@ -10,15 +10,11 @@ import { renderEmail } from '../email/templates';
 import { writeAudit } from '../lib/audit';
 import { AppError, validationError } from '../lib/errors';
 import type { RequestMeta } from '../lib/request-meta';
+import { assertAdmin } from './permissions';
 import type { Actor } from './session-service';
 
 export function hasRole(actor: Actor | null, role: Role): boolean {
   return !!actor && actor.roles.includes(role);
-}
-
-export function assertAdmin(actor: Actor | null): asserts actor is Actor {
-  if (!actor) throw new AppError('unauthorized');
-  if (!actor.roles.includes(Role.ADMIN)) throw new AppError('forbidden');
 }
 
 const PAGE_SIZE = 20;

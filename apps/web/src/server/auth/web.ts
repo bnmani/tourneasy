@@ -60,13 +60,24 @@ export async function requireRole(
   return actor;
 }
 
+export function isPortalUser(actor: Pick<Actor, 'roles'> | null): boolean {
+  return !!actor && (actor.roles.includes(Role.ADMIN) || actor.roles.includes(Role.ORGANISER));
+}
+
+/** Admin portal: administrators and delegated organisers (others get a 404). */
+export async function requirePortal(locale: AppLocale, returnTo?: string): Promise<Actor> {
+  const actor = await requireActor(locale, returnTo);
+  if (!isPortalUser(actor)) notFound();
+  return actor;
+}
+
 export async function currentRequestMeta(): Promise<RequestMeta> {
   return requestMetaFromHeaders(await headers());
 }
 
-/** Where to land after login: admins in the admin portal, players on their dashboard. */
+/** Where to land after login: admins/organisers in the portal, players on their dashboard. */
 export function homeFor(actor: Pick<Actor, 'roles'>, locale: AppLocale): string {
-  return actor.roles.includes(Role.ADMIN) ? `/${locale}/admin` : `/${locale}/account`;
+  return isPortalUser(actor) ? `/${locale}/admin` : `/${locale}/account`;
 }
 
 /**
