@@ -48,6 +48,12 @@ const nextConfig: NextConfig = {
   },
   serverExternalPackages: ['@node-rs/argon2'],
   transpilePackages: ['@tourneasy/shared', '@tourneasy/db'],
+  // Hostinger's shared build servers cap processes per account (spawn EAGAIN). Keep
+  // `next build` to one worker and leave lint/typecheck to their own steps (`pnpm lint`,
+  // `pnpm typecheck`), which run in CI and locally before every push.
+  experimental: { cpus: 1, workerThreads: false },
+  eslint: { ignoreDuringBuilds: true },
+  typescript: { ignoreBuildErrors: true },
   async headers() {
     return [{ source: '/:path*', headers: securityHeaders }];
   },
