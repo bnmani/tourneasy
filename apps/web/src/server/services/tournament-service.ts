@@ -4,10 +4,13 @@
  */
 import { Prisma, prisma, Role, type TournamentStatus } from '@tourneasy/db';
 import {
+  fieldErrors,
+  NEW_VENUE,
   organiserEmailSchema,
   STATUS_TRANSITIONS,
   tournamentSchema,
   tournamentStatusSchema,
+  venueSchema,
   type TournamentStatusCode,
 } from '@tourneasy/shared';
 import { messages, type AppLocale } from '@tourneasy/shared/i18n';
@@ -20,6 +23,7 @@ import { localized, uniqueSlug } from '../lib/slug';
 import { pageCount, pageParams, parseInput } from '../lib/validation';
 import { assertAdmin, assertCanManageTournament, assertPortalAccess, isAdmin } from './permissions';
 import type { Actor } from './session-service';
+import { createVenue } from './venue-service';
 
 // ── Queries ────────────────────────────────────────────────────────────────────────
 
@@ -112,9 +116,38 @@ function toData(input: ReturnType<typeof tournamentSchema.parse>) {
   };
 }
 
+/**
+ * "Add new venue" in the tournament form: validates the tournament and the inline venue
+ * (`newVenue.*` fields) together so all errors show at once, creates the venue, and returns
+ * the input with its id. Only admins manage venues.
+ */
+async function resolveNewVenue(
+  actor: Actor,
+  input: unknown,
+  meta: RequestMeta,
+  creating = false,
+): Promise<unknown> {
+  if (typeof input !== 'object' || input === null) return input;
+  const record = input as Record<string, unknown>;
+  if (record.venueId !== NEW_VENUE) return input;
+  assertAdmin(actor);
+  const venueInput = (record.newVenue ?? {}) as Record<string, unknown>;
+  const tournament = tournamentSchema.safeParse({ ...record, venueId: undefined });
+  const venue = venueSchema.safeParse(venueInput);
+  const errors: Record<string, string> = tournament.success ? {} : fieldErrors(tournament.error);
+  if (creating && record.type === 'THIRD_PARTY' && !record.organiserEmail)
+    errors.organiserEmail ??= 'organiserEmailRequired';
+  if (!venue.success)
+    for (const [field, error] of Object.entries(fieldErrors(venue.error)))
+      errors[`newVenue.${field}`] = error;
+  if (Object.keys(errors).length > 0) throw validationError(errors);
+  const created = await createVenue(actor, venueInput, meta);
+  return { ...record, venueId: created.id };
+}
+
 export async function createTournament(actor: Actor, input: unknown, meta: RequestMeta) {
   assertAdmin(actor); // "Create tournaments" is visible only to the site's admins.
-  const data = parseInput(tournamentSchema, input);
+  const data = parseInput(tournamentSchema, await resolveNewVenue(actor, input, meta, true));
   if (data.type === 'THIRD_PARTY' && !data.organiserEmail) {
     throw validationError({ organiserEmail: 'organiserEmailRequired' });
   }
@@ -148,7 +181,7 @@ export async function updateTournament(
   meta: RequestMeta,
 ) {
   await assertCanManageTournament(actor, id);
-  const data = parseInput(tournamentSchema, input);
+  const data = parseInput(tournamentSchema, await resolveNewVenue(actor, input, meta));
   const before = await prisma.tournament.findFirstOrThrow({ where: { id, deletedAt: null } });
   const tournament = await prisma.tournament.update({
     where: { id },

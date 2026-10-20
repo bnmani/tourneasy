@@ -1,12 +1,16 @@
 import { prisma, Role } from '@tourneasy/db';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createPlayer, meta, resetDatabase } from '@/test/db';
+import { readXlsx, toXlsx } from '../lib/xlsx';
 import { authenticate, signUp } from './auth-service';
 import { createEvent, deleteEvent, updateEvent } from './event-service';
 import {
   createPlayer as adminCreatePlayer,
   exportPlayersCsv,
+  exportPlayersXlsx,
   importPlayersCsv,
+  importPlayersFile,
+  playerXlsxTemplate,
   listPlayers,
   mergePlayers,
 } from './player-service';
@@ -51,7 +55,7 @@ const tournamentInput = {
   dayStartTime: '09:00',
   registrationOpensAt: '2026-11-01T09:00',
   registrationClosesAt: '2027-02-27T23:59',
-  withdrawalDeadline: '2027-03-06T23:59',
+  withdrawalDeadline: '2027-02-20T23:59',
 };
 
 describe('venues', () => {
@@ -62,6 +66,30 @@ describe('venues', () => {
     expect(await prisma.court.count({ where: { venueId: venue.id } })).toBe(6);
     await updateVenue(admin, venue.id, { ...venueInput, numberOfCourts: '4' }, meta);
     expect(await prisma.court.count({ where: { venueId: venue.id } })).toBe(4);
+  });
+
+  it('creates a new venue from the tournament form, validating both together', async () => {
+    const admin = await newAdmin();
+    await expect(
+      createTournament(
+        admin,
+        { ...tournamentInput, endsOn: '', venueId: 'new', newVenue: { ...venueInput, city: '' } },
+        meta,
+      ),
+    ).rejects.toMatchObject({
+      code: 'validation',
+      details: { fields: { endsOn: 'required', 'newVenue.city': 'required' } },
+    });
+    expect(await prisma.venue.count()).toBe(0);
+
+    const tournament = await createTournament(
+      admin,
+      { ...tournamentInput, venueId: 'new', newVenue: venueInput },
+      meta,
+    );
+    const venue = await prisma.venue.findFirstOrThrow({ include: { courts: true } });
+    expect(tournament.venueId).toBe(venue.id);
+    expect(venue.courts).toHaveLength(6);
   });
 
   it("can't archive a venue with an upcoming tournament", async () => {
@@ -336,9 +364,45 @@ describe('players', () => {
     expect(exported).toContain('anna@example.test');
   });
 
+  it('exports Excel and imports Excel files (template, date serials, lost leading zeros)', async () => {
+    const admin = await newAdmin();
+    const template = await importPlayersFile(admin, playerXlsxTemplate(), meta);
+    expect(template).toMatchObject({ created: 1, skipped: 0 });
+
+    // What Excel saves after a user types a date and a phone number into the template.
+    const typed = toXlsx(
+      'Blad1',
+      ['firstName', 'lastName', 'email', 'phone', 'dateOfBirth', 'gender'],
+      [['Lotte', 'Bakker', 'lotte@example.test', 612345678, 33000, 'FEMALE'], []],
+    );
+    const result = await importPlayersFile(admin, typed, meta);
+    expect(result).toMatchObject({ created: 1, skipped: 0, errors: [] });
+    const lotte = await prisma.playerProfile.findFirstOrThrow({ where: { lastName: 'Bakker' } });
+    expect(lotte.dateOfBirth.toISOString().slice(0, 10)).toBe('1990-05-07');
+    expect(lotte.phone).toBe('0612345678');
+
+    const grid = readXlsx(await exportPlayersXlsx(admin, { q: 'lotte' }));
+    expect(grid?.[0]?.slice(0, 2)).toEqual(['memberNumber', 'firstName']);
+    expect(grid?.[1]).toContain('lotte@example.test');
+    expect(grid).toHaveLength(2);
+
+    // Gender "other" is no longer accepted.
+    const other = await importPlayersCsv(
+      admin,
+      'firstName;lastName;dateOfBirth;gender\nSam;Smit;2000-01-01;OTHER',
+      meta,
+    );
+    expect(other.errors).toEqual([{ line: 2, field: 'gender', error: 'required' }]);
+  });
+
   it('rejects files that are not player CSVs', async () => {
     const admin = await newAdmin();
     await expect(importPlayersCsv(admin, 'foo,bar\n1,2', meta)).rejects.toMatchObject({
+      code: 'csvInvalid',
+    });
+    // A zip that is not a workbook.
+    const notWorkbook = new Uint8Array([0x50, 0x4b, 0x03, 0x04, 1, 2, 3]);
+    await expect(importPlayersFile(admin, notWorkbook, meta)).rejects.toMatchObject({
       code: 'csvInvalid',
     });
   });

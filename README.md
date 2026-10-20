@@ -60,7 +60,7 @@ packages/shared   translations (nl/en), formatting, Zod schemas, business rules
 3. On the tournament page: add events (category, age, level, fee, max entries, match format incl. hybrid groups),
    then _Inschrijving open_ (refused without an open event), publish/unpublish.
 4. **Spelers**: filter (gender, preferred event, club, with/without account), add a player without account,
-   export CSV, import CSV (template on the import page), merge a duplicate by member number.
+   export to Excel, import Excel or CSV (template on the import page), merge a duplicate by member number.
 5. **Locaties / Clubs**: create, edit, archive (a venue with upcoming tournaments can't be archived).
 6. **Auditlog**: every action above is listed.
 7. Log in as the organiser: the portal shows only their tournament(s).

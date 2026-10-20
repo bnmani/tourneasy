@@ -15,7 +15,7 @@ import { setClubArchived, createClub, updateClub } from '../services/club-servic
 import { createEvent, deleteEvent, updateEvent } from '../services/event-service';
 import {
   createPlayer,
-  importPlayersCsv,
+  importPlayersFile,
   mergePlayers,
   updatePlayer,
   type ImportResult,
@@ -39,6 +39,17 @@ async function actorOrThrow(): Promise<Actor> {
 }
 
 /** Runs `work` and redirects to the path it returns; errors become form state. */
+/** Moves `prefix.field` keys into a nested `prefix` object (inline sub-forms). */
+function withPrefixed(input: Record<string, unknown>, prefix: string) {
+  const nested: Record<string, unknown> = {};
+  const rest: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(input)) {
+    if (key.startsWith(`${prefix}.`)) nested[key.slice(prefix.length + 1)] = value;
+    else rest[key] = value;
+  }
+  return { ...rest, [prefix]: nested };
+}
+
 async function submit(
   formData: FormData,
   work: (actor: Actor, meta: RequestMeta) => Promise<string>,
@@ -129,7 +140,7 @@ export async function saveTournamentAction(
   formData: FormData,
 ) {
   return submit(formData, async (actor, meta) => {
-    const input = formToObject(formData);
+    const input = withPrefixed(formToObject(formData), 'newVenue');
     const t = tournamentId
       ? await updateTournament(actor, tournamentId, input, meta)
       : await createTournament(actor, input, meta);
@@ -199,7 +210,7 @@ export async function saveEventAction(
   formData: FormData,
 ) {
   return submit(formData, async (actor, meta) => {
-    const input = formToObject(formData, { booleans: ['allowOtherGender', 'isOpen'] });
+    const input = formToObject(formData, { booleans: ['isOpen'] });
     if (eventId) await updateEvent(actor, tournamentId, eventId, input, meta);
     else await createEvent(actor, tournamentId, input, meta);
     return `/${locale}/admin/tournaments/${tournamentId}?status=saved#events`;
@@ -257,9 +268,9 @@ export async function importPlayersAction(
     const file = formData.get('file');
     if (!(file instanceof File) || file.size === 0) throw new AppError('csvInvalid');
     if (file.size > 2_000_000) throw new AppError('csvInvalid');
-    const result = await importPlayersCsv(
+    const result = await importPlayersFile(
       await actorOrThrow(),
-      await file.text(),
+      new Uint8Array(await file.arrayBuffer()),
       await currentRequestMeta(),
     );
     revalidatePath('/', 'layout');

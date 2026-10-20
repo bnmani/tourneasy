@@ -118,17 +118,7 @@ export function Badge({
 }
 
 /** Search box + optional extra filters, submitted as GET (bookmarkable). */
-export function FilterBar({ action, children }: { action: string; children: ReactNode }) {
-  return (
-    <form
-      role="search"
-      action={action}
-      className="flex flex-col gap-2 rounded-lg border bg-card p-3 sm:flex-row sm:flex-wrap sm:items-end"
-    >
-      {children}
-    </form>
-  );
-}
+export { FilterBar } from './filter-bar';
 
 export const filterInputClass =
   'h-10 w-full rounded-md border border-input bg-background px-3 text-base sm:w-auto sm:min-w-48 sm:text-sm';

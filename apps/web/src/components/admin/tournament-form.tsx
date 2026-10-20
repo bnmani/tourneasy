@@ -1,9 +1,9 @@
 'use client';
 
-import { TOURNAMENT_TYPES } from '@tourneasy/shared/schemas';
+import { NEW_VENUE, PROVINCES, TOURNAMENT_TYPES } from '@tourneasy/shared/schemas';
 import type { AppLocale } from '@tourneasy/shared/i18n';
 import { useTranslations } from 'next-intl';
-import { useActionState, useState } from 'react';
+import { useActionState, useEffect, useState } from 'react';
 import {
   FormError,
   FormSection,
@@ -51,11 +51,21 @@ export function TournamentForm({
   const t = useTranslations('Admin.tournaments');
   const ta = useTranslations('Admin');
   const tt = useTranslations('TournamentTypes');
+  const tv = useTranslations('Admin.venues');
+  const tp = useTranslations('Provinces');
   const [state, action] = useActionState(
     saveTournamentAction.bind(null, locale, tournamentId),
     initialFormState,
   );
-  const [type, setType] = useState(values.type ?? 'SELF');
+  // React resets the form after each submit: radio defaults follow the last submitted choice.
+  const submittedType = state.values?.type as TournamentFormValues['type'] | undefined;
+  const defaultType = submittedType ?? values.type ?? 'SELF';
+  const [type, setType] = useState(defaultType);
+  useEffect(() => setType(defaultType), [state, defaultType]);
+  const submittedVenue = state.values?.venueId;
+  const [venueId, setVenueId] = useState(
+    (typeof submittedVenue === 'string' ? submittedVenue : values.venueId) ?? '',
+  );
   const tz = t('timezoneHint');
 
   return (
@@ -84,7 +94,7 @@ export function TournamentForm({
                     type="radio"
                     name="type"
                     value={value}
-                    checked={type === value}
+                    defaultChecked={defaultType === value}
                     onChange={() => setType(value)}
                     className="size-4 accent-primary"
                   />
@@ -107,14 +117,87 @@ export function TournamentForm({
             defaultValue={values.contactEmail}
           />
         )}
-        <SelectField
-          name="venueId"
-          label={t('venue')}
-          state={state}
-          defaultValue={values.venueId}
-          placeholder={t('noVenue')}
-          options={venues.map((v) => ({ value: v.id, label: `${v.name}, ${v.city}` }))}
-        />
+        <div
+          onChange={(e) => {
+            const target = e.target;
+            if (target instanceof HTMLSelectElement && target.name === 'venueId')
+              setVenueId(target.value);
+          }}
+        >
+          <SelectField
+            name="venueId"
+            label={t('venue')}
+            state={state}
+            defaultValue={values.venueId}
+            placeholder={t('noVenue')}
+            options={[
+              ...venues.map((v) => ({ value: v.id, label: `${v.name}, ${v.city}` })),
+              ...(isAdmin ? [{ value: NEW_VENUE, label: t('newVenue') }] : []),
+            ]}
+          />
+        </div>
+        {isAdmin && venueId === NEW_VENUE && (
+          <fieldset className="space-y-4 rounded-md border bg-secondary/40 p-4">
+            <legend className="px-1 text-sm font-medium">{t('newVenueTitle')}</legend>
+            <p className="text-sm text-muted-foreground">{t('newVenueHint')}</p>
+            <TextField
+              name="newVenue.name"
+              label={tv('name')}
+              state={state}
+              required
+              maxLength={120}
+            />
+            <div className="grid gap-4 sm:grid-cols-[1fr_8rem]">
+              <TextField
+                name="newVenue.street"
+                label={tv('street')}
+                state={state}
+                required
+                autoComplete="address-line1"
+              />
+              <TextField
+                name="newVenue.houseNumber"
+                label={tv('houseNumber')}
+                state={state}
+                required
+              />
+            </div>
+            <div className="grid gap-4 sm:grid-cols-[8rem_1fr]">
+              <TextField
+                name="newVenue.postcode"
+                label={tv('postcode')}
+                state={state}
+                required
+                autoComplete="postal-code"
+              />
+              <TextField
+                name="newVenue.city"
+                label={tv('city')}
+                state={state}
+                required
+                autoComplete="address-level2"
+              />
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <SelectField
+                name="newVenue.province"
+                label={tv('province')}
+                state={state}
+                required
+                placeholder="—"
+                options={PROVINCES.map((p) => ({ value: p, label: tp(p) }))}
+              />
+              <TextField
+                name="newVenue.numberOfCourts"
+                type="number"
+                label={tv('numberOfCourts')}
+                state={state}
+                required
+                inputMode="numeric"
+              />
+            </div>
+          </fieldset>
+        )}
       </FormSection>
 
       <FormSection title={t('sectionDates')}>

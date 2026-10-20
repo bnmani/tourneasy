@@ -14,6 +14,7 @@ import {
   toCsv,
 } from '@tourneasy/shared';
 import { writeAudit } from '../lib/audit';
+import { excelSerialToIsoDate, looksLikeXlsx, readXlsx, toXlsx } from '../lib/xlsx';
 import { AppError } from '../lib/errors';
 import type { RequestMeta } from '../lib/request-meta';
 import { pageCount, pageParams, parseInput } from '../lib/validation';
@@ -338,9 +339,12 @@ export async function mergePlayers(actor: Actor, input: unknown, meta: RequestMe
   return { targetId: target.id, targetMemberNumber: target.memberNumber };
 }
 
-// ── CSV ────────────────────────────────────────────────────────────────────────────
+// ── Export / import (Excel and CSV) ────────────────────────────────────────────────
 
-export async function exportPlayersCsv(actor: Actor, filters: PlayerFilters = {}): Promise<string> {
+async function exportPlayerTable(
+  actor: Actor,
+  filters: PlayerFilters,
+): Promise<{ header: string[]; rows: (string | number)[][] }> {
   assertAdmin(actor);
   const players = await prisma.playerProfile.findMany({
     where: whereFor({ ...filters, page: undefined }),
@@ -364,27 +368,43 @@ export async function exportPlayersCsv(actor: Actor, filters: PlayerFilters = {}
     p.user ? 'yes' : 'no',
     p.createdAt.toISOString().slice(0, 10),
   ]);
+  return { header, rows };
+}
+
+export async function exportPlayersCsv(actor: Actor, filters: PlayerFilters = {}): Promise<string> {
+  const { header, rows } = await exportPlayerTable(actor, filters);
   return toCsv(header, rows);
 }
 
+export async function exportPlayersXlsx(
+  actor: Actor,
+  filters: PlayerFilters = {},
+): Promise<Uint8Array> {
+  const { header, rows } = await exportPlayerTable(actor, filters);
+  return toXlsx('Spelers', header, rows);
+}
+
+const TEMPLATE_ROWS = [
+  [
+    'Daan',
+    '',
+    'Jansen',
+    'daan@example.nl',
+    '0612345678',
+    '1995-04-12',
+    'MALE',
+    'BC Utrecht Smash',
+    '',
+    'HE HD',
+  ],
+];
+
 export function playerCsvTemplate(): string {
-  return toCsv(
-    [...PLAYER_CSV_COLUMNS],
-    [
-      [
-        'Daan',
-        '',
-        'Jansen',
-        'daan@example.nl',
-        '0612345678',
-        '1995-04-12',
-        'MALE',
-        'BC Utrecht Smash',
-        '',
-        'HE HD',
-      ],
-    ],
-  );
+  return toCsv([...PLAYER_CSV_COLUMNS], TEMPLATE_ROWS);
+}
+
+export function playerXlsxTemplate(): Uint8Array {
+  return toXlsx('Spelers', [...PLAYER_CSV_COLUMNS], TEMPLATE_ROWS);
 }
 
 export type ImportResult = {
@@ -396,7 +416,7 @@ export type ImportResult = {
 
 const MAX_IMPORT_ROWS = 2000;
 
-/** Imports/updates players from CSV. Matches existing players by federation ID or email. */
+/** Imports/updates players from CSV text. */
 export async function importPlayersCsv(
   actor: Actor,
   text: string,
@@ -404,7 +424,39 @@ export async function importPlayersCsv(
 ): Promise<ImportResult> {
   assertAdmin(actor);
   if (text.length > 2_000_000) throw new AppError('csvInvalid');
-  const rows = parseCsvObjects(text);
+  return importPlayerRows(actor, parseCsvObjects(text), meta);
+}
+
+/** Imports an uploaded Excel (.xlsx) or CSV file; the format is detected from the content. */
+export async function importPlayersFile(
+  actor: Actor,
+  bytes: Uint8Array,
+  meta: RequestMeta,
+): Promise<ImportResult> {
+  assertAdmin(actor);
+  if (!looksLikeXlsx(bytes)) return importPlayersCsv(actor, new TextDecoder().decode(bytes), meta);
+  const grid = readXlsx(bytes);
+  if (!grid) throw new AppError('csvInvalid');
+  const [header = [], ...body] = grid;
+  const keys = header.map((h) => h.trim().toLowerCase());
+  const rows = body
+    .filter((cells) => cells.some((c) => c.trim() !== ''))
+    .map((cells) => {
+      const row = Object.fromEntries(keys.map((k, i) => [k, (cells[i] ?? '').trim()]));
+      // Excel turns typed dates into day numbers; phone numbers may lose their leading zero.
+      if (row.dateofbirth) row.dateofbirth = excelSerialToIsoDate(row.dateofbirth);
+      if (row.phone && /^6\d{8}$/.test(row.phone)) row.phone = `0${row.phone}`;
+      return row;
+    });
+  return importPlayerRows(actor, rows, meta);
+}
+
+/** Matches existing players by federation ID or email; empty cells keep existing values. */
+async function importPlayerRows(
+  actor: Actor,
+  rows: Record<string, string>[],
+  meta: RequestMeta,
+): Promise<ImportResult> {
   if (rows.length === 0 || !('firstname' in rows[0]!) || !('lastname' in rows[0]!))
     throw new AppError('csvInvalid');
   if (rows.length > MAX_IMPORT_ROWS) throw new AppError('csvInvalid', { max: MAX_IMPORT_ROWS });
