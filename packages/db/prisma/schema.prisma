@@ -89,10 +89,20 @@ enum Discipline {
   GD
 }
 
+/// Match format of an event (front-end brief: round robin, Swiss, knockout incl. double
+/// elimination, hybrid = groups followed by knockout).
 enum DrawType {
   KNOCKOUT
+  DOUBLE_KNOCKOUT
   ROUND_ROBIN
+  SWISS
   GROUPS_KNOCKOUT
+}
+
+/// SELF = run by the platform admins; THIRD_PARTY = delegated to an external organiser.
+enum TournamentType {
+  SELF
+  THIRD_PARTY
 }
 
 enum PartnerPaymentMode {
@@ -428,6 +438,9 @@ model PlayerProfile {
   gender               Gender
   nationality          String?      @db.Char(2) // ISO 3166-1 alpha-2
   phone                String?
+  /// Contact email for players without an account (admin-added/imported). A sign-up with
+  /// this email claims the profile instead of creating a duplicate.
+  contactEmail         String?      @db.Citext
   clubId               String?      @db.Uuid
   levelSinglesId       String?      @db.Uuid
   levelDoublesId       String?      @db.Uuid
@@ -462,6 +475,7 @@ model PlayerProfile {
   followers       PlayerFollow[]            @relation("Followed")
 
   @@index([lastName, firstName])
+  @@index([contactEmail])
   @@index([clubId])
   @@index([deletedAt])
 }
@@ -620,6 +634,11 @@ model Tournament {
   entryDeadline        DateTime
   withdrawalDeadline   DateTime
   status               TournamentStatus   @default(DRAFT)
+  type                 TournamentType     @default(SELF)
+  /// First match time on each day, "HH:MM" in Europe/Amsterdam.
+  dayStartTime         String?
+  /// Courts available for this tournament (defaults to the venue's number of courts).
+  courtsAvailable      Int?
   coverImageKey        String?
   logoKey              String?
   contactName          String?
@@ -639,13 +658,14 @@ model Tournament {
   createdAt            DateTime           @default(now())
   updatedAt            DateTime           @updatedAt
 
-  venue         Venue?                @relation(fields: [venueId], references: [id], onDelete: SetNull)
-  organisers    TournamentOrganiser[]
-  documents     TournamentDocument[]
-  events        TournamentEvent[]
-  announcements Announcement[]
-  orders        Order[]
-  courtSlots    CourtSlot[]
+  venue            Venue?                @relation(fields: [venueId], references: [id], onDelete: SetNull)
+  organisers       TournamentOrganiser[]
+  organiserInvites OrganiserInvite[]
+  documents        TournamentDocument[]
+  events           TournamentEvent[]
+  announcements    Announcement[]
+  orders           Order[]
+  courtSlots       CourtSlot[]
 
   @@index([status, startsOn])
   @@index([startsOn])
@@ -668,6 +688,22 @@ model TournamentOrganiser {
 
   @@unique([tournamentId, userId])
   @@index([userId])
+}
+
+/// Delegation to an email address without an account yet: becomes a TournamentOrganiser
+/// (and the ORGANISER role) as soon as someone signs up or logs in with that email.
+model OrganiserInvite {
+  id           String    @id @default(uuid()) @db.Uuid
+  tournamentId String    @db.Uuid
+  email        String    @db.Citext
+  invitedById  String?   @db.Uuid
+  acceptedAt   DateTime?
+  createdAt    DateTime  @default(now())
+
+  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+
+  @@unique([tournamentId, email])
+  @@index([email, acceptedAt])
 }
 
 model TournamentDocument {
