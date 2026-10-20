@@ -110,11 +110,14 @@
     "statusTransition": "This status change is not allowed.",
     "organiserEmailRequired": "Enter the organiser's email address.",
     "mergeSelf": "Choose another player to merge with.",
-    "csvInvalid": "The file could not be read. Please use the CSV template.",
+    "csvInvalid": "The file could not be read. Please use the template (Excel or CSV).",
     "inUse": "This is still in use and cannot be archived.",
     "mergeTwoAccounts": "Both players have an account; only merge profiles where at most one has an account.",
     "duplicate": "This value already exists.",
-    "noOpenEvents": "First add at least one event that is open for entries."
+    "noOpenEvents": "First add at least one event that is open for entries.",
+    "withdrawalAfterClose": "The withdrawal deadline can't be later than the entry closing date.",
+    "oddMatches": "Choose 3, 5, 7 or 9 matches.",
+    "tooFewEntries": "Too few entries for this format: raise the maximum or lower the number of matches or knockout places."
   },
   "Auth": {
     "login": {
@@ -354,8 +357,8 @@
       "organiserEmailHint": "This person gets admin rights for this tournament only. If they have no account yet, the rights apply as soon as an account is created with this email address.",
       "venue": "Venue",
       "noVenue": "Not known yet",
-      "startsOn": "First day",
-      "endsOn": "Last day",
+      "startsOn": "Start date",
+      "endsOn": "Tournament end date",
       "dayStartTime": "Start time (first match)",
       "registrationOpensAt": "Entries open",
       "registrationClosesAt": "Entries close",
@@ -390,7 +393,10 @@
       "noEvents": "No events yet.",
       "members": "Participants",
       "membersSoon": "The participant list appears once entries are possible (Phase 4).",
-      "scheduleSoon": "Schedule and results follow in Phase 6."
+      "scheduleSoon": "Schedule and results follow in Phase 6.",
+      "newVenue": "+ Add new venue",
+      "newVenueTitle": "New venue",
+      "newVenueHint": "The venue is saved and can then be chosen for other tournaments too."
     },
     "events": {
       "new": "New event",
@@ -409,7 +415,6 @@
       "drawType": "Match format",
       "groupSize": "Players/pairs per group",
       "advancePerGroup": "Advance to knockout per group",
-      "allowOtherGender": "Players with gender \"other\" may enter",
       "scoring": "Scoring",
       "bestOf": "Number of games (best of)",
       "pointsToWin": "Points per game",
@@ -418,7 +423,11 @@
       "entries": "{count} entries",
       "max": "max {count}",
       "unlimited": "no maximum",
-      "closed": "Closed"
+      "closed": "Closed",
+      "matchesPerEntry": "Max matches per team",
+      "matchesPerEntryHint": "Each team plays this many matches against random opponents.",
+      "knockoutSize": "Teams advancing to the knockout",
+      "knockoutSizeHint": "For example 16: round of 16, quarter-finals, semi-finals and final."
     },
     "venues": {
       "title": "Venues",
@@ -473,12 +482,12 @@
       "preferred": "Preferred",
       "contactEmail": "Email address",
       "contactEmailHint": "If this player later creates an account with this email address, this profile is linked.",
-      "export": "Export (CSV)",
+      "export": "Export (Excel)",
       "import": "Import",
       "importTitle": "Import players",
-      "importHelp": "Upload a CSV file (semicolon or comma) with the columns: {columns}. Dates as YYYY-MM-DD, gender as MALE/FEMALE/OTHER, preferred events like \"HE GD\". Players with a known email address or federation ID are updated.",
-      "template": "Download template",
-      "file": "CSV file",
+      "importHelp": "Upload an Excel file (.xlsx) or CSV file with the columns: {columns}. Dates as YYYY-MM-DD (or an Excel date), gender as MALE/FEMALE, preferred events like \"HE GD\". Players with a known email address or federation ID are updated; empty cells keep existing data.",
+      "template": "Download template (Excel)",
+      "file": "Excel or CSV file",
       "importSubmit": "Import",
       "importResult": "{created} new, {updated} updated, {skipped} skipped.",
       "importErrors": "Errors per line",
@@ -515,7 +524,9 @@
       "merged": "Players merged.",
       "organiserAdded": "Organiser added. They have received an email.",
       "organiserInvited": "Invitation ready: the rights apply as soon as an account is created or logged in with this email address."
-    }
+    },
+    "grantShort": "Grant",
+    "revokeShort": "Remove"
   },
   "Legal": {
     "draftNotice": "Draft — this text is still being reviewed legally.",
@@ -572,13 +583,15 @@
     "DOUBLE_KNOCKOUT": "Double knockout",
     "ROUND_ROBIN": "Round robin",
     "SWISS": "Swiss system",
-    "GROUPS_KNOCKOUT": "Hybrid: groups + knockout"
+    "GROUPS_KNOCKOUT": "Groups + knockout",
+    "HYBRID_ROUND_ROBIN_KNOCKOUT": "Hybrid: round robin + knockout"
   },
   "DrawTypeHelp": {
     "KNOCKOUT": "Lose once and you are out.",
     "DOUBLE_KNOCKOUT": "You are out after two losses.",
     "ROUND_ROBIN": "Everyone plays everyone in the group; fair ranking and more matches.",
     "SWISS": "Fixed number of rounds without elimination; opponents of similar strength.",
-    "GROUPS_KNOCKOUT": "Groups first, then a knockout with the best of each group."
+    "GROUPS_KNOCKOUT": "Groups first, then a knockout with the best of each group.",
+    "HYBRID_ROUND_ROBIN_KNOCKOUT": "Each team plays a fixed number of matches against random opponents in the same event. The best teams of the overall ranking go to the knockout."
   }
 }

@@ -11,6 +11,7 @@ import type { Actor } from './session-service';
 
 function toData(input: ReturnType<typeof eventSchema.parse>) {
   const groups = input.drawType === 'GROUPS_KNOCKOUT';
+  const hybrid = input.drawType === 'HYBRID_ROUND_ROBIN_KNOCKOUT';
   return {
     discipline: input.discipline as Discipline,
     ageCategoryId: input.ageCategoryId ?? null,
@@ -21,7 +22,8 @@ function toData(input: ReturnType<typeof eventSchema.parse>) {
     drawType: input.drawType as DrawType,
     groupSize: groups ? (input.groupSize ?? null) : null,
     advancePerGroup: groups ? (input.advancePerGroup ?? null) : null,
-    allowOtherGender: input.allowOtherGender,
+    matchesPerEntry: hybrid ? (input.matchesPerEntry ?? null) : null,
+    knockoutSize: hybrid ? (input.knockoutSize ?? null) : null,
     bestOf: input.bestOf,
     pointsToWin: input.pointsToWin,
     pointsCap: input.pointsCap,

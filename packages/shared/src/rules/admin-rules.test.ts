@@ -62,7 +62,7 @@ describe('tournamentSchema', () => {
     endsOn: '2027-03-14',
     registrationOpensAt: '2026-11-01T09:00',
     registrationClosesAt: '2027-02-27T23:59',
-    withdrawalDeadline: '2027-03-06T23:59',
+    withdrawalDeadline: '2027-02-20T23:59',
     dayStartTime: '09:00',
   };
 
@@ -125,5 +125,49 @@ describe('venueSchema', () => {
     expect(v.postcode).toBe('3511 AB');
     expect(v.website).toBe('https://sporthal.nl');
     expect(venueSchema.safeParse({ ...v, postcode: '35 AB' }).success).toBe(false);
+  });
+});
+
+describe('feedback rules (Oct 2026)', () => {
+  const base = {
+    name: 'Cup',
+    startsOn: '2027-03-13',
+    endsOn: '2027-03-14',
+    registrationOpensAt: '2026-11-01T09:00',
+    registrationClosesAt: '2027-02-27T23:59',
+    withdrawalDeadline: '2027-02-20T23:59',
+  };
+
+  it('refuses withdrawals that stay open after entries close', () => {
+    const r = tournamentSchema.safeParse({ ...base, withdrawalDeadline: '2027-03-01T12:00' });
+    expect(!r.success && fieldErrors(r.error).withdrawalDeadline).toBe('withdrawalAfterClose');
+    expect(
+      tournamentSchema.safeParse({ ...base, withdrawalDeadline: '2027-02-27T23:59' }).success,
+    ).toBe(true);
+  });
+
+  it('hybrid round robin + knockout needs odd matches and a knockout size', () => {
+    const hybrid = { discipline: 'HD', fee: '10', drawType: 'HYBRID_ROUND_ROBIN_KNOCKOUT' };
+    const missing = eventSchema.safeParse(hybrid);
+    expect(!missing.success && fieldErrors(missing.error)).toMatchObject({
+      matchesPerEntry: 'required',
+      knockoutSize: 'required',
+    });
+    const even = eventSchema.safeParse({ ...hybrid, matchesPerEntry: '4', knockoutSize: '16' });
+    expect(!even.success && fieldErrors(even.error).matchesPerEntry).toBe('oddMatches');
+    const tooFew = eventSchema.safeParse({
+      ...hybrid,
+      matchesPerEntry: '5',
+      knockoutSize: '16',
+      maxEntries: '12',
+    });
+    expect(!tooFew.success && fieldErrors(tooFew.error).maxEntries).toBe('tooFewEntries');
+    const ok = eventSchema.parse({
+      ...hybrid,
+      matchesPerEntry: '3',
+      knockoutSize: '16',
+      maxEntries: '32',
+    });
+    expect(ok).toMatchObject({ matchesPerEntry: 3, knockoutSize: 16 });
   });
 });

@@ -41,7 +41,13 @@ export const DRAW_TYPES = [
   'ROUND_ROBIN',
   'SWISS',
   'GROUPS_KNOCKOUT',
+  'HYBRID_ROUND_ROBIN_KNOCKOUT',
 ] as const;
+
+/** Hybrid round robin + knock-out: each entry plays this many random opponents (odd numbers). */
+export const MATCHES_PER_ENTRY_OPTIONS = [3, 5, 7, 9] as const;
+/** …after which the best N of the overall ranking go to the knock-out stage. */
+export const KNOCKOUT_SIZE_OPTIONS = [4, 8, 16, 32] as const;
 
 /** Allowed status changes (organiser workflow). Archive is possible from any final-ish state. */
 export const STATUS_TRANSITIONS: Record<TournamentStatusCode, TournamentStatusCode[]> = {
@@ -109,6 +115,9 @@ const localDateTime = z
   .transform((v) => amsterdamLocalToUtc(v)!);
 
 // ── Venues & clubs ────────────────────────────────────────────────────────────────
+
+/** Venue select value meaning "create a venue from the inline `newVenue.*` fields". */
+export const NEW_VENUE = 'new';
 
 export const venueSchema = z
   .object({
@@ -210,6 +219,9 @@ export const tournamentSchema = z
       issue('registrationClosesAt', 'deadlineAfterStart');
     if (v.withdrawalDeadline.getTime() > v.startsOn.getTime())
       issue('withdrawalDeadline', 'deadlineAfterStart');
+    // Withdrawing is only possible while entries are open (draws are made after closing).
+    if (v.withdrawalDeadline > v.registrationClosesAt)
+      issue('withdrawalDeadline', 'withdrawalAfterClose');
   });
 export type TournamentInput = z.infer<typeof tournamentSchema>;
 
@@ -237,7 +249,8 @@ export const eventSchema = z
     drawType: z.enum(DRAW_TYPES),
     groupSize: optionalInt(3, 8),
     advancePerGroup: optionalInt(1, 4),
-    allowOtherGender: z.boolean().default(true),
+    matchesPerEntry: optionalInt(3, 9),
+    knockoutSize: optionalInt(4, 32),
     bestOf: z.coerce
       .number()
       .refine((n) => [1, 3, 5].includes(n), 'invalid')
@@ -257,6 +270,21 @@ export const eventSchema = z
       if (v.groupSize && v.advancePerGroup && v.advancePerGroup >= v.groupSize) {
         ctx.addIssue({ code: 'custom', path: ['advancePerGroup'], message: 'invalid' });
       }
+    }
+    if (v.drawType === 'HYBRID_ROUND_ROBIN_KNOCKOUT') {
+      const issue = (path: string, message: string) =>
+        ctx.addIssue({ code: 'custom', path: [path], message });
+      if (!v.matchesPerEntry) issue('matchesPerEntry', 'required');
+      else if (!(MATCHES_PER_ENTRY_OPTIONS as readonly number[]).includes(v.matchesPerEntry))
+        issue('matchesPerEntry', 'oddMatches');
+      if (!v.knockoutSize) issue('knockoutSize', 'required');
+      else if (!(KNOCKOUT_SIZE_OPTIONS as readonly number[]).includes(v.knockoutSize))
+        issue('knockoutSize', 'invalid');
+      // Enough entries to give everyone that many different opponents and fill the knock-out.
+      if (v.maxEntries && v.matchesPerEntry && v.maxEntries <= v.matchesPerEntry)
+        issue('maxEntries', 'tooFewEntries');
+      if (v.maxEntries && v.knockoutSize && v.maxEntries < v.knockoutSize)
+        issue('maxEntries', 'tooFewEntries');
     }
     if (v.pointsCap < v.pointsToWin)
       ctx.addIssue({ code: 'custom', path: ['pointsCap'], message: 'invalid' });

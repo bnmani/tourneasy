@@ -110,11 +110,14 @@
     "statusTransition": "Deze statuswijziging is niet toegestaan.",
     "organiserEmailRequired": "Vul het e-mailadres van de organisator in.",
     "mergeSelf": "Kies een andere speler om mee samen te voegen.",
-    "csvInvalid": "Het bestand kon niet worden gelezen. Gebruik het CSV-sjabloon.",
+    "csvInvalid": "Het bestand kon niet worden gelezen. Gebruik het sjabloon (Excel of CSV).",
     "inUse": "Dit wordt nog gebruikt en kan niet worden gearchiveerd.",
     "mergeTwoAccounts": "Beide spelers hebben een account; voeg alleen profielen samen waarvan er hooguit één een account heeft.",
     "duplicate": "Deze waarde bestaat al.",
-    "noOpenEvents": "Voeg eerst minstens één onderdeel toe dat open is voor inschrijving."
+    "noOpenEvents": "Voeg eerst minstens één onderdeel toe dat open is voor inschrijving.",
+    "withdrawalAfterClose": "Afmelden kan niet later zijn dan het sluiten van de inschrijving.",
+    "oddMatches": "Kies 3, 5, 7 of 9 wedstrijden.",
+    "tooFewEntries": "Te weinig inschrijvingen voor dit speelsysteem: verhoog het maximum of verlaag het aantal wedstrijden of knock-outplaatsen."
   },
   "Auth": {
     "login": {
@@ -354,8 +357,8 @@
       "organiserEmailHint": "Deze persoon krijgt alleen beheerrechten voor dit toernooi. Heeft hij of zij nog geen account, dan gaan de rechten in zodra er met dit e-mailadres een account wordt aangemaakt.",
       "venue": "Locatie",
       "noVenue": "Nog niet bekend",
-      "startsOn": "Eerste dag",
-      "endsOn": "Laatste dag",
+      "startsOn": "Startdatum",
+      "endsOn": "Einddatum toernooi",
       "dayStartTime": "Starttijd (eerste wedstrijd)",
       "registrationOpensAt": "Inschrijving opent",
       "registrationClosesAt": "Inschrijving sluit",
@@ -390,7 +393,10 @@
       "noEvents": "Nog geen onderdelen.",
       "members": "Deelnemers",
       "membersSoon": "De deelnemerslijst verschijnt zodra inschrijven mogelijk is (fase 4).",
-      "scheduleSoon": "Schema en uitslagen volgen in fase 6."
+      "scheduleSoon": "Schema en uitslagen volgen in fase 6.",
+      "newVenue": "+ Nieuwe locatie toevoegen",
+      "newVenueTitle": "Nieuwe locatie",
+      "newVenueHint": "De locatie wordt opgeslagen en is daarna ook te kiezen bij andere toernooien."
     },
     "events": {
       "new": "Nieuw onderdeel",
@@ -409,7 +415,6 @@
       "drawType": "Speelsysteem",
       "groupSize": "Spelers/koppels per poule",
       "advancePerGroup": "Door naar knock-out per poule",
-      "allowOtherGender": "Spelers met geslacht \"anders\" mogen meedoen",
       "scoring": "Telling",
       "bestOf": "Aantal games (best of)",
       "pointsToWin": "Punten per game",
@@ -418,7 +423,11 @@
       "entries": "{count} inschrijvingen",
       "max": "max {count}",
       "unlimited": "geen maximum",
-      "closed": "Gesloten"
+      "closed": "Gesloten",
+      "matchesPerEntry": "Maximaal aantal wedstrijden per team",
+      "matchesPerEntryHint": "Elk team speelt dit aantal wedstrijden tegen willekeurige tegenstanders.",
+      "knockoutSize": "Aantal teams door naar de knock-out",
+      "knockoutSizeHint": "Bijvoorbeeld 16: achtste finales, kwartfinales, halve finales en finale."
     },
     "venues": {
       "title": "Locaties",
@@ -473,12 +482,12 @@
       "preferred": "Voorkeur",
       "contactEmail": "E-mailadres",
       "contactEmailHint": "Maakt deze speler later zelf een account aan met dit e-mailadres, dan wordt dit profiel gekoppeld.",
-      "export": "Exporteren (CSV)",
+      "export": "Exporteren (Excel)",
       "import": "Importeren",
       "importTitle": "Spelers importeren",
-      "importHelp": "Upload een CSV-bestand (puntkomma of komma) met de kolommen: {columns}. Datum als JJJJ-MM-DD, geslacht als MALE/FEMALE/OTHER, voorkeur als bijvoorbeeld \"HE GD\". Spelers met een bekend e-mailadres of bondsnummer worden bijgewerkt.",
-      "template": "Download sjabloon",
-      "file": "CSV-bestand",
+      "importHelp": "Upload een Excel-bestand (.xlsx) of CSV-bestand met de kolommen: {columns}. Datum als JJJJ-MM-DD (of een Excel-datum), geslacht als MALE/FEMALE, voorkeur als bijvoorbeeld \"HE GD\". Spelers met een bekend e-mailadres of bondsnummer worden bijgewerkt; lege cellen laten bestaande gegevens staan.",
+      "template": "Download sjabloon (Excel)",
+      "file": "Excel- of CSV-bestand",
       "importSubmit": "Importeren",
       "importResult": "{created} nieuw, {updated} bijgewerkt, {skipped} overgeslagen.",
       "importErrors": "Fouten per regel",
@@ -515,7 +524,9 @@
       "merged": "Spelers samengevoegd.",
       "organiserAdded": "Organisator toegevoegd. Hij of zij heeft een e-mail gekregen.",
       "organiserInvited": "Uitnodiging klaargezet: de rechten gaan in zodra er met dit e-mailadres een account wordt aangemaakt of ingelogd."
-    }
+    },
+    "grantShort": "Toekennen",
+    "revokeShort": "Intrekken"
   },
   "Legal": {
     "draftNotice": "Concept — deze tekst wordt nog juridisch gecontroleerd.",
@@ -572,13 +583,15 @@
     "DOUBLE_KNOCKOUT": "Dubbele knock-out",
     "ROUND_ROBIN": "Poule (round robin)",
     "SWISS": "Zwitsers systeem",
-    "GROUPS_KNOCKOUT": "Hybride: poules + knock-out"
+    "GROUPS_KNOCKOUT": "Poules + knock-out",
+    "HYBRID_ROUND_ROBIN_KNOCKOUT": "Hybride: round robin + knock-out"
   },
   "DrawTypeHelp": {
     "KNOCKOUT": "Wie verliest, ligt eruit.",
     "DOUBLE_KNOCKOUT": "Je ligt eruit na twee nederlagen.",
     "ROUND_ROBIN": "Iedereen speelt tegen iedereen in de poule; eerlijke ranglijst en veel wedstrijden.",
     "SWISS": "Vast aantal rondes zonder uitschakeling; tegenstanders van vergelijkbaar niveau.",
-    "GROUPS_KNOCKOUT": "Eerst poules, daarna knock-out met de besten uit elke poule."
+    "GROUPS_KNOCKOUT": "Eerst poules, daarna knock-out met de besten uit elke poule.",
+    "HYBRID_ROUND_ROBIN_KNOCKOUT": "Elk team speelt een vast aantal wedstrijden tegen willekeurige tegenstanders in hetzelfde onderdeel. De beste teams uit het totaalklassement gaan door naar de knock-out."
   }
 }

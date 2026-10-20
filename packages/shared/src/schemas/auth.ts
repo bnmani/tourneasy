@@ -9,7 +9,8 @@ import { isCommonPassword, PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from '../r
 
 export const DISCIPLINES = ['HE', 'DE', 'HD', 'DD', 'GD'] as const;
 export type DisciplineCode = (typeof DISCIPLINES)[number];
-export const GENDERS = ['MALE', 'FEMALE', 'OTHER'] as const;
+// Badminton events are men's, women's or mixed: players register as male or female (D11).
+export const GENDERS = ['MALE', 'FEMALE'] as const;
 export type GenderCode = (typeof GENDERS)[number];
 export const ASSIGNABLE_ROLES = ['ORGANISER', 'ADMIN'] as const;
 
@@ -208,4 +209,7 @@ export const KNOWN_ERROR_KEYS = new Set([
   'feeInvalid',
   'duplicate',
   'emailTaken',
+  'withdrawalAfterClose',
+  'oddMatches',
+  'tooFewEntries',
 ]);

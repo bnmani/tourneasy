@@ -97,6 +97,9 @@ enum DrawType {
   ROUND_ROBIN
   SWISS
   GROUPS_KNOCKOUT
+  /// Each entry plays `matchesPerEntry` random opponents in the event; the best
+  /// `knockoutSize` of the overall ranking play a knock-out.
+  HYBRID_ROUND_ROBIN_KNOCKOUT
 }
 
 /// SELF = run by the platform admins; THIRD_PARTY = delegated to an external organiser.
@@ -722,7 +725,7 @@ model TournamentDocument {
 }
 
 /// An event within a tournament, e.g. "HE U17 B". Gender eligibility follows from the discipline
-/// (HE/HD male, DE/DD female, GD one of each); `allowOtherGender` relaxes this for OTHER.
+/// (HE/HD male, DE/DD female, GD one of each).
 model TournamentEvent {
   id               String     @id @default(uuid()) @db.Uuid
   tournamentId     String     @db.Uuid
@@ -735,10 +738,11 @@ model TournamentEvent {
   drawType         DrawType   @default(KNOCKOUT)
   groupSize        Int? // for GROUPS_KNOCKOUT
   advancePerGroup  Int?
+  matchesPerEntry  Int? // HYBRID_ROUND_ROBIN_KNOCKOUT: 3, 5, 7 or 9
+  knockoutSize     Int? // HYBRID_ROUND_ROBIN_KNOCKOUT: 4, 8, 16 or 32
   // Eligibility (ranks refer to LevelClass.rank; null = no limit)
   minLevelRank     Int?
   maxLevelRank     Int?
-  allowOtherGender Boolean    @default(true)
   // Scoring (BWF default: best of 3 games to 21, rally point, cap 30)
   bestOf           Int        @default(3)
   pointsToWin      Int        @default(21)

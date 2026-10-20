@@ -1,9 +1,14 @@
 'use client';
 
-import { DRAW_TYPES, DISCIPLINES } from '@tourneasy/shared/schemas';
+import {
+  DRAW_TYPES,
+  DISCIPLINES,
+  KNOCKOUT_SIZE_OPTIONS,
+  MATCHES_PER_ENTRY_OPTIONS,
+} from '@tourneasy/shared/schemas';
 import { pickLocalized, type AppLocale, type LocalizedText } from '@tourneasy/shared/i18n';
 import { useTranslations } from 'next-intl';
-import { useActionState, useState } from 'react';
+import { useActionState, useEffect, useState } from 'react';
 import {
   CheckboxField,
   FormError,
@@ -26,7 +31,8 @@ export type EventFormValues = {
   drawType: (typeof DRAW_TYPES)[number];
   groupSize: string;
   advancePerGroup: string;
-  allowOtherGender: boolean;
+  matchesPerEntry: string;
+  knockoutSize: string;
   bestOf: string;
   pointsToWin: string;
   pointsCap: string;
@@ -58,7 +64,12 @@ export function EventForm({
     saveEventAction.bind(null, locale, tournamentId, eventId),
     initialFormState,
   );
-  const [drawType, setDrawType] = useState(values.drawType);
+  // React resets the form after each submit; radios fall back to their default, so the
+  // default follows the last submitted choice and the visible extra fields follow it too.
+  const submittedDrawType = state.values?.drawType as EventFormValues['drawType'] | undefined;
+  const defaultDrawType = submittedDrawType ?? values.drawType;
+  const [drawType, setDrawType] = useState(defaultDrawType);
+  useEffect(() => setDrawType(defaultDrawType), [state, defaultDrawType]);
 
   return (
     <form action={action} className="space-y-6" noValidate>
@@ -138,12 +149,6 @@ export function EventForm({
           state={state}
           defaultChecked={values.isOpen}
         />
-        <CheckboxField
-          name="allowOtherGender"
-          label={t('allowOtherGender')}
-          state={state}
-          defaultChecked={values.allowOtherGender}
-        />
       </FormSection>
 
       <FormSection title={t('drawType')}>
@@ -158,7 +163,7 @@ export function EventForm({
                 type="radio"
                 name="drawType"
                 value={d}
-                checked={drawType === d}
+                defaultChecked={defaultDrawType === d}
                 onChange={() => setDrawType(d)}
                 className="mt-1 size-4 accent-primary"
               />
@@ -186,6 +191,31 @@ export function EventForm({
               state={state}
               required
               defaultValue={values.advancePerGroup}
+            />
+          </div>
+        )}
+        {drawType === 'HYBRID_ROUND_ROBIN_KNOCKOUT' && (
+          <div className="grid gap-4 sm:grid-cols-2">
+            <SelectField
+              name="matchesPerEntry"
+              label={t('matchesPerEntry')}
+              hint={t('matchesPerEntryHint')}
+              state={state}
+              required
+              defaultValue={values.matchesPerEntry}
+              options={MATCHES_PER_ENTRY_OPTIONS.map((n) => ({
+                value: String(n),
+                label: String(n),
+              }))}
+            />
+            <SelectField
+              name="knockoutSize"
+              label={t('knockoutSize')}
+              hint={t('knockoutSizeHint')}
+              state={state}
+              required
+              defaultValue={values.knockoutSize}
+              options={KNOCKOUT_SIZE_OPTIONS.map((n) => ({ value: String(n), label: String(n) }))}
             />
           </div>
         )}
