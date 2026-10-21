@@ -38,3 +38,16 @@ describe('formatDate / formatTime', () => {
     expect(formatDate(new Date('2027-03-12T23:30:00Z'), 'nl')).toBe('zaterdag 13 maart 2027');
   });
 });
+
+describe('day ranges', () => {
+  it('formats tournament days without time-zone shifts', async () => {
+    const { formatDayRange, formatMonthYear, formatFeeRange } = await import('./format');
+    expect(plain(formatDayRange('2027-03-13', '2027-03-14', 'nl'))).toMatch(
+      /13\s*[–-]\s*14 mrt\.? 2027/,
+    );
+    expect(plain(formatDayRange('2027-03-13', '2027-03-13', 'en'))).toBe('13 Mar 2027');
+    expect(formatMonthYear('2026-11-01', 'nl')).toBe('november 2026');
+    expect(plain(formatFeeRange(1500, 1750, 'nl')!)).toBe('€ 15,00 – € 17,50');
+    expect(formatFeeRange(null, null, 'nl')).toBeNull();
+  });
+});

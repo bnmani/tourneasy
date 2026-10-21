@@ -30,7 +30,11 @@
     "home": "Home",
     "about": "About",
     "openMenu": "Open menu",
-    "closeMenu": "Close menu"
+    "closeMenu": "Close menu",
+    "calendar": "Calendar",
+    "players": "Players",
+    "clubs": "Clubs",
+    "venues": "Venues"
   },
   "LanguageSwitcher": {
     "label": "Choose language",
@@ -59,7 +63,13 @@
     "featurePayText": "Pay your entry fee securely; refunds take one click.",
     "featureScheduleTitle": "Smart scheduling",
     "featureScheduleText": "Match schedules and court plans are proposed for you and can be adjusted by hand.",
-    "illustration": "Mixed doubles in action"
+    "illustration": "Mixed doubles in action",
+    "carouselTitle": "Now and coming up",
+    "carouselLabel": "Current and upcoming tournaments",
+    "previous": "Previous",
+    "next": "Next",
+    "slide": "Tournament {current} of {total}",
+    "allTournaments": "All tournaments"
   },
   "Footer": {
     "tagline": "Badminton tournaments in the Netherlands",
@@ -228,7 +238,10 @@
     "preferred": "Preferred events",
     "none": "Not filled in yet",
     "club": "Club",
-    "contact": "Contact"
+    "contact": "Contact",
+    "tabFollowing": "Following",
+    "followingEmpty": "You don't follow anyone yet. Find players and click Follow.",
+    "findPlayers": "Find players"
   },
   "Profile": {
     "title": "My profile",
@@ -639,5 +652,127 @@
       "name": "Night Teal",
       "description": "A dark theme with peach and teal. Easy on the eyes at night."
     }
+  },
+  "Phases": {
+    "registrationSoon": "Entries open soon",
+    "registrationOpen": "Entries open",
+    "registrationClosed": "Entries closed",
+    "inProgress": "In progress",
+    "finished": "Finished"
+  },
+  "Public": {
+    "allProvinces": "All provinces",
+    "allEvents": "All events",
+    "search": "Search",
+    "results": "{count, plural, =0 {No results} one {# result} other {# results}}",
+    "courts": "{count, plural, one {# court} other {# courts}}",
+    "route": "Directions",
+    "website": "Website",
+    "viewAll": "View all",
+    "back": "Back"
+  },
+  "Tournaments": {
+    "title": "Tournaments",
+    "intro": "Badminton tournaments across the Netherlands. Search by name, town, province or event.",
+    "tabUpcoming": "Upcoming",
+    "tabOpen": "Entries open",
+    "tabPast": "Past",
+    "tabsLabel": "Which tournaments",
+    "searchPlaceholder": "Name, town or venue",
+    "empty": "No tournaments found. Try another search or filter.",
+    "events": "{count, plural, =0 {No events yet} one {# event} other {# events}}"
+  },
+  "Tournament": {
+    "addToCalendar": "Add to calendar",
+    "about": "About the tournament",
+    "keyInfo": "Key dates",
+    "registrationOpens": "Entries open",
+    "registrationCloses": "Entries close",
+    "withdrawal": "Withdraw until",
+    "firstMatch": "First match",
+    "maxEvents": "Events per player",
+    "maxEventsValue": "Up to {count}",
+    "events": "Events",
+    "event": "Event",
+    "format": "Format",
+    "fee": "Entry fee",
+    "feeNote": "per player",
+    "eventClosed": "closed",
+    "noEvents": "The events will be announced soon.",
+    "scoring": "Best of {bestOf}, to {points} (cap {cap})",
+    "groups": "Groups of {size}, {advance} advance",
+    "hybrid": "{matches} matches per team, top {size} to the knockout",
+    "venue": "Venue",
+    "venueTbd": "The venue will be announced.",
+    "contact": "Contact",
+    "entry": "Enter",
+    "entrySoon": "Entries open on {date}.",
+    "entryOpen": "Entries are open until {date}. Online entry and payment are coming soon; until then, please contact the organisers.",
+    "entryClosed": "Entries are closed.",
+    "entryInProgress": "The tournament is in progress. Live results are coming soon.",
+    "entryFinished": "This tournament has finished.",
+    "entryCta": "Enter",
+    "entryCtaSoon": "Online entry coming soon",
+    "maxEntriesValue": "Max. {count} entries"
+  },
+  "Calendar": {
+    "title": "Calendar",
+    "intro": "All tournaments this month and the next eleven.",
+    "empty": "There are no tournaments in the calendar yet.",
+    "addToCalendar": "Add"
+  },
+  "Venues": {
+    "title": "Venues",
+    "intro": "Sports halls where tournaments are played.",
+    "searchPlaceholder": "Name or town",
+    "empty": "No venues found.",
+    "address": "Address",
+    "facilities": "Facilities",
+    "parking": "Parking",
+    "transport": "Public transport",
+    "phone": "Phone",
+    "upcoming": "Upcoming tournaments here",
+    "noUpcoming": "No tournaments are planned here yet.",
+    "clubs": "Home clubs"
+  },
+  "Clubs": {
+    "title": "Clubs",
+    "intro": "Badminton clubs and their players.",
+    "searchPlaceholder": "Name or town",
+    "empty": "No clubs found.",
+    "homeVenue": "Home venue",
+    "players": "{count, plural, =0 {No public players yet} one {# player} other {# players}}",
+    "playersTitle": "Players",
+    "noPlayers": "No players with a public profile yet."
+  },
+  "Players": {
+    "title": "Players",
+    "intro": "Find players and follow their tournaments.",
+    "privacy": "Only adult players who made their profile public are listed. You control this yourself under My account → Profile.",
+    "searchPlaceholder": "Name, member number or club",
+    "empty": "No players found.",
+    "noClub": "No club",
+    "preferred": "Preferred events",
+    "followers": "{count, plural, =0 {No followers yet} one {# follower} other {# followers}}",
+    "follow": "Follow",
+    "unfollow": "Unfollow",
+    "following": "You follow this player.",
+    "loginToFollow": "Log in to follow this player",
+    "self": "This is your public profile.",
+    "editProfile": "Edit profile",
+    "history": "Tournaments and results",
+    "historyNote": "Tournaments and results will appear here once matches have been played.",
+    "followed": "You now follow {name}. You will be notified when they play.",
+    "unfollowed": "You no longer follow {name}."
+  },
+  "MetadataPages": {
+    "tournaments": "Badminton tournaments in the Netherlands: search by town, province and event and see when entries open.",
+    "calendar": "Calendar of all badminton tournaments in the next twelve months.",
+    "venues": "Sports halls and venues of badminton tournaments in the Netherlands.",
+    "clubs": "Badminton clubs in the Netherlands and their players.",
+    "players": "Badminton players with a public profile.",
+    "tournament": "{name}: badminton tournament on {dates} in {place}. Events, entry fees and entries.",
+    "venue": "{name} in {city}: address, courts and upcoming badminton tournaments.",
+    "club": "{name}: badminton club{city, select, none {} other { in {city}}}."
   }
 }

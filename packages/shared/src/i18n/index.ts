@@ -25,7 +25,11 @@ export function intlLocale(locale: AppLocale): string {
 /** Content stored as `{ nl, en? }` JSON (organiser-written text). Falls back to Dutch. */
 export type LocalizedText = { nl: string; en?: string };
 
-export function pickLocalized(text: LocalizedText | null | undefined, locale: AppLocale): string {
+/** Text in the visitor's language, falling back to the other one (nl first). */
+export function pickLocalized(
+  text: { nl?: string; en?: string } | null | undefined,
+  locale: AppLocale,
+): string {
   if (!text) return '';
-  return (locale === 'en' && text.en) || text.nl;
+  return (locale === 'en' && text.en) || text.nl || text.en || '';
 }

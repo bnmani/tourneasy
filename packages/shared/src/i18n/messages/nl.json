@@ -30,7 +30,11 @@
     "home": "Home",
     "about": "Over ons",
     "openMenu": "Menu openen",
-    "closeMenu": "Menu sluiten"
+    "closeMenu": "Menu sluiten",
+    "calendar": "Kalender",
+    "players": "Spelers",
+    "clubs": "Clubs",
+    "venues": "Locaties"
   },
   "LanguageSwitcher": {
     "label": "Taal kiezen",
@@ -59,7 +63,13 @@
     "featurePayText": "Betaal je inschrijfgeld veilig; terugbetalen gaat met één klik.",
     "featureScheduleTitle": "Slimme planning",
     "featureScheduleText": "Speelschema en baanindeling worden voorgesteld en zijn met de hand aan te passen.",
-    "illustration": "Gemengd dubbel in actie"
+    "illustration": "Gemengd dubbel in actie",
+    "carouselTitle": "Nu en binnenkort",
+    "carouselLabel": "Huidige en komende toernooien",
+    "previous": "Vorige",
+    "next": "Volgende",
+    "slide": "Toernooi {current} van {total}",
+    "allTournaments": "Alle toernooien"
   },
   "Footer": {
     "tagline": "Badmintontoernooien in Nederland",
@@ -228,7 +238,10 @@
     "preferred": "Voorkeursonderdelen",
     "none": "Nog niet ingevuld",
     "club": "Club",
-    "contact": "Contact"
+    "contact": "Contact",
+    "tabFollowing": "Volgend",
+    "followingEmpty": "Je volgt nog niemand. Zoek spelers en klik op Volgen.",
+    "findPlayers": "Spelers zoeken"
   },
   "Profile": {
     "title": "Mijn profiel",
@@ -639,5 +652,127 @@
       "name": "Night Teal",
       "description": "Donker thema met perzik en petrol. Goed voor avondgebruik."
     }
+  },
+  "Phases": {
+    "registrationSoon": "Inschrijving binnenkort",
+    "registrationOpen": "Inschrijving open",
+    "registrationClosed": "Inschrijving gesloten",
+    "inProgress": "Nu bezig",
+    "finished": "Afgelopen"
+  },
+  "Public": {
+    "allProvinces": "Alle provincies",
+    "allEvents": "Alle onderdelen",
+    "search": "Zoeken",
+    "results": "{count, plural, =0 {Geen resultaten} one {# resultaat} other {# resultaten}}",
+    "courts": "{count, plural, one {# baan} other {# banen}}",
+    "route": "Route",
+    "website": "Website",
+    "viewAll": "Bekijk alles",
+    "back": "Terug"
+  },
+  "Tournaments": {
+    "title": "Toernooien",
+    "intro": "Badmintontoernooien in heel Nederland. Zoek op naam, plaats, provincie of onderdeel.",
+    "tabUpcoming": "Komend",
+    "tabOpen": "Inschrijving open",
+    "tabPast": "Afgelopen",
+    "tabsLabel": "Welke toernooien",
+    "searchPlaceholder": "Naam, plaats of sporthal",
+    "empty": "Geen toernooien gevonden. Probeer een andere zoekopdracht of filter.",
+    "events": "{count, plural, =0 {Nog geen onderdelen} one {# onderdeel} other {# onderdelen}}"
+  },
+  "Tournament": {
+    "addToCalendar": "Zet in je agenda",
+    "about": "Over het toernooi",
+    "keyInfo": "Belangrijke data",
+    "registrationOpens": "Inschrijving opent",
+    "registrationCloses": "Inschrijving sluit",
+    "withdrawal": "Afmelden kan tot",
+    "firstMatch": "Eerste wedstrijd",
+    "maxEvents": "Onderdelen per speler",
+    "maxEventsValue": "Maximaal {count}",
+    "events": "Onderdelen",
+    "event": "Onderdeel",
+    "format": "Speelsysteem",
+    "fee": "Inschrijfgeld",
+    "feeNote": "per speler",
+    "eventClosed": "gesloten",
+    "noEvents": "De onderdelen worden binnenkort bekendgemaakt.",
+    "scoring": "Best of {bestOf}, tot {points} (max. {cap})",
+    "groups": "Poules van {size}, {advance} door",
+    "hybrid": "{matches} wedstrijden per team, top {size} naar de knock-out",
+    "venue": "Locatie",
+    "venueTbd": "De locatie wordt nog bekendgemaakt.",
+    "contact": "Contact",
+    "entry": "Inschrijven",
+    "entrySoon": "De inschrijving opent op {date}.",
+    "entryOpen": "De inschrijving is open tot {date}. Online inschrijven en betalen komt binnenkort beschikbaar; tot die tijd kun je contact opnemen met de organisatie.",
+    "entryClosed": "De inschrijving is gesloten.",
+    "entryInProgress": "Het toernooi is bezig. Live uitslagen komen binnenkort beschikbaar.",
+    "entryFinished": "Dit toernooi is afgelopen.",
+    "entryCta": "Inschrijven",
+    "entryCtaSoon": "Online inschrijven volgt",
+    "maxEntriesValue": "Max. {count} inschrijvingen"
+  },
+  "Calendar": {
+    "title": "Kalender",
+    "intro": "Alle toernooien van deze en de komende elf maanden.",
+    "empty": "Er staan nog geen toernooien in de kalender.",
+    "addToCalendar": "In agenda"
+  },
+  "Venues": {
+    "title": "Locaties",
+    "intro": "Sporthallen waar toernooien worden gespeeld.",
+    "searchPlaceholder": "Naam of plaats",
+    "empty": "Geen locaties gevonden.",
+    "address": "Adres",
+    "facilities": "Faciliteiten",
+    "parking": "Parkeren",
+    "transport": "Openbaar vervoer",
+    "phone": "Telefoon",
+    "upcoming": "Komende toernooien hier",
+    "noUpcoming": "Er staan hier nog geen toernooien gepland.",
+    "clubs": "Thuisclubs"
+  },
+  "Clubs": {
+    "title": "Clubs",
+    "intro": "Badmintonclubs en hun spelers.",
+    "searchPlaceholder": "Naam of plaats",
+    "empty": "Geen clubs gevonden.",
+    "homeVenue": "Thuislocatie",
+    "players": "{count, plural, =0 {Nog geen openbare spelers} one {# speler} other {# spelers}}",
+    "playersTitle": "Spelers",
+    "noPlayers": "Nog geen spelers met een openbaar profiel."
+  },
+  "Players": {
+    "title": "Spelers",
+    "intro": "Zoek spelers en volg hun toernooien.",
+    "privacy": "Alleen volwassen spelers die hun profiel openbaar hebben gemaakt, staan hier. Je regelt dit zelf bij Mijn account → Profiel.",
+    "searchPlaceholder": "Naam, lidnummer of club",
+    "empty": "Geen spelers gevonden.",
+    "noClub": "Geen club",
+    "preferred": "Voorkeursonderdelen",
+    "followers": "{count, plural, =0 {Nog geen volgers} one {# volger} other {# volgers}}",
+    "follow": "Volgen",
+    "unfollow": "Niet meer volgen",
+    "following": "Je volgt deze speler.",
+    "loginToFollow": "Log in om deze speler te volgen",
+    "self": "Dit is jouw openbare profiel.",
+    "editProfile": "Profiel aanpassen",
+    "history": "Toernooien en uitslagen",
+    "historyNote": "Toernooien en uitslagen verschijnen hier zodra er gespeeld is.",
+    "followed": "Je volgt nu {name}. Je krijgt straks een melding als deze speler speelt.",
+    "unfollowed": "Je volgt {name} niet meer."
+  },
+  "MetadataPages": {
+    "tournaments": "Badmintontoernooien in Nederland: zoek op plaats, provincie en onderdeel en zie wanneer de inschrijving opent.",
+    "calendar": "Kalender met alle badmintontoernooien van de komende twaalf maanden.",
+    "venues": "Sporthallen en locaties van badmintontoernooien in Nederland.",
+    "clubs": "Badmintonclubs in Nederland en hun spelers.",
+    "players": "Badmintonspelers met een openbaar profiel.",
+    "tournament": "{name}: badmintontoernooi op {dates} in {place}. Onderdelen, inschrijfgeld en inschrijving.",
+    "venue": "{name} in {city}: adres, banen en komende badmintontoernooien.",
+    "club": "{name}: badmintonclub{city, select, none {} other { in {city}}}."
   }
 }
