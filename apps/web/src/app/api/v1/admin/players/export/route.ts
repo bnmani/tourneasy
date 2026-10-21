@@ -4,6 +4,7 @@ import { XLSX_CONTENT_TYPE } from '@/server/lib/xlsx';
 import {
   exportPlayersCsv,
   exportPlayersXlsx,
+  PLAYER_SORTS,
   type PlayerFilters,
 } from '@/server/services/player-service';
 
@@ -18,6 +19,8 @@ export const GET = apiHandler(async (request) => {
     discipline: (p.get('discipline') as Discipline) || undefined,
     clubId: p.get('clubId') || undefined,
     account: account === 'with' || account === 'without' ? account : undefined,
+    sort: PLAYER_SORTS.find((s) => s === p.get('sort')),
+    dir: p.get('dir') === 'desc' ? 'desc' : 'asc',
   };
   const date = new Date().toISOString().slice(0, 10);
   if (p.get('format') === 'csv') {

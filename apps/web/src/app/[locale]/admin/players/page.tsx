@@ -1,6 +1,7 @@
 import type { Discipline, Gender } from '@tourneasy/db';
 import { DISCIPLINES, GENDERS } from '@tourneasy/shared/schemas';
-import { getTranslations } from 'next-intl/server';
+import { ageOn } from '@tourneasy/shared';
+import { getFormatter, getTranslations } from 'next-intl/server';
 import { Badge, FilterBar, filterInputClass, PageHeader, Pagination } from '@/components/admin/ui';
 import { Button } from '@/components/ui/button';
 import { Link } from '@/i18n/navigation';
@@ -8,7 +9,13 @@ import { personName } from '@/lib/labels';
 import { firstParam, pageLocale, type LocaleParams, type SearchParams } from '@/lib/page';
 import { requireRole } from '@/server/auth/web';
 import { getProfileOptions } from '@/server/services/profile-service';
-import { listPlayers, playerEmail, type PlayerFilters } from '@/server/services/player-service';
+import { SortHeader } from '@/components/admin/sort-header';
+import {
+  listPlayers,
+  PLAYER_SORTS,
+  playerEmail,
+  type PlayerFilters,
+} from '@/server/services/player-service';
 
 export const metadata = { robots: { index: false } };
 
@@ -29,6 +36,8 @@ export default async function AdminPlayersPage({
     discipline: pick('discipline', DISCIPLINES) as Discipline | undefined,
     clubId: firstParam(query.clubId) || undefined,
     account: pick('account', ['with', 'without'] as const),
+    sort: pick('sort', PLAYER_SORTS),
+    dir: pick('dir', ['asc', 'desc'] as const),
   };
   const [result, options] = await Promise.all([
     listPlayers(actor, { ...filters, page: Number(firstParam(query.page) ?? 1) }),
@@ -42,6 +51,18 @@ export default async function AdminPlayersPage({
       (e): e is [string, string] => typeof e[1] === 'string' && e[1] !== '',
     ),
   );
+  const format = await getFormatter();
+  // Header links keep the filters and go back to page 1.
+  const sortProps = {
+    current: filters.sort ?? 'name',
+    dir: filters.dir ?? 'asc',
+    href: (column: string, dir: 'asc' | 'desc') =>
+      `/admin/players?${new URLSearchParams([
+        ...[...filterQuery].filter(([k]) => k !== 'sort' && k !== 'dir'),
+        ['sort', column],
+        ['dir', dir],
+      ])}`,
+  };
   const href = (p: number) =>
     `/admin/players?${new URLSearchParams([...filterQuery, ['page', String(p)]])}`;
 
@@ -66,7 +87,9 @@ export default async function AdminPlayersPage({
           </>
         }
       />
-      <FilterBar action={`/${locale}/admin/players`}>
+      <FilterBar action={`/${locale}/admin/players`} persistent={['sort', 'dir']}>
+        {filters.sort && <input type="hidden" name="sort" value={filters.sort} />}
+        {filters.dir && <input type="hidden" name="dir" value={filters.dir} />}
         <label className="sr-only" htmlFor="q">
           {t('search')}
         </label>
@@ -157,24 +180,20 @@ export default async function AdminPlayersPage({
         <p className="text-muted-foreground">{t('players.empty')}</p>
       ) : (
         <div className="overflow-x-auto rounded-lg border bg-card">
-          <table className="w-full min-w-[44rem] text-left text-sm">
+          <table className="w-full min-w-[52rem] text-left text-sm">
             <thead className="border-b bg-muted/50 text-xs text-muted-foreground uppercase">
               <tr>
-                <th scope="col" className="px-3 py-2">
-                  {t('name')}
-                </th>
+                <SortHeader column="name" label={t('name')} {...sortProps} />
                 <th scope="col" className="px-3 py-2">
                   {t('players.contact')}
                 </th>
-                <th scope="col" className="px-3 py-2">
-                  {t('players.gender')}
-                </th>
+                <SortHeader column="gender" label={t('players.gender')} {...sortProps} />
+                <SortHeader column="age" label={t('players.age')} {...sortProps} />
                 <th scope="col" className="px-3 py-2">
                   {t('players.preferred')}
                 </th>
-                <th scope="col" className="px-3 py-2">
-                  {t('players.club')}
-                </th>
+                <SortHeader column="club" label={t('players.club')} {...sortProps} />
+                <SortHeader column="created" label={t('players.created')} {...sortProps} />
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -195,8 +214,12 @@ export default async function AdminPlayersPage({
                     <div className="text-muted-foreground">{p.phone ?? ''}</div>
                   </td>
                   <td className="px-3 py-2">{tg(p.gender)}</td>
+                  <td className="px-3 py-2 tabular-nums">{ageOn(p.dateOfBirth)}</td>
                   <td className="px-3 py-2">{p.preferredDisciplines.join(' ') || t('none')}</td>
                   <td className="px-3 py-2">{p.club?.name ?? t('none')}</td>
+                  <td className="px-3 py-2 text-xs whitespace-nowrap text-muted-foreground">
+                    {format.dateTime(p.createdAt, { dateStyle: 'short' })}
+                  </td>
                 </tr>
               ))}
             </tbody>

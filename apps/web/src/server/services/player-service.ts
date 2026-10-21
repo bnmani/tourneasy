@@ -21,7 +21,40 @@ import { pageCount, pageParams, parseInput } from '../lib/validation';
 import { assertAdmin } from './permissions';
 import type { Actor } from './session-service';
 
+/** Columns the admin player list can be sorted by. */
+export const PLAYER_SORTS = ['name', 'number', 'gender', 'club', 'age', 'created'] as const;
+export type PlayerSort = (typeof PLAYER_SORTS)[number];
+export type SortDir = 'asc' | 'desc';
+
+function orderFor(
+  sort: PlayerSort = 'name',
+  dir: SortDir = 'asc',
+): Prisma.PlayerProfileOrderByWithRelationInput[] {
+  const byName: Prisma.PlayerProfileOrderByWithRelationInput[] = [
+    { lastName: dir },
+    { firstName: dir },
+  ];
+  switch (sort) {
+    case 'number':
+      return [{ memberNumber: dir }];
+    case 'gender':
+      return [{ gender: dir }, { lastName: 'asc' }, { firstName: 'asc' }];
+    case 'club':
+      // Players without a club go last when ascending.
+      return [{ club: { name: dir } }, { lastName: 'asc' }, { firstName: 'asc' }];
+    case 'age':
+      // Youngest first when ascending: a later date of birth means younger.
+      return [{ dateOfBirth: dir === 'asc' ? 'desc' : 'asc' }, { lastName: 'asc' }];
+    case 'created':
+      return [{ createdAt: dir }];
+    default:
+      return byName;
+  }
+}
+
 export type PlayerFilters = {
+  sort?: PlayerSort;
+  dir?: SortDir;
   q?: string;
   gender?: Gender;
   discipline?: Discipline;
@@ -96,7 +129,7 @@ export async function listPlayers(actor: Actor, filters: PlayerFilters = {}) {
     prisma.playerProfile.count({ where }),
     prisma.playerProfile.findMany({
       where,
-      orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }],
+      orderBy: orderFor(filters.sort, filters.dir),
       skip,
       take,
       select: listSelect,
@@ -348,7 +381,7 @@ async function exportPlayerTable(
   assertAdmin(actor);
   const players = await prisma.playerProfile.findMany({
     where: whereFor({ ...filters, page: undefined }),
-    orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }],
+    orderBy: orderFor(filters.sort, filters.dir),
     select: listSelect,
     take: 20_000,
   });
