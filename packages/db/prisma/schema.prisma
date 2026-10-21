@@ -454,7 +454,7 @@ model PlayerProfile {
   /// Under-16: data minimised and parental consent required (see Consent PARENTAL_CONSENT).
   isMinor              Boolean      @default(false)
   parentalConsentAt    DateTime?
-  publicProfile        Boolean      @default(true) // show in public player search (public-safe fields only)
+  publicProfile        Boolean      @default(false) // opt-in: show in public player search (D30)
   /// Disciplines the player usually wants to enter (sign-up checkboxes; used to pre-fill entries).
   preferredDisciplines Discipline[] @default([])
   mergedIntoId         String?      @db.Uuid // set when an admin merges a duplicate into another profile
