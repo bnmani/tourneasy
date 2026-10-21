@@ -62,6 +62,11 @@ export default async function EntriesPage({ params, searchParams }: Props) {
             <Button asChild variant="outline">
               <Link href={`/admin/tournaments/${id}`}>{t('back')}</Link>
             </Button>
+            {actor.roles.includes('ADMIN') && (
+              <Button asChild variant="outline">
+                <Link href={`/admin/tournaments/${id}/entries/import`}>{t('entries.import')}</Link>
+              </Button>
+            )}
             <Button asChild>
               <a href={`/api/v1/admin/tournaments/${id}/entries/export?${exportQuery}`} download>
                 {t('entries.export')}

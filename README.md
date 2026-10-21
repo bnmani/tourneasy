@@ -65,6 +65,8 @@ Needs the Stripe **test** keys and webhook secret (docs/deploy-test.md); without
 5. Withdraw a paid entry: the refund follows the policy (automatic, or a request under Admin → _Betalingen_).
 6. Admin → _Betalingen_: received / refunded / outstanding, refund requests, orders and Excel export.
    On the participants list an organiser can mark a share _Betaald aan de balie_.
+7. Admin → tournament → _Deelnemers bekijken_ → _Importeren_ (admins only): download the template, fill in
+   member numbers, upload; the result lists entered / waitlisted / skipped rows with the reason per line.
 
 ## Verifying Phase 4 (registration flow)
 

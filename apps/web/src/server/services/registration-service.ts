@@ -31,13 +31,13 @@ import { refundsForCancelledRegistration } from './refund-service';
 import { assertCanManageTournament } from './permissions';
 import type { Actor } from './session-service';
 
-const ACTIVE: RegistrationStatus[] = ['PENDING', 'CONFIRMED'];
+export const ACTIVE: RegistrationStatus[] = ['PENDING', 'CONFIRMED'];
 const LIVE: RegistrationStatus[] = ['PENDING', 'CONFIRMED', 'WAITLISTED'];
 const INVITE_DAYS = 7;
 
 // ── Loading helpers ────────────────────────────────────────────────────────────────
 
-const playerSelect = {
+export const playerSelect = {
   id: true,
   userId: true,
   memberNumber: true,
@@ -53,7 +53,7 @@ const playerSelect = {
   levelMixed: { select: { rank: true } },
   user: { select: { email: true, name: true, locale: true } },
 } satisfies Prisma.PlayerProfileSelect;
-type PlayerRow = Prisma.PlayerProfileGetPayload<{ select: typeof playerSelect }>;
+export type PlayerRow = Prisma.PlayerProfileGetPayload<{ select: typeof playerSelect }>;
 
 export const fullName = (p: {
   firstName: string;
@@ -82,7 +82,7 @@ async function myPlayer(actor: Actor): Promise<PlayerRow> {
   return p;
 }
 
-const eventSelect = {
+export const eventSelect = {
   id: true,
   discipline: true,
   name: true,
@@ -104,9 +104,13 @@ const eventSelect = {
   },
   levelClass: { select: { code: true, rank: true } },
 } satisfies Prisma.TournamentEventSelect;
-type EventRow = Prisma.TournamentEventGetPayload<{ select: typeof eventSelect }>;
+export type EventRow = Prisma.TournamentEventGetPayload<{ select: typeof eventSelect }>;
 
-function eligibility(player: PlayerRow, event: EventRow, startsOn: Date): EligibilityReason[] {
+export function eligibility(
+  player: PlayerRow,
+  event: EventRow,
+  startsOn: Date,
+): EligibilityReason[] {
   return playerEligibility(
     asEligible(player),
     {
@@ -143,7 +147,7 @@ async function loadTournament(slug: string) {
 }
 
 /** Entries (singles players or pairs) that hold a place in each event. */
-async function activeCounts(eventIds: string[], db: Prisma.TransactionClient = prisma) {
+export async function activeCounts(eventIds: string[], db: Prisma.TransactionClient = prisma) {
   const rows = await db.registration.groupBy({
     by: ['eventId'],
     where: { eventId: { in: eventIds }, status: { in: ACTIVE } },
@@ -153,7 +157,7 @@ async function activeCounts(eventIds: string[], db: Prisma.TransactionClient = p
 }
 
 /** Events the player is already in (any live status) and how many count towards the cap. */
-async function playerEntries(playerId: string, tournamentId: string) {
+export async function playerEntries(playerId: string, tournamentId: string) {
   const rows = await prisma.registrationParticipant.findMany({
     where: {
       playerId,

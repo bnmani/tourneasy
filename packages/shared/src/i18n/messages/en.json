@@ -158,7 +158,9 @@
     "noPlayerProfile": "Your account doesn't have a player profile yet.",
     "lettersOnly": "Only letters, spaces, hyphens and apostrophes.",
     "paymentsUnavailable": "Online payment is not available right now. Please try again later.",
-    "bundleOrder": "A price for more categories can’t be lower than one for fewer categories."
+    "bundleOrder": "A price for more categories can’t be lower than one for fewer categories.",
+    "eventNotFound": "Category not found in this tournament.",
+    "playerNotFound": "Player not found (member number or email address)."
   },
   "Auth": {
     "login": {
@@ -648,7 +650,11 @@
       "cancelConfirm": "Cancel entry",
       "viewEntries": "View participants",
       "summary": "{count, plural, =0 {No entries yet} one {# entry} other {# entries}}",
-      "markPaid": "Paid at the desk"
+      "markPaid": "Paid at the desk",
+      "import": "Import",
+      "importTitle": "Import participants: {tournament}",
+      "importHelp": "Upload an Excel or CSV file with the columns: {columns}. One row per entry; the category as in the export (e.g. \"Men's doubles · Seniors\"). Players must already exist (import them under Players first). This page’s export can be imported back too. Full categories go to the waiting list; no emails are sent.",
+      "importResult": "{created} entered, {waitlisted} on the waiting list, {skipped} skipped."
     },
     "navPayments": "Payments",
     "payments": {

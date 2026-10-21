@@ -158,7 +158,9 @@
     "noPlayerProfile": "Je account heeft nog geen spelersprofiel.",
     "lettersOnly": "Alleen letters, spaties, koppeltekens en apostrofs.",
     "paymentsUnavailable": "Online betalen is op dit moment niet beschikbaar. Probeer het later opnieuw.",
-    "bundleOrder": "Een prijs voor meer onderdelen kan niet lager zijn dan die voor minder onderdelen."
+    "bundleOrder": "Een prijs voor meer onderdelen kan niet lager zijn dan die voor minder onderdelen.",
+    "eventNotFound": "Onderdeel niet gevonden in dit toernooi.",
+    "playerNotFound": "Speler niet gevonden (lidnummer of e-mailadres)."
   },
   "Auth": {
     "login": {
@@ -648,7 +650,11 @@
       "cancelConfirm": "Inschrijving annuleren",
       "viewEntries": "Deelnemers bekijken",
       "summary": "{count, plural, =0 {Nog geen inschrijvingen} one {# inschrijving} other {# inschrijvingen}}",
-      "markPaid": "Betaald aan de balie"
+      "markPaid": "Betaald aan de balie",
+      "import": "Importeren",
+      "importTitle": "Deelnemers importeren: {tournament}",
+      "importHelp": "Upload een Excel- of CSV-bestand met de kolommen: {columns}. Eén regel per inschrijving; het onderdeel zoals in de export (bijv. \"Herendubbel · Senioren\"). Spelers moeten al bestaan (importeer ze eerst onder Spelers). De export van deze pagina kan ook terug worden geïmporteerd. Volle onderdelen gaan naar de wachtlijst; er worden geen e-mails verstuurd.",
+      "importResult": "{created} ingeschreven, {waitlisted} op de wachtlijst, {skipped} overgeslagen."
     },
     "navPayments": "Betalingen",
     "payments": {

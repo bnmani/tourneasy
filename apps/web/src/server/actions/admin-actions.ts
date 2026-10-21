@@ -13,6 +13,7 @@ import { AppError } from '../lib/errors';
 import type { RequestMeta } from '../lib/request-meta';
 import { setClubArchived, createClub, updateClub } from '../services/club-service';
 import { createEvent, deleteEvent, updateEvent } from '../services/event-service';
+import { importTournamentEntries, type EntryImportResult } from '../services/entry-import-service';
 import {
   createPlayer,
   importPlayersFile,
@@ -281,6 +282,31 @@ export async function importPlayersAction(
     if (file.size > 2_000_000) throw new AppError('csvInvalid');
     const result = await importPlayersFile(
       await actorOrThrow(),
+      new Uint8Array(await file.arrayBuffer()),
+      await currentRequestMeta(),
+    );
+    revalidatePath('/', 'layout');
+    return { ok: true, result };
+  } catch (error) {
+    return toFormState(error, new FormData());
+  }
+}
+
+export type EntryImportState = FormState & { result?: EntryImportResult };
+
+/** Admin: participants from an Excel/CSV file into one tournament (D53). */
+export async function importEntriesAction(
+  tournamentId: string,
+  _prev: EntryImportState,
+  formData: FormData,
+): Promise<EntryImportState> {
+  try {
+    const file = formData.get('file');
+    if (!(file instanceof File) || file.size === 0 || file.size > 2_000_000)
+      throw new AppError('csvInvalid');
+    const result = await importTournamentEntries(
+      await actorOrThrow(),
+      tournamentId,
       new Uint8Array(await file.arrayBuffer()),
       await currentRequestMeta(),
     );

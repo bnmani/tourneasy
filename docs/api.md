@@ -120,7 +120,7 @@ All need a signed-in player (Bearer or cookie). Entering needs a verified email 
 | `PUT`    | `/api/v1/me/registrations/{id}/partner`    | `{ partner }` invite a (new) partner → `204`                                                                   |
 | `GET`    | `/api/v1/me/invites`                       | Partner invitations waiting for my answer                                                                      |
 | `POST`   | `/api/v1/me/invites/{id}`                  | `{ accept: true                                                                                                | false }` |
-| `GET`    | `/api/v1/admin/tournaments/{id}/entries`   | Participants (organisers); `/export` returns Excel                                                             |
+| `GET`    | `/api/v1/admin/tournaments/{id}/entries`   | Participants (organisers); `/export` returns Excel; `/template` the import template (admins)                   |
 
 Field errors use keys `event.{eventId}` and `partner.{eventId}`, e.g. `notEligible`, `alreadyEntered`,
 `partnerIneligible`, `partnerRequired`; a full event is not an error but returns `status: "WAITLISTED"`.
