@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "dotenv -e ../../.env -- next dev --turbopack",
-    "build": "pnpm --filter @tourneasy/db db:generate && dotenv -e ../../.env -- next build && node scripts/prepare-standalone.mjs && node scripts/server-dependency-report.mjs",
+    "build": "pnpm --filter @tourneasy/db db:generate && dotenv -e ../../.env -- next build && node scripts/prepare-standalone.mjs",
     "start": "dotenv -e ../../.env -- node .next/standalone/apps/web/server.js",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
