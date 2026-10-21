@@ -45,7 +45,7 @@ export default async function DeskPage({ params, searchParams }: Props) {
   const view: View = (VIEWS as readonly string[]).includes(requested ?? '')
     ? (requested as View)
     : 'next';
-  const desk = await deskMatches(actor, id, view).catch((e) => {
+  const desk = await deskMatches(actor, id, view, locale).catch((e) => {
     if (isAppError(e) && e.code === 'notFound') return null;
     throw e;
   });
@@ -58,6 +58,15 @@ export default async function DeskPage({ params, searchParams }: Props) {
   );
   const t = await getTranslations('Admin');
   const td = await getTranslations('Admin.desk');
+  // After a refused score, refill what was typed for that match.
+  const [enteredId, enteredGames] = (firstParam(query.entered) ?? '').split('~');
+  const refill =
+    firstParam(query.status) !== 'resultSaved' && enteredId
+      ? (enteredGames ?? '')
+          .split('.')
+          .filter(Boolean)
+          .map((g) => g.split('-').map(Number) as [number, number])
+      : null;
 
   return (
     <>
@@ -186,7 +195,10 @@ export default async function DeskPage({ params, searchParams }: Props) {
                       <input type="hidden" name="version" value={item.version} />
                       <div className="flex flex-wrap items-end gap-3">
                         {games.map((g) => {
-                          const set = item.sets[g - 1];
+                          const typed = refill && enteredId === item.id ? refill[g - 1] : undefined;
+                          const set = typed
+                            ? { scoreA: typed[0], scoreB: typed[1] }
+                            : item.sets[g - 1];
                           return (
                             <fieldset key={g} className="space-y-1">
                               <legend className="text-xs text-muted-foreground">

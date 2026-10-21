@@ -32,7 +32,7 @@ export default async function SchedulePage({ params, searchParams }: Props) {
   const locale = await pageLocale(params);
   const { id } = await params;
   const actor = await requirePortal(locale);
-  const schedule = await getSchedule(actor, id).catch((e) => {
+  const schedule = await getSchedule(actor, id, locale).catch((e) => {
     if (isAppError(e) && e.code === 'notFound') return null;
     throw e;
   });

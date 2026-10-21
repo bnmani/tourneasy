@@ -144,7 +144,12 @@ export async function resultAction(
   view: string,
   formData: FormData,
 ) {
-  await act(`${deskPage(locale, tournamentId, view)}#m-${matchId}`, 'resultSaved', async () =>
+  // The typed games go back in the URL, so a refused score doesn't have to be typed again.
+  const typed = gamesFrom(formData)
+    .map(([a, b]) => `${a}-${b}`)
+    .join('.');
+  const target = `${deskPage(locale, tournamentId, view)}&entered=${matchId}~${typed}#m-${matchId}`;
+  await act(target, 'resultSaved', async () =>
     recordResult(
       await actorOrThrow(),
       matchId,
@@ -194,7 +199,8 @@ export async function startMatchAction(
   matchId: string,
   view: string,
 ) {
-  await act(`${deskPage(locale, tournamentId, view)}#m-${matchId}`, 'saved', async () =>
+  void view; // the match moves to "On court", so show that list
+  await act(`${deskPage(locale, tournamentId, 'now')}#m-${matchId}`, 'saved', async () =>
     startMatch(await actorOrThrow(), matchId, await currentRequestMeta()),
   );
 }

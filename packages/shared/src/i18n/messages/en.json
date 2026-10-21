@@ -1245,7 +1245,8 @@
     "podium": "Result",
     "first": "1st",
     "second": "2nd",
-    "third": "3rd"
+    "third": "3rd",
+    "knockoutStage": "Knockout stage"
   },
   "Matches": {
     "court": "Court {number}",
@@ -1266,6 +1267,7 @@
     "lostShort": "L",
     "versus": "vs {name}",
     "myMatches": "My matches",
-    "history": "Matches played"
+    "history": "Matches played",
+    "new": "New"
   }
 }

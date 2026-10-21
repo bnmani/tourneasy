@@ -14,6 +14,7 @@ import {
   stageStatus,
 } from './results-service';
 import {
+  deskMatches,
   getSchedule,
   moveMatch,
   myMatches,
@@ -156,7 +157,7 @@ describe('schedule', () => {
       meta,
     );
     const after = await getSchedule(actor, t.id);
-    expect(after.scheduled.find((s) => s.id === second!.id)?.changed).toBe(true);
+    expect(after.scheduled.find((s) => s.id === second!.id)?.changed).toBe('changed');
   });
 });
 
@@ -244,6 +245,16 @@ describe('results', () => {
         .map((e) => e.seed)
         .sort(),
     ).toEqual([1, 2]);
+    // Match numbers are unique across both groups and the knockout (no two "#1"s at the desk).
+    const desk = await deskMatches(
+      actor,
+      (await prisma.tournamentEvent.findUniqueOrThrow({ where: { id: event.id } })).tournamentId,
+      'open',
+      'en',
+    );
+    const numbers = desk.items.map((i) => i.number);
+    expect(new Set(numbers).size).toBe(numbers.length);
+    expect(desk.items.find((i) => i.a === null || i.a.startsWith('Winner #'))).toBeTruthy();
     await playAll(actor, event.id);
     expect((await eventPodium(event.id))?.first).toBeTruthy();
   });

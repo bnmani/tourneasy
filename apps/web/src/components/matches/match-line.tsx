@@ -56,7 +56,12 @@ export async function MatchLine({
         )}
         {item.status === 'WALKOVER' && <span>{t('walkover')}</span>}
         {item.status === 'RETIRED' && <span>{t('retired')}</span>}
-        {item.changed && (
+        {item.changed === 'new' && (
+          <span className="rounded-full bg-secondary px-2 py-0.5 font-bold text-secondary-foreground">
+            {t('new')}
+          </span>
+        )}
+        {item.changed === 'changed' && (
           <span className="rounded-full bg-destructive/10 px-2 py-0.5 font-bold text-destructive">
             {t('changed')}
           </span>

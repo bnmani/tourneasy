@@ -1245,7 +1245,8 @@
     "podium": "Uitslag",
     "first": "1e",
     "second": "2e",
-    "third": "3e"
+    "third": "3e",
+    "knockoutStage": "Knock-outfase"
   },
   "Matches": {
     "court": "Baan {number}",
@@ -1266,6 +1267,7 @@
     "lostShort": "V",
     "versus": "tegen {name}",
     "myMatches": "Mijn wedstrijden",
-    "history": "Gespeelde wedstrijden"
+    "history": "Gespeelde wedstrijden",
+    "new": "Nieuw"
   }
 }

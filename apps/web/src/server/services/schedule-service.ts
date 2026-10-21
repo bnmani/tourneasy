@@ -73,6 +73,7 @@ export const matchSelect = {
       id: true,
       startsAt: true,
       endsAt: true,
+      createdAt: true,
       updatedAt: true,
       court: { select: { id: true, number: true, name: true } },
     },
@@ -249,10 +250,11 @@ export async function proposeTournamentSchedule(
       ),
       restMinutes: restFor(m, t.restMinutes),
     }));
-  const now = Date.now();
-  const days = scheduleDays(t).filter(
-    (d) => d.end.getTime() > now || process.env.NODE_ENV === 'test',
-  );
+  // Never plan in the past: today starts at the next 5-minute mark (tests plan fixed days).
+  const floor = process.env.NODE_ENV === 'test' ? 0 : Math.ceil(Date.now() / 300_000) * 300_000;
+  const days = scheduleDays(t)
+    .map((d) => ({ ...d, start: new Date(Math.max(d.start.getTime(), floor)) }))
+    .filter((d) => d.end.getTime() - d.start.getTime() >= t.matchMinutes * 60_000);
   const result = proposeSchedule({
     matches: plan,
     courts: courts.map((c) => c.id),
@@ -322,9 +324,11 @@ export async function moveMatch(actor: Actor, matchId: string, input: unknown, m
   const end = new Date(start.getTime() + t.matchMinutes * 60_000);
   try {
     await prisma.$transaction(async (tx) => {
-      await tx.courtSlot.deleteMany({ where: { matchId } });
-      await tx.courtSlot.create({
-        data: {
+      // Update in place, so a moved match counts as "changed" rather than "new".
+      await tx.courtSlot.upsert({
+        where: { matchId },
+        update: { courtId, startsAt: start, endsAt: end },
+        create: {
           tournamentId: t.id,
           courtId,
           matchId,
@@ -360,28 +364,11 @@ export async function swapMatches(actor: Actor, input: unknown, meta: RequestMet
   const sb = slots.find((s) => s.matchId === b);
   if (!sa || !sb) throw new AppError('notScheduled');
   await prisma.$transaction(async (tx) => {
-    // Free both, then re-create crosswise (keeps the overlap constraint happy).
-    await tx.courtSlot.deleteMany({ where: { id: { in: [sa.id, sb.id] } } });
-    await tx.courtSlot.create({
-      data: {
-        tournamentId: sa.tournamentId,
-        courtId: sb.courtId,
-        matchId: a,
-        startsAt: sb.startsAt,
-        endsAt: sb.endsAt,
-        isPublished: sa.isPublished,
-      },
-    });
-    await tx.courtSlot.create({
-      data: {
-        tournamentId: sa.tournamentId,
-        courtId: sa.courtId,
-        matchId: b,
-        startsAt: sa.startsAt,
-        endsAt: sa.endsAt,
-        isPublished: sb.isPublished,
-      },
-    });
+    // The slots stay where they are; the matches change places (matchId is unique, hence
+    // the three steps).
+    await tx.courtSlot.update({ where: { id: sa.id }, data: { matchId: null } });
+    await tx.courtSlot.update({ where: { id: sb.id }, data: { matchId: a } });
+    await tx.courtSlot.update({ where: { id: sa.id }, data: { matchId: b } });
     await writeAudit(tx, {
       actorId: actor.userId,
       action: 'schedule.swap',
@@ -450,23 +437,17 @@ export function roundLabel(m: MatchRow, locale: 'nl' | 'en') {
 
 export type ScheduleItem = ReturnType<typeof toItem>;
 
-function toItem(
-  m: MatchRow,
-  locale: 'nl' | 'en',
-  publishedAt: Date | null,
-  feederNumbers: Map<string, number[]>,
-) {
+function toItem(m: MatchRow, locale: 'nl' | 'en', publishedAt: Date | null, nums: Numbering) {
   const placeholder = (slot: 'A' | 'B') => {
-    const from = feederNumbers.get(`${m.id}${slot}`);
-    return from
-      ? locale === 'nl'
-        ? `Winnaar #${from.join('/')}`
-        : `Winner #${from.join('/')}`
-      : null;
+    const feeder = nums.feeders.get(`${m.id}${slot}`);
+    const n = feeder ? nums.numberOf.get(feeder.matchId) : undefined;
+    if (!n) return null;
+    if (feeder!.loser) return locale === 'nl' ? `Verliezer #${n}` : `Loser #${n}`;
+    return locale === 'nl' ? `Winnaar #${n}` : `Winner #${n}`;
   };
   return {
     id: m.id,
-    number: m.matchNumber,
+    number: nums.numberOf.get(m.id) ?? m.matchNumber,
     status: m.status,
     event: eventText(m.draw.event, locale),
     eventId: m.draw.event.id,
@@ -481,7 +462,15 @@ function toItem(
     court: m.slot?.court ?? null,
     startsAt: m.slot?.startsAt ?? null,
     endsAt: m.slot?.endsAt ?? null,
-    changed: !!publishedAt && !!m.slot && m.slot.updatedAt > publishedAt,
+    // After publishing: a slot added later is "new", a moved one "changed".
+    changed:
+      publishedAt && m.slot
+        ? m.slot.createdAt > publishedAt
+          ? ('new' as const)
+          : m.slot.updatedAt > publishedAt
+            ? ('changed' as const)
+            : null
+        : null,
     checkIn: [m.entryA, m.entryB].map(
       (e) =>
         e?.registration?.participants.map((p) => ({
@@ -493,36 +482,75 @@ function toItem(
   };
 }
 
-async function feederNumbers(tournamentId: string) {
+type Numbering = {
+  numberOf: Map<string, number>;
+  feeders: Map<string, { matchId: string; loser: boolean }>;
+};
+
+const STAGE_ORDER: Record<string, number> = { GROUP: 0, MAIN: 1, KNOCKOUT: 2 };
+
+/**
+ * Match numbers unique within the tournament (per category, stage, round and group), so the
+ * desk never sees two "#1"s; plus which match feeds which slot.
+ */
+async function numbering(tournamentId: string): Promise<Numbering> {
   const rows = await prisma.match.findMany({
-    where: { draw: { event: { tournamentId } } },
+    where: { draw: { status: { not: 'DRAFT' }, event: { tournamentId, deletedAt: null } } },
     select: {
+      id: true,
+      status: true,
+      round: true,
+      bracket: true,
       matchNumber: true,
       nextMatchId: true,
       nextMatchSlot: true,
       loserNextMatchId: true,
       loserNextMatchSlot: true,
+      draw: {
+        select: {
+          stage: true,
+          groupNumber: true,
+          event: { select: { id: true, sortOrder: true, createdAt: true } },
+        },
+      },
     },
   });
-  const map = new Map<string, number[]>();
+  const bracketOrder = (b: string) => (b === 'W' ? 0 : b === 'L' ? 1 : 2);
+  const sorted = rows
+    .filter((r) => r.status !== 'BYE' && r.status !== 'CANCELLED')
+    .sort(
+      (a, b) =>
+        a.draw.event.sortOrder - b.draw.event.sortOrder ||
+        a.draw.event.createdAt.getTime() - b.draw.event.createdAt.getTime() ||
+        a.draw.event.id.localeCompare(b.draw.event.id) ||
+        (STAGE_ORDER[a.draw.stage] ?? 1) - (STAGE_ORDER[b.draw.stage] ?? 1) ||
+        // Groups: round by round across the groups, as they are played.
+        (a.draw.stage === 'GROUP' ? a.round - b.round : 0) ||
+        (a.draw.groupNumber ?? 0) - (b.draw.groupNumber ?? 0) ||
+        bracketOrder(a.bracket) - bracketOrder(b.bracket) ||
+        a.matchNumber - b.matchNumber,
+    );
+  const numberOf = new Map(sorted.map((r, i) => [r.id, i + 1]));
+  const feeders = new Map<string, { matchId: string; loser: boolean }>();
   for (const r of rows) {
-    if (r.nextMatchId) map.set(`${r.nextMatchId}${r.nextMatchSlot}`, [r.matchNumber]);
+    if (r.nextMatchId)
+      feeders.set(`${r.nextMatchId}${r.nextMatchSlot}`, { matchId: r.id, loser: false });
     if (r.loserNextMatchId)
-      map.set(`${r.loserNextMatchId}${r.loserNextMatchSlot}`, [r.matchNumber]);
+      feeders.set(`${r.loserNextMatchId}${r.loserNextMatchSlot}`, { matchId: r.id, loser: true });
   }
-  return map;
+  return { numberOf, feeders };
 }
 
 /** Organiser view: days with courts and matches, unscheduled matches and rest warnings. */
-export async function getSchedule(actor: Actor, tournamentId: string) {
+export async function getSchedule(actor: Actor, tournamentId: string, locale = actor.locale) {
   await assertCanManageTournament(actor, tournamentId);
   const t = await loadTournament(tournamentId);
   const courts = t.venue ? await ensureCourts(prisma, t) : [];
   const [matches, feeders] = await Promise.all([
     tournamentMatches(tournamentId),
-    feederNumbers(tournamentId),
+    numbering(tournamentId),
   ]);
-  const items = matches.map((m) => toItem(m, actor.locale, t.schedulePublishedAt, feeders));
+  const items = matches.map((m) => toItem(m, locale, t.schedulePublishedAt, feeders));
   const restOf = new Map(matches.map((m) => [m.id, restFor(m, t.restMinutes)]));
   const conflicts = restConflicts(
     items
@@ -555,7 +583,7 @@ export async function publicSchedule(slug: string, locale: 'nl' | 'en') {
   });
   if (!t) throw new AppError('notFound');
   if (!t.schedulePublishedAt) return { published: false as const, items: [] };
-  const [matches, feeders] = await Promise.all([tournamentMatches(t.id), feederNumbers(t.id)]);
+  const [matches, feeders] = await Promise.all([tournamentMatches(t.id), numbering(t.id)]);
   return {
     published: true as const,
     items: matches
@@ -598,12 +626,10 @@ export async function myMatches(actor: Actor) {
     },
   });
   return matches.map((m) => ({
-    ...toItem(
-      m as unknown as MatchRow,
-      actor.locale,
-      m.draw.event.tournament.schedulePublishedAt,
-      new Map(),
-    ),
+    ...toItem(m as unknown as MatchRow, actor.locale, m.draw.event.tournament.schedulePublishedAt, {
+      numberOf: new Map(),
+      feeders: new Map(),
+    }),
     tournament: m.draw.event.tournament,
   }));
 }
@@ -613,15 +639,16 @@ export async function deskMatches(
   actor: Actor,
   tournamentId: string,
   view: 'now' | 'next' | 'open' | 'done',
+  locale = actor.locale,
 ) {
   await assertCanManageTournament(actor, tournamentId);
   const t = await loadTournament(tournamentId);
   const [matches, feeders] = await Promise.all([
     tournamentMatches(tournamentId),
-    feederNumbers(tournamentId),
+    numbering(tournamentId),
   ]);
   const items = matches.map((m) => ({
-    ...toItem(m, actor.locale, t.schedulePublishedAt, feeders),
+    ...toItem(m, locale, t.schedulePublishedAt, feeders),
     version: m.version,
     bestOf: m.draw.event.bestOf,
     ready: !!m.entryA?.registration && !!m.entryB?.registration,
@@ -658,7 +685,7 @@ export async function liveMatches(locale: 'nl' | 'en', slug?: string, now = new 
   });
   const out = [];
   for (const t of tournaments) {
-    const [matches, feeders] = await Promise.all([tournamentMatches(t.id), feederNumbers(t.id)]);
+    const [matches, feeders] = await Promise.all([tournamentMatches(t.id), numbering(t.id)]);
     const items = matches.map((m) => toItem(m, locale, t.schedulePublishedAt, feeders));
     const onCourt = items.filter((i) => i.status === 'IN_PROGRESS' || i.status === 'CALLED');
     const next = items

@@ -179,6 +179,7 @@ export async function DrawView({ draws }: { draws: EventDraw[] }) {
   const t = await getTranslations('Draws');
   if (draws.length === 0) return null;
   const type = draws[0]!.type;
+  const hasKnockoutStage = draws.some((d) => d.stage === 'KNOCKOUT');
   return (
     <div className="space-y-8">
       {draws.map((draw) => {
@@ -187,6 +188,9 @@ export async function DrawView({ draws }: { draws: EventDraw[] }) {
           const final = draw.matches.find((m) => m.bracket === 'F');
           return (
             <div key={draw.id} className="space-y-6">
+              {draw.stage === 'KNOCKOUT' && (
+                <h3 className="font-heading text-lg font-semibold">{t('knockoutStage')}</h3>
+              )}
               {draw.type === 'DOUBLE_KNOCKOUT' && (
                 <h3 className="font-semibold">{t('winnersBracket')}</h3>
               )}
@@ -222,10 +226,10 @@ export async function DrawView({ draws }: { draws: EventDraw[] }) {
           </section>
         );
       })}
-      {type === 'GROUPS_KNOCKOUT' && (
+      {type === 'GROUPS_KNOCKOUT' && !hasKnockoutStage && (
         <p className="text-sm text-muted-foreground">{t('knockoutFollowsGroups')}</p>
       )}
-      {type === 'HYBRID_ROUND_ROBIN_KNOCKOUT' && (
+      {type === 'HYBRID_ROUND_ROBIN_KNOCKOUT' && !hasKnockoutStage && (
         <p className="text-sm text-muted-foreground">{t('knockoutFollowsRanking')}</p>
       )}
       {type === 'SWISS' && <p className="text-sm text-muted-foreground">{t('swissNextRounds')}</p>}
@@ -238,7 +242,7 @@ async function StandingsTable({ draw, entries }: { draw: EventDraw; entries: Map
   const rows = drawStandings(draw);
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[28rem] text-sm">
+      <table className="w-full text-sm">
         <thead className="text-xs text-muted-foreground uppercase">
           <tr className="border-b">
             <th className="py-1.5 pr-2 text-left">#</th>
@@ -252,7 +256,7 @@ async function StandingsTable({ draw, entries }: { draw: EventDraw; entries: Map
             <th className="px-2 py-1.5 text-right" title={t('gamesLong')}>
               {t('games')}
             </th>
-            <th className="py-1.5 pl-2 text-right" title={t('pointsLong')}>
+            <th className="hidden py-1.5 pl-2 text-right sm:table-cell" title={t('pointsLong')}>
               {t('points')}
             </th>
           </tr>
@@ -278,7 +282,7 @@ async function StandingsTable({ draw, entries }: { draw: EventDraw; entries: Map
                 <td className="px-2 py-1.5 text-right tabular-nums">
                   {r.gamesFor}-{r.gamesAgainst}
                 </td>
-                <td className="py-1.5 pl-2 text-right tabular-nums">
+                <td className="hidden py-1.5 pl-2 text-right tabular-nums sm:table-cell">
                   {r.pointsFor}-{r.pointsAgainst}
                 </td>
               </tr>
