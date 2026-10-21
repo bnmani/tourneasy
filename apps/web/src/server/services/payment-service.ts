@@ -26,8 +26,8 @@ import { refundsForCancelledRegistration, applyRefundUpdate } from './refund-ser
 import { eventText, fullName } from './registration-service';
 import type { Actor } from './session-service';
 
-function requireGateway(): PaymentGateway {
-  const gateway = getGateway();
+async function requireGateway(): Promise<PaymentGateway> {
+  const gateway = await getGateway();
   if (!gateway) throw new AppError('paymentsUnavailable');
   return gateway;
 }
@@ -68,7 +68,7 @@ type ShareRow = Prisma.RegistrationParticipantGetPayload<{ select: typeof shareS
 // ── Checkout ───────────────────────────────────────────────────────────────────────
 
 export async function createCheckout(actor: Actor, input: unknown, now = new Date()) {
-  const gateway = requireGateway();
+  const gateway = await requireGateway();
   const { participantIds } = parseInput(checkoutSchema, input);
   const me = await prisma.playerProfile.findFirst({
     where: { userId: actor.userId, deletedAt: null },
@@ -359,7 +359,7 @@ export async function reconcileOrder(orderId: string, actor: Actor | null) {
     },
   });
   if (!order || (actor && order.userId !== actor.userId)) throw new AppError('notFound');
-  const gateway = getGateway();
+  const gateway = await getGateway();
   const intentId = order.payments[0]?.stripePaymentIntentId;
   if (gateway && intentId && order.status === 'PENDING') {
     await applyIntent(await gateway.retrieveIntent(intentId));
@@ -382,7 +382,7 @@ export async function reconcileOrder(orderId: string, actor: Actor | null) {
 
 /** Stripe webhook: verified, recorded once (StripeEvent) and applied. */
 export async function handleWebhook(rawBody: string, signature: string) {
-  const gateway = requireGateway();
+  const gateway = await requireGateway();
   let event: GatewayEvent;
   try {
     event = gateway.parseWebhook(rawBody, signature);

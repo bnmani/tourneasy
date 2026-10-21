@@ -218,7 +218,7 @@ export async function getEntryOptions(actor: Actor, slug: string, now = new Date
       maxEventsPerPlayer: t.maxEventsPerPlayer,
       bundlePricesCents: t.bundlePricesCents,
       partnerPaysAll: t.partnerPaymentMode === 'INITIATOR_PAYS_ALL',
-      payOnline: paymentsEnabled(),
+      payOnline: await paymentsEnabled(),
     },
     player: {
       name: fullName(player),
@@ -361,7 +361,7 @@ export async function enterTournament(
     eventId: string;
   }[] = [];
 
-  const online = paymentsEnabled();
+  const online = await paymentsEnabled();
   const holdUntil = new Date(now.getTime() + HOLD_MINUTES * 60_000);
   let created: {
     id: string;
@@ -631,7 +631,7 @@ export async function listMyRegistrations(actor: Actor, now = new Date()) {
   for (const tournamentId of new Set(rows.map((r) => r.event.tournament.id))) {
     for (const [id, cents] of await amountsDue(player.id, tournamentId)) due.set(id, cents);
   }
-  const online = paymentsEnabled();
+  const online = await paymentsEnabled();
   return rows.map((r) => {
     const me = r.participants.find((p) => p.player.id === player.id)!;
     const amountDue = due.get(me.id) ?? null;
@@ -996,7 +996,7 @@ async function promoteFromWaitlist(tx: Prisma.TransactionClient, eventId: string
     select: { maxEntries: true, feeCents: true },
   });
   // Paid online: the promoted pair gets 48 hours to pay before the place moves on.
-  const mustPay = paymentsEnabled() && event.feeCents > 0;
+  const mustPay = event.feeCents > 0 && (await paymentsEnabled());
   const taken = await tx.registration.count({ where: { eventId, status: { in: ACTIVE } } });
   const room = event.maxEntries === null ? Number.MAX_SAFE_INTEGER : event.maxEntries - taken;
   const waiting = await tx.registration.findMany({

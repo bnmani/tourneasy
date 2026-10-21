@@ -28,7 +28,9 @@ export type ErrorCode =
   | 'emailNotVerified'
   | 'inviteInvalid'
   | 'noPlayerProfile'
-  | 'paymentsUnavailable';
+  | 'paymentsUnavailable'
+  | 'settingsLocked'
+  | 'encryptionUnavailable';
 
 const HTTP_STATUS: Record<ErrorCode, number> = {
   validation: 422,
@@ -57,6 +59,8 @@ const HTTP_STATUS: Record<ErrorCode, number> = {
   inviteInvalid: 410,
   noPlayerProfile: 409,
   paymentsUnavailable: 503,
+  settingsLocked: 403,
+  encryptionUnavailable: 503,
 };
 
 export class AppError extends Error {

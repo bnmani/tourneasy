@@ -10,6 +10,7 @@ import {
   StatusNotice,
 } from '@/components/admin/ui';
 import { Button } from '@/components/ui/button';
+import { Link } from '@/i18n/navigation';
 import { firstParam, pageLocale, type SearchParams } from '@/lib/page';
 import { cn } from '@/lib/utils';
 import { refundDecisionAction } from '@/server/actions/payment-actions';
@@ -65,11 +66,16 @@ export default async function PaymentsPage({ params, searchParams }: Props) {
         title={tp('title')}
         intro={tp('intro')}
         actions={
-          <Button asChild>
-            <a href={`/api/v1/admin/payments/export?${exportQuery}`} download>
-              {tp('export')}
-            </a>
-          </Button>
+          <>
+            <Button asChild variant="outline">
+              <Link href="/admin/payments/settings">{tp('settings')}</Link>
+            </Button>
+            <Button asChild>
+              <a href={`/api/v1/admin/payments/export?${exportQuery}`} download>
+                {tp('export')}
+              </a>
+            </Button>
+          </>
         }
       />
       <StatusNotice status={firstParam(query.status)} />

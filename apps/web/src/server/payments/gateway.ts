@@ -1,10 +1,13 @@
 /**
  * Payment provider boundary (D51). The service layer talks to this interface only; production
  * uses Stripe PaymentIntents (iDEAL first, plus card/Bancontact when enabled in the Stripe
- * dashboard), tests use the in-memory fake below. Without STRIPE_SECRET_KEY there is no gateway
- * and entries behave as in Phase 4 (confirmed, shares marked unpaid).
+ * dashboard), tests use the in-memory fake below. The keys come from Admin → Betalingen →
+ * Stripe-instellingen (encrypted in the database, D54), else from STRIPE_* environment variables.
+ * Without keys there is no gateway and entries behave as in Phase 4 (shares paid at the desk).
  */
+import { prisma } from '@tourneasy/db';
 import Stripe from 'stripe';
+import { decryptSecret } from '../lib/secret-box';
 
 export type IntentStatus = 'requires_payment' | 'processing' | 'succeeded' | 'canceled' | 'failed';
 export type IntentMethod = 'IDEAL' | 'CARD' | 'BANCONTACT' | 'OTHER';
@@ -181,26 +184,99 @@ class StripeGateway implements PaymentGateway {
 
 // ── Selection ──────────────────────────────────────────────────────────────────────
 
-let override: PaymentGateway | null | undefined;
-let cached: PaymentGateway | null | undefined;
+/** SiteSetting key holding the portal-managed Stripe keys (secrets encrypted). */
+export const STRIPE_SETTINGS_KEY = 'payments.stripe';
 
-/** The configured gateway, or null when online payment is not set up (yet). */
-export function getGateway(): PaymentGateway | null {
-  if (override !== undefined) return override;
-  if (cached !== undefined) return cached;
+export type StoredStripeSettings = {
+  publishableKey: string;
+  secretKeyBox: string;
+  webhookSecretBox: string | null;
+  secretKeyLast4: string;
+  updatedById: string;
+  updatedByName: string;
+  updatedAt: string;
+};
+
+export type StripeConfig = {
+  secretKey: string;
+  publishableKey: string;
+  webhookSecret: string | undefined;
+  source: 'portal' | 'environment';
+};
+
+/** Keys from the portal settings, else from the environment; null when not set up. */
+export async function loadStripeConfig(): Promise<StripeConfig | null> {
+  const row = await prisma.siteSetting.findUnique({ where: { key: STRIPE_SETTINGS_KEY } });
+  const stored = row?.value as StoredStripeSettings | undefined;
+  if (stored?.secretKeyBox) {
+    const secretKey = decryptSecret(stored.secretKeyBox);
+    if (secretKey) {
+      return {
+        secretKey,
+        publishableKey: stored.publishableKey,
+        webhookSecret: stored.webhookSecretBox
+          ? (decryptSecret(stored.webhookSecretBox) ?? undefined)
+          : undefined,
+        source: 'portal',
+      };
+    }
+    console.error('[payments] stored Stripe key cannot be decrypted (server secret changed?)');
+  }
   const secret = process.env.STRIPE_SECRET_KEY;
   const publishable =
     process.env.STRIPE_PUBLISHABLE_KEY ?? process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
-  cached =
-    secret && publishable
-      ? new StripeGateway(secret, publishable, process.env.STRIPE_WEBHOOK_SECRET)
-      : null;
-  return cached;
+  return secret && publishable
+    ? {
+        secretKey: secret,
+        publishableKey: publishable,
+        webhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
+        source: 'environment',
+      }
+    : null;
 }
 
+const CACHE_MS = 60_000;
+let override: PaymentGateway | null | undefined;
+let cached: { gateway: PaymentGateway | null; until: number } | null = null;
+
+/** The configured gateway, or null when online payment is not set up (yet). */
+export async function getGateway(): Promise<PaymentGateway | null> {
+  if (override !== undefined) return override;
+  if (cached && cached.until > Date.now()) return cached.gateway;
+  const config = await loadStripeConfig();
+  const gateway = config
+    ? new StripeGateway(config.secretKey, config.publishableKey, config.webhookSecret)
+    : null;
+  cached = { gateway, until: Date.now() + CACHE_MS };
+  return gateway;
+}
+
+/** After the settings change: the next request builds the gateway from the new keys. */
+export function resetGatewayCache() {
+  cached = null;
+}
+
+/** Checks a secret key with Stripe before it is saved (read-only call). */
+export async function verifyStripeSecretKey(secretKey: string): Promise<boolean> {
+  if (keyVerifierOverride) return keyVerifierOverride(secretKey);
+  try {
+    await new Stripe(secretKey, { maxNetworkRetries: 1 }).balance.retrieve();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+let keyVerifierOverride: ((key: string) => boolean) | undefined;
+
 /** Tests: replace the gateway (null = payments off); `undefined` restores the real one. */
-export function setGatewayForTests(gateway: PaymentGateway | null | undefined) {
+export function setGatewayForTests(
+  gateway: PaymentGateway | null | undefined,
+  verifyKey?: (key: string) => boolean,
+) {
   override = gateway;
+  keyVerifierOverride = verifyKey;
+  cached = null;
 }
 
 // ── Fake (tests) ───────────────────────────────────────────────────────────────────

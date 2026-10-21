@@ -127,7 +127,7 @@ export async function executeRefund(
   let status: RefundStatus = 'SUCCEEDED';
   let stripeRefundId: string | null = null;
   if (refund.payment.stripePaymentIntentId) {
-    const gateway = getGateway();
+    const gateway = await getGateway();
     if (!gateway) throw new AppError('paymentsUnavailable');
     const result = await gateway.refund({
       paymentIntentId: refund.payment.stripePaymentIntentId,

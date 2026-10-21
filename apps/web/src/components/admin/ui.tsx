@@ -36,6 +36,7 @@ const SUCCESS = new Set([
   'markedPaid',
   'refundApproved',
   'refundRejected',
+  'locked',
 ]);
 
 /** Shows the outcome of the last action from ?status=… (success text or error key). */

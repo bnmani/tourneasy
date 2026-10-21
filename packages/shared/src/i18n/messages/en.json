@@ -160,7 +160,12 @@
     "paymentsUnavailable": "Online payment is not available right now. Please try again later.",
     "bundleOrder": "A price for more categories can’t be lower than one for fewer categories.",
     "eventNotFound": "Category not found in this tournament.",
-    "playerNotFound": "Player not found (member number or email address)."
+    "playerNotFound": "Player not found (member number or email address).",
+    "settingsLocked": "These settings are locked. Unlock them with your password first.",
+    "encryptionUnavailable": "Keys can’t be stored safely: the server is missing a secret key (AUTH_SECRET).",
+    "stripeKeyFormat": "This doesn’t look like a valid Stripe key.",
+    "stripeKeyRejected": "Stripe does not accept this secret key.",
+    "stripeModeMismatch": "Test and live keys can’t be used together."
   },
   "Auth": {
     "login": {
@@ -610,7 +615,8 @@
       "cancelled": "The entry has been cancelled.",
       "markedPaid": "Marked as paid.",
       "refundApproved": "Refund made.",
-      "refundRejected": "Refund request declined."
+      "refundRejected": "Refund request declined.",
+      "locked": "Locked."
     },
     "grantShort": "Grant",
     "revokeShort": "Remove",
@@ -677,7 +683,47 @@
       "payer": "Paid by",
       "items": "Categories",
       "amount": "Amount",
-      "refundedShort": "{amount} back"
+      "refundedShort": "{amount} back",
+      "settings": "Stripe settings"
+    },
+    "paymentSettings": {
+      "title": "Stripe settings",
+      "intro": "The keys for online payment. Secret keys are stored encrypted and never shown again.",
+      "statusActive": "Online payment is on ({mode}).",
+      "statusOff": "Online payment is off: no Stripe keys have been set up yet.",
+      "fromEnvironment": "The keys currently come from the server settings (environment variables). Keys saved here take precedence.",
+      "webhookMissing": "The webhook secret is missing: payments are then only confirmed when the player returns to the site.",
+      "unreadable": "The stored keys can’t be read (server secret changed). Please enter them again.",
+      "lastUpdated": "Last changed by {name} on {date}.",
+      "webhookUrl": "Webhook address for Stripe: {url} (events payment_intent.* and refund.*).",
+      "noEncryptionKey": "The server is missing a secret key (AUTH_SECRET or SETTINGS_ENCRYPTION_KEY), so keys can’t be stored safely.",
+      "locked": "Locked. Enter your password to change the settings for 10 minutes.",
+      "password": "Your password",
+      "passwordHint": "To confirm it’s you. Every attempt is logged.",
+      "unlock": "Unlock",
+      "unlockedUntil": "Unlocked until {time}",
+      "lock": "Lock now",
+      "publishableKey": "Publishable key (pk_…)",
+      "publishableHint": "Stripe → Developers → API keys.",
+      "currentValue": "Now: {value}. Leave empty to keep.",
+      "secretKey": "Secret key (sk_… or rk_…)",
+      "secretHint": "Checked with Stripe and stored encrypted.",
+      "storedSecret": "Stored: ends in …{last4}. Leave empty to keep.",
+      "webhookSecret": "Webhook secret (whsec_…)",
+      "webhookHint": "Stripe → Developers → Webhooks → your endpoint → Signing secret.",
+      "storedWebhook": "Stored. Leave empty to keep.",
+      "save": "Save",
+      "remove": "Remove keys",
+      "removeHint": "Online payment turns off; players then pay the organisers.",
+      "removeConfirm": "Yes, remove",
+      "log": "Changes",
+      "logEmpty": "No changes yet.",
+      "action": {
+        "unlock": "Unlocked",
+        "unlockFailed": "Failed unlock attempt",
+        "update": "Keys changed",
+        "clear": "Keys removed"
+      }
     }
   },
   "Legal": {

@@ -11,7 +11,7 @@ export const HOLD_MINUTES = 30;
 /** Hours a pair promoted from the waiting list has to pay. */
 export const PROMOTION_HOURS = 48;
 
-export const paymentsEnabled = () => getGateway() !== null;
+export const paymentsEnabled = async () => (await getGateway()) !== null;
 
 type Db = Prisma.TransactionClient | typeof prisma;
 type FeeEvent = { discipline: Discipline; feeCents: number };

@@ -160,7 +160,12 @@
     "paymentsUnavailable": "Online betalen is op dit moment niet beschikbaar. Probeer het later opnieuw.",
     "bundleOrder": "Een prijs voor meer onderdelen kan niet lager zijn dan die voor minder onderdelen.",
     "eventNotFound": "Onderdeel niet gevonden in dit toernooi.",
-    "playerNotFound": "Speler niet gevonden (lidnummer of e-mailadres)."
+    "playerNotFound": "Speler niet gevonden (lidnummer of e-mailadres).",
+    "settingsLocked": "Deze instellingen zijn vergrendeld. Ontgrendel ze eerst met je wachtwoord.",
+    "encryptionUnavailable": "Sleutels kunnen niet veilig worden opgeslagen: de server mist een geheime sleutel (AUTH_SECRET).",
+    "stripeKeyFormat": "Dit lijkt geen geldige Stripe-sleutel.",
+    "stripeKeyRejected": "Stripe accepteert deze geheime sleutel niet.",
+    "stripeModeMismatch": "Test- en live-sleutels kunnen niet samen worden gebruikt."
   },
   "Auth": {
     "login": {
@@ -610,7 +615,8 @@
       "cancelled": "De inschrijving is geannuleerd.",
       "markedPaid": "Gemarkeerd als betaald.",
       "refundApproved": "Terugbetaling uitgevoerd.",
-      "refundRejected": "Terugbetaalverzoek afgewezen."
+      "refundRejected": "Terugbetaalverzoek afgewezen.",
+      "locked": "Vergrendeld."
     },
     "grantShort": "Toekennen",
     "revokeShort": "Intrekken",
@@ -677,7 +683,47 @@
       "payer": "Betaald door",
       "items": "Onderdelen",
       "amount": "Bedrag",
-      "refundedShort": "{amount} terug"
+      "refundedShort": "{amount} terug",
+      "settings": "Stripe-instellingen"
+    },
+    "paymentSettings": {
+      "title": "Stripe-instellingen",
+      "intro": "De sleutels voor online betalen. Geheime sleutels worden versleuteld opgeslagen en nooit meer getoond.",
+      "statusActive": "Online betalen staat aan ({mode}).",
+      "statusOff": "Online betalen staat uit: er zijn nog geen Stripe-sleutels ingesteld.",
+      "fromEnvironment": "De sleutels komen nu uit de serverinstellingen (omgevingsvariabelen). Sleutels die je hier opslaat gaan voor.",
+      "webhookMissing": "Het webhook-geheim ontbreekt: betalingen worden dan alleen bevestigd als de speler terugkeert naar de site.",
+      "unreadable": "De opgeslagen sleutels kunnen niet worden gelezen (geheime serversleutel gewijzigd). Voer ze opnieuw in.",
+      "lastUpdated": "Laatst gewijzigd door {name} op {date}.",
+      "webhookUrl": "Webhook-adres voor Stripe: {url} (gebeurtenissen payment_intent.* en refund.*).",
+      "noEncryptionKey": "De server mist een geheime sleutel (AUTH_SECRET of SETTINGS_ENCRYPTION_KEY), dus sleutels kunnen niet veilig worden opgeslagen.",
+      "locked": "Vergrendeld. Voer je wachtwoord in om de instellingen 10 minuten te kunnen wijzigen.",
+      "password": "Je wachtwoord",
+      "passwordHint": "Ter bevestiging dat jij het bent. Elke poging wordt vastgelegd.",
+      "unlock": "Ontgrendelen",
+      "unlockedUntil": "Ontgrendeld tot {time}",
+      "lock": "Nu vergrendelen",
+      "publishableKey": "Publieke sleutel (pk_…)",
+      "publishableHint": "Stripe → Developers → API keys.",
+      "currentValue": "Nu: {value}. Leeg laten = niet wijzigen.",
+      "secretKey": "Geheime sleutel (sk_… of rk_…)",
+      "secretHint": "Wordt gecontroleerd bij Stripe en versleuteld opgeslagen.",
+      "storedSecret": "Opgeslagen: eindigt op …{last4}. Leeg laten = niet wijzigen.",
+      "webhookSecret": "Webhook-geheim (whsec_…)",
+      "webhookHint": "Stripe → Developers → Webhooks → je endpoint → Signing secret.",
+      "storedWebhook": "Opgeslagen. Leeg laten = niet wijzigen.",
+      "save": "Opslaan",
+      "remove": "Sleutels verwijderen",
+      "removeHint": "Online betalen gaat uit; spelers betalen dan aan de organisatie.",
+      "removeConfirm": "Ja, verwijderen",
+      "log": "Wijzigingen",
+      "logEmpty": "Nog geen wijzigingen.",
+      "action": {
+        "unlock": "Ontgrendeld",
+        "unlockFailed": "Mislukte ontgrendelpoging",
+        "update": "Sleutels gewijzigd",
+        "clear": "Sleutels verwijderd"
+      }
     }
   },
   "Legal": {

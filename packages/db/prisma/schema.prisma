@@ -333,18 +333,20 @@ model Account {
 /// Web: the Auth.js JWT carries this id and is rejected once revokedAt is set.
 /// Mobile: refresh tokens rotate within this session (see RefreshToken).
 model UserSession {
-  id         String      @id @default(uuid()) @db.Uuid
-  userId     String      @db.Uuid
-  kind       SessionKind
+  id            String      @id @default(uuid()) @db.Uuid
+  userId        String      @db.Uuid
+  kind          SessionKind
   /// WEB only: SHA-256 of the opaque session cookie value. MOBILE sessions use RefreshToken.
-  tokenHash  String?     @unique
-  deviceName String?
-  userAgent  String?
-  ipAddress  String?
-  lastSeenAt DateTime    @default(now())
-  expiresAt  DateTime
-  revokedAt  DateTime?
-  createdAt  DateTime    @default(now())
+  tokenHash     String?     @unique
+  deviceName    String?
+  userAgent     String?
+  ipAddress     String?
+  lastSeenAt    DateTime    @default(now())
+  /// Unlocked for sensitive settings after re-entering the password (D54), until this moment.
+  elevatedUntil DateTime?
+  expiresAt     DateTime
+  revokedAt     DateTime?
+  createdAt     DateTime    @default(now())
 
   user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   refreshTokens RefreshToken[]
@@ -729,31 +731,31 @@ model TournamentDocument {
 /// An event within a tournament, e.g. "HE U17 B". Gender eligibility follows from the discipline
 /// (HE/HD male, DE/DD female, GD one of each).
 model TournamentEvent {
-  id               String     @id @default(uuid()) @db.Uuid
-  tournamentId     String     @db.Uuid
-  discipline       Discipline
-  ageCategoryId    String?    @db.Uuid
-  levelClassId     String?    @db.Uuid
-  name             Json? // optional override; otherwise generated from discipline/age/level
-  feeCents         Int // per player
-  maxEntries       Int? // entries = singles players or doubles pairs
-  drawType         DrawType   @default(KNOCKOUT)
-  groupSize        Int? // for GROUPS_KNOCKOUT
-  advancePerGroup  Int?
-  matchesPerEntry  Int? // HYBRID_ROUND_ROBIN_KNOCKOUT: 3, 5, 7 or 9
-  knockoutSize     Int? // HYBRID_ROUND_ROBIN_KNOCKOUT: 4, 8, 16 or 32
+  id              String     @id @default(uuid()) @db.Uuid
+  tournamentId    String     @db.Uuid
+  discipline      Discipline
+  ageCategoryId   String?    @db.Uuid
+  levelClassId    String?    @db.Uuid
+  name            Json? // optional override; otherwise generated from discipline/age/level
+  feeCents        Int // per player
+  maxEntries      Int? // entries = singles players or doubles pairs
+  drawType        DrawType   @default(KNOCKOUT)
+  groupSize       Int? // for GROUPS_KNOCKOUT
+  advancePerGroup Int?
+  matchesPerEntry Int? // HYBRID_ROUND_ROBIN_KNOCKOUT: 3, 5, 7 or 9
+  knockoutSize    Int? // HYBRID_ROUND_ROBIN_KNOCKOUT: 4, 8, 16 or 32
   // Eligibility (ranks refer to LevelClass.rank; null = no limit)
-  minLevelRank     Int?
-  maxLevelRank     Int?
+  minLevelRank    Int?
+  maxLevelRank    Int?
   // Scoring (BWF default: best of 3 games to 21, rally point, cap 30)
-  bestOf           Int        @default(3)
-  pointsToWin      Int        @default(21)
-  pointsCap        Int        @default(30)
-  sortOrder        Int        @default(0)
-  isOpen           Boolean    @default(true)
-  deletedAt        DateTime?
-  createdAt        DateTime   @default(now())
-  updatedAt        DateTime   @updatedAt
+  bestOf          Int        @default(3)
+  pointsToWin     Int        @default(21)
+  pointsCap       Int        @default(30)
+  sortOrder       Int        @default(0)
+  isOpen          Boolean    @default(true)
+  deletedAt       DateTime?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
 
   tournament      Tournament       @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
   ageCategory     AgeCategory?     @relation(fields: [ageCategoryId], references: [id], onDelete: SetNull)

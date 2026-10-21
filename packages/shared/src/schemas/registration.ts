@@ -46,3 +46,17 @@ export const refundDecisionSchema = z.object({
   refundId: z.string().uuid('invalid'),
   decision: z.enum(['approve', 'reject']),
 });
+
+/** Admin: Stripe keys entered in the portal (D54). Empty fields keep the stored value. */
+const optionalKey = (pattern: RegExp) =>
+  z.preprocess(
+    emptyToUndefined,
+    z.string().trim().max(255, 'tooLong').regex(pattern, 'stripeKeyFormat').optional(),
+  );
+export const paymentSettingsSchema = z.object({
+  secretKey: optionalKey(/^(sk|rk)_(test|live)_[A-Za-z0-9]{10,}$/),
+  publishableKey: optionalKey(/^pk_(test|live)_[A-Za-z0-9]{10,}$/),
+  webhookSecret: optionalKey(/^whsec_[A-Za-z0-9+/=]{10,}$/),
+});
+
+export const unlockSchema = z.object({ password: z.string().min(1, 'required').max(200) });

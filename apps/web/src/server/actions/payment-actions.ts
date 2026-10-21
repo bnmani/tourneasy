@@ -6,7 +6,15 @@ import { redirect } from 'next/navigation';
 import { currentRequestMeta, getActor } from '../auth/web';
 import { AppError, isAppError, type ErrorCode } from '../lib/errors';
 import { createCheckout, markShareAsPaid } from '../services/payment-service';
+import {
+  clearPaymentSettings,
+  lockSettings,
+  savePaymentSettings,
+  unlockSettings,
+} from '../services/payment-settings-service';
 import { approveRefund, rejectRefund } from '../services/refund-service';
+import type { FormState } from '@/components/forms/form-state';
+import { toFormState } from './form-utils';
 
 async function actorOrThrow() {
   const actor = await getActor();
@@ -69,5 +77,58 @@ export async function refundDecisionAction(locale: AppLocale, refundId: string, 
       const meta = await currentRequestMeta();
       return approve ? approveRefund(actor, refundId, meta) : rejectRefund(actor, refundId, meta);
     },
+  );
+}
+
+const SETTINGS = (locale: AppLocale) => `/${locale}/admin/payments/settings`;
+
+/** Re-enter the password to unlock the Stripe settings for 10 minutes (D54). */
+export async function unlockSettingsAction(
+  locale: AppLocale,
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  try {
+    await unlockSettings(
+      await actorOrThrow(),
+      { password: formData.get('password') },
+      await currentRequestMeta(),
+    );
+  } catch (error) {
+    return toFormState(error, formData);
+  }
+  redirect(SETTINGS(locale));
+}
+
+export async function savePaymentSettingsAction(
+  locale: AppLocale,
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  try {
+    await savePaymentSettings(
+      await actorOrThrow(),
+      {
+        secretKey: formData.get('secretKey'),
+        publishableKey: formData.get('publishableKey'),
+        webhookSecret: formData.get('webhookSecret'),
+      },
+      await currentRequestMeta(),
+    );
+  } catch (error) {
+    // Never echo the keys back into the form.
+    return toFormState(error, new FormData());
+  }
+  revalidatePath('/', 'layout');
+  redirect(`${SETTINGS(locale)}?status=saved`);
+}
+
+export async function lockSettingsAction(locale: AppLocale) {
+  await act(SETTINGS(locale), 'locked', async () => lockSettings(await actorOrThrow()));
+}
+
+export async function clearPaymentSettingsAction(locale: AppLocale) {
+  await act(SETTINGS(locale), 'deleted', async () =>
+    clearPaymentSettings(await actorOrThrow(), await currentRequestMeta()),
   );
 }
