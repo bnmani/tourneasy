@@ -69,3 +69,5 @@ export function json(data: unknown, init: ResponseInit = {}): Response {
     headers: { 'Cache-Control': 'private, no-store', ...(init.headers ?? {}) },
   });
 }
+
+export { publicJson, queryObject } from './http-cache';
