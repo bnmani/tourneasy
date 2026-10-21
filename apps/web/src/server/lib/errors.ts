@@ -30,7 +30,11 @@ export type ErrorCode =
   | 'noPlayerProfile'
   | 'paymentsUnavailable'
   | 'settingsLocked'
-  | 'encryptionUnavailable';
+  | 'encryptionUnavailable'
+  | 'drawPublished'
+  | 'drawStarted'
+  | 'tooFewEntries'
+  | 'entriesStillOpen';
 
 const HTTP_STATUS: Record<ErrorCode, number> = {
   validation: 422,
@@ -61,6 +65,10 @@ const HTTP_STATUS: Record<ErrorCode, number> = {
   paymentsUnavailable: 503,
   settingsLocked: 403,
   encryptionUnavailable: 503,
+  drawPublished: 409,
+  drawStarted: 409,
+  tooFewEntries: 409,
+  entriesStillOpen: 409,
 };
 
 export class AppError extends Error {

@@ -1096,32 +1096,39 @@ model DrawEntry {
 /// A match. Knockout winners advance into `nextMatchId` at `nextMatchSlot` (A or B).
 /// Round-robin standings are computed from completed matches (not stored).
 model Match {
-  id                String      @id @default(uuid()) @db.Uuid
-  drawId            String      @db.Uuid
-  round             Int // 1 = first round; for RR the round number
-  matchNumber       Int // order within the draw
-  entryAId          String?     @db.Uuid
-  entryBId          String?     @db.Uuid
-  winnerEntryId     String?     @db.Uuid
-  status            MatchStatus @default(SCHEDULED)
-  nextMatchId       String?     @db.Uuid
-  nextMatchSlot     String?     @db.Char(1) // "A" | "B"
-  umpireName        String?
-  startedAt         DateTime?
-  completedAt       DateTime?
-  resultEnteredById String?     @db.Uuid
-  version           Int         @default(0) // optimistic locking for concurrent score entry
-  createdAt         DateTime    @default(now())
-  updatedAt         DateTime    @updatedAt
+  id                 String      @id @default(uuid()) @db.Uuid
+  drawId             String      @db.Uuid
+  round              Int // 1 = first round; for RR the round number
+  matchNumber        Int // order within the draw
+  entryAId           String?     @db.Uuid
+  entryBId           String?     @db.Uuid
+  winnerEntryId      String?     @db.Uuid
+  status             MatchStatus @default(SCHEDULED)
+  nextMatchId        String?     @db.Uuid
+  nextMatchSlot      String?     @db.Char(1) // "A" | "B"
+  /// Double knockout (D55): W = winners bracket, L = losers bracket, F = final.
+  bracket            String      @default("W") @db.Char(1)
+  /// Double knockout: where the loser goes (losers bracket).
+  loserNextMatchId   String?     @db.Uuid
+  loserNextMatchSlot String?     @db.Char(1)
+  umpireName         String?
+  startedAt          DateTime?
+  completedAt        DateTime?
+  resultEnteredById  String?     @db.Uuid
+  version            Int         @default(0) // optimistic locking for concurrent score entry
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
 
-  draw      Draw       @relation(fields: [drawId], references: [id], onDelete: Cascade)
-  entryA    DrawEntry? @relation("EntryA", fields: [entryAId], references: [id], onDelete: SetNull)
-  entryB    DrawEntry? @relation("EntryB", fields: [entryBId], references: [id], onDelete: SetNull)
-  winner    DrawEntry? @relation("Winner", fields: [winnerEntryId], references: [id], onDelete: SetNull)
-  nextMatch Match?     @relation("Advance", fields: [nextMatchId], references: [id], onDelete: SetNull)
-  feeders   Match[]    @relation("Advance")
-  sets      MatchSet[]
-  slot      CourtSlot?
+  draw         Draw       @relation(fields: [drawId], references: [id], onDelete: Cascade)
+  entryA       DrawEntry? @relation("EntryA", fields: [entryAId], references: [id], onDelete: SetNull)
+  entryB       DrawEntry? @relation("EntryB", fields: [entryBId], references: [id], onDelete: SetNull)
+  winner       DrawEntry? @relation("Winner", fields: [winnerEntryId], references: [id], onDelete: SetNull)
+  nextMatch    Match?     @relation("Advance", fields: [nextMatchId], references: [id], onDelete: SetNull)
+  feeders      Match[]    @relation("Advance")
+  loserNext    Match?     @relation("LoserAdvance", fields: [loserNextMatchId], references: [id], onDelete: SetNull)
+  loserFeeders Match[]    @relation("LoserAdvance")
+  sets         MatchSet[]
+  slot         CourtSlot?
 
   @@unique([drawId, matchNumber])
   @@index([drawId, round])

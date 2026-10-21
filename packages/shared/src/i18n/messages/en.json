@@ -141,7 +141,7 @@
     "noOpenEvents": "First add at least one event that is open for entries.",
     "withdrawalAfterClose": "The withdrawal deadline can't be later than the entry closing date.",
     "oddMatches": "Choose 3, 5, 7 or 9 matches.",
-    "tooFewEntries": "Too few entries for this format: raise the maximum or lower the number of matches or knockout places.",
+    "tooFewEntries": "Too few confirmed entries for this format (at least {min}).",
     "chooseEvent": "Choose at least one event.",
     "partnerRequired": "Enter your partner or choose 'I'm still looking for a partner'.",
     "partnerNotFound": "No player found. Enter a member number (e.g. TE100023) or an email address.",
@@ -165,7 +165,11 @@
     "encryptionUnavailable": "Keys can’t be stored safely: the server is missing a secret key (AUTH_SECRET).",
     "stripeKeyFormat": "This doesn’t look like a valid Stripe key.",
     "stripeKeyRejected": "Stripe does not accept this secret key.",
-    "stripeModeMismatch": "Test and live keys can’t be used together."
+    "stripeModeMismatch": "Test and live keys can’t be used together.",
+    "drawPublished": "The draw is already published. Unpublish it first to change it.",
+    "drawStarted": "Matches have already been played in this draw.",
+    "entriesStillOpen": "Entries are still open. Publish the draw after the closing date.",
+    "seedOrder": "Seeds must be 1, 2, 3 … without gaps or duplicates."
   },
   "Auth": {
     "login": {
@@ -616,7 +620,10 @@
       "markedPaid": "Marked as paid.",
       "refundApproved": "Refund made.",
       "refundRejected": "Refund request declined.",
-      "locked": "Locked."
+      "locked": "Locked.",
+      "drawGenerated": "Draft draw made.",
+      "drawPublished": "Draw published.",
+      "drawUnpublished": "Draw unpublished."
     },
     "grantShort": "Grant",
     "revokeShort": "Remove",
@@ -724,6 +731,42 @@
         "update": "Keys changed",
         "clear": "Keys removed"
       }
+    },
+    "draws": {
+      "title": "Draws",
+      "manage": "Make draws",
+      "overviewTitle": "Draws: {tournament}",
+      "intro": "Per category: seeds, make a draft draw, check and publish.",
+      "entryCount": "{count, plural, one {# entry} other {# entries}}",
+      "statusNONE": "No draw yet",
+      "statusDRAFT": "Draft",
+      "statusPUBLISHED": "Published",
+      "open": "Open",
+      "entriesOpen": "Entries are still open: you can make a draft, publishing is possible after closing.",
+      "outOfDate": "Entries changed since this draw was made. Make it again.",
+      "incomplete": "{count, plural, one {# doubles entry without a partner is} other {# doubles entries without a partner are}} left out.",
+      "seedsTitle": "Seeds",
+      "seedsHelp": "The system suggests seeds by level (strongest first). You can change them.",
+      "seedCount": "Number of seeds",
+      "suggest": "Suggest by level",
+      "seed": "Seed",
+      "seedFor": "Seed for {name}",
+      "entry": "Entry",
+      "level": "Level",
+      "suggested": "Suggested",
+      "saveSeeds": "Save seeds",
+      "drawTitle": "Draw",
+      "generate": "Make draw",
+      "regenerate": "Draw again",
+      "publish": "Publish",
+      "unpublish": "Unpublish",
+      "delete": "Delete draft",
+      "noDraw": "No draw yet. Set the seeds and click Make draw.",
+      "swapA": "Swap",
+      "swapB": "with",
+      "swap": "Swap",
+      "bye": "Bye",
+      "groupShort": "Group {name}"
     }
   },
   "Legal": {
@@ -905,7 +948,8 @@
     "maxEntriesValue": "Max. {count} entries",
     "entryCtaLogin": "Log in to enter",
     "bundle": "Multi-category discount",
-    "bundleTier": "{count, plural, one {# category} other {# categories}} {price}"
+    "bundleTier": "{count, plural, one {# category} other {# categories}} {price}",
+    "draws": "Draws"
   },
   "Calendar": {
     "title": "Calendar",
@@ -1078,5 +1122,28 @@
     "BANCONTACT": "Bancontact",
     "MANUAL": "At the desk",
     "OTHER": "Online"
+  },
+  "Draws": {
+    "pageTitle": "Draws: {tournament}",
+    "pageDescription": "Draws and groups of {tournament}.",
+    "backToTournament": "Back to the tournament",
+    "none": "No draws have been published yet.",
+    "events": "Categories",
+    "bye": "Bye",
+    "final": "Final",
+    "semiFinal": "Semi-final",
+    "quarterFinal": "Quarter-final",
+    "round": "Round {round}",
+    "losersRound": "Losers round {round}",
+    "winnersBracket": "Main draw",
+    "losersBracket": "Losers bracket",
+    "grandFinal": "Final",
+    "group": "Group {name}",
+    "roundRobin": "All play all",
+    "swiss": "Swiss system",
+    "hybrid": "Preliminary round",
+    "knockoutFollowsGroups": "The best of each group go on to the knockout draw, which follows after the group matches.",
+    "knockoutFollowsRanking": "The best of the ranking then play a knockout draw.",
+    "swissNextRounds": "Next rounds are paired based on the results."
   }
 }

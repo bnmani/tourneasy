@@ -52,6 +52,14 @@ packages/db       Prisma schema, migrations, seed, client
 packages/shared   translations (nl/en), formatting, Zod schemas, business rules
 ```
 
+## Verifying Phase 6a (draws)
+
+1. Admin → tournament → _Schema's maken_: every category with its entries and draw status.
+2. Open a category: _Voorstel op niveau_ fills the seeds (strongest first); adjust them by hand and save.
+3. _Schema maken_ draws the category in its format (knockout with byes for the top seeds, double knockout,
+   poules, round robin, hybrid, Swiss). Swap two entries if needed, or draw again.
+4. After entries close, _Publiceren_: the tournament page shows _Schema's_ with the bracket or poules per category.
+
 ## Verifying Phase 5 (payments)
 
 Needs the Stripe **test** keys and webhook secret (docs/deploy-test.md); without them entries behave as in Phase 4.

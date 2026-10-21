@@ -37,6 +37,9 @@ const SUCCESS = new Set([
   'refundApproved',
   'refundRejected',
   'locked',
+  'drawGenerated',
+  'drawPublished',
+  'drawUnpublished',
 ]);
 
 /** Shows the outcome of the last action from ?status=… (success text or error key). */

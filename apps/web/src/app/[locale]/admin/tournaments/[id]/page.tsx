@@ -237,7 +237,11 @@ export default async function AdminTournamentPage({
             </Link>
           </Button>
         </div>
-        <p className="text-sm text-muted-foreground">{t('tournaments.scheduleSoon')}</p>
+        <div>
+          <Button asChild variant="outline" size="sm">
+            <Link href={`/admin/tournaments/${tournament.id}/draws`}>{t('draws.manage')}</Link>
+          </Button>
+        </div>
       </FormSection>
 
       <h2 className="pt-2 text-lg font-semibold">{t('edit')}</h2>

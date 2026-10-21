@@ -141,7 +141,7 @@
     "noOpenEvents": "Voeg eerst minstens één onderdeel toe dat open is voor inschrijving.",
     "withdrawalAfterClose": "Afmelden kan niet later zijn dan het sluiten van de inschrijving.",
     "oddMatches": "Kies 3, 5, 7 of 9 wedstrijden.",
-    "tooFewEntries": "Te weinig inschrijvingen voor dit speelsysteem: verhoog het maximum of verlaag het aantal wedstrijden of knock-outplaatsen.",
+    "tooFewEntries": "Te weinig bevestigde inschrijvingen voor dit speelsysteem (minimaal {min}).",
     "chooseEvent": "Kies minstens één onderdeel.",
     "partnerRequired": "Vul je partner in of kies 'Ik zoek nog een partner'.",
     "partnerNotFound": "Geen speler gevonden. Vul een lidnummer (bijv. TE100023) of e-mailadres in.",
@@ -165,7 +165,11 @@
     "encryptionUnavailable": "Sleutels kunnen niet veilig worden opgeslagen: de server mist een geheime sleutel (AUTH_SECRET).",
     "stripeKeyFormat": "Dit lijkt geen geldige Stripe-sleutel.",
     "stripeKeyRejected": "Stripe accepteert deze geheime sleutel niet.",
-    "stripeModeMismatch": "Test- en live-sleutels kunnen niet samen worden gebruikt."
+    "stripeModeMismatch": "Test- en live-sleutels kunnen niet samen worden gebruikt.",
+    "drawPublished": "Het schema is al gepubliceerd. Haal het eerst offline om iets te wijzigen.",
+    "drawStarted": "Er zijn al wedstrijden gespeeld in dit schema.",
+    "entriesStillOpen": "De inschrijving is nog open. Publiceer het schema na de sluitingsdatum.",
+    "seedOrder": "Plaatsingen moeten 1, 2, 3 … zijn, zonder gaten of dubbele nummers."
   },
   "Auth": {
     "login": {
@@ -616,7 +620,10 @@
       "markedPaid": "Gemarkeerd als betaald.",
       "refundApproved": "Terugbetaling uitgevoerd.",
       "refundRejected": "Terugbetaalverzoek afgewezen.",
-      "locked": "Vergrendeld."
+      "locked": "Vergrendeld.",
+      "drawGenerated": "Concept-schema gemaakt.",
+      "drawPublished": "Schema gepubliceerd.",
+      "drawUnpublished": "Schema offline gehaald."
     },
     "grantShort": "Toekennen",
     "revokeShort": "Intrekken",
@@ -724,6 +731,42 @@
         "update": "Sleutels gewijzigd",
         "clear": "Sleutels verwijderd"
       }
+    },
+    "draws": {
+      "title": "Schema's",
+      "manage": "Schema's maken",
+      "overviewTitle": "Schema's: {tournament}",
+      "intro": "Per onderdeel: plaatsingen, concept-schema maken, controleren en publiceren.",
+      "entryCount": "{count, plural, one {# inschrijving} other {# inschrijvingen}}",
+      "statusNONE": "Nog geen schema",
+      "statusDRAFT": "Concept",
+      "statusPUBLISHED": "Gepubliceerd",
+      "open": "Openen",
+      "entriesOpen": "De inschrijving is nog open: je kunt al een concept maken, publiceren kan na sluiting.",
+      "outOfDate": "De inschrijvingen zijn veranderd sinds dit schema is gemaakt. Maak het opnieuw.",
+      "incomplete": "{count, plural, one {# dubbel zonder partner doet} other {# dubbels zonder partner doen}} niet mee.",
+      "seedsTitle": "Plaatsingen",
+      "seedsHelp": "Het systeem stelt de plaatsingen voor op niveau (sterkste eerst). Je kunt ze aanpassen.",
+      "seedCount": "Aantal geplaatst",
+      "suggest": "Voorstel op niveau",
+      "seed": "Plaats",
+      "seedFor": "Plaatsing voor {name}",
+      "entry": "Inschrijving",
+      "level": "Niveau",
+      "suggested": "Voorstel",
+      "saveSeeds": "Plaatsingen opslaan",
+      "drawTitle": "Schema",
+      "generate": "Schema maken",
+      "regenerate": "Opnieuw loten",
+      "publish": "Publiceren",
+      "unpublish": "Offline halen",
+      "delete": "Concept verwijderen",
+      "noDraw": "Nog geen schema. Stel de plaatsingen in en klik op Schema maken.",
+      "swapA": "Wissel",
+      "swapB": "met",
+      "swap": "Wisselen",
+      "bye": "Vrij",
+      "groupShort": "Poule {name}"
     }
   },
   "Legal": {
@@ -905,7 +948,8 @@
     "maxEntriesValue": "Max. {count} inschrijvingen",
     "entryCtaLogin": "Inloggen om in te schrijven",
     "bundle": "Korting meerdere onderdelen",
-    "bundleTier": "{count, plural, one {# onderdeel} other {# onderdelen}} {price}"
+    "bundleTier": "{count, plural, one {# onderdeel} other {# onderdelen}} {price}",
+    "draws": "Schema's"
   },
   "Calendar": {
     "title": "Kalender",
@@ -1078,5 +1122,28 @@
     "BANCONTACT": "Bancontact",
     "MANUAL": "Aan de balie",
     "OTHER": "Online"
+  },
+  "Draws": {
+    "pageTitle": "Schema's: {tournament}",
+    "pageDescription": "Speelschema’s en poules van {tournament}.",
+    "backToTournament": "Terug naar het toernooi",
+    "none": "Er zijn nog geen schema's gepubliceerd.",
+    "events": "Onderdelen",
+    "bye": "Vrij",
+    "final": "Finale",
+    "semiFinal": "Halve finale",
+    "quarterFinal": "Kwartfinale",
+    "round": "Ronde {round}",
+    "losersRound": "Herkansing ronde {round}",
+    "winnersBracket": "Hoofdschema",
+    "losersBracket": "Herkansingsschema",
+    "grandFinal": "Finale",
+    "group": "Poule {name}",
+    "roundRobin": "Iedereen tegen iedereen",
+    "swiss": "Zwitsers systeem",
+    "hybrid": "Voorronde",
+    "knockoutFollowsGroups": "De beste spelers per poule gaan door naar het knock-outschema; dat volgt na de poulewedstrijden.",
+    "knockoutFollowsRanking": "De besten van de ranglijst spelen daarna een knock-outschema.",
+    "swissNextRounds": "Volgende rondes worden ingedeeld op basis van de uitslagen."
   }
 }

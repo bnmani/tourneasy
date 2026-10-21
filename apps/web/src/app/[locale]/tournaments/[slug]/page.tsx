@@ -7,7 +7,7 @@ import {
   type PublicTournament,
 } from '@tourneasy/shared';
 import { pickLocalized, type AppLocale } from '@tourneasy/shared/i18n';
-import { CalendarPlus, Mail, MapPin, Navigation, Phone } from 'lucide-react';
+import { CalendarPlus, GitBranch, Mail, MapPin, Navigation, Phone } from 'lucide-react';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
@@ -20,6 +20,7 @@ import { pageLocale } from '@/lib/page';
 import { pageMetadata } from '@/lib/seo';
 import { getActor } from '@/server/auth/web';
 import { isAppError } from '@/server/lib/errors';
+import { hasPublishedDraws } from '@/server/services/draw-service';
 import { getPublicTournament } from '@/server/services/public-service';
 
 type Props = { params: Promise<{ locale: string; slug: string }> };
@@ -172,6 +173,14 @@ export default async function TournamentPage({ params }: Props) {
               {tt('addToCalendar')}
             </a>
           </Button>
+          {(await hasPublishedDraws(t.slug)) && (
+            <Button asChild className="bg-brand text-brand-foreground hover:bg-brand/90">
+              <Link href={`/tournaments/${t.slug}/draws`}>
+                <GitBranch aria-hidden="true" />
+                {tt('draws')}
+              </Link>
+            </Button>
+          )}
           {t.venue && (
             <Button
               asChild
