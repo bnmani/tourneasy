@@ -156,7 +156,9 @@
     "emailNotVerified": "Bevestig eerst je e-mailadres.",
     "inviteInvalid": "Deze uitnodiging is verlopen of al gebruikt.",
     "noPlayerProfile": "Je account heeft nog geen spelersprofiel.",
-    "lettersOnly": "Alleen letters, spaties, koppeltekens en apostrofs."
+    "lettersOnly": "Alleen letters, spaties, koppeltekens en apostrofs.",
+    "paymentsUnavailable": "Online betalen is op dit moment niet beschikbaar. Probeer het later opnieuw.",
+    "bundleOrder": "Een prijs voor meer onderdelen kan niet lager zijn dan die voor minder onderdelen."
   },
   "Auth": {
     "login": {
@@ -460,7 +462,20 @@
       "scheduleSoon": "Schema en uitslagen volgen in fase 6.",
       "newVenue": "+ Nieuwe locatie toevoegen",
       "newVenueTitle": "Nieuwe locatie",
-      "newVenueHint": "De locatie wordt opgeslagen en is daarna ook te kiezen bij andere toernooien."
+      "newVenueHint": "De locatie wordt opgeslagen en is daarna ook te kiezen bij andere toernooien.",
+      "sectionPayment": "Betaling en korting",
+      "bundleTitle": "Korting bij meerdere onderdelen",
+      "bundleHint": "Optioneel: de totaalprijs die een speler betaalt bij 1, 2 of meer onderdelen (bijv. € 15 / € 25 / € 32). Leeg laten = elk onderdeel kost zijn eigen inschrijfgeld.",
+      "bundleTier": "{count, plural, one {# onderdeel} other {# onderdelen}} (totaal)",
+      "partnerPaymentMode": "Betaling bij dubbelspel",
+      "partnerPaymentEACH_PAYS_OWN_SHARE": "Ieder betaalt zijn eigen deel",
+      "partnerPaymentINITIATOR_PAYS_ALL": "Wie inschrijft betaalt voor beiden",
+      "refundPolicy": "Terugbetaling bij afmelden",
+      "refundAUTOMATIC_BEFORE_DEADLINE": "Automatisch, vóór de afmelddeadline",
+      "refundADMIN_APPROVAL": "Na goedkeuring door de organisatie",
+      "refundNO_REFUNDS": "Geen terugbetaling",
+      "refundPercent": "Percentage terug",
+      "refundPercentHint": "Bijv. 90 om 10% administratiekosten te houden."
     },
     "events": {
       "new": "Nieuw onderdeel",
@@ -590,7 +605,10 @@
       "merged": "Spelers samengevoegd.",
       "organiserAdded": "Organisator toegevoegd. Hij of zij heeft een e-mail gekregen.",
       "organiserInvited": "Uitnodiging klaargezet: de rechten gaan in zodra er met dit e-mailadres een account wordt aangemaakt of ingelogd.",
-      "cancelled": "De inschrijving is geannuleerd."
+      "cancelled": "De inschrijving is geannuleerd.",
+      "markedPaid": "Gemarkeerd als betaald.",
+      "refundApproved": "Terugbetaling uitgevoerd.",
+      "refundRejected": "Terugbetaalverzoek afgewezen."
     },
     "grantShort": "Toekennen",
     "revokeShort": "Intrekken",
@@ -629,7 +647,31 @@
       "cancelReason": "Reden (de spelers krijgen geen automatische e-mail)",
       "cancelConfirm": "Inschrijving annuleren",
       "viewEntries": "Deelnemers bekijken",
-      "summary": "{count, plural, =0 {Nog geen inschrijvingen} one {# inschrijving} other {# inschrijvingen}}"
+      "summary": "{count, plural, =0 {Nog geen inschrijvingen} one {# inschrijving} other {# inschrijvingen}}",
+      "markPaid": "Betaald aan de balie"
+    },
+    "navPayments": "Betalingen",
+    "payments": {
+      "title": "Betalingen",
+      "intro": "Ontvangen inschrijfgeld, terugbetalingen en wat nog openstaat.",
+      "export": "Exporteren (Excel)",
+      "allTournaments": "Alle toernooien",
+      "allStatuses": "Alle statussen",
+      "status": "Status",
+      "received": "Ontvangen",
+      "refunded": "Terugbetaald",
+      "outstanding": "Openstaand ({count, plural, one {# deel} other {# delen}})",
+      "refundRequests": "Terugbetaalverzoeken",
+      "manualRefund": "betaald aan de balie: zelf terugstorten",
+      "approve": "Terugbetalen",
+      "reject": "Afwijzen",
+      "orders": "Bestellingen ({count})",
+      "none": "Nog geen betalingen.",
+      "order": "Bestelling",
+      "payer": "Betaald door",
+      "items": "Onderdelen",
+      "amount": "Bedrag",
+      "refundedShort": "{amount} terug"
     }
   },
   "Legal": {
@@ -672,7 +714,21 @@
     "promotedBody": "Er is een plek vrijgekomen. Je inschrijving voor {event} ({tournament}) is nu bevestigd.",
     "withdrawnSubject": "Afgemeld: {tournament}",
     "withdrawnBody": "Je inschrijving voor {event} ({tournament}) is afgemeld.",
-    "withdrawnByPartnerBody": "Je partner heeft jullie inschrijving voor {event} ({tournament}) afgemeld."
+    "withdrawnByPartnerBody": "Je partner heeft jullie inschrijving voor {event} ({tournament}) afgemeld.",
+    "entryPayNow": "Rond je betaling binnen {minutes} minuten af om je plek vast te houden.",
+    "receiptSubject": "Betaalbevestiging {orderNumber} – {tournament}",
+    "receiptIntro": "Bedankt! We hebben je betaling voor {tournament} ontvangen.",
+    "receiptTotal": "Totaal betaald: {total} ({method})",
+    "receiptOrder": "Bestelnummer: {orderNumber}",
+    "refundSubject": "Terugbetaling {orderNumber} – {tournament}",
+    "refundRequested": "Je terugbetaling van {amount} voor {tournament} is aangevraagd. De organisatie beoordeelt het verzoek.",
+    "refundProcessed": "We hebben {amount} voor {tournament} teruggestort. Het kan een paar werkdagen duren voordat het op je rekening staat.",
+    "refundRejected": "Je verzoek om terugbetaling van {amount} voor {tournament} is afgewezen. Neem bij vragen contact op met de organisatie.",
+    "methodIDEAL": "iDEAL",
+    "methodCARD": "creditcard",
+    "methodBANCONTACT": "Bancontact",
+    "methodMANUAL": "betaald bij de organisatie",
+    "methodOTHER": "online"
   },
   "Provinces": {
     "DRENTHE": "Drenthe",
@@ -930,5 +986,39 @@
     "text": "Deze pagina kon niet worden geladen. Meestal komt dat doordat er net een nieuwe versie van de site online is gezet. Vernieuw de pagina en probeer het opnieuw.",
     "reload": "Pagina vernieuwen",
     "home": "Naar de startpagina"
+  },
+  "Payments": {
+    "due": "Nog te betalen: {amount}",
+    "holdUntil": "Je plek is vastgehouden tot {time}. Daarna gaat hij naar de volgende op de wachtlijst.",
+    "discountNote": "Inclusief korting voor meerdere onderdelen.",
+    "payButton": "Betalen {amount}",
+    "dialogTitle": "Inschrijfgeld betalen",
+    "close": "Sluiten",
+    "loading": "Betaalscherm laden…",
+    "orderLine": "Bestelling {orderNumber} · {amount}",
+    "payNow": "Nu betalen {amount}",
+    "processing": "Bezig…",
+    "failed": "De betaling kon niet worden gestart. Probeer het opnieuw.",
+    "secureNote": "Veilig betalen via Stripe. Tourneasy ziet je bank- of kaartgegevens niet.",
+    "resultTitle": "Betaling",
+    "resultPaid": "Betaling ontvangen. Je inschrijving is bevestigd; je krijgt een bevestiging per e-mail.",
+    "resultProcessing": "Je betaling wordt nog verwerkt. Je krijgt een e-mail zodra hij binnen is.",
+    "resultFailed": "De betaling is niet gelukt of afgebroken. Je kunt het opnieuw proberen vanuit je inschrijvingen.",
+    "backToEntries": "Naar mijn inschrijvingen"
+  },
+  "OrderStatuses": {
+    "PENDING": "Open",
+    "PAID": "Betaald",
+    "EXPIRED": "Verlopen",
+    "CANCELLED": "Geannuleerd",
+    "PARTIALLY_REFUNDED": "Deels terugbetaald",
+    "REFUNDED": "Terugbetaald"
+  },
+  "PaymentMethods": {
+    "IDEAL": "iDEAL",
+    "CARD": "Creditcard",
+    "BANCONTACT": "Bancontact",
+    "MANUAL": "Aan de balie",
+    "OTHER": "Online"
   }
 }

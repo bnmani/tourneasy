@@ -31,3 +31,18 @@ export const withdrawSchema = z.object({
 
 /** Version of the tournament terms players accept when entering (stored per entry). */
 export const ENTRY_TERMS_VERSION = '2026-10';
+
+// ── Payments (Phase 5, D51) ─────────────────────────────────────────────────────────
+
+/** Paying one or more of my unpaid entry shares in one tournament. */
+export const checkoutSchema = z.object({
+  participantIds: z.array(z.string().uuid('invalid')).min(1, 'chooseEvent').max(20),
+});
+
+/** Organiser records a share as paid at the desk (cash / bank transfer). */
+export const manualPaymentSchema = z.object({ participantId: z.string().uuid('invalid') });
+
+export const refundDecisionSchema = z.object({
+  refundId: z.string().uuid('invalid'),
+  decision: z.enum(['approve', 'reject']),
+});

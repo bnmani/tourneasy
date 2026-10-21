@@ -1,6 +1,7 @@
-import { formatDate, formatDayRange, formatTime } from '@tourneasy/shared';
+import { formatDate, formatDayRange, formatEuro, formatTime } from '@tourneasy/shared';
 import type { AppLocale } from '@tourneasy/shared/i18n';
 import { getTranslations } from 'next-intl/server';
+import { PayButton } from '@/components/payments/pay-button';
 import { Button } from '@/components/ui/button';
 import { Link } from '@/i18n/navigation';
 import { eventLabel } from '@/lib/labels';
@@ -70,10 +71,13 @@ export async function MyEntries({
   entries,
   locale,
   showActions,
+  payFor,
 }: {
   entries: Entry[];
   locale: AppLocale;
   showActions: boolean;
+  /** Tournament slug whose payment window opens straight away (after entering). */
+  payFor?: string;
 }) {
   const t = await getTranslations('Dashboard');
   const ts = await getTranslations('RegistrationStatuses');
@@ -101,6 +105,9 @@ export async function MyEntries({
                 {formatDayRange(day(tournament.startsOn), day(tournament.endsOn), locale)}
               </span>
             </header>
+            {showActions && (
+              <PaymentBar group={group} locale={locale} autoOpen={payFor === tournament.slug} />
+            )}
             <ul className="divide-y">
               {group.map((e) => (
                 <li key={e.id} className="space-y-3 p-4">
@@ -203,6 +210,50 @@ export async function MyEntries({
           </section>
         );
       })}
+    </div>
+  );
+}
+
+/** What I still owe in one tournament, with the hold deadline and the pay button. */
+async function PaymentBar({
+  group,
+  locale,
+  autoOpen,
+}: {
+  group: Entry[];
+  locale: AppLocale;
+  autoOpen: boolean;
+}) {
+  const t = await getTranslations('Payments');
+  const payable = group.filter(
+    (e) => e.canPay && e.paymentStatus === 'UNPAID' && e.amountDueCents !== null,
+  );
+  if (payable.length === 0) return null;
+  const total = payable.reduce((n, e) => n + (e.amountDueCents ?? 0), 0);
+  const holds = payable
+    .map((e) => e.holdExpiresAt)
+    .filter((d): d is Date => d !== null)
+    .sort((a, b) => a.getTime() - b.getTime());
+  const fullFees = payable.reduce((n, e) => n + e.event.feeCents, 0);
+  const amount = formatEuro(total, locale);
+  return (
+    <div className="flex flex-col gap-3 border-b bg-brand/10 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="text-sm">
+        <p className="font-semibold">{t('due', { amount })}</p>
+        {holds[0] && (
+          <p className="text-muted-foreground">
+            {t('holdUntil', {
+              time: `${formatDate(holds[0], locale)}, ${formatTime(holds[0], locale)}`,
+            })}
+          </p>
+        )}
+        {total < fullFees && <p className="text-muted-foreground">{t('discountNote')}</p>}
+      </div>
+      <PayButton
+        participantIds={payable.map((e) => e.participantId)}
+        amountLabel={amount}
+        autoOpen={autoOpen}
+      />
     </div>
   );
 }

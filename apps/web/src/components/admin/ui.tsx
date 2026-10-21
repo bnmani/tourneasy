@@ -33,6 +33,9 @@ const SUCCESS = new Set([
   'organiserAdded',
   'organiserInvited',
   'cancelled',
+  'markedPaid',
+  'refundApproved',
+  'refundRejected',
 ]);
 
 /** Shows the outcome of the last action from ?status=… (success text or error key). */

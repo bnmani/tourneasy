@@ -156,7 +156,9 @@
     "emailNotVerified": "Please confirm your email address first.",
     "inviteInvalid": "This invitation has expired or has already been used.",
     "noPlayerProfile": "Your account doesn't have a player profile yet.",
-    "lettersOnly": "Only letters, spaces, hyphens and apostrophes."
+    "lettersOnly": "Only letters, spaces, hyphens and apostrophes.",
+    "paymentsUnavailable": "Online payment is not available right now. Please try again later.",
+    "bundleOrder": "A price for more categories can’t be lower than one for fewer categories."
   },
   "Auth": {
     "login": {
@@ -460,7 +462,20 @@
       "scheduleSoon": "Schedule and results follow in Phase 6.",
       "newVenue": "+ Add new venue",
       "newVenueTitle": "New venue",
-      "newVenueHint": "The venue is saved and can then be chosen for other tournaments too."
+      "newVenueHint": "The venue is saved and can then be chosen for other tournaments too.",
+      "sectionPayment": "Payment and discount",
+      "bundleTitle": "Multi-category discount",
+      "bundleHint": "Optional: the total a player pays for entering 1, 2 or more categories (e.g. €15 / €25 / €32). Leave empty = each category costs its own fee.",
+      "bundleTier": "{count, plural, one {# category} other {# categories}} (total)",
+      "partnerPaymentMode": "Payment for doubles",
+      "partnerPaymentEACH_PAYS_OWN_SHARE": "Each player pays their own share",
+      "partnerPaymentINITIATOR_PAYS_ALL": "The entrant pays for both",
+      "refundPolicy": "Refund on withdrawal",
+      "refundAUTOMATIC_BEFORE_DEADLINE": "Automatic, before the withdrawal deadline",
+      "refundADMIN_APPROVAL": "After approval by the organisers",
+      "refundNO_REFUNDS": "No refunds",
+      "refundPercent": "Percentage refunded",
+      "refundPercentHint": "E.g. 90 to keep 10% for admin costs."
     },
     "events": {
       "new": "New event",
@@ -590,7 +605,10 @@
       "merged": "Players merged.",
       "organiserAdded": "Organiser added. They have received an email.",
       "organiserInvited": "Invitation ready: the rights apply as soon as an account is created or logged in with this email address.",
-      "cancelled": "The entry has been cancelled."
+      "cancelled": "The entry has been cancelled.",
+      "markedPaid": "Marked as paid.",
+      "refundApproved": "Refund made.",
+      "refundRejected": "Refund request declined."
     },
     "grantShort": "Grant",
     "revokeShort": "Remove",
@@ -629,7 +647,31 @@
       "cancelReason": "Reason (players don't get an automatic email)",
       "cancelConfirm": "Cancel entry",
       "viewEntries": "View participants",
-      "summary": "{count, plural, =0 {No entries yet} one {# entry} other {# entries}}"
+      "summary": "{count, plural, =0 {No entries yet} one {# entry} other {# entries}}",
+      "markPaid": "Paid at the desk"
+    },
+    "navPayments": "Payments",
+    "payments": {
+      "title": "Payments",
+      "intro": "Entry fees received, refunds and what is still outstanding.",
+      "export": "Export (Excel)",
+      "allTournaments": "All tournaments",
+      "allStatuses": "All statuses",
+      "status": "Status",
+      "received": "Received",
+      "refunded": "Refunded",
+      "outstanding": "Outstanding ({count, plural, one {# share} other {# shares}})",
+      "refundRequests": "Refund requests",
+      "manualRefund": "paid at the desk: pay back yourself",
+      "approve": "Refund",
+      "reject": "Decline",
+      "orders": "Orders ({count})",
+      "none": "No payments yet.",
+      "order": "Order",
+      "payer": "Paid by",
+      "items": "Categories",
+      "amount": "Amount",
+      "refundedShort": "{amount} back"
     }
   },
   "Legal": {
@@ -672,7 +714,21 @@
     "promotedBody": "A place has become available. Your entry for {event} ({tournament}) is now confirmed.",
     "withdrawnSubject": "Withdrawn: {tournament}",
     "withdrawnBody": "Your entry for {event} ({tournament}) has been withdrawn.",
-    "withdrawnByPartnerBody": "Your partner withdrew your entry for {event} ({tournament})."
+    "withdrawnByPartnerBody": "Your partner withdrew your entry for {event} ({tournament}).",
+    "entryPayNow": "Complete your payment within {minutes} minutes to keep your place.",
+    "receiptSubject": "Payment confirmation {orderNumber} – {tournament}",
+    "receiptIntro": "Thank you! We received your payment for {tournament}.",
+    "receiptTotal": "Total paid: {total} ({method})",
+    "receiptOrder": "Order number: {orderNumber}",
+    "refundSubject": "Refund {orderNumber} – {tournament}",
+    "refundRequested": "Your refund of {amount} for {tournament} has been requested. The organisers will review it.",
+    "refundProcessed": "We have refunded {amount} for {tournament}. It may take a few working days to reach your account.",
+    "refundRejected": "Your refund request of {amount} for {tournament} was declined. Please contact the organisers if you have questions.",
+    "methodIDEAL": "iDEAL",
+    "methodCARD": "card",
+    "methodBANCONTACT": "Bancontact",
+    "methodMANUAL": "paid to the organisers",
+    "methodOTHER": "online"
   },
   "Provinces": {
     "DRENTHE": "Drenthe",
@@ -930,5 +986,39 @@
     "text": "This page could not be loaded. Usually this is because a new version of the site has just been released. Reload the page and try again.",
     "reload": "Reload page",
     "home": "Go to the home page"
+  },
+  "Payments": {
+    "due": "Still to pay: {amount}",
+    "holdUntil": "Your place is held until {time}. After that it goes to the next on the waiting list.",
+    "discountNote": "Includes the multi-category discount.",
+    "payButton": "Pay {amount}",
+    "dialogTitle": "Pay the entry fee",
+    "close": "Close",
+    "loading": "Loading the payment form…",
+    "orderLine": "Order {orderNumber} · {amount}",
+    "payNow": "Pay {amount} now",
+    "processing": "Working…",
+    "failed": "The payment could not be started. Please try again.",
+    "secureNote": "Secure payment via Stripe. Tourneasy never sees your bank or card details.",
+    "resultTitle": "Payment",
+    "resultPaid": "Payment received. Your entry is confirmed; a confirmation is on its way by email.",
+    "resultProcessing": "Your payment is still being processed. You will get an email as soon as it is in.",
+    "resultFailed": "The payment did not go through or was cancelled. You can try again from your entries.",
+    "backToEntries": "Go to my entries"
+  },
+  "OrderStatuses": {
+    "PENDING": "Open",
+    "PAID": "Paid",
+    "EXPIRED": "Expired",
+    "CANCELLED": "Cancelled",
+    "PARTIALLY_REFUNDED": "Partly refunded",
+    "REFUNDED": "Refunded"
+  },
+  "PaymentMethods": {
+    "IDEAL": "iDEAL",
+    "CARD": "Card",
+    "BANCONTACT": "Bancontact",
+    "MANUAL": "At the desk",
+    "OTHER": "Online"
   }
 }

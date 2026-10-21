@@ -5,6 +5,7 @@
  */
 import { z } from 'zod';
 import { parseDateOnly } from '../rules/age';
+import { bundlePricesValid } from '../rules/bundle-pricing';
 import { parseEuroToCents } from '../rules/money';
 import { amsterdamLocalToUtc, TIME_OF_DAY_PATTERN } from '../rules/time';
 import { DISCIPLINES, GENDERS, optionalPersonNameSchema, personNameSchema } from './auth';
@@ -35,6 +36,14 @@ export const TOURNAMENT_STATUSES = [
 ] as const;
 export type TournamentStatusCode = (typeof TOURNAMENT_STATUSES)[number];
 export const TOURNAMENT_TYPES = ['SELF', 'THIRD_PARTY'] as const;
+export const PARTNER_PAYMENT_MODES = ['EACH_PAYS_OWN_SHARE', 'INITIATOR_PAYS_ALL'] as const;
+export const REFUND_POLICIES = [
+  'AUTOMATIC_BEFORE_DEADLINE',
+  'ADMIN_APPROVAL',
+  'NO_REFUNDS',
+] as const;
+/** Price-list rows on the tournament form: total for 1 … 5 categories (D52). */
+export const BUNDLE_TIERS = 5;
 export const DRAW_TYPES = [
   'KNOCKOUT',
   'DOUBLE_KNOCKOUT',
@@ -207,8 +216,42 @@ export const tournamentSchema = z
     contactPhone: optionalPhone,
     descriptionNl: optionalText(5000),
     descriptionEn: optionalText(5000),
+    partnerPaymentMode: z.enum(PARTNER_PAYMENT_MODES).default('EACH_PAYS_OWN_SHARE'),
+    refundPolicy: z.enum(REFUND_POLICIES).default('ADMIN_APPROVAL'),
+    refundPercent: z.coerce
+      .number({ invalid_type_error: 'invalid' })
+      .int('invalid')
+      .min(0, 'invalid')
+      .max(100, 'invalid')
+      .default(100),
+    /** Multi-category prices; empty rows are skipped, so ["15", "25", ""] = 1 and 2 categories. */
+    bundlePrices: z
+      .array(
+        z.preprocess(
+          emptyToUndefined,
+          z
+            .string()
+            .refine((v) => parseEuroToCents(v) !== null, 'feeInvalid')
+            .transform((v) => parseEuroToCents(v)!)
+            .optional(),
+        ),
+      )
+      .max(BUNDLE_TIERS)
+      .default([]),
   })
   .superRefine((v, ctx) => {
+    const firstGap = v.bundlePrices.findIndex((p) => p === undefined);
+    if (firstGap >= 0 && v.bundlePrices.slice(firstGap).some((p) => p !== undefined))
+      ctx.addIssue({ code: 'custom', path: ['bundlePrices', firstGap], message: 'required' });
+    else if (!bundlePricesValid(v.bundlePrices.filter((p): p is number => p !== undefined)))
+      ctx.addIssue({
+        code: 'custom',
+        path: [
+          'bundlePrices',
+          v.bundlePrices.findIndex((p, i) => i > 0 && p! < v.bundlePrices[i - 1]!),
+        ],
+        message: 'bundleOrder',
+      });
     const issue = (path: string, message: string) =>
       ctx.addIssue({ code: 'custom', path: [path], message });
     if (v.endsOn < v.startsOn) issue('endsOn', 'endBeforeStart');
@@ -222,7 +265,11 @@ export const tournamentSchema = z
     // Withdrawing is only possible while entries are open (draws are made after closing).
     if (v.withdrawalDeadline > v.registrationClosesAt)
       issue('withdrawalDeadline', 'withdrawalAfterClose');
-  });
+  })
+  .transform(({ bundlePrices, ...v }) => ({
+    ...v,
+    bundlePricesCents: bundlePrices.filter((p): p is number => p !== undefined),
+  }));
 export type TournamentInput = z.infer<typeof tournamentSchema>;
 
 export const tournamentStatusSchema = z.object({ status: z.enum(TOURNAMENT_STATUSES) });

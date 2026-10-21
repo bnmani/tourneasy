@@ -141,7 +141,17 @@ export async function saveTournamentAction(
   formData: FormData,
 ) {
   return submit(formData, async (actor, meta) => {
-    const input = withPrefixed(formToObject(formData), 'newVenue');
+    const fields = formToObject(formData);
+    // Price-list rows (bundlePrices.0 … .4) → one array, in order.
+    const bundlePrices = Object.keys(fields)
+      .filter((k) => k.startsWith('bundlePrices.'))
+      .sort((a, b) => Number(a.split('.')[1]) - Number(b.split('.')[1]))
+      .map((k) => {
+        const value = fields[k];
+        delete fields[k];
+        return value;
+      });
+    const input = withPrefixed({ ...fields, bundlePrices }, 'newVenue');
     const t = tournamentId
       ? await updateTournament(actor, tournamentId, input, meta)
       : await createTournament(actor, input, meta);

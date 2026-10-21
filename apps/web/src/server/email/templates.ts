@@ -12,7 +12,15 @@ type Template =
   | { kind: 'resetPassword'; name: string; url: string }
   | { kind: 'passwordChanged'; name: string }
   | { kind: 'roleChanged'; name: string; role: string; granted: boolean }
-  | { kind: 'entryConfirmed'; name: string; tournament: string; lines: string[]; url: string }
+  | {
+      kind: 'entryConfirmed';
+      name: string;
+      tournament: string;
+      lines: string[];
+      url: string;
+      /** Minutes left to pay when online payment is on; otherwise the "payment follows" note. */
+      payWithinMinutes?: number;
+    }
   | {
       kind: 'partnerInvite';
       name: string;
@@ -30,7 +38,26 @@ type Template =
       url: string;
     }
   | { kind: 'waitlistPromoted'; name: string; tournament: string; event: string; url: string }
-  | { kind: 'entryWithdrawn'; name: string; tournament: string; event: string; byPartner: boolean };
+  | { kind: 'entryWithdrawn'; name: string; tournament: string; event: string; byPartner: boolean }
+  | {
+      kind: 'paymentReceipt';
+      name: string;
+      tournament: string;
+      orderNumber: string;
+      lines: string[];
+      total: string;
+      method: 'IDEAL' | 'CARD' | 'BANCONTACT' | 'MANUAL' | 'OTHER';
+      url: string;
+    }
+  | {
+      kind: 'refund';
+      state: 'requested' | 'processed' | 'rejected';
+      name: string;
+      tournament: string;
+      amount: string;
+      orderNumber: string;
+      url: string;
+    };
 
 function escapeHtml(value: string): string {
   return value
@@ -97,7 +124,9 @@ export function renderEmail(to: string, locale: AppLocale, template: Template): 
         greeting,
         t('entryIntro', { tournament: template.tournament }),
         ...template.lines.map((line) => `• ${line}`),
-        t('entryPay'),
+        template.payWithinMinutes
+          ? t('entryPayNow', { minutes: template.payWithinMinutes })
+          : t('entryPay'),
       ];
       button = { label: t('entryButton'), url: template.url };
       break;
@@ -144,6 +173,34 @@ export function renderEmail(to: string, locale: AppLocale, template: Template): 
         greeting,
         template.byPartner ? t('withdrawnByPartnerBody', params) : t('withdrawnBody', params),
       ];
+      break;
+    }
+    case 'paymentReceipt': {
+      const params = { tournament: template.tournament, orderNumber: template.orderNumber };
+      subject = t('receiptSubject', params);
+      paragraphs = [
+        greeting,
+        t('receiptIntro', params),
+        ...template.lines.map((line) => `• ${line}`),
+        t('receiptTotal', { total: template.total, method: t(`method${template.method}`) }),
+        t('receiptOrder', params),
+      ];
+      button = { label: t('entryButton'), url: template.url };
+      break;
+    }
+    case 'refund': {
+      const params = { amount: template.amount, tournament: template.tournament };
+      subject = t('refundSubject', {
+        orderNumber: template.orderNumber,
+        tournament: template.tournament,
+      });
+      const body = {
+        requested: t('refundRequested', params),
+        processed: t('refundProcessed', params),
+        rejected: t('refundRejected', params),
+      }[template.state];
+      paragraphs = [greeting, body, t('receiptOrder', { orderNumber: template.orderNumber })];
+      button = { label: t('entryButton'), url: template.url };
       break;
     }
   }

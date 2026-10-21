@@ -113,6 +113,10 @@ function toData(input: ReturnType<typeof tournamentSchema.parse>) {
     contactEmail: input.contactEmail ?? null,
     contactPhone: input.contactPhone ?? null,
     description: localized(input.descriptionNl, input.descriptionEn) ?? Prisma.DbNull,
+    partnerPaymentMode: input.partnerPaymentMode,
+    refundPolicy: input.refundPolicy,
+    refundPercent: input.refundPercent,
+    bundlePricesCents: input.bundlePricesCents,
   };
 }
 

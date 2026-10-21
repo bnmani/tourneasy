@@ -124,3 +124,20 @@ All need a signed-in player (Bearer or cookie). Entering needs a verified email 
 
 Field errors use keys `event.{eventId}` and `partner.{eventId}`, e.g. `notEligible`, `alreadyEntered`,
 `partnerIneligible`, `partnerRequired`; a full event is not an error but returns `status: "WAITLISTED"`.
+
+## Payments (Phase 5)
+
+Entering a paid event returns `status: "PENDING"` and `holdExpiresAt`: pay within 30 minutes or the place
+is released. `GET /api/v1/me/registrations` includes `participantId`, `amountDueCents` (after the
+multi-category discount) and `canPay`.
+
+| Method | Path                            | Purpose                                                                                            |
+| ------ | ------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `POST` | `/api/v1/me/orders`             | `{ participantIds }` → `201 { orderId, orderNumber, amountCents, clientSecret, publishableKey }`   |
+| `GET`  | `/api/v1/me/orders/{id}`        | Order status, checked with Stripe (`PENDING`, `PAID`, `EXPIRED`, `PARTIALLY_REFUNDED`, `REFUNDED`) |
+| `POST` | `/api/v1/payments/webhook`      | Stripe only (signature checked); events `payment_intent.*` and `refund.*`                          |
+| `GET`  | `/api/v1/admin/payments/export` | Orders as Excel (admins); `tournamentId`, `status` filters                                         |
+
+Mobile apps show the Stripe Payment Sheet with `clientSecret` and `publishableKey`, then call
+`GET /api/v1/me/orders/{id}`. `clientSecret` is `null` when a discount already covers the amount.
+Errors: `PAYMENTS_UNAVAILABLE` (503) when online payment is not configured.

@@ -52,6 +52,20 @@ packages/db       Prisma schema, migrations, seed, client
 packages/shared   translations (nl/en), formatting, Zod schemas, business rules
 ```
 
+## Verifying Phase 5 (payments)
+
+Needs the Stripe **test** keys and webhook secret (docs/deploy-test.md); without them entries behave as in Phase 4.
+
+1. Admin → tournament → _Betaling en korting_: set e.g. €15 / €25 / €32 for 1 / 2 / 3 categories, the
+   doubles payment mode and the refund policy.
+2. As a player, enter two paid categories: the dashboard opens the payment window straight away and shows
+   the hold time and the discounted total. Pay with iDEAL (Stripe's test bank) or test card 4242 4242 4242 4242.
+3. After paying you land on the result page; the entries are _Bevestigd_ / _Betaald_ and a receipt email is sent.
+4. Enter and don't pay: after 30 minutes the place is released and the next on the waiting list gets 48 hours.
+5. Withdraw a paid entry: the refund follows the policy (automatic, or a request under Admin → _Betalingen_).
+6. Admin → _Betalingen_: received / refunded / outstanding, refund requests, orders and Excel export.
+   On the participants list an organiser can mark a share _Betaald aan de balie_.
+
 ## Verifying Phase 4 (registration flow)
 
 1. Log out, open a tournament with open entries and click _Inloggen om in te schrijven_: after logging in

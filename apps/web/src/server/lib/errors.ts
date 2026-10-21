@@ -27,7 +27,8 @@ export type ErrorCode =
   | 'withdrawalClosed'
   | 'emailNotVerified'
   | 'inviteInvalid'
-  | 'noPlayerProfile';
+  | 'noPlayerProfile'
+  | 'paymentsUnavailable';
 
 const HTTP_STATUS: Record<ErrorCode, number> = {
   validation: 422,
@@ -55,6 +56,7 @@ const HTTP_STATUS: Record<ErrorCode, number> = {
   emailNotVerified: 403,
   inviteInvalid: 410,
   noPlayerProfile: 409,
+  paymentsUnavailable: 503,
 };
 
 export class AppError extends Error {

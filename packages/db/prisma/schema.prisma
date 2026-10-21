@@ -654,6 +654,8 @@ model Tournament {
   refundPolicy         RefundPolicy       @default(ADMIN_APPROVAL)
   /// Percentage refunded under the automatic policy (0–100). Fee kept for admin costs.
   refundPercent        Int                @default(100)
+  /// Multi-category discount (D52): total in cents for 1, 2, 3 … categories; empty = per-category fees.
+  bundlePricesCents    Int[]              @default([])
   vatRateBasisPoints   Int                @default(0) // 2100 = 21%. Sports entries are often VAT-exempt; configurable.
   isPublished          Boolean            @default(false)
   createdById          String?            @db.Uuid

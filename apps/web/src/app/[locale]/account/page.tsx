@@ -104,7 +104,12 @@ export default async function DashboardPage({
           <div className="space-y-6">
             <MyInvites invites={invites} locale={locale} />
             {upcoming.length > 0 ? (
-              <MyEntries entries={upcoming} locale={locale} showActions />
+              <MyEntries
+                entries={upcoming}
+                locale={locale}
+                showActions
+                payFor={firstParam(query.pay)}
+              />
             ) : (
               <p className="text-muted-foreground">{t('upcomingEmpty')}</p>
             )}

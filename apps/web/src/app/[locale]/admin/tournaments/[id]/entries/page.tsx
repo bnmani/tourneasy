@@ -8,6 +8,7 @@ import { Link } from '@/i18n/navigation';
 import { eventLabel, personName } from '@/lib/labels';
 import { firstParam, pageLocale, type SearchParams } from '@/lib/page';
 import { cn } from '@/lib/utils';
+import { markPaidAction } from '@/server/actions/payment-actions';
 import { cancelEntryAction } from '@/server/actions/registration-actions';
 import { requirePortal } from '@/server/auth/web';
 import { isAppError } from '@/server/lib/errors';
@@ -192,6 +193,20 @@ export default async function EntriesPage({ params, searchParams }: Props) {
                       {r.participants.map((p) => (
                         <span key={p.player.memberNumber} className="block whitespace-nowrap">
                           {tpay(p.paymentStatus)}
+                          {p.paymentStatus === 'UNPAID' && r.status !== 'CANCELLED' && (
+                            <form
+                              action={markPaidAction.bind(null, locale, id, p.id)}
+                              className="inline"
+                            >
+                              {' '}
+                              <button
+                                type="submit"
+                                className="font-medium text-primary underline-offset-4 hover:underline"
+                              >
+                                {t('entries.markPaid')}
+                              </button>
+                            </form>
+                          )}
                         </span>
                       ))}
                     </td>

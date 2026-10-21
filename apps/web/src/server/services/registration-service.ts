@@ -1,7 +1,9 @@
 /**
  * Entering tournaments (Phase 4, D48): eligibility, partners and invites, capacity with a
- * waiting list, withdrawals and the organiser's entry list. Payment is added in Phase 5; until
- * then entries are confirmed straight away with every player's share marked UNPAID.
+ * waiting list, withdrawals and the organiser's entry list. With online payment on (Phase 5,
+ * D51) a paid entry is PENDING and holds its place for 30 minutes until the entrant pays; free
+ * events are confirmed with the shares WAIVED. Without payments entries are confirmed straight
+ * away with the shares UNPAID (paid at the desk).
  */
 import { Prisma, prisma, type Discipline, type RegistrationStatus } from '@tourneasy/db';
 import {
@@ -24,6 +26,8 @@ import { AppError, validationError } from '../lib/errors';
 import type { RequestMeta } from '../lib/request-meta';
 import { appUrl } from '../lib/urls';
 import { parseInput } from '../lib/validation';
+import { amountsDue, HOLD_MINUTES, paymentsEnabled, PROMOTION_HOURS } from '../payments/pricing';
+import { refundsForCancelledRegistration } from './refund-service';
 import { assertCanManageTournament } from './permissions';
 import type { Actor } from './session-service';
 
@@ -129,6 +133,8 @@ async function loadTournament(slug: string) {
       withdrawalDeadline: true,
       maxEventsPerPlayer: true,
       maxParticipants: true,
+      bundlePricesCents: true,
+      partnerPaymentMode: true,
       events: { where: { deletedAt: null }, select: eventSelect },
     },
   });
@@ -162,6 +168,7 @@ async function playerEntries(playerId: string, tournamentId: string) {
 // ── Entry form ─────────────────────────────────────────────────────────────────────
 
 export async function getEntryOptions(actor: Actor, slug: string, now = new Date()) {
+  await expireStaleHolds(now);
   const [t, player] = await Promise.all([loadTournament(slug), myPlayer(actor)]);
   const [counts, entered] = await Promise.all([
     activeCounts(t.events.map((e) => e.id)),
@@ -205,6 +212,9 @@ export async function getEntryOptions(actor: Actor, slug: string, now = new Date
       registrationClosesAt: t.registrationClosesAt,
       withdrawalDeadline: t.withdrawalDeadline,
       maxEventsPerPlayer: t.maxEventsPerPlayer,
+      bundlePricesCents: t.bundlePricesCents,
+      partnerPaysAll: t.partnerPaymentMode === 'INITIATOR_PAYS_ALL',
+      payOnline: paymentsEnabled(),
     },
     player: {
       name: fullName(player),
@@ -258,6 +268,7 @@ export async function enterTournament(
 ) {
   if (!actor.emailVerified) throw new AppError('emailNotVerified');
   const data = parseInput(entrySchema, input);
+  await expireStaleHolds(now);
   const [t, player] = await Promise.all([loadTournament(slug), myPlayer(actor)]);
   if (tournamentPhase(t, now) !== 'registrationOpen') throw new AppError('registrationClosed');
 
@@ -346,6 +357,8 @@ export async function enterTournament(
     eventId: string;
   }[] = [];
 
+  const online = paymentsEnabled();
+  const holdUntil = new Date(now.getTime() + HOLD_MINUTES * 60_000);
   let created: {
     id: string;
     eventId: string;
@@ -385,12 +398,15 @@ export async function enterTournament(
             waitlistPosition = (last._max.waitlistPosition ?? 0) + 1;
           } else {
             added += 1;
+            // Paid online: the place is held until the entrant pays (D51).
+            if (online && plan.event.feeCents > 0) status = 'PENDING';
           }
           const registration = await tx.registration.create({
             data: {
               eventId: plan.event.id,
               status,
               waitlistPosition,
+              holdExpiresAt: status === 'PENDING' ? holdUntil : null,
               createdById: actor.userId,
               confirmedAt: status === 'CONFIRMED' ? now : null,
               termsVersion: ENTRY_TERMS_VERSION,
@@ -401,6 +417,7 @@ export async function enterTournament(
                   playerId: player.id,
                   role: 'PRIMARY',
                   checkInToken: randomToken(18),
+                  paymentStatus: plan.event.feeCents === 0 ? 'WAIVED' : 'UNPAID',
                 },
               },
             },
@@ -474,6 +491,7 @@ export async function enterTournament(
           : messages[locale].Email.entryLine.replace('{event}', label(c.eventId, locale)),
       ),
       url: appUrl(locale, '/account?tab=upcoming'),
+      payWithinMinutes: created.some((c) => c.status === 'PENDING') ? HOLD_MINUTES : undefined,
     }),
   );
   for (const invite of invites) {
@@ -488,7 +506,18 @@ export async function enterTournament(
       }),
     );
   }
-  return { registrations: created };
+  // The participant ids let the client open the payment window straight away.
+  const mine = await prisma.registrationParticipant.findMany({
+    where: { registrationId: { in: created.map((c) => c.id) }, playerId: player.id },
+    select: { id: true, registrationId: true, paymentStatus: true },
+  });
+  return {
+    registrations: created.map((c) => {
+      const p = mine.find((m) => m.registrationId === c.id);
+      return { ...c, participantId: p?.id ?? null, paymentStatus: p?.paymentStatus ?? 'UNPAID' };
+    }),
+    holdExpiresAt: created.some((c) => c.status === 'PENDING') ? holdUntil : null,
+  };
 }
 
 /** "Herendubbel · Senioren · B" in the given language. */
@@ -523,6 +552,7 @@ const registrationSelect = {
   id: true,
   status: true,
   waitlistPosition: true,
+  holdExpiresAt: true,
   createdAt: true,
   event: {
     select: {
@@ -547,6 +577,7 @@ const registrationSelect = {
   participants: {
     where: { active: true },
     select: {
+      id: true,
       role: true,
       paymentStatus: true,
       player: {
@@ -591,8 +622,15 @@ export async function listMyRegistrations(actor: Actor, now = new Date()) {
       })
     ).map((r) => r.eventId),
   );
+  // What I still owe per share, per tournament (multi-category discount, D52).
+  const due = new Map<string, number>();
+  for (const tournamentId of new Set(rows.map((r) => r.event.tournament.id))) {
+    for (const [id, cents] of await amountsDue(player.id, tournamentId)) due.set(id, cents);
+  }
+  const online = paymentsEnabled();
   return rows.map((r) => {
     const me = r.participants.find((p) => p.player.id === player.id)!;
+    const amountDue = due.get(me.id) ?? null;
     const partner = r.participants.find((p) => p.player.id !== player.id);
     const invite = r.invites[0] && r.invites[0].expiresAt > now ? r.invites[0] : null;
     const t = r.event.tournament;
@@ -604,7 +642,11 @@ export async function listMyRegistrations(actor: Actor, now = new Date()) {
       event: { ...r.event, tournament: undefined },
       doubles: isDoubles(r.event.discipline),
       myRole: me.role,
+      participantId: me.id,
       paymentStatus: me.paymentStatus,
+      amountDueCents: amountDue,
+      holdExpiresAt: r.status === 'PENDING' ? r.holdExpiresAt : null,
+      canPay: online && amountDue !== null && (r.status === 'PENDING' || r.status === 'CONFIRMED'),
       partner: partner
         ? { name: fullName(partner.player), memberNumber: partner.player.memberNumber }
         : null,
@@ -837,6 +879,14 @@ export async function respondToInvite(
         data: { status: accept ? 'ACCEPTED' : 'DECLINED', respondedAt: now, toPlayerId: me.id },
       });
       if (accept) {
+        const settings = await tx.tournament.findUniqueOrThrow({
+          where: { id: t.id },
+          select: { partnerPaymentMode: true },
+        });
+        const fee = await tx.tournamentEvent.findUniqueOrThrow({
+          where: { id: r.event.id },
+          select: { feeCents: true },
+        });
         await tx.registrationParticipant.create({
           data: {
             registrationId: r.id,
@@ -844,6 +894,13 @@ export async function respondToInvite(
             playerId: me.id,
             role: 'PARTNER',
             checkInToken: randomToken(18),
+            // Free event, or the entrant pays for both (D51).
+            paymentStatus:
+              fee.feeCents === 0
+                ? 'WAIVED'
+                : settings.partnerPaymentMode === 'INITIATOR_PAYS_ALL'
+                  ? 'PAID_BY_PARTNER'
+                  : 'UNPAID',
           },
         });
         await tx.partnerRequest.updateMany({
@@ -932,8 +989,10 @@ async function promoteFromWaitlist(tx: Prisma.TransactionClient, eventId: string
   await tx.$queryRaw`SELECT id FROM "TournamentEvent" WHERE id = ${eventId}::uuid FOR UPDATE`;
   const event = await tx.tournamentEvent.findUniqueOrThrow({
     where: { id: eventId },
-    select: { maxEntries: true },
+    select: { maxEntries: true, feeCents: true },
   });
+  // Paid online: the promoted pair gets 48 hours to pay before the place moves on.
+  const mustPay = paymentsEnabled() && event.feeCents > 0;
   const taken = await tx.registration.count({ where: { eventId, status: { in: ACTIVE } } });
   const room = event.maxEntries === null ? Number.MAX_SAFE_INTEGER : event.maxEntries - taken;
   const waiting = await tx.registration.findMany({
@@ -945,7 +1004,13 @@ async function promoteFromWaitlist(tx: Prisma.TransactionClient, eventId: string
   for (const w of promoted) {
     await tx.registration.update({
       where: { id: w.id },
-      data: { status: 'CONFIRMED', waitlistPosition: null, confirmedAt: now },
+      data: mustPay
+        ? {
+            status: 'PENDING',
+            waitlistPosition: null,
+            holdExpiresAt: new Date(now.getTime() + PROMOTION_HOURS * 3_600_000),
+          }
+        : { status: 'CONFIRMED', waitlistPosition: null, confirmedAt: now },
     });
   }
   // Renumber the rest 1, 2, 3 …
@@ -998,9 +1063,9 @@ async function notifyPromoted(registrationIds: string[]) {
 
 async function cancelRegistration(
   registrationId: string,
-  actorId: string,
+  actorId: string | null,
   reason: string | undefined,
-  meta: RequestMeta,
+  meta: RequestMeta | undefined,
   action: string,
   now: Date,
 ) {
@@ -1103,6 +1168,8 @@ export async function withdrawMyRegistration(
       }),
     );
   }
+  // Paid shares go back per the tournament's refund policy (D51).
+  await refundsForCancelledRegistration(r.id, 'policy', actor.userId, meta);
 }
 
 // ── Organiser: entry list ─────────────────────────────────────────────────────────
@@ -1148,6 +1215,7 @@ export async function listTournamentEntries(
       participants: {
         orderBy: { role: 'asc' },
         select: {
+          id: true,
           role: true,
           active: true,
           paymentStatus: true,
@@ -1208,6 +1276,38 @@ export async function cancelEntryAsOrganiser(
   if (!r) throw new AppError('notFound');
   await assertCanManageTournament(actor, r.event.tournamentId);
   await cancelRegistration(r.id, actor.userId, reason, meta, 'registration.cancelByOrganiser', now);
+  // Cancelled by the organisers: whatever was paid goes back in full.
+  await refundsForCancelledRegistration(r.id, 'full', actor.userId, meta);
+}
+
+/**
+ * Releases places whose payment hold ran out (lazy on entry pages + the housekeeping cron).
+ * Entries with a payment in progress (iDEAL can take a moment) are left alone.
+ */
+export async function expireStaleHolds(now = new Date()) {
+  const stale = await prisma.registration.findMany({
+    where: {
+      status: 'PENDING',
+      holdExpiresAt: { lt: now },
+      orderItems: {
+        none: { order: { payments: { some: { status: { in: ['PROCESSING', 'SUCCEEDED'] } } } } },
+      },
+    },
+    select: { id: true },
+    take: 200,
+  });
+  for (const r of stale) {
+    await cancelRegistration(r.id, null, 'holdExpired', undefined, 'registration.holdExpired', now);
+  }
+  await prisma.order.updateMany({
+    where: {
+      status: 'PENDING',
+      expiresAt: { lt: now },
+      payments: { none: { status: { in: ['PROCESSING', 'SUCCEEDED'] } } },
+    },
+    data: { status: 'EXPIRED' },
+  });
+  return stale.length;
 }
 
 /** Entry list as a table for the Excel export (organisers need contact details on the day). */

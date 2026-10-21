@@ -1,6 +1,6 @@
 import { utcToAmsterdamLocal } from '@tourneasy/shared/rules';
 import { STATUS_TRANSITIONS, type TournamentStatusCode } from '@tourneasy/shared/schemas';
-import { formatEuro, type LocalizedText } from '@tourneasy/shared';
+import { centsToEuroInput, formatEuro, type LocalizedText } from '@tourneasy/shared';
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import { OrganiserForm } from '@/components/admin/organiser-form';
@@ -264,6 +264,13 @@ export default async function AdminTournamentPage({
           contactPhone: tournament.contactPhone ?? '',
           descriptionNl: description?.nl ?? '',
           descriptionEn: description?.en ?? '',
+          partnerPaymentMode:
+            tournament.partnerPaymentMode === 'INITIATOR_PAYS_ALL'
+              ? 'INITIATOR_PAYS_ALL'
+              : 'EACH_PAYS_OWN_SHARE',
+          refundPolicy: tournament.refundPolicy,
+          refundPercent: tournament.refundPercent.toString(),
+          bundlePrices: tournament.bundlePricesCents.map(centsToEuroInput),
         }}
       />
     </>

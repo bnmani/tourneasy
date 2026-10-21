@@ -42,6 +42,7 @@ export async function enterAction(
   _prev: FormState,
   formData: FormData,
 ): Promise<FormState> {
+  let pay = false;
   try {
     const actor = await actorOrThrow();
     const ids = formData.getAll('eventId').filter((v): v is string => typeof v === 'string');
@@ -54,12 +55,14 @@ export async function enterAction(
       phone: formData.get('phone') ?? undefined,
       acceptTerms: formData.get('acceptTerms') === 'on',
     };
-    await enterTournament(actor, slug, input, await currentRequestMeta());
+    const result = await enterTournament(actor, slug, input, await currentRequestMeta());
+    pay = result.holdExpiresAt !== null;
   } catch (error) {
     return toFormState(error, formData);
   }
   revalidatePath('/', 'layout');
-  redirect(`/${locale}/account?tab=upcoming&status=entered`);
+  // Paid entries: the dashboard opens the payment window straight away.
+  redirect(`/${locale}/account?tab=upcoming&status=entered${pay ? `&pay=${slug}` : ''}`);
 }
 
 export async function withdrawAction(

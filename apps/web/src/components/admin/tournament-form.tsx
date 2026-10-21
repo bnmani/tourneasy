@@ -1,6 +1,12 @@
 'use client';
 
-import { NEW_VENUE, PROVINCES, TOURNAMENT_TYPES } from '@tourneasy/shared/schemas';
+import {
+  NEW_VENUE,
+  PARTNER_PAYMENT_MODES,
+  PROVINCES,
+  REFUND_POLICIES,
+  TOURNAMENT_TYPES,
+} from '@tourneasy/shared/schemas';
 import type { AppLocale } from '@tourneasy/shared/i18n';
 import { useTranslations } from 'next-intl';
 import { useActionState, useEffect, useState } from 'react';
@@ -33,6 +39,11 @@ export type TournamentFormValues = {
   contactPhone: string;
   descriptionNl: string;
   descriptionEn: string;
+  partnerPaymentMode: (typeof PARTNER_PAYMENT_MODES)[number];
+  refundPolicy: (typeof REFUND_POLICIES)[number];
+  refundPercent: string;
+  /** Euro amounts ("15,00") for 1, 2, 3 … categories. */
+  bundlePrices: string[];
 };
 
 export function TournamentForm({
@@ -65,6 +76,10 @@ export function TournamentForm({
   const submittedVenue = state.values?.venueId;
   const [venueId, setVenueId] = useState(
     (typeof submittedVenue === 'string' ? submittedVenue : values.venueId) ?? '',
+  );
+  const submittedMax = state.values?.maxEventsPerPlayer;
+  const [maxEvents, setMaxEvents] = useState(
+    Number((typeof submittedMax === 'string' ? submittedMax : values.maxEventsPerPlayer) ?? 3),
   );
   const tz = t('timezoneHint');
 
@@ -272,14 +287,20 @@ export function TournamentForm({
             defaultValue={values.maxParticipants}
             inputMode="numeric"
           />
-          <SelectField
-            name="maxEventsPerPlayer"
-            label={t('maxEventsPerPlayer')}
-            state={state}
-            required
-            defaultValue={values.maxEventsPerPlayer ?? '3'}
-            options={['1', '2', '3', '4', '5'].map((n) => ({ value: n, label: n }))}
-          />
+          <div
+            onChange={(e) => {
+              if (e.target instanceof HTMLSelectElement) setMaxEvents(Number(e.target.value));
+            }}
+          >
+            <SelectField
+              name="maxEventsPerPlayer"
+              label={t('maxEventsPerPlayer')}
+              state={state}
+              required
+              defaultValue={values.maxEventsPerPlayer ?? '3'}
+              options={['1', '2', '3', '4', '5'].map((n) => ({ value: n, label: n }))}
+            />
+          </div>
           <TextField
             name="courtsAvailable"
             type="number"
@@ -289,6 +310,56 @@ export function TournamentForm({
             hint={t('courtsAvailableHint')}
             state={state}
             defaultValue={values.courtsAvailable}
+            inputMode="numeric"
+          />
+        </div>
+      </FormSection>
+
+      <FormSection title={t('sectionPayment')}>
+        <fieldset className="space-y-3">
+          <legend className="text-sm font-medium">{t('bundleTitle')}</legend>
+          <p className="text-sm text-muted-foreground">{t('bundleHint')}</p>
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-5">
+            {Array.from({ length: maxEvents }, (_, i) => (
+              <TextField
+                key={i}
+                name={`bundlePrices.${i}`}
+                label={t('bundleTier', { count: i + 1 })}
+                state={state}
+                defaultValue={values.bundlePrices?.[i]}
+              />
+            ))}
+          </div>
+        </fieldset>
+        <div className="grid gap-4 sm:grid-cols-3">
+          <SelectField
+            name="partnerPaymentMode"
+            label={t('partnerPaymentMode')}
+            state={state}
+            required
+            defaultValue={values.partnerPaymentMode ?? 'EACH_PAYS_OWN_SHARE'}
+            options={PARTNER_PAYMENT_MODES.map((m) => ({
+              value: m,
+              label: t(`partnerPayment${m}`),
+            }))}
+          />
+          <SelectField
+            name="refundPolicy"
+            label={t('refundPolicy')}
+            state={state}
+            required
+            defaultValue={values.refundPolicy ?? 'ADMIN_APPROVAL'}
+            options={REFUND_POLICIES.map((p) => ({ value: p, label: t(`refund${p}`) }))}
+          />
+          <TextField
+            name="refundPercent"
+            type="number"
+            min={0}
+            max={100}
+            label={t('refundPercent')}
+            hint={t('refundPercentHint')}
+            state={state}
+            defaultValue={values.refundPercent ?? '100'}
             inputMode="numeric"
           />
         </div>

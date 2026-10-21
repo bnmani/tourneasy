@@ -34,6 +34,10 @@ Delete these rows from the platform form (they are for local development only):
 | `AUTH_SECRET`                        | random secret (in `.env.test-server`); signs mobile access tokens                                                                   |
 | `EMAIL_TRANSPORT`                    | `log` until an SMTP provider is set up                                                                                              |
 | `NEXT_SERVER_ACTIONS_ENCRYPTION_KEY` | 32-byte base64 key (in `.env.test-server`); keep it the same across deploys so buttons on pages opened before a deploy keep working |
+| `STRIPE_SECRET_KEY`                  | Stripe → Developers → API keys, **test mode** `sk_test_…` (online payment stays off while empty)                                    |
+| `STRIPE_PUBLISHABLE_KEY`             | the matching `pk_test_…`                                                                                                            |
+| `STRIPE_WEBHOOK_SECRET`              | `whsec_…` of the webhook endpoint `https://test.tourneasy.app/api/v1/payments/webhook` (events `payment_intent.*`, `refund.*`)      |
+| `CRON_SECRET`                        | random secret; a scheduler calls `POST /api/cron/housekeeping` with `Authorization: Bearer …` every 5 minutes (optional)            |
 
 ## 3. Build settings
 
