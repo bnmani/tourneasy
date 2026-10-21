@@ -17,10 +17,13 @@ export function FilterBar({
   action,
   children,
   className,
+  persistent = [],
 }: {
   action: string;
   children: ReactNode;
   className?: string;
+  /** Query keys that are not filters (e.g. a tab), so they don't show the clear button. */
+  persistent?: string[];
 }) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
@@ -29,7 +32,9 @@ export function FilterBar({
   const [pending, startTransition] = useTransition();
   const t = useTranslations('Admin');
   const searchParams = useSearchParams();
-  const filtered = [...searchParams.keys()].some((k) => k !== 'page' && k !== 'status');
+  const filtered = [...searchParams.keys()].some(
+    (k) => k !== 'page' && k !== 'status' && !persistent.includes(k),
+  );
 
   useEffect(() => () => clearTimeout(timer.current), []);
 

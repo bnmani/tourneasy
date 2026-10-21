@@ -44,10 +44,7 @@ export async function generateMetadata({ params }: Omit<Props, 'children'>): Pro
     metadataBase: new URL(process.env.APP_URL ?? 'http://localhost:3000'),
     title: { default: t('title'), template: `%s | ${t('siteName')}` },
     description: t('description'),
-    alternates: {
-      canonical: `/${locale}`,
-      languages: { nl: '/nl', en: '/en', 'x-default': '/nl' },
-    },
+    // Canonical URL and nl/en alternates are set per page (lib/seo.ts pageMetadata).
     openGraph: {
       type: 'website',
       siteName: t('siteName'),

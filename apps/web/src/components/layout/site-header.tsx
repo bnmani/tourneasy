@@ -10,7 +10,7 @@ import { Logo } from './logo';
 import { SmartHeader } from './smart-header';
 
 const navLink =
-  'rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none';
+  'rounded-md px-3 py-2 text-sm font-medium whitespace-nowrap text-muted-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none';
 const mobileLink =
   'block border-b border-border px-1 py-3 font-semibold last:border-b-0 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none';
 
@@ -18,9 +18,13 @@ export async function SiteHeader() {
   const t = await getTranslations('Header');
   const locale = (await getLocale()) as AppLocale;
   const actor = await getActor();
-  // Tournament, live, results and player pages join the menu in Phase 3 (no dead links until then).
+  // Live and results pages join the menu in Phase 6 (no links to pages that don't exist yet).
   const links = [
-    { href: '/', label: t('home') },
+    { href: '/tournaments', label: t('tournaments') },
+    { href: '/calendar', label: t('calendar') },
+    { href: '/players', label: t('players') },
+    { href: '/clubs', label: t('clubs') },
+    { href: '/venues', label: t('venues') },
     { href: '/#about', label: t('about') },
   ];
 
@@ -40,6 +44,18 @@ export async function SiteHeader() {
               {t('login')}
             </Link>
           )}
+          {actor?.roles.includes('ADMIN') && (
+            <Link href="/admin" className={mobileLink}>
+              {t('admin')}
+            </Link>
+          )}
+          {actor && (
+            <form action={logoutAction.bind(null, locale)}>
+              <button type="submit" className={`${mobileLink} w-full text-left`}>
+                {t('logout')}
+              </button>
+            </form>
+          )}
           <div className="pt-3">
             <LanguageSwitcher />
           </div>
@@ -54,7 +70,7 @@ export async function SiteHeader() {
         <Logo />
       </Link>
 
-      <nav aria-label={t('mainNav')} className="ml-4 hidden items-center gap-1 md:flex">
+      <nav aria-label={t('mainNav')} className="ml-2 hidden items-center gap-0.5 lg:flex">
         {links.map((l) => (
           <Link key={l.href} href={l.href} className={navLink}>
             {l.label}
@@ -66,23 +82,24 @@ export async function SiteHeader() {
         {actor ? (
           <>
             {actor.roles.includes('ADMIN') && (
-              <Button asChild variant="ghost" size="sm">
-                <Link href="/admin">
+              <Button asChild variant="ghost" size="sm" className="hidden lg:inline-flex">
+                <Link href="/admin" title={t('admin')}>
                   <Shield aria-hidden="true" />
-                  <span className="sr-only lg:not-sr-only">{t('admin')}</span>
+                  <span className="sr-only 2xl:not-sr-only">{t('admin')}</span>
                 </Link>
               </Button>
             )}
             <Button asChild variant="ghost" size="sm">
-              <Link href="/account">
+              <Link href="/account" title={t('dashboard')}>
                 <LayoutDashboard aria-hidden="true" />
-                <span className="sr-only lg:not-sr-only">{t('dashboard')}</span>
+                <span className="sr-only 2xl:not-sr-only">{t('dashboard')}</span>
               </Link>
             </Button>
-            <form action={logoutAction.bind(null, locale)}>
-              <Button type="submit" variant="ghost" size="sm">
+            {/* On small screens admin and log out live in the menu panel. */}
+            <form action={logoutAction.bind(null, locale)} className="hidden lg:block">
+              <Button type="submit" variant="ghost" size="sm" title={t('logout')}>
                 <LogOut aria-hidden="true" />
-                <span className="sr-only lg:not-sr-only">{t('logout')}</span>
+                <span className="sr-only 2xl:not-sr-only">{t('logout')}</span>
               </Button>
             </form>
           </>
@@ -96,7 +113,7 @@ export async function SiteHeader() {
             </Button>
           </>
         )}
-        <div className="hidden md:block">
+        <div className="hidden lg:block">
           <LanguageSwitcher />
         </div>
       </nav>

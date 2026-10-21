@@ -7,6 +7,8 @@ import { firstParam, pageLocale, type LocaleParams, type SearchParams } from '@/
 import { cn } from '@/lib/utils';
 import { requireActor } from '@/server/auth/web';
 import { getMyAccount } from '@/server/services/profile-service';
+import { listFollowing } from '@/server/services/public-service';
+import { PlayerList } from '@/components/public/player-list';
 
 export async function generateMetadata({ params }: LocaleParams): Promise<Metadata> {
   const locale = await pageLocale(params);
@@ -14,7 +16,7 @@ export async function generateMetadata({ params }: LocaleParams): Promise<Metada
   return { title: t('title'), robots: { index: false } };
 }
 
-const TABS = ['upcoming', 'past', 'profile'] as const;
+const TABS = ['upcoming', 'past', 'following', 'profile'] as const;
 type Tab = (typeof TABS)[number];
 
 export default async function DashboardPage({
@@ -28,7 +30,6 @@ export default async function DashboardPage({
   const t = await getTranslations('Dashboard');
   const tr = await getTranslations('Auth.registered');
   const td = await getTranslations('Disciplines');
-  const tc = await getTranslations('Common');
 
   const requested = firstParam(query.tab);
   const tab: Tab = (TABS as readonly string[]).includes(requested ?? '')
@@ -37,9 +38,11 @@ export default async function DashboardPage({
   const tabLabel: Record<Tab, string> = {
     upcoming: t('tabUpcoming'),
     past: t('tabPast'),
+    following: t('tabFollowing'),
     profile: t('tabProfile'),
   };
   const profile = account.profile;
+  const followed = tab === 'following' ? await listFollowing(actor) : [];
 
   return (
     <div className="space-y-6">
@@ -88,13 +91,23 @@ export default async function DashboardPage({
         {tab === 'upcoming' && (
           <div className="space-y-4">
             <p className="text-muted-foreground">{t('upcomingEmpty')}</p>
-            <div className="flex flex-wrap items-center gap-3">
-              <Button disabled>{t('browse')}</Button>
-              <span className="text-sm text-muted-foreground">{tc('comingSoon')}</span>
-            </div>
+            <Button asChild>
+              <Link href="/tournaments">{t('browse')}</Link>
+            </Button>
           </div>
         )}
         {tab === 'past' && <p className="text-muted-foreground">{t('pastEmpty')}</p>}
+        {tab === 'following' &&
+          (followed.length === 0 ? (
+            <div className="space-y-4">
+              <p className="text-muted-foreground">{t('followingEmpty')}</p>
+              <Button asChild variant="outline">
+                <Link href="/players">{t('findPlayers')}</Link>
+              </Button>
+            </div>
+          ) : (
+            <PlayerList players={followed} locale={locale} />
+          ))}
         {tab === 'profile' && profile && (
           <dl className="grid gap-4 sm:grid-cols-2">
             <div>

@@ -148,7 +148,7 @@ Main groups:
 
 ## 4. Phases
 
-0 Foundation · 1 Auth & profiles · 2 Admin core · **2.5 Design & theming** · 3 Public pages ·
+0 Foundation · 1 Auth & profiles · 2 Admin core · 2.5 Design & theming · **3 Public pages** ·
 4 Registration flow · 5 Payments · 6 Draws, schedule & results · 7 Notifications & polish ·
 8 Hardening & launch · 9 Mobile app (Expo): auth, browsing, registration + partner invites, Stripe
 Payment Sheet, push notifications, my schedule/results, QR check-in, TestFlight / Play internal

@@ -52,6 +52,19 @@ packages/db       Prisma schema, migrations, seed, client
 packages/shared   translations (nl/en), formatting, Zod schemas, business rules
 ```
 
+## Verifying Phase 3 (public pages)
+
+1. Home: the carousel shows current and upcoming published tournaments; the menu links to every public page.
+2. **Toernooien**: tabs _Komend / Inschrijving open / Afgelopen_; search and filters update while typing.
+   Unpublished tournaments never appear. A tournament page shows events, fees, formats, key dates, venue
+   and contact, plus _Zet in je agenda_ (.ics) and _Route_.
+3. **Kalender**: tournaments grouped by month for twelve months.
+4. **Locaties / Clubs**: list with search and province filter; detail pages link to each other.
+5. **Spelers**: only adults with a public profile. Logged in, open a player and click _Volgen_; the player
+   appears under _Mijn dashboard → Volgend_.
+6. `/sitemap.xml`, `/robots.txt` and `/api/openapi.json`; e.g. `curl -i /api/v1/tournaments` shows the
+   `ETag`, and repeating it with `If-None-Match` returns `304`.
+
 ## Verifying Phase 2 (admin core)
 
 1. Log in as admin → **Beheer**: overview with counts, tournaments per status, upcoming tournaments and recent changes.

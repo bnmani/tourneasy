@@ -1,12 +1,30 @@
+import { formatDayRange, formatFeeRange } from '@tourneasy/shared';
 import type { AppLocale } from '@tourneasy/shared/i18n';
+import type { Metadata } from 'next';
 import { Bell, CalendarClock, CreditCard, Radio } from 'lucide-react';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { HeroArt } from '@/components/home/hero-art';
+import { TournamentCarousel } from '@/components/home/tournament-carousel';
 import { Button } from '@/components/ui/button';
 import { Link } from '@/i18n/navigation';
+import { pageMetadata } from '@/lib/seo';
 import { getActor } from '@/server/auth/web';
+import { featuredTournaments } from '@/server/services/public-service';
 
 type Props = { params: Promise<{ locale: string }> };
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const locale = (await params).locale as AppLocale;
+  const t = await getTranslations({ locale, namespace: 'Metadata' });
+  const meta = pageMetadata({
+    locale,
+    path: '/',
+    title: t('title'),
+    description: t('description'),
+  });
+  // The home page title already contains the site name, so skip the "| Tourneasy" template.
+  return { ...meta, title: { absolute: t('title') } };
+}
 
 export default async function HomePage({ params }: Props) {
   const { locale } = await params;
@@ -14,9 +32,10 @@ export default async function HomePage({ params }: Props) {
   setRequestLocale(locale as AppLocale);
   const t = await getTranslations('Home');
   const actor = await getActor();
+  const tph = await getTranslations('Phases');
+  const featured = await featuredTournaments(6);
 
-  // The tournament carousel, live results and "next on court" join the home page in
-  // Phases 3 and 6, when those pages and data exist.
+  // Live results and "next on court" join the home page in Phase 6.
   const features = [
     { icon: Radio, title: t('featureLiveTitle'), text: t('featureLiveText') },
     { icon: CreditCard, title: t('featurePayTitle'), text: t('featurePayText') },
@@ -33,7 +52,7 @@ export default async function HomePage({ params }: Props) {
           aria-hidden="true"
           className="absolute inset-0 bg-[linear-gradient(90deg,var(--hero)_0%,color-mix(in_srgb,var(--hero)_75%,transparent)_45%,transparent_75%)] max-md:bg-[color-mix(in_srgb,var(--hero)_70%,transparent)]"
         />
-        <div className="relative mx-auto max-w-6xl px-4 py-16 sm:py-24 md:min-h-[560px]">
+        <div className="relative mx-auto max-w-6xl px-4 pt-16 pb-32 sm:pt-24 sm:pb-36 md:min-h-[600px]">
           <div className="max-w-xl">
             <p className="text-xs font-bold tracking-[0.14em] text-hero-highlight uppercase">
               {t('heroEyebrow')}
@@ -70,6 +89,30 @@ export default async function HomePage({ params }: Props) {
           </div>
         </div>
       </section>
+
+      {featured.length > 0 && (
+        <div className="relative z-10 mx-auto -mt-20 max-w-6xl px-4 sm:-mt-24">
+          <TournamentCarousel
+            items={featured.map((f) => ({
+              slug: f.slug,
+              name: f.name,
+              dates: formatDayRange(f.startsOn, f.endsOn, locale as AppLocale, 'long'),
+              place: f.venue ? `${f.venue.name}, ${f.venue.city}` : null,
+              phase: f.phase,
+              phaseLabel: tph(f.phase),
+              disciplines: f.disciplines,
+              fee: formatFeeRange(f.feeFromCents, f.feeToCents, locale as AppLocale),
+            }))}
+            labels={{
+              region: t('carouselLabel'),
+              previous: t('previous'),
+              next: t('next'),
+              slide: t.raw('slide') as string,
+              viewAll: t('allTournaments'),
+            }}
+          />
+        </div>
+      )}
 
       <section
         id="about"

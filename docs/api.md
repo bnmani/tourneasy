@@ -13,7 +13,7 @@ from the Zod schemas in `packages/shared` and served at `/api/openapi.json`.
 
 ## Authentication
 
-- Web: Auth.js session cookie (`HttpOnly`, `Secure`, `SameSite=Lax`) + CSRF protection on mutations.
+- Web: opaque session cookie `__Host-te_session` (`HttpOnly`, `Secure`, `SameSite=Lax`) + same-origin check on mutations.
 - Mobile: `Authorization: Bearer <access token>` (15 min) obtained via `/api/v1/auth/token`,
   renewed with a rotating refresh token.
 
@@ -85,3 +85,24 @@ an `Origin` header matching the site (CSRF protection); Bearer requests don't ne
 Rate limits (per window): login 30 per IP and 10 per identifier / 15 min, sign-up 10 per IP / hour,
 password reset 10 per IP and 3 per email / hour. Five wrong passwords lock an account for 15 minutes
 (`423 ACCOUNT_LOCKED`).
+
+## Public endpoints (Phase 3)
+
+No login needed. Responses are cacheable (`ETag`, `Cache-Control: public, max-age=60`; venues
+and clubs 300) and answer `304` to a matching `If-None-Match`. Lists take `limit` (1–100, default 20)
+and an opaque `cursor`, and return `{ "data": [...], "nextCursor": "…" | null }`. The full schema is
+generated from the shared Zod schemas at **`/api/openapi.json`**.
+
+| Method   | Path                                                | Auth          | Purpose                                                                                       |
+| -------- | --------------------------------------------------- | ------------- | --------------------------------------------------------------------------------------------- |
+| `GET`    | `/api/v1/tournaments`                               | —             | Published tournaments; `q`, `province`, `discipline`, `when` (`upcoming` \| `open` \| `past`) |
+| `GET`    | `/api/v1/tournaments/{slug}`                        | —             | Details: venue, events (fee, format, scoring), dates, contact                                 |
+| `GET`    | `/api/v1/tournaments/{slug}/calendar.ics`           | —             | The tournament days as an iCalendar event                                                     |
+| `GET`    | `/api/v1/venues`, `/api/v1/venues/{slug}`           | —             | Venues; a venue with its upcoming tournaments and home clubs                                  |
+| `GET`    | `/api/v1/clubs`, `/api/v1/clubs/{slug}`             | —             | Clubs; a club with its public players                                                         |
+| `GET`    | `/api/v1/players`, `/api/v1/players/{memberNumber}` | — / optional  | Players with a public profile; signed in adds `following`, `isSelf`                           |
+| `PUT`    | `/api/v1/players/{memberNumber}/follow`             | Bearer/cookie | Follow → `204`                                                                                |
+| `DELETE` | `/api/v1/players/{memberNumber}/follow`             | Bearer/cookie | Unfollow → `204`                                                                              |
+
+Only published, non-deleted tournaments are returned. Players appear only when they opted in, have an
+account and are 16 or older (D30); responses never contain email addresses, phone numbers or dates of birth.

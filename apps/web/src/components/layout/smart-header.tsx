@@ -62,7 +62,7 @@ export function SmartHeader({
           aria-expanded={open}
           aria-controls="mobile-menu"
           aria-label={open ? closeLabel : openLabel}
-          className="inline-flex size-10 shrink-0 items-center justify-center rounded-md border border-border focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none md:hidden"
+          className="inline-flex size-10 shrink-0 items-center justify-center rounded-md border border-border focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none lg:hidden"
         >
           {open ? (
             <X aria-hidden="true" className="size-5" />
@@ -71,7 +71,7 @@ export function SmartHeader({
           )}
         </button>
       </div>
-      <div id="mobile-menu" hidden={!open} className="border-t border-border md:hidden">
+      <div id="mobile-menu" hidden={!open} className="border-t border-border lg:hidden">
         {mobileMenu}
       </div>
     </header>
