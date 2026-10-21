@@ -106,6 +106,8 @@ export const publicTournamentSchema = publicTournamentSummarySchema.extend({
   maxEventsPerPlayer: z.number().int(),
   /** Multi-category discount (D52): total in cents for 1, 2, 3 … categories; empty = none. */
   bundlePricesCents: z.array(z.number().int()),
+  /** The schedule is published (D56). */
+  schedulePublished: z.boolean(),
   contact: z.object({
     name: z.string().nullable(),
     email: z.string().nullable(),

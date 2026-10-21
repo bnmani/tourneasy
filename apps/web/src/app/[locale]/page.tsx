@@ -6,6 +6,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { HeroImage } from '@/components/home/hero-image';
 import { TournamentCarousel } from '@/components/home/tournament-carousel';
 import { Button } from '@/components/ui/button';
+import { LiveMatches } from '@/components/matches/live-matches';
 import { Link } from '@/i18n/navigation';
 import { pageMetadata } from '@/lib/seo';
 import { getActor } from '@/server/auth/web';
@@ -113,6 +114,10 @@ export default async function HomePage({ params }: Props) {
           />
         </div>
       )}
+
+      <div className="mx-auto max-w-6xl px-4 pt-12 empty:hidden">
+        <LiveMatches locale={locale as AppLocale} />
+      </div>
 
       <section
         id="about"

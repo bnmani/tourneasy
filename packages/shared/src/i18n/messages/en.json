@@ -169,7 +169,20 @@
     "drawPublished": "The draw is already published. Unpublish it first to change it.",
     "drawStarted": "Matches have already been played in this draw.",
     "entriesStillOpen": "Entries are still open. Publish the draw after the closing date.",
-    "seedOrder": "Seeds must be 1, 2, 3 … without gaps or duplicates."
+    "seedOrder": "Seeds must be 1, 2, 3 … without gaps or duplicates.",
+    "noVenue": "Choose a venue for the tournament first; the courts come from the venue.",
+    "noPublishedDraws": "There are no published draws to schedule yet.",
+    "courtTaken": "That court is already taken at that time.",
+    "notScheduled": "Both matches must be scheduled to swap them.",
+    "drawNotPublished": "Publish this category’s draw first.",
+    "matchNotReady": "This match does not have two opponents yet.",
+    "nextMatchPlayed": "The next match has already started; this result can no longer be changed.",
+    "resultConflict": "Someone else just changed this result. Refresh the page and try again.",
+    "stageExists": "This next round already exists.",
+    "stageNotFinished": "Not all matches of this round have been played yet.",
+    "gameScore": "Game {game} is not a valid final score (e.g. 21-19, 24-22 or 30-29).",
+    "tooFewGames": "Not enough games won yet for a winner.",
+    "tooManyGames": "Game {game} is one too many: the match was already decided."
   },
   "Auth": {
     "login": {
@@ -486,7 +499,13 @@
       "refundADMIN_APPROVAL": "After approval by the organisers",
       "refundNO_REFUNDS": "No refunds",
       "refundPercent": "Percentage refunded",
-      "refundPercentHint": "E.g. 90 to keep 10% for admin costs."
+      "refundPercentHint": "E.g. 90 to keep 10% for admin costs.",
+      "dayEndTime": "Last match finished by",
+      "dayEndTimeHint": "Dutch time; default 22:00.",
+      "matchMinutes": "Minutes per match",
+      "matchMinutesHint": "Length of a time slot in the schedule.",
+      "restMinutes": "Rest between matches (min)",
+      "restMinutesHint": "Minimum rest for a player between two matches."
     },
     "events": {
       "new": "New event",
@@ -517,7 +536,9 @@
       "matchesPerEntry": "Max matches per team",
       "matchesPerEntryHint": "Each team plays this many matches against random opponents.",
       "knockoutSize": "Teams advancing to the knockout",
-      "knockoutSizeHint": "For example 16: round of 16, quarter-finals, semi-finals and final."
+      "knockoutSizeHint": "For example 16: round of 16, quarter-finals, semi-finals and final.",
+      "restMinutes": "Rest between matches (min)",
+      "restMinutesHint": "Empty = the tournament’s rest (hybrid defaults to at most 10 minutes)."
     },
     "venues": {
       "title": "Venues",
@@ -595,7 +616,8 @@
       "mergedInto": "Merged into {number}",
       "minorNotice": "Minor: use these details for the organisation only.",
       "age": "Age",
-      "created": "Added"
+      "created": "Added",
+      "categoriesPlayed": "Categories played"
     },
     "audit": {
       "title": "Audit log",
@@ -623,7 +645,12 @@
       "locked": "Locked.",
       "drawGenerated": "Draft draw made.",
       "drawPublished": "Draw published.",
-      "drawUnpublished": "Draw unpublished."
+      "drawUnpublished": "Draw unpublished.",
+      "scheduleProposed": "Schedule made. Not scheduled: {unscheduled}.",
+      "schedulePublished": "Schedule published.",
+      "scheduleUnpublished": "Schedule unpublished.",
+      "resultSaved": "Result saved.",
+      "stageCreated": "Next round made."
     },
     "grantShort": "Grant",
     "revokeShort": "Remove",
@@ -767,6 +794,65 @@
       "swap": "Swap",
       "bye": "Bye",
       "groupShort": "Group {name}"
+    },
+    "schedule": {
+      "title": "Schedule",
+      "heading": "Schedule: {tournament}",
+      "intro": "The system proposes a schedule over the courts and days; then you adjust and publish it.",
+      "desk": "Match desk",
+      "settings": "{minutes} minutes per match, at least {rest} minutes rest, {courts} courts, from {start} to {end}.",
+      "changeSettings": "Change settings",
+      "noVenue": "This tournament has no venue yet: choose one to schedule courts.",
+      "propose": "Propose schedule",
+      "proposeAgain": "Propose again",
+      "proposeRemaining": "Schedule remaining matches",
+      "publish": "Publish schedule",
+      "unpublish": "Unpublish",
+      "isPublished": "Published: players see their times and courts. Changes are marked.",
+      "notPublished": "Not published yet: only the organisers see this schedule.",
+      "conflicts": "{count, plural, one {# match gives} other {# matches give}} a player too little rest.",
+      "unscheduled": "Not scheduled ({count})",
+      "restConflict": "Too little rest for a player.",
+      "adjust": "Adjust",
+      "court": "Court",
+      "courtNumber": "Court {number}",
+      "time": "Time",
+      "move": "Move",
+      "swapWith": "Swap with",
+      "swap": "Swap",
+      "remove": "Take off the schedule",
+      "place": "Schedule",
+      "empty": "Nothing to schedule yet. Publish the draws per category first."
+    },
+    "desk": {
+      "title": "Match desk",
+      "heading": "Match desk: {tournament}",
+      "intro": "Check players in, put matches on court and enter results.",
+      "schedule": "Schedule",
+      "groupsDone": "{event}: the first stage is finished.",
+      "swissRoundDone": "{event}: the round is finished.",
+      "makeKnockout": "Make knockout draw",
+      "nextRound": "Pair next round",
+      "views": "Matches",
+      "view": {
+        "now": "On court",
+        "next": "Next",
+        "open": "All open",
+        "done": "Played"
+      },
+      "empty": "No matches in this list.",
+      "present": "present",
+      "checkIn": "check in",
+      "onCourt": "On court",
+      "game": "Game {number}",
+      "scoreA": "Game {number}, points player or pair 1",
+      "scoreB": "Game {number}, points player or pair 2",
+      "correct": "Correct result",
+      "save": "Save result",
+      "other": "Walkover or retirement",
+      "walkoverWinner": "Walkover, winner:",
+      "retiredHelp": "Retirement: enter the score so far and choose the winner.",
+      "retiredWinner": "Winner:"
     }
   },
   "Legal": {
@@ -949,7 +1035,8 @@
     "entryCtaLogin": "Log in to enter",
     "bundle": "Multi-category discount",
     "bundleTier": "{count, plural, one {# category} other {# categories}} {price}",
-    "draws": "Draws"
+    "draws": "Draws",
+    "schedule": "Schedule and results"
   },
   "Calendar": {
     "title": "Calendar",
@@ -1144,6 +1231,41 @@
     "hybrid": "Preliminary round",
     "knockoutFollowsGroups": "The best of each group go on to the knockout draw, which follows after the group matches.",
     "knockoutFollowsRanking": "The best of the ranking then play a knockout draw.",
-    "swissNextRounds": "Next rounds are paired based on the results."
+    "swissNextRounds": "Next rounds are paired based on the results.",
+    "walkover": "Walkover",
+    "entry": "Player / pair",
+    "played": "P",
+    "playedLong": "Played",
+    "won": "W",
+    "wonLong": "Won",
+    "games": "Games",
+    "gamesLong": "Games for-against",
+    "points": "Points",
+    "pointsLong": "Points for-against",
+    "podium": "Result",
+    "first": "1st",
+    "second": "2nd",
+    "third": "3rd"
+  },
+  "Matches": {
+    "court": "Court {number}",
+    "live": "Live",
+    "walkover": "Walkover",
+    "retired": "retired",
+    "changed": "Changed",
+    "liveTitle": "Live now",
+    "onCourtNow": "On court",
+    "nextUp": "Next matches",
+    "scheduleTitle": "Schedule: {tournament}",
+    "backToTournament": "Back to the tournament",
+    "notPublished": "The schedule has not been published yet.",
+    "noHistory": "No matches played yet.",
+    "wonLong": "Won",
+    "lostLong": "Lost",
+    "wonShort": "W",
+    "lostShort": "L",
+    "versus": "vs {name}",
+    "myMatches": "My matches",
+    "history": "Matches played"
   }
 }

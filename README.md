@@ -52,6 +52,17 @@ packages/db       Prisma schema, migrations, seed, client
 packages/shared   translations (nl/en), formatting, Zod schemas, business rules
 ```
 
+## Verifying Phase 6b/6c (schedule, results, live)
+
+1. Tournament form: _Minuten per wedstrijd_, _Rust tussen wedstrijden_, _Laatste wedstrijd klaar om_ (and rest per category).
+2. Admin → tournament → _Planning_ → _Planning voorstellen_: matches per day, time and court; adjust (move, swap,
+   take off), then _Planning publiceren_. The public tournament page gets _Planning en uitslagen_.
+3. _Wedstrijdtafel_: check players in, _Op de baan_, enter game scores (invalid scores are refused), walkover or
+   retirement. Winners move on; group tables update. When the groups are done: _Knock-outschema maken_;
+   Swiss: _Volgende ronde indelen_.
+4. On tournament days the home and tournament pages show _Nu bezig_ (on court / next), refreshing every 20 s.
+5. _Schema's_ shows scores, group tables and the podium; players see _Mijn wedstrijden_ and their history.
+
 ## Verifying Phase 6a (draws)
 
 1. Admin → tournament → _Schema's maken_: every category with its entries and draw status.

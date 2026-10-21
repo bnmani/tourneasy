@@ -200,6 +200,23 @@ export const tournamentSchema = z
       emptyToUndefined,
       z.string().regex(TIME_OF_DAY_PATTERN, 'timeInvalid').optional(),
     ),
+    dayEndTime: z.preprocess(
+      emptyToUndefined,
+      z.string().regex(TIME_OF_DAY_PATTERN, 'timeInvalid').optional(),
+    ),
+    /** Schedule (D56): minutes per match slot and minimum rest between a player's matches. */
+    matchMinutes: z.coerce
+      .number({ invalid_type_error: 'invalid' })
+      .int('invalid')
+      .min(10, 'invalid')
+      .max(120, 'invalid')
+      .default(30),
+    restMinutes: z.coerce
+      .number({ invalid_type_error: 'invalid' })
+      .int('invalid')
+      .min(0, 'invalid')
+      .max(180, 'invalid')
+      .default(20),
     registrationOpensAt: localDateTime,
     registrationClosesAt: localDateTime,
     withdrawalDeadline: localDateTime,
@@ -307,6 +324,8 @@ export const eventSchema = z
       .refine((n) => [11, 15, 21].includes(n), 'invalid')
       .default(21),
     pointsCap: z.coerce.number().int().min(11, 'invalid').max(40, 'invalid').default(30),
+    /** Rest between a player's matches in this category; empty = the tournament's (D56). */
+    restMinutes: optionalInt(0, 180),
     isOpen: z.boolean().default(true),
   })
   .superRefine((v, ctx) => {

@@ -135,7 +135,24 @@ export async function listPlayers(actor: Actor, filters: PlayerFilters = {}) {
       select: listSelect,
     }),
   ]);
-  return { players, total, page, pages: pageCount(total) };
+  // Categories in which the player has played at least one match (D57).
+  const played = players.length
+    ? await prisma.$queryRaw<{ playerId: string; n: bigint }[]>`
+        SELECT rp."playerId", COUNT(DISTINCT rp."eventId") AS n
+        FROM "RegistrationParticipant" rp
+        JOIN "DrawEntry" de ON de."registrationId" = rp."registrationId"
+        JOIN "Match" m ON m."entryAId" = de.id OR m."entryBId" = de.id
+        WHERE rp."playerId" = ANY(${players.map((p) => p.id)}::uuid[])
+          AND m.status IN ('COMPLETED', 'WALKOVER', 'RETIRED')
+        GROUP BY rp."playerId"`
+    : [];
+  const playedOf = new Map(played.map((r) => [r.playerId, Number(r.n)]));
+  return {
+    players: players.map((p) => ({ ...p, categoriesPlayed: playedOf.get(p.id) ?? 0 })),
+    total,
+    page,
+    pages: pageCount(total),
+  };
 }
 
 export async function getPlayer(actor: Actor, id: string) {

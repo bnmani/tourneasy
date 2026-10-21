@@ -40,6 +40,11 @@ const SUCCESS = new Set([
   'drawGenerated',
   'drawPublished',
   'drawUnpublished',
+  'scheduleProposed',
+  'schedulePublished',
+  'scheduleUnpublished',
+  'resultSaved',
+  'stageCreated',
 ]);
 
 /** Shows the outcome of the last action from ?status=… (success text or error key). */
@@ -70,7 +75,7 @@ export async function StatusNotice({
       className="rounded-md border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm text-destructive"
     >
       {te.has(status as 'invalid')
-        ? te(status as 'invalid', { minutes: 15, min: 10 })
+        ? te(status as 'invalid', { minutes: 15, min: 10, ...params } as never)
         : te('unexpected')}
     </p>
   );

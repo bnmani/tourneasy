@@ -34,7 +34,17 @@ export type ErrorCode =
   | 'drawPublished'
   | 'drawStarted'
   | 'tooFewEntries'
-  | 'entriesStillOpen';
+  | 'entriesStillOpen'
+  | 'noVenue'
+  | 'noPublishedDraws'
+  | 'courtTaken'
+  | 'notScheduled'
+  | 'drawNotPublished'
+  | 'matchNotReady'
+  | 'nextMatchPlayed'
+  | 'resultConflict'
+  | 'stageExists'
+  | 'stageNotFinished';
 
 const HTTP_STATUS: Record<ErrorCode, number> = {
   validation: 422,
@@ -69,6 +79,16 @@ const HTTP_STATUS: Record<ErrorCode, number> = {
   drawStarted: 409,
   tooFewEntries: 409,
   entriesStillOpen: 409,
+  noVenue: 409,
+  noPublishedDraws: 409,
+  courtTaken: 409,
+  notScheduled: 409,
+  drawNotPublished: 409,
+  matchNotReady: 409,
+  nextMatchPlayed: 409,
+  resultConflict: 409,
+  stageExists: 409,
+  stageNotFinished: 409,
 };
 
 export class AppError extends Error {

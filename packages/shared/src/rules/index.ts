@@ -7,3 +7,5 @@ export * from './tournament-phase';
 export * from './eligibility';
 export * from './bundle-pricing';
 export * from './draws';
+export * from './schedule';
+export * from './scoring';

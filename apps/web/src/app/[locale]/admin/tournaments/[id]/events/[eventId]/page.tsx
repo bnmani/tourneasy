@@ -53,6 +53,7 @@ export default async function EditEventPage({ params }: Params) {
           bestOf: event.bestOf.toString(),
           pointsToWin: event.pointsToWin.toString(),
           pointsCap: event.pointsCap.toString(),
+          restMinutes: event.restMinutes?.toString() ?? '',
           isOpen: event.isOpen,
         }}
       />

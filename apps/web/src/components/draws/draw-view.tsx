@@ -1,6 +1,7 @@
 import { getTranslations } from 'next-intl/server';
 import { cn } from '@/lib/utils';
 import type { EventDraw } from '@/server/services/draw-service';
+import { drawStandings } from '@/server/services/results-service';
 
 type Entry = EventDraw['entries'][number];
 type Match = EventDraw['matches'][number];
@@ -25,10 +26,12 @@ async function Side({
   entry,
   winner,
   seed,
+  scores,
 }: {
   entry: Entry | undefined;
   winner: boolean;
   seed: number | null;
+  scores: number[];
 }) {
   const t = await getTranslations('Draws');
   const label = entryLabel(entry);
@@ -64,11 +67,21 @@ async function Side({
           </>
         )}
       </span>
+      {scores.length > 0 && (
+        <span className="ml-auto flex shrink-0 gap-1.5 pl-2 tabular-nums">
+          {scores.map((n, i) => (
+            <span key={i} className="w-5 text-right">
+              {n}
+            </span>
+          ))}
+        </span>
+      )}
     </div>
   );
 }
 
 async function MatchCard({ match, entries }: { match: Match; entries: Map<string, Entry> }) {
+  const t = await getTranslations('Draws');
   const a = match.entryAId ? entries.get(match.entryAId) : undefined;
   const b = match.entryBId ? entries.get(match.entryBId) : undefined;
   return (
@@ -76,13 +89,18 @@ async function MatchCard({ match, entries }: { match: Match; entries: Map<string
       <Side
         entry={a}
         seed={a?.seed ?? null}
+        scores={match.sets.map((x) => x.scoreA)}
         winner={!!match.winnerEntryId && match.winnerEntryId === a?.id}
       />
       <Side
         entry={b}
         seed={b?.seed ?? null}
+        scores={match.sets.map((x) => x.scoreB)}
         winner={!!match.winnerEntryId && match.winnerEntryId === b?.id}
       />
+      {match.status === 'WALKOVER' && (
+        <p className="px-2.5 py-1 text-xs text-muted-foreground">{t('walkover')}</p>
+      )}
     </div>
   );
 }
@@ -199,24 +217,7 @@ export async function DrawView({ draws }: { draws: EventDraw[] }) {
                     ? t('hybrid')
                     : t('roundRobin')}
             </h3>
-            {draw.stage === 'GROUP' && draw.name && (
-              <ol className="list-inside list-decimal space-y-1 text-sm">
-                {draw.entries
-                  .filter((e) => e.registration)
-                  .map((e) => {
-                    const l = entryLabel(e)!;
-                    return (
-                      <li key={e.id}>
-                        {e.seed ? <span className="text-muted-foreground">[{e.seed}] </span> : null}
-                        {l.names.join(' / ')}
-                        {l.clubs.length > 0 && (
-                          <span className="text-muted-foreground"> · {l.clubs.join(' / ')}</span>
-                        )}
-                      </li>
-                    );
-                  })}
-              </ol>
-            )}
+            <StandingsTable draw={draw} entries={entries} />
             <RoundList draw={draw} entries={entries} />
           </section>
         );
@@ -228,6 +229,63 @@ export async function DrawView({ draws }: { draws: EventDraw[] }) {
         <p className="text-sm text-muted-foreground">{t('knockoutFollowsRanking')}</p>
       )}
       {type === 'SWISS' && <p className="text-sm text-muted-foreground">{t('swissNextRounds')}</p>}
+    </div>
+  );
+}
+
+async function StandingsTable({ draw, entries }: { draw: EventDraw; entries: Map<string, Entry> }) {
+  const t = await getTranslations('Draws');
+  const rows = drawStandings(draw);
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full min-w-[28rem] text-sm">
+        <thead className="text-xs text-muted-foreground uppercase">
+          <tr className="border-b">
+            <th className="py-1.5 pr-2 text-left">#</th>
+            <th className="py-1.5 pr-2 text-left">{t('entry')}</th>
+            <th className="px-2 py-1.5 text-right" title={t('playedLong')}>
+              {t('played')}
+            </th>
+            <th className="px-2 py-1.5 text-right" title={t('wonLong')}>
+              {t('won')}
+            </th>
+            <th className="px-2 py-1.5 text-right" title={t('gamesLong')}>
+              {t('games')}
+            </th>
+            <th className="py-1.5 pl-2 text-right" title={t('pointsLong')}>
+              {t('points')}
+            </th>
+          </tr>
+        </thead>
+        <tbody className="divide-y">
+          {rows.map((r, i) => {
+            const l = entryLabel(entries.get(r.id))!;
+            const e = entries.get(r.id);
+            return (
+              <tr key={r.id}>
+                <td className="py-1.5 pr-2 text-muted-foreground">{i + 1}</td>
+                <td className="py-1.5 pr-2">
+                  {e?.seed ? <span className="text-muted-foreground">[{e.seed}] </span> : null}
+                  {l.names.join(' / ')}
+                  {l.clubs.length > 0 && (
+                    <span className="block text-xs text-muted-foreground">
+                      {l.clubs.join(' / ')}
+                    </span>
+                  )}
+                </td>
+                <td className="px-2 py-1.5 text-right tabular-nums">{r.played}</td>
+                <td className="px-2 py-1.5 text-right font-semibold tabular-nums">{r.won}</td>
+                <td className="px-2 py-1.5 text-right tabular-nums">
+                  {r.gamesFor}-{r.gamesAgainst}
+                </td>
+                <td className="py-1.5 pl-2 text-right tabular-nums">
+                  {r.pointsFor}-{r.pointsAgainst}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
     </div>
   );
 }

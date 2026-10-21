@@ -28,6 +28,9 @@ export type TournamentFormValues = {
   startsOn: string;
   endsOn: string;
   dayStartTime: string;
+  dayEndTime: string;
+  matchMinutes: string;
+  restMinutes: string;
   registrationOpensAt: string;
   registrationClosesAt: string;
   withdrawalDeadline: string;
@@ -242,6 +245,38 @@ export function TournamentForm({
             hint={tz}
             state={state}
             defaultValue={values.dayStartTime}
+          />
+        </div>
+        <div className="grid gap-4 sm:grid-cols-3">
+          <TextField
+            name="dayEndTime"
+            type="time"
+            label={t('dayEndTime')}
+            hint={t('dayEndTimeHint')}
+            state={state}
+            defaultValue={values.dayEndTime}
+          />
+          <TextField
+            name="matchMinutes"
+            type="number"
+            min={10}
+            max={120}
+            label={t('matchMinutes')}
+            hint={t('matchMinutesHint')}
+            state={state}
+            defaultValue={values.matchMinutes ?? '30'}
+            inputMode="numeric"
+          />
+          <TextField
+            name="restMinutes"
+            type="number"
+            min={0}
+            max={180}
+            label={t('restMinutes')}
+            hint={t('restMinutesHint')}
+            state={state}
+            defaultValue={values.restMinutes ?? '20'}
+            inputMode="numeric"
           />
         </div>
         <div className="grid gap-4 sm:grid-cols-3">

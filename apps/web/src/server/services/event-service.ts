@@ -27,6 +27,7 @@ function toData(input: ReturnType<typeof eventSchema.parse>) {
     bestOf: input.bestOf,
     pointsToWin: input.pointsToWin,
     pointsCap: input.pointsCap,
+    restMinutes: input.restMinutes ?? null,
     isOpen: input.isOpen,
   };
 }

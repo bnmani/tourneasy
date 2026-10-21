@@ -193,6 +193,9 @@ export default async function AdminPlayersPage({
                   {t('players.preferred')}
                 </th>
                 <SortHeader column="club" label={t('players.club')} {...sortProps} />
+                <th scope="col" className="px-3 py-2 text-right">
+                  {t('players.categoriesPlayed')}
+                </th>
                 <SortHeader column="created" label={t('players.created')} {...sortProps} />
               </tr>
             </thead>
@@ -217,6 +220,7 @@ export default async function AdminPlayersPage({
                   <td className="px-3 py-2 tabular-nums">{ageOn(p.dateOfBirth)}</td>
                   <td className="px-3 py-2">{p.preferredDisciplines.join(' ') || t('none')}</td>
                   <td className="px-3 py-2">{p.club?.name ?? t('none')}</td>
+                  <td className="px-3 py-2 text-right tabular-nums">{p.categoriesPlayed}</td>
                   <td className="px-3 py-2 text-xs whitespace-nowrap text-muted-foreground">
                     {format.dateTime(p.createdAt, { dateStyle: 'short' })}
                   </td>

@@ -7,7 +7,15 @@ import {
   type PublicTournament,
 } from '@tourneasy/shared';
 import { pickLocalized, type AppLocale } from '@tourneasy/shared/i18n';
-import { CalendarPlus, GitBranch, Mail, MapPin, Navigation, Phone } from 'lucide-react';
+import {
+  CalendarClock,
+  CalendarPlus,
+  GitBranch,
+  Mail,
+  MapPin,
+  Navigation,
+  Phone,
+} from 'lucide-react';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
@@ -20,6 +28,7 @@ import { pageLocale } from '@/lib/page';
 import { pageMetadata } from '@/lib/seo';
 import { getActor } from '@/server/auth/web';
 import { isAppError } from '@/server/lib/errors';
+import { LiveMatches } from '@/components/matches/live-matches';
 import { hasPublishedDraws } from '@/server/services/draw-service';
 import { getPublicTournament } from '@/server/services/public-service';
 
@@ -173,6 +182,14 @@ export default async function TournamentPage({ params }: Props) {
               {tt('addToCalendar')}
             </a>
           </Button>
+          {t.schedulePublished && (
+            <Button asChild className="bg-brand text-brand-foreground hover:bg-brand/90">
+              <Link href={`/tournaments/${t.slug}/schedule`}>
+                <CalendarClock aria-hidden="true" />
+                {tt('schedule')}
+              </Link>
+            </Button>
+          )}
           {(await hasPublishedDraws(t.slug)) && (
             <Button asChild className="bg-brand text-brand-foreground hover:bg-brand/90">
               <Link href={`/tournaments/${t.slug}/draws`}>
@@ -196,6 +213,9 @@ export default async function TournamentPage({ params }: Props) {
         </div>
       </PageHero>
 
+      <div className="mx-auto max-w-6xl px-4 pt-8 empty:hidden">
+        <LiveMatches locale={locale} slug={t.slug} />
+      </div>
       <div className="mx-auto grid max-w-6xl gap-8 px-4 py-8 sm:py-10 lg:grid-cols-[1fr_340px]">
         <div className="min-w-0 space-y-8">
           {description && (

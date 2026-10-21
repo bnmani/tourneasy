@@ -51,6 +51,7 @@ export default async function NewEventPage({ params }: Params) {
           bestOf: '3',
           pointsToWin: '21',
           pointsCap: '30',
+          restMinutes: '',
           isOpen: true,
         }}
       />

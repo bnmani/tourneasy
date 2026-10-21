@@ -10,6 +10,8 @@ import { pageMetadata } from '@/lib/seo';
 import { cn } from '@/lib/utils';
 import { isAppError } from '@/server/lib/errors';
 import { publicDraws } from '@/server/services/draw-service';
+import { eventPodium } from '@/server/services/results-service';
+import { AutoRefresh } from '@/components/matches/auto-refresh';
 import { getPublicTournament } from '@/server/services/public-service';
 
 type Props = { params: Promise<{ locale: string; slug: string }>; searchParams: SearchParams };
@@ -78,10 +80,35 @@ export default async function TournamentDrawsPage({ params, searchParams }: Prop
                 </Link>
               ))}
             </nav>
+            {current && <Podium eventId={current.event.id} />}
             {current && <DrawView draws={current.draws} />}
+            <AutoRefresh seconds={60} />
           </>
         )}
       </div>
     </>
+  );
+}
+
+async function Podium({ eventId }: { eventId: string }) {
+  const podium = await eventPodium(eventId);
+  if (!podium?.first) return null;
+  const t = await getTranslations('Draws');
+  const places = [
+    { label: t('first'), names: [podium.first] },
+    { label: t('second'), names: podium.second ? [podium.second] : [] },
+    { label: t('third'), names: podium.third },
+  ].filter((p) => p.names.length > 0);
+  return (
+    <section aria-label={t('podium')} className="rounded-lg border border-brand/40 bg-brand/10 p-4">
+      <h2 className="mb-2 font-heading text-lg font-semibold">{t('podium')}</h2>
+      <ol className="space-y-1 text-sm">
+        {places.map((p) => (
+          <li key={p.label}>
+            <span className="font-semibold">{p.label}:</span> {p.names.join(' · ')}
+          </li>
+        ))}
+      </ol>
+    </section>
   );
 }

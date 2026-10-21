@@ -644,6 +644,12 @@ model Tournament {
   dayStartTime         String?
   /// Courts available for this tournament (defaults to the venue's number of courts).
   courtsAvailable      Int?
+  /// Schedule (D56): minutes per match slot, minimum rest between a player's matches, last
+  /// moment a match may end each day ("HH:MM", Europe/Amsterdam), and when it was published.
+  matchMinutes         Int                @default(30)
+  restMinutes          Int                @default(20)
+  dayEndTime           String?
+  schedulePublishedAt  DateTime?
   coverImageKey        String?
   logoKey              String?
   contactName          String?
@@ -744,6 +750,8 @@ model TournamentEvent {
   advancePerGroup Int?
   matchesPerEntry Int? // HYBRID_ROUND_ROBIN_KNOCKOUT: 3, 5, 7 or 9
   knockoutSize    Int? // HYBRID_ROUND_ROBIN_KNOCKOUT: 4, 8, 16 or 32
+  /// Rest between a player's matches in this category; null = the tournament's (hybrid: shorter).
+  restMinutes     Int?
   // Eligibility (ranks refer to LevelClass.rank; null = no limit)
   minLevelRank    Int?
   maxLevelRank    Int?

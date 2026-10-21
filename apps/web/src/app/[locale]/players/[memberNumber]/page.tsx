@@ -13,6 +13,8 @@ import { setFollowAction } from '@/server/actions/public-actions';
 import { getActor } from '@/server/auth/web';
 import { isAppError } from '@/server/lib/errors';
 import { getPublicPlayer } from '@/server/services/public-service';
+import { historyByMemberNumber } from '@/server/services/results-service';
+import { HistoryList } from '@/components/matches/history-list';
 
 type Props = {
   params: Promise<{ locale: string; memberNumber: string }>;
@@ -121,8 +123,8 @@ export default async function PlayerPage({ params, searchParams }: Props) {
           </section>
         )}
         <section className="rounded-lg border bg-card p-5">
-          <h2 className="font-heading text-lg font-semibold">{t('history')}</h2>
-          <p className="mt-2 text-muted-foreground">{t('historyNote')}</p>
+          <h2 className="mb-3 font-heading text-lg font-semibold">{t('history')}</h2>
+          <HistoryList rows={await historyByMemberNumber(p.memberNumber)} locale={locale} />
         </section>
       </div>
     </>

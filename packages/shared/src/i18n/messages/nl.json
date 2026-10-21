@@ -169,7 +169,20 @@
     "drawPublished": "Het schema is al gepubliceerd. Haal het eerst offline om iets te wijzigen.",
     "drawStarted": "Er zijn al wedstrijden gespeeld in dit schema.",
     "entriesStillOpen": "De inschrijving is nog open. Publiceer het schema na de sluitingsdatum.",
-    "seedOrder": "Plaatsingen moeten 1, 2, 3 … zijn, zonder gaten of dubbele nummers."
+    "seedOrder": "Plaatsingen moeten 1, 2, 3 … zijn, zonder gaten of dubbele nummers.",
+    "noVenue": "Kies eerst een locatie voor het toernooi; de banen komen van de locatie.",
+    "noPublishedDraws": "Er zijn nog geen gepubliceerde schema's om in te plannen.",
+    "courtTaken": "Die baan is op dat moment al bezet.",
+    "notScheduled": "Beide wedstrijden moeten al zijn ingepland om te wisselen.",
+    "drawNotPublished": "Publiceer eerst het schema van dit onderdeel.",
+    "matchNotReady": "Deze wedstrijd heeft nog geen twee tegenstanders.",
+    "nextMatchPlayed": "De volgende wedstrijd is al begonnen; deze uitslag kan niet meer worden veranderd.",
+    "resultConflict": "Iemand anders heeft deze uitslag net gewijzigd. Vernieuw de pagina en probeer het opnieuw.",
+    "stageExists": "Deze volgende ronde bestaat al.",
+    "stageNotFinished": "Nog niet alle wedstrijden van deze ronde zijn gespeeld.",
+    "gameScore": "Game {game} heeft geen geldige eindstand (bijv. 21-19, 24-22 of 30-29).",
+    "tooFewGames": "Er zijn nog niet genoeg games gewonnen voor een winnaar.",
+    "tooManyGames": "Game {game} is te veel: de wedstrijd was al beslist."
   },
   "Auth": {
     "login": {
@@ -486,7 +499,13 @@
       "refundADMIN_APPROVAL": "Na goedkeuring door de organisatie",
       "refundNO_REFUNDS": "Geen terugbetaling",
       "refundPercent": "Percentage terug",
-      "refundPercentHint": "Bijv. 90 om 10% administratiekosten te houden."
+      "refundPercentHint": "Bijv. 90 om 10% administratiekosten te houden.",
+      "dayEndTime": "Laatste wedstrijd klaar om",
+      "dayEndTimeHint": "Nederlandse tijd; standaard 22:00.",
+      "matchMinutes": "Minuten per wedstrijd",
+      "matchMinutesHint": "Lengte van een tijdslot in de planning.",
+      "restMinutes": "Rust tussen wedstrijden (min)",
+      "restMinutesHint": "Minimale rust voor een speler tussen twee wedstrijden."
     },
     "events": {
       "new": "Nieuw onderdeel",
@@ -517,7 +536,9 @@
       "matchesPerEntry": "Maximaal aantal wedstrijden per team",
       "matchesPerEntryHint": "Elk team speelt dit aantal wedstrijden tegen willekeurige tegenstanders.",
       "knockoutSize": "Aantal teams door naar de knock-out",
-      "knockoutSizeHint": "Bijvoorbeeld 16: achtste finales, kwartfinales, halve finales en finale."
+      "knockoutSizeHint": "Bijvoorbeeld 16: achtste finales, kwartfinales, halve finales en finale.",
+      "restMinutes": "Rust tussen wedstrijden (min)",
+      "restMinutesHint": "Leeg = de rust van het toernooi (bij hybride standaard maximaal 10 minuten)."
     },
     "venues": {
       "title": "Locaties",
@@ -595,7 +616,8 @@
       "mergedInto": "Samengevoegd met {number}",
       "minorNotice": "Minderjarige speler: gegevens alleen voor organisatie gebruiken.",
       "age": "Leeftijd",
-      "created": "Toegevoegd"
+      "created": "Toegevoegd",
+      "categoriesPlayed": "Onderdelen gespeeld"
     },
     "audit": {
       "title": "Auditlog",
@@ -623,7 +645,12 @@
       "locked": "Vergrendeld.",
       "drawGenerated": "Concept-schema gemaakt.",
       "drawPublished": "Schema gepubliceerd.",
-      "drawUnpublished": "Schema offline gehaald."
+      "drawUnpublished": "Schema offline gehaald.",
+      "scheduleProposed": "Planning gemaakt. Niet ingepland: {unscheduled}.",
+      "schedulePublished": "Planning gepubliceerd.",
+      "scheduleUnpublished": "Planning offline gehaald.",
+      "resultSaved": "Uitslag opgeslagen.",
+      "stageCreated": "Volgende ronde gemaakt."
     },
     "grantShort": "Toekennen",
     "revokeShort": "Intrekken",
@@ -767,6 +794,65 @@
       "swap": "Wisselen",
       "bye": "Vrij",
       "groupShort": "Poule {name}"
+    },
+    "schedule": {
+      "title": "Planning",
+      "heading": "Planning: {tournament}",
+      "intro": "Het systeem stelt een planning voor over de banen en dagen; daarna pas je aan en publiceer je.",
+      "desk": "Wedstrijdtafel",
+      "settings": "{minutes} minuten per wedstrijd, minstens {rest} minuten rust, {courts} banen, van {start} tot {end}.",
+      "changeSettings": "Instellingen wijzigen",
+      "noVenue": "Dit toernooi heeft nog geen locatie: kies er een om banen te kunnen plannen.",
+      "propose": "Planning voorstellen",
+      "proposeAgain": "Opnieuw voorstellen",
+      "proposeRemaining": "Overige wedstrijden inplannen",
+      "publish": "Planning publiceren",
+      "unpublish": "Offline halen",
+      "isPublished": "Gepubliceerd: spelers zien hun tijden en banen. Wijzigingen worden gemarkeerd.",
+      "notPublished": "Nog niet gepubliceerd: alleen de organisatie ziet deze planning.",
+      "conflicts": "{count, plural, one {# wedstrijd heeft} other {# wedstrijden hebben}} te weinig rust voor een speler.",
+      "unscheduled": "Niet ingepland ({count})",
+      "restConflict": "Te weinig rust voor een speler.",
+      "adjust": "Aanpassen",
+      "court": "Baan",
+      "courtNumber": "Baan {number}",
+      "time": "Tijd",
+      "move": "Verplaatsen",
+      "swapWith": "Wisselen met",
+      "swap": "Wisselen",
+      "remove": "Uit de planning halen",
+      "place": "Inplannen",
+      "empty": "Nog niets te plannen. Publiceer eerst de schema's per onderdeel."
+    },
+    "desk": {
+      "title": "Wedstrijdtafel",
+      "heading": "Wedstrijdtafel: {tournament}",
+      "intro": "Aanmelden, wedstrijden op de baan zetten en uitslagen invoeren.",
+      "schedule": "Planning",
+      "groupsDone": "{event}: de voorronde is klaar.",
+      "swissRoundDone": "{event}: de ronde is klaar.",
+      "makeKnockout": "Knock-outschema maken",
+      "nextRound": "Volgende ronde indelen",
+      "views": "Wedstrijden",
+      "view": {
+        "now": "Op de baan",
+        "next": "Volgende",
+        "open": "Alle open",
+        "done": "Gespeeld"
+      },
+      "empty": "Geen wedstrijden in deze lijst.",
+      "present": "aanwezig",
+      "checkIn": "aanmelden",
+      "onCourt": "Op de baan",
+      "game": "Game {number}",
+      "scoreA": "Game {number}, punten speler of paar 1",
+      "scoreB": "Game {number}, punten speler of paar 2",
+      "correct": "Uitslag corrigeren",
+      "save": "Uitslag opslaan",
+      "other": "Walk-over of opgave",
+      "walkoverWinner": "Walk-over, winnaar:",
+      "retiredHelp": "Opgave: vul de stand tot dan in en kies de winnaar.",
+      "retiredWinner": "Winnaar:"
     }
   },
   "Legal": {
@@ -949,7 +1035,8 @@
     "entryCtaLogin": "Inloggen om in te schrijven",
     "bundle": "Korting meerdere onderdelen",
     "bundleTier": "{count, plural, one {# onderdeel} other {# onderdelen}} {price}",
-    "draws": "Schema's"
+    "draws": "Schema's",
+    "schedule": "Planning en uitslagen"
   },
   "Calendar": {
     "title": "Kalender",
@@ -1144,6 +1231,41 @@
     "hybrid": "Voorronde",
     "knockoutFollowsGroups": "De beste spelers per poule gaan door naar het knock-outschema; dat volgt na de poulewedstrijden.",
     "knockoutFollowsRanking": "De besten van de ranglijst spelen daarna een knock-outschema.",
-    "swissNextRounds": "Volgende rondes worden ingedeeld op basis van de uitslagen."
+    "swissNextRounds": "Volgende rondes worden ingedeeld op basis van de uitslagen.",
+    "walkover": "Walk-over",
+    "entry": "Speler / paar",
+    "played": "G",
+    "playedLong": "Gespeeld",
+    "won": "W",
+    "wonLong": "Gewonnen",
+    "games": "Games",
+    "gamesLong": "Games voor-tegen",
+    "points": "Punten",
+    "pointsLong": "Punten voor-tegen",
+    "podium": "Uitslag",
+    "first": "1e",
+    "second": "2e",
+    "third": "3e"
+  },
+  "Matches": {
+    "court": "Baan {number}",
+    "live": "Live",
+    "walkover": "Walk-over",
+    "retired": "opgave",
+    "changed": "Gewijzigd",
+    "liveTitle": "Nu bezig",
+    "onCourtNow": "Op de baan",
+    "nextUp": "Volgende wedstrijden",
+    "scheduleTitle": "Planning: {tournament}",
+    "backToTournament": "Terug naar het toernooi",
+    "notPublished": "De planning is nog niet gepubliceerd.",
+    "noHistory": "Nog geen gespeelde wedstrijden.",
+    "wonLong": "Gewonnen",
+    "lostLong": "Verloren",
+    "wonShort": "W",
+    "lostShort": "V",
+    "versus": "tegen {name}",
+    "myMatches": "Mijn wedstrijden",
+    "history": "Gespeelde wedstrijden"
   }
 }

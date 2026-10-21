@@ -240,6 +240,12 @@ export default async function AdminTournamentPage({
         <div>
           <Button asChild variant="outline" size="sm">
             <Link href={`/admin/tournaments/${tournament.id}/draws`}>{t('draws.manage')}</Link>
+          </Button>{' '}
+          <Button asChild variant="outline" size="sm">
+            <Link href={`/admin/tournaments/${tournament.id}/schedule`}>{t('schedule.title')}</Link>
+          </Button>{' '}
+          <Button asChild variant="outline" size="sm">
+            <Link href={`/admin/tournaments/${tournament.id}/matches`}>{t('desk.title')}</Link>
           </Button>
         </div>
       </FormSection>
@@ -257,6 +263,9 @@ export default async function AdminTournamentPage({
           startsOn: tournament.startsOn.toISOString().slice(0, 10),
           endsOn: tournament.endsOn.toISOString().slice(0, 10),
           dayStartTime: tournament.dayStartTime ?? '',
+          dayEndTime: tournament.dayEndTime ?? '',
+          matchMinutes: tournament.matchMinutes.toString(),
+          restMinutes: tournament.restMinutes.toString(),
           registrationOpensAt: utcToAmsterdamLocal(tournament.registrationOpensAt),
           registrationClosesAt: utcToAmsterdamLocal(tournament.registrationClosesAt),
           withdrawalDeadline: utcToAmsterdamLocal(tournament.withdrawalDeadline),

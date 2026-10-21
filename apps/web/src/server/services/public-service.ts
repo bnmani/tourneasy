@@ -222,6 +222,7 @@ export async function getPublicTournament(
       withdrawalDeadline: true,
       maxEventsPerPlayer: true,
       bundlePricesCents: true,
+      schedulePublishedAt: true,
       contactName: true,
       contactEmail: true,
       contactPhone: true,
@@ -286,6 +287,7 @@ export async function getPublicTournament(
     withdrawalDeadline: t.withdrawalDeadline.toISOString(),
     maxEventsPerPlayer: t.maxEventsPerPlayer,
     bundlePricesCents: t.bundlePricesCents,
+    schedulePublished: !!t.schedulePublishedAt,
     contact: { name: t.contactName, email: t.contactEmail, phone: t.contactPhone },
     events,
   };

@@ -1,3 +1,4 @@
+import type { AppLocale } from '@tourneasy/shared/i18n';
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import { MyEntries, MyInvites } from '@/components/entry/my-entries';
@@ -10,6 +11,10 @@ import { requireActor } from '@/server/auth/web';
 import { getMyAccount } from '@/server/services/profile-service';
 import { listFollowing } from '@/server/services/public-service';
 import { listMyInvites, listMyRegistrations } from '@/server/services/registration-service';
+import { HistoryList } from '@/components/matches/history-list';
+import { MatchLine } from '@/components/matches/match-line';
+import { myHistory } from '@/server/services/results-service';
+import { myMatches } from '@/server/services/schedule-service';
 import { PlayerList } from '@/components/public/player-list';
 
 export async function generateMetadata({ params }: LocaleParams): Promise<Metadata> {
@@ -103,6 +108,7 @@ export default async function DashboardPage({
         {tab === 'upcoming' && (
           <div className="space-y-6">
             <MyInvites invites={invites} locale={locale} />
+            <MyUpcomingMatches actor={actor} locale={locale} />
             {upcoming.length > 0 ? (
               <MyEntries
                 entries={upcoming}
@@ -118,6 +124,7 @@ export default async function DashboardPage({
             </Button>
           </div>
         )}
+        {tab === 'past' && <MyHistory actor={actor} locale={locale} />}
         {tab === 'past' &&
           (past.length > 0 ? (
             <MyEntries entries={past} locale={locale} showActions={false} />
@@ -166,5 +173,54 @@ export default async function DashboardPage({
         )}
       </section>
     </div>
+  );
+}
+
+/** My scheduled matches (published schedules) with time and court. */
+async function MyUpcomingMatches({
+  actor,
+  locale,
+}: {
+  actor: Parameters<typeof myMatches>[0];
+  locale: AppLocale;
+}) {
+  const matches = (await myMatches(actor)).filter(
+    (m) => !['COMPLETED', 'WALKOVER', 'RETIRED'].includes(m.status),
+  );
+  if (matches.length === 0) return null;
+  const t = await getTranslations('Matches');
+  return (
+    <section aria-labelledby="my-matches" className="space-y-2">
+      <h2 id="my-matches" className="font-heading text-lg font-semibold">
+        {t('myMatches')}
+      </h2>
+      <div className="grid gap-2 sm:grid-cols-2">
+        {matches.map((m) => (
+          <MatchLine key={m.id} item={m} locale={locale}>
+            <p className="text-xs text-muted-foreground">{m.tournament.name}</p>
+          </MatchLine>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+async function MyHistory({
+  actor,
+  locale,
+}: {
+  actor: Parameters<typeof myHistory>[0];
+  locale: AppLocale;
+}) {
+  const rows = await myHistory(actor);
+  if (rows.length === 0) return null;
+  const t = await getTranslations('Matches');
+  return (
+    <section aria-labelledby="my-history" className="mb-6 space-y-2">
+      <h2 id="my-history" className="font-heading text-lg font-semibold">
+        {t('history')}
+      </h2>
+      <HistoryList rows={rows} locale={locale} />
+    </section>
   );
 }

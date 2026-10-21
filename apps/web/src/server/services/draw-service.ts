@@ -157,6 +157,7 @@ const drawInclude = {
       entryAId: true,
       entryBId: true,
       winnerEntryId: true,
+      sets: { orderBy: { setNumber: 'asc' }, select: { scoreA: true, scoreB: true } },
     },
   },
 } satisfies Prisma.DrawInclude;

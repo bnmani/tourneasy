@@ -204,6 +204,9 @@ export function fieldErrors(error: z.ZodError): Record<string, string> {
 }
 
 export const KNOWN_ERROR_KEYS = new Set([
+  'gameScore',
+  'tooFewGames',
+  'tooManyGames',
   'seedOrder',
   'stripeKeyFormat',
   'stripeKeyRejected',

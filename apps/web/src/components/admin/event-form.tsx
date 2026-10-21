@@ -33,6 +33,7 @@ export type EventFormValues = {
   advancePerGroup: string;
   matchesPerEntry: string;
   knockoutSize: string;
+  restMinutes: string;
   bestOf: string;
   pointsToWin: string;
   pointsCap: string;
@@ -256,6 +257,17 @@ export function EventForm({
             defaultValue={values.pointsCap}
           />
         </div>
+        <TextField
+          name="restMinutes"
+          type="number"
+          min={0}
+          max={180}
+          label={t('restMinutes')}
+          hint={t('restMinutesHint')}
+          state={state}
+          defaultValue={values.restMinutes}
+          inputMode="numeric"
+        />
       </FormSection>
 
       <SubmitButton size="lg">{ta('save')}</SubmitButton>
