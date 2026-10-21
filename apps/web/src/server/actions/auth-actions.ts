@@ -22,11 +22,7 @@ import {
   resetPassword,
   signUp,
 } from '../services/auth-service';
-import {
-  actorFromWebToken,
-  createWebSession,
-  revokeSessionById,
-} from '../services/session-service';
+import { actorFromWebToken, createWebSession } from '../services/session-service';
 import { formToObject, toFormState } from './form-utils';
 
 export async function registerAction(
@@ -72,13 +68,6 @@ export async function loginAction(
     return toFormState(error, formData);
   }
   redirect(target);
-}
-
-export async function logoutAction(locale: AppLocale): Promise<void> {
-  const actor = await getActor();
-  if (actor) await revokeSessionById(actor.sessionId);
-  await clearSessionCookie();
-  redirect(`/${locale}`);
 }
 
 export async function forgotPasswordAction(

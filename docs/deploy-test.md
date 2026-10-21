@@ -24,13 +24,16 @@ Use **Import .env** with the local file `.env.test-server` after filling in `DAT
 Delete these rows from the platform form (they are for local development only):
 `SMTP_HOST`, `SMTP_PORT`, `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD`, `SEED_PLAYER_PASSWORD`.
 
-| Key                       | Value                                  |
-| ------------------------- | -------------------------------------- |
-| `APP_URL`                 | `https://test.tourneasy.app`           |
-| `NEXT_PUBLIC_APP_URL`     | `https://test.tourneasy.app`           |
-| `DATABASE_URL`            | your hosted Postgres connection string |
-| `EMAIL_FROM`              | `Tourneasy <no-reply@tourneasy.app>`   |
-| `NEXT_TELEMETRY_DISABLED` | `1`                                    |
+| Key                                  | Value                                                                                                                               |
+| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `APP_URL`                            | `https://test.tourneasy.app`                                                                                                        |
+| `NEXT_PUBLIC_APP_URL`                | `https://test.tourneasy.app`                                                                                                        |
+| `DATABASE_URL`                       | your hosted Postgres connection string                                                                                              |
+| `EMAIL_FROM`                         | `Tourneasy <no-reply@tourneasy.app>`                                                                                                |
+| `NEXT_TELEMETRY_DISABLED`            | `1`                                                                                                                                 |
+| `AUTH_SECRET`                        | random secret (in `.env.test-server`); signs mobile access tokens                                                                   |
+| `EMAIL_TRANSPORT`                    | `log` until an SMTP provider is set up                                                                                              |
+| `NEXT_SERVER_ACTIONS_ENCRYPTION_KEY` | 32-byte base64 key (in `.env.test-server`); keep it the same across deploys so buttons on pages opened before a deploy keep working |
 
 ## 3. Build settings
 

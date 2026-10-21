@@ -94,7 +94,7 @@ export async function actorFromRequest(request: Request): Promise<Actor | null> 
   return token ? actorFromWebToken(token) : null;
 }
 
-function isSameOrigin(request: Request): boolean {
+export function isSameOrigin(request: Request): boolean {
   const origin = request.headers.get('origin');
   if (!origin) return false;
   const host = request.headers.get('x-forwarded-host') ?? request.headers.get('host');

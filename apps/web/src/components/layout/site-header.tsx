@@ -3,7 +3,6 @@ import { LayoutDashboard, LogOut, Shield } from 'lucide-react';
 import { getLocale, getTranslations } from 'next-intl/server';
 import { Button } from '@/components/ui/button';
 import { Link } from '@/i18n/navigation';
-import { logoutAction } from '@/server/actions/auth-actions';
 import { getActor } from '@/server/auth/web';
 import { LanguageSwitcher } from './language-switcher';
 import { Logo } from './logo';
@@ -50,7 +49,7 @@ export async function SiteHeader() {
             </Link>
           )}
           {actor && (
-            <form action={logoutAction.bind(null, locale)}>
+            <form action={`/${locale}/logout`} method="post">
               <button type="submit" className={`${mobileLink} w-full text-left`}>
                 {t('logout')}
               </button>
@@ -96,7 +95,7 @@ export async function SiteHeader() {
               </Link>
             </Button>
             {/* On small screens admin and log out live in the menu panel. */}
-            <form action={logoutAction.bind(null, locale)} className="hidden lg:block">
+            <form action={`/${locale}/logout`} method="post" className="hidden lg:block">
               <Button type="submit" variant="ghost" size="sm" title={t('logout')}>
                 <LogOut aria-hidden="true" />
                 <span className="sr-only 2xl:not-sr-only">{t('logout')}</span>
