@@ -1,6 +1,6 @@
 'use client';
 
-import { formatEuro } from '@tourneasy/shared';
+import { formatEuro, quoteNewEntries } from '@tourneasy/shared';
 import type { AppLocale } from '@tourneasy/shared/i18n';
 import { Check, Users } from 'lucide-react';
 import { useTranslations } from 'next-intl';
@@ -38,6 +38,9 @@ export function EntryForm({
   maxEvents,
   enteredCount,
   phone,
+  bundlePricesCents,
+  partnerPaysAll,
+  payOnline,
 }: {
   locale: AppLocale;
   slug: string;
@@ -45,6 +48,11 @@ export function EntryForm({
   maxEvents: number;
   enteredCount: number;
   phone: string;
+  /** Multi-category discount (D52): total for 1, 2, 3 … paid categories. */
+  bundlePricesCents: number[];
+  /** Doubles: the entrant pays the partner's fee too. */
+  partnerPaysAll: boolean;
+  payOnline: boolean;
 }) {
   const t = useTranslations('Entry');
   const te = useTranslations('Errors');
@@ -53,9 +61,21 @@ export function EntryForm({
   const [selected, setSelected] = useState<string[]>([]);
   const [looking, setLooking] = useState<Record<string, boolean>>({});
   const room = Math.max(0, maxEvents - enteredCount);
-  const total = events
-    .filter((e) => selected.includes(e.id))
-    .reduce((sum, e) => sum + e.feeCents, 0);
+  const chosen = events.filter((e) => selected.includes(e.id));
+  const partnerFees = partnerPaysAll
+    ? chosen.filter((e) => e.doubles).reduce((sum, e) => sum + e.feeCents, 0)
+    : 0;
+  // With a price list the new categories cost the step from what I already entered (D52).
+  const {
+    total,
+    full: fullPrice,
+    discount,
+  } = quoteNewEntries({
+    prices: bundlePricesCents,
+    enteredPaidCount: events.filter((e) => e.alreadyEntered && e.feeCents > 0).length,
+    fees: chosen.map((e) => e.feeCents),
+    partnerFees,
+  });
 
   function toggle(id: string) {
     setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
@@ -230,10 +250,33 @@ export function EntryForm({
           <span className="text-muted-foreground">{t('selected', { count: selected.length })}</span>
           <span className="text-right">
             <span className="block text-sm text-muted-foreground">{t('total')}</span>
+            {discount > 0 && (
+              <span className="block text-sm text-muted-foreground line-through">
+                {formatEuro(fullPrice, locale)}
+              </span>
+            )}
             <span className="font-heading text-2xl font-semibold">{formatEuro(total, locale)}</span>
           </span>
         </div>
-        <p className="mt-3 text-sm text-muted-foreground">{t('payNote')}</p>
+        {discount > 0 && (
+          <p className="mt-2 text-sm font-medium text-primary">
+            {t('discount', { amount: formatEuro(discount, locale) })}
+          </p>
+        )}
+        {bundlePricesCents.length > 0 && (
+          <p className="mt-2 text-sm text-muted-foreground">
+            {t('bundleList', {
+              list: bundlePricesCents
+                .map((cents, i) =>
+                  t('bundleTier', { count: i + 1, price: formatEuro(cents, locale) }),
+                )
+                .join(' · '),
+            })}
+          </p>
+        )}
+        <p className="mt-3 text-sm text-muted-foreground">
+          {payOnline ? t('payNoteOnline') : t('payNote')}
+        </p>
         <label className="mt-4 flex items-start gap-3">
           <input
             type="checkbox"

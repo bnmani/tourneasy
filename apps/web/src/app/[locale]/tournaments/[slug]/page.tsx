@@ -305,6 +305,25 @@ export default async function TournamentPage({ params }: Props) {
                   label: tt('maxEvents'),
                   value: tt('maxEventsValue', { count: t.maxEventsPerPlayer }),
                 },
+                ...(t.bundlePricesCents.length > 0
+                  ? [
+                      {
+                        label: tt('bundle'),
+                        value: (
+                          <ul>
+                            {t.bundlePricesCents.map((cents, n) => (
+                              <li key={n} className="whitespace-nowrap">
+                                {tt('bundleTier', {
+                                  count: n + 1,
+                                  price: formatEuro(cents, locale),
+                                })}
+                              </li>
+                            ))}
+                          </ul>
+                        ),
+                      },
+                    ]
+                  : []),
               ]}
             />
           </section>

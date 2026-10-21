@@ -38,3 +38,25 @@ export function splitBundle(
 export function bundlePricesValid(prices: readonly number[]): boolean {
   return prices.every((p, i) => p >= 0 && (i === 0 || p >= prices[i - 1]!));
 }
+
+/**
+ * Price shown on the entry form for the categories being picked now: with a price list, the
+ * step from what the player already entered to the new number of categories (plus any partner
+ * fees the entrant pays). `full` is the price without discount.
+ */
+export function quoteNewEntries(input: {
+  prices: readonly number[];
+  enteredPaidCount: number;
+  fees: readonly number[];
+  partnerFees?: number;
+}): { total: number; full: number; discount: number } {
+  const partnerFees = input.partnerFees ?? 0;
+  const full = input.fees.reduce((n, f) => n + f, 0) + partnerFees;
+  const paid = input.fees.filter((f) => f > 0).length;
+  const after = bundleTotal(input.prices, input.enteredPaidCount + paid);
+  const total =
+    after === null
+      ? full
+      : after - bundleTotal(input.prices, input.enteredPaidCount)! + partnerFees;
+  return { total, full, discount: Math.max(0, full - total) };
+}

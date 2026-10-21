@@ -857,7 +857,9 @@
     "entryFinished": "Dit toernooi is afgelopen.",
     "entryCta": "Inschrijven",
     "maxEntriesValue": "Max. {count} inschrijvingen",
-    "entryCtaLogin": "Inloggen om in te schrijven"
+    "entryCtaLogin": "Inloggen om in te schrijven",
+    "bundle": "Korting meerdere onderdelen",
+    "bundleTier": "{count, plural, one {# onderdeel} other {# onderdelen}} {price}"
   },
   "Calendar": {
     "title": "Kalender",
@@ -944,14 +946,18 @@
     "summary": "Overzicht",
     "selected": "{count, plural, =0 {Nog geen onderdelen gekozen} one {# onderdeel gekozen} other {# onderdelen gekozen}}",
     "total": "Jouw inschrijfgeld",
-    "payNote": "Online betalen met iDEAL komt binnenkort. Je ontvangt dan een betaalverzoek; je plek staat tot die tijd vast.",
+    "payNote": "Je betaalt het inschrijfgeld aan de organisatie; je plek staat vast.",
     "terms": "Ik ga akkoord met de algemene voorwaarden en het reglement van dit toernooi.",
     "termsLink": "Algemene voorwaarden lezen",
     "submit": "Inschrijving bevestigen",
     "notOpen": "De inschrijving voor dit toernooi is niet open.",
     "verifyFirst": "Bevestig eerst je e-mailadres om je in te schrijven. Kijk in je inbox of vraag een nieuwe link aan.",
     "back": "Terug naar het toernooi",
-    "gender": "Geslacht"
+    "gender": "Geslacht",
+    "discount": "Korting voor meerdere onderdelen: −{amount}",
+    "bundleList": "Prijs per speler: {list}.",
+    "bundleTier": "{count, plural, one {# onderdeel} other {# onderdelen}} {price}",
+    "payNoteOnline": "Na het inschrijven betaal je direct online (iDEAL). Je plek wordt 30 minuten voor je vastgehouden."
   },
   "Reasons": {
     "gender": "Niet voor jouw geslacht",

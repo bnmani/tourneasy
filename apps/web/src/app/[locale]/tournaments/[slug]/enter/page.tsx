@@ -74,6 +74,9 @@ export default async function EnterPage({ params }: Props) {
               locale={locale}
               slug={slug}
               maxEvents={tournament.maxEventsPerPlayer}
+              bundlePricesCents={tournament.bundlePricesCents}
+              partnerPaysAll={tournament.partnerPaysAll}
+              payOnline={tournament.payOnline}
               enteredCount={options.enteredCount}
               phone={player.phone}
               events={options.events.map((e) => ({

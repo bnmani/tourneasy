@@ -857,7 +857,9 @@
     "entryFinished": "This tournament has finished.",
     "entryCta": "Enter",
     "maxEntriesValue": "Max. {count} entries",
-    "entryCtaLogin": "Log in to enter"
+    "entryCtaLogin": "Log in to enter",
+    "bundle": "Multi-category discount",
+    "bundleTier": "{count, plural, one {# category} other {# categories}} {price}"
   },
   "Calendar": {
     "title": "Calendar",
@@ -944,14 +946,18 @@
     "summary": "Summary",
     "selected": "{count, plural, =0 {No events chosen yet} one {# event chosen} other {# events chosen}}",
     "total": "Your entry fee",
-    "payNote": "Online payment with iDEAL is coming soon. You will then receive a payment request; your place is held until then.",
+    "payNote": "You pay the entry fee to the organisers; your place is confirmed.",
     "terms": "I agree to the terms and conditions and the rules of this tournament.",
     "termsLink": "Read the terms and conditions",
     "submit": "Confirm entry",
     "notOpen": "Entries for this tournament are not open.",
     "verifyFirst": "Please confirm your email address before entering. Check your inbox or request a new link.",
     "back": "Back to the tournament",
-    "gender": "Gender"
+    "gender": "Gender",
+    "discount": "Multi-category discount: −{amount}",
+    "bundleList": "Price per player: {list}.",
+    "bundleTier": "{count, plural, one {# category} other {# categories}} {price}",
+    "payNoteOnline": "After entering you pay online straight away (iDEAL). Your place is held for 30 minutes."
   },
   "Reasons": {
     "gender": "Not for your gender",
