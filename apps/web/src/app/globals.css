@@ -1,28 +1,163 @@
 @import 'tailwindcss';
 
 /*
- * Design tokens (shadcn/ui convention). Court-green primary; all text/background pairs
- * are chosen for WCAG 2.1 AA contrast (≥ 4.5:1 for body text).
+ * Design tokens (shadcn/ui convention) for the four site themes (DECISIONS.md D42). The admin
+ * picks the active theme; the root layout sets it as <html data-theme="…">. Every text/background
+ * pair meets WCAG 2.1 AA (≥ 4.5:1 for body text).
+ *
+ * Beyond the shadcn set:
+ *   --brand / --brand-foreground   signature accent (gold, teal, aqua, …) for highlights and CTAs
+ *   --accent-text                  the brand accent darkened for use as text on light surfaces
+ *   --hero*                        the dark (or tinted) band at the top of marketing pages
+ *   --live                         "live now" badges
+ *   --silhouette                   the player figures in the hero artwork
+ *   --font-head / --font-body      set from the next/font variables in fonts.ts
  */
-:root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.21 0.02 160);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.21 0.02 160);
-  --primary: oklch(0.45 0.12 155);
-  --primary-foreground: oklch(0.99 0 0);
-  --secondary: oklch(0.96 0.015 155);
-  --secondary-foreground: oklch(0.26 0.04 160);
-  --muted: oklch(0.965 0.006 155);
-  --muted-foreground: oklch(0.47 0.02 160);
-  --accent: oklch(0.94 0.03 155);
-  --accent-foreground: oklch(0.26 0.05 160);
-  --destructive: oklch(0.55 0.22 27);
-  --destructive-foreground: oklch(0.99 0 0);
-  --border: oklch(0.9 0.01 155);
-  --input: oklch(0.9 0.01 155);
-  --ring: oklch(0.45 0.12 155);
+:root,
+[data-theme='midnight'] {
+  --radius: 0.75rem;
+  --background: #f4f0e8;
+  --foreground: #0f1e33;
+  --card: #ffffff;
+  --card-foreground: #0f1e33;
+  --primary: #2e4a67;
+  --primary-foreground: #ffffff;
+  --secondary: #e9e2d6;
+  --secondary-foreground: #0f1e33;
+  --muted: #ede7dc;
+  --muted-foreground: #4a5568;
+  --accent: #e9e2d6;
+  --accent-foreground: #0f1e33;
+  --destructive: #b3261e;
+  --destructive-foreground: #ffffff;
+  --border: #d8cebe;
+  --input: #cfc3af;
+  --ring: #2e4a67;
+  --brand: #b8945b;
+  --brand-foreground: #0f1e33;
+  --accent-text: #7a5c2e;
+  --hero: #0f1e33;
+  --hero-foreground: #f4f0e8;
+  --hero-muted: #c9d3e0;
+  --hero-highlight: #b8945b;
+  --hero-card: #1a2c45;
+  --hero-card-foreground: #f4f0e8;
+  --live: #b3261e;
+  --live-foreground: #ffffff;
+  --silhouette: #060d19;
+  --font-head: var(--font-fraunces), Georgia, serif;
+  --font-body: var(--font-inter), system-ui, sans-serif;
+  --head-tracking: -0.01em;
+  color-scheme: light;
+}
+
+[data-theme='teal'] {
+  --background: #f3fafb;
+  --foreground: #003135;
+  --card: #ffffff;
+  --card-foreground: #003135;
+  --primary: #024950;
+  --primary-foreground: #ffffff;
+  --secondary: #e1f2f5;
+  --secondary-foreground: #003135;
+  --muted: #e8f5f7;
+  --muted-foreground: #3b5f63;
+  --accent: #e1f2f5;
+  --accent-foreground: #003135;
+  --destructive: #a3402e;
+  --destructive-foreground: #ffffff;
+  --border: #afdde5;
+  --input: #9fd0d9;
+  --ring: #024950;
+  --brand: #0fa4af;
+  --brand-foreground: #003135;
+  --accent-text: #00737b;
+  --hero: #003135;
+  --hero-foreground: #f3fafb;
+  --hero-muted: #afdde5;
+  --hero-highlight: #0fa4af;
+  --hero-card: #024950;
+  --hero-card-foreground: #f3fafb;
+  --live: #964734;
+  --live-foreground: #ffffff;
+  --silhouette: #001a1d;
+  --font-head: var(--font-space-grotesk), system-ui, sans-serif;
+  --font-body: var(--font-inter), system-ui, sans-serif;
+  --head-tracking: -0.02em;
+  color-scheme: light;
+}
+
+[data-theme='aqua'] {
+  --background: #f2f7f6;
+  --foreground: #112d32;
+  --card: #ffffff;
+  --card-foreground: #112d32;
+  --primary: #254e58;
+  --primary-foreground: #ffffff;
+  --secondary: #e3efee;
+  --secondary-foreground: #112d32;
+  --muted: #e8f1f0;
+  --muted-foreground: #4f4a41;
+  --accent: #e3efee;
+  --accent-foreground: #112d32;
+  --destructive: #a3402e;
+  --destructive-foreground: #ffffff;
+  --border: #c5dedd;
+  --input: #a9cccb;
+  --ring: #254e58;
+  --brand: #88bdbc;
+  --brand-foreground: #112d32;
+  --accent-text: #2f6466;
+  --hero: #88bdbc;
+  --hero-foreground: #112d32;
+  --hero-muted: #1e3f47;
+  --hero-highlight: #254e58;
+  --hero-card: #f2f7f6;
+  --hero-card-foreground: #112d32;
+  --live: #a3402e;
+  --live-foreground: #ffffff;
+  --silhouette: #254e58;
+  --font-head: var(--font-nunito), system-ui, sans-serif;
+  --font-body: var(--font-nunito), system-ui, sans-serif;
+  --head-tracking: -0.01em;
+  color-scheme: light;
+}
+
+/* A dark site. */
+[data-theme='night'] {
+  --background: #2c3531;
+  --foreground: #d1e8e2;
+  --card: #36423d;
+  --card-foreground: #e8f3f0;
+  --primary: #ffcb9a;
+  --primary-foreground: #2c3531;
+  --secondary: #3b4843;
+  --secondary-foreground: #e8f3f0;
+  --muted: #333e3a;
+  --muted-foreground: #a9c4bc;
+  --accent: #3b4843;
+  --accent-foreground: #e8f3f0;
+  --destructive: #ff9e8f;
+  --destructive-foreground: #2c3531;
+  --border: #4a5852;
+  --input: #5a6a63;
+  --ring: #ffcb9a;
+  --brand: #116466;
+  --brand-foreground: #ffffff;
+  --accent-text: #7fd3c9;
+  --hero: #1f2623;
+  --hero-foreground: #e8f3f0;
+  --hero-muted: #a9c4bc;
+  --hero-highlight: #ffcb9a;
+  --hero-card: #116466;
+  --hero-card-foreground: #e8f3f0;
+  --live: #ffcb9a;
+  --live-foreground: #2c3531;
+  --silhouette: #111614;
+  --font-head: var(--font-montserrat), system-ui, sans-serif;
+  --font-body: var(--font-inter), system-ui, sans-serif;
+  --head-tracking: 0.02em;
+  color-scheme: dark;
 }
 
 @theme inline {
@@ -43,12 +178,23 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-brand: var(--brand);
+  --color-brand-foreground: var(--brand-foreground);
+  --color-accent-text: var(--accent-text);
+  --color-hero: var(--hero);
+  --color-hero-foreground: var(--hero-foreground);
+  --color-hero-muted: var(--hero-muted);
+  --color-hero-highlight: var(--hero-highlight);
+  --color-hero-card: var(--hero-card);
+  --color-hero-card-foreground: var(--hero-card-foreground);
+  --color-live: var(--live);
+  --color-live-foreground: var(--live-foreground);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
-  --font-sans:
-    ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-sans: var(--font-body);
+  --font-heading: var(--font-head);
 }
 
 @layer base {
@@ -57,9 +203,16 @@
   }
   html {
     -webkit-text-size-adjust: 100%;
+    /* In-page anchors land below the sticky header. */
+    scroll-padding-top: 5rem;
   }
   body {
     @apply bg-background font-sans text-foreground antialiased;
+  }
+  h1,
+  h2 {
+    font-family: var(--font-head);
+    letter-spacing: var(--head-tracking);
   }
 }
 

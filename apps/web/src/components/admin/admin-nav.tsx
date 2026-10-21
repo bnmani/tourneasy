@@ -16,6 +16,7 @@ export function AdminNav({ isAdmin }: { isAdmin: boolean }) {
           { href: '/admin/venues', label: t('navVenues') },
           { href: '/admin/clubs', label: t('navClubs') },
           { href: '/admin/users', label: t('users') },
+          { href: '/admin/appearance', label: t('navAppearance') },
           { href: '/admin/audit', label: t('navAudit') },
         ]
       : []),

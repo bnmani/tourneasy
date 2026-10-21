@@ -340,3 +340,14 @@ export const PLAYER_CSV_COLUMNS = [
   'federationId',
   'preferredEvents',
 ] as const;
+
+// ── Site appearance ────────────────────────────────────────────────────────────
+
+/** Site themes (D42): `midnight` is the default; admins can switch to the others. */
+export const SITE_THEMES = ['midnight', 'teal', 'aqua', 'night'] as const;
+export type SiteTheme = (typeof SITE_THEMES)[number];
+export const DEFAULT_SITE_THEME: SiteTheme = 'midnight';
+
+export const siteThemeSchema = z.object({
+  theme: z.enum(SITE_THEMES, { errorMap: () => ({ message: 'invalid' }) }),
+});

@@ -6,6 +6,8 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { SiteFooter } from '@/components/layout/site-footer';
 import { SiteHeader } from '@/components/layout/site-header';
 import { routing } from '@/i18n/routing';
+import { getSiteTheme } from '@/server/services/site-settings-service';
+import { fontVariables } from '../fonts';
 import '../globals.css';
 
 type Props = {
@@ -17,11 +19,21 @@ export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
 }
 
-export const viewport: Viewport = {
-  width: 'device-width',
-  initialScale: 1,
-  themeColor: '#1f6b45',
-};
+// Browser UI colour (mobile address bar) follows the theme's top band.
+const THEME_COLORS = {
+  midnight: '#0f1e33',
+  teal: '#003135',
+  aqua: '#88bdbc',
+  night: '#1f2623',
+} as const;
+
+export async function generateViewport(): Promise<Viewport> {
+  return {
+    width: 'device-width',
+    initialScale: 1,
+    themeColor: THEME_COLORS[await getSiteTheme()],
+  };
+}
 
 export async function generateMetadata({ params }: Omit<Props, 'children'>): Promise<Metadata> {
   const { locale } = await params;
@@ -53,9 +65,10 @@ export default async function LocaleLayout({ children, params }: Props) {
   // Enables static rendering for pages under this locale.
   setRequestLocale(locale);
   const t = await getTranslations('Common');
+  const theme = await getSiteTheme();
 
   return (
-    <html lang={locale}>
+    <html lang={locale} data-theme={theme} className={fontVariables}>
       <body className="flex min-h-dvh flex-col">
         <NextIntlClientProvider>
           <a

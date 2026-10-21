@@ -1200,6 +1200,13 @@ model NotificationPreference {
   @@unique([userId, type, channel])
 }
 
+/// Site-wide settings changed in the admin portal, e.g. `theme`. Changes are audit-logged.
+model SiteSetting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+}
+
 /// Append-only log of every admin/organiser mutation (and sensitive user actions).
 model AuditLog {
   id         String   @id @default(uuid()) @db.Uuid

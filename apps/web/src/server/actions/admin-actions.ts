@@ -29,6 +29,7 @@ import {
   setTournamentPublished,
   updateTournament,
 } from '../services/tournament-service';
+import { setSiteTheme } from '../services/site-settings-service';
 import { createVenue, setVenueArchived, updateVenue } from '../services/venue-service';
 import { formToObject, toFormState } from './form-utils';
 
@@ -278,4 +279,10 @@ export async function importPlayersAction(
   } catch (error) {
     return toFormState(error, new FormData());
   }
+}
+
+export async function setSiteThemeAction(locale: AppLocale, formData: FormData) {
+  await act(`/${locale}/admin/appearance`, (actor, meta) =>
+    setSiteTheme(actor, { theme: formData.get('theme') }, meta),
+  );
 }
