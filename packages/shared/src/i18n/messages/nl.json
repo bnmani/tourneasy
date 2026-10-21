@@ -69,9 +69,7 @@
     "previous": "Vorige",
     "next": "Volgende",
     "slide": "Toernooi {current} van {total}",
-    "allTournaments": "Alle toernooien",
-    "illustrationCredit": "Illustratie: Vecteezy",
-    "illustrationCreditLabel": "Illustratie van Vecteezy (opent in een nieuw venster)"
+    "allTournaments": "Alle toernooien"
   },
   "Footer": {
     "tagline": "Badmintontoernooien in Nederland",

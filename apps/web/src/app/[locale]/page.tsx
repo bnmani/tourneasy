@@ -46,7 +46,7 @@ export default async function HomePage({ params }: Props) {
   return (
     <>
       <section className="relative overflow-hidden bg-hero text-hero-foreground">
-        <HeroImage credit={t('illustrationCredit')} creditLabel={t('illustrationCreditLabel')} />
+        <HeroImage />
         {/* Keeps the text readable over the picture; on phones the player sits behind it. */}
         <div
           aria-hidden="true"

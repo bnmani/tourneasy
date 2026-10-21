@@ -69,9 +69,7 @@
     "previous": "Previous",
     "next": "Next",
     "slide": "Tournament {current} of {total}",
-    "allTournaments": "All tournaments",
-    "illustrationCredit": "Illustration: Vecteezy",
-    "illustrationCreditLabel": "Illustration by Vecteezy (opens in a new window)"
+    "allTournaments": "All tournaments"
   },
   "Footer": {
     "tagline": "Badminton tournaments in the Netherlands",
