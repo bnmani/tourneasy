@@ -64,13 +64,14 @@
     "featurePayText": "Pay your entry fee securely; refunds take one click.",
     "featureScheduleTitle": "Smart scheduling",
     "featureScheduleText": "Match schedules and court plans are proposed for you and can be adjusted by hand.",
-    "illustration": "Mixed doubles in action",
     "carouselTitle": "Now and coming up",
     "carouselLabel": "Current and upcoming tournaments",
     "previous": "Previous",
     "next": "Next",
     "slide": "Tournament {current} of {total}",
-    "allTournaments": "All tournaments"
+    "allTournaments": "All tournaments",
+    "illustrationCredit": "Illustration: Vecteezy",
+    "illustrationCreditLabel": "Illustration by Vecteezy (opens in a new window)"
   },
   "Footer": {
     "tagline": "Badminton tournaments in the Netherlands",

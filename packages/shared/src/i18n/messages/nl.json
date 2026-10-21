@@ -64,13 +64,14 @@
     "featurePayText": "Betaal je inschrijfgeld veilig; terugbetalen gaat met één klik.",
     "featureScheduleTitle": "Slimme planning",
     "featureScheduleText": "Speelschema en baanindeling worden voorgesteld en zijn met de hand aan te passen.",
-    "illustration": "Gemengd dubbel in actie",
     "carouselTitle": "Nu en binnenkort",
     "carouselLabel": "Huidige en komende toernooien",
     "previous": "Vorige",
     "next": "Volgende",
     "slide": "Toernooi {current} van {total}",
-    "allTournaments": "Alle toernooien"
+    "allTournaments": "Alle toernooien",
+    "illustrationCredit": "Illustratie: Vecteezy",
+    "illustrationCreditLabel": "Illustratie van Vecteezy (opent in een nieuw venster)"
   },
   "Footer": {
     "tagline": "Badmintontoernooien in Nederland",

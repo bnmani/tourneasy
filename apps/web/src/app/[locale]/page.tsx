@@ -3,7 +3,7 @@ import type { AppLocale } from '@tourneasy/shared/i18n';
 import type { Metadata } from 'next';
 import { Bell, CalendarClock, CreditCard, Radio } from 'lucide-react';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
-import { HeroArt } from '@/components/home/hero-art';
+import { HeroImage } from '@/components/home/hero-image';
 import { TournamentCarousel } from '@/components/home/tournament-carousel';
 import { Button } from '@/components/ui/button';
 import { Link } from '@/i18n/navigation';
@@ -46,12 +46,11 @@ export default async function HomePage({ params }: Props) {
   return (
     <>
       <section className="relative overflow-hidden bg-hero text-hero-foreground">
-        <HeroArt className="max-md:hidden" />
-        <HeroArt variant="phone" className="opacity-60 md:hidden" />
-        {/* Keeps the text readable over the artwork; on phones the figures sit behind it. */}
+        <HeroImage credit={t('illustrationCredit')} creditLabel={t('illustrationCreditLabel')} />
+        {/* Keeps the text readable over the picture; on phones the player sits behind it. */}
         <div
           aria-hidden="true"
-          className="absolute inset-0 bg-[linear-gradient(90deg,var(--hero)_0%,color-mix(in_srgb,var(--hero)_75%,transparent)_45%,transparent_75%)] max-md:bg-[color-mix(in_srgb,var(--hero)_70%,transparent)]"
+          className="absolute inset-0 bg-[linear-gradient(90deg,var(--hero)_0%,color-mix(in_srgb,var(--hero)_75%,transparent)_45%,transparent_75%)] max-md:bg-[color-mix(in_srgb,var(--hero)_55%,transparent)]"
         />
         <div className="relative mx-auto max-w-6xl px-4 pt-16 pb-32 sm:pt-24 sm:pb-36 md:min-h-[600px]">
           <div className="max-w-xl">
