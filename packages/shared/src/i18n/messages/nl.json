@@ -15,7 +15,8 @@
     "optional": "optioneel",
     "loading": "Laden…",
     "yes": "Ja",
-    "no": "Nee"
+    "no": "Nee",
+    "numberRange": "Tussen {min} en {max}."
   },
   "Header": {
     "homeLink": "Tourneasy, naar de startpagina",
@@ -155,7 +156,8 @@
     "withdrawalClosed": "Afmelden kan niet meer online. Neem contact op met de organisatie.",
     "emailNotVerified": "Bevestig eerst je e-mailadres.",
     "inviteInvalid": "Deze uitnodiging is verlopen of al gebruikt.",
-    "noPlayerProfile": "Je account heeft nog geen spelersprofiel."
+    "noPlayerProfile": "Je account heeft nog geen spelersprofiel.",
+    "lettersOnly": "Alleen letters, spaties, koppeltekens en apostrofs."
   },
   "Auth": {
     "login": {
@@ -566,7 +568,9 @@
       "mergeSubmit": "Samenvoegen",
       "merged": "Samengevoegd met {number}.",
       "mergedInto": "Samengevoegd met {number}",
-      "minorNotice": "Minderjarige speler: gegevens alleen voor organisatie gebruiken."
+      "minorNotice": "Minderjarige speler: gegevens alleen voor organisatie gebruiken.",
+      "age": "Leeftijd",
+      "created": "Toegevoegd"
     },
     "audit": {
       "title": "Auditlog",
@@ -921,5 +925,11 @@
     "expired": "Deze uitnodiging is verlopen of al beantwoord.",
     "accepted": "Je bent samen met {from} ingeschreven.",
     "declined": "Je hebt de uitnodiging geweigerd."
+  },
+  "ErrorPage": {
+    "title": "Er ging iets mis",
+    "text": "Deze pagina kon niet worden geladen. Meestal komt dat doordat er net een nieuwe versie van de site online is gezet. Vernieuw de pagina en probeer het opnieuw.",
+    "reload": "Pagina vernieuwen",
+    "home": "Naar de startpagina"
   }
 }

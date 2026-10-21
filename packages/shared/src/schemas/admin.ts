@@ -7,7 +7,7 @@ import { z } from 'zod';
 import { parseDateOnly } from '../rules/age';
 import { parseEuroToCents } from '../rules/money';
 import { amsterdamLocalToUtc, TIME_OF_DAY_PATTERN } from '../rules/time';
-import { DISCIPLINES, GENDERS } from './auth';
+import { DISCIPLINES, GENDERS, optionalPersonNameSchema, personNameSchema } from './auth';
 
 export const PROVINCES = [
   'DRENTHE',
@@ -202,7 +202,7 @@ export const tournamentSchema = z
       .max(5, 'invalid')
       .default(3),
     courtsAvailable: optionalInt(1, 60),
-    contactName: optionalText(120),
+    contactName: optionalPersonNameSchema(120),
     contactEmail: optionalEmail,
     contactPhone: optionalPhone,
     descriptionNl: optionalText(5000),
@@ -294,9 +294,9 @@ export type EventInput = z.infer<typeof eventSchema>;
 // ── Players (admin) ───────────────────────────────────────────────────────────────
 
 export const adminPlayerSchema = z.object({
-  firstName: text(60),
-  lastNamePrefix: optionalText(20),
-  lastName: text(80),
+  firstName: personNameSchema(60),
+  lastNamePrefix: optionalPersonNameSchema(20),
+  lastName: personNameSchema(80),
   contactEmail: optionalEmail,
   phone: optionalPhone,
   dateOfBirth: dateOnly,

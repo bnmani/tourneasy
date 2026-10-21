@@ -119,6 +119,8 @@ export function VenueForm({
           <TextField
             name="numberOfCourts"
             type="number"
+            min={1}
+            max={60}
             label={t('numberOfCourts')}
             state={state}
             required

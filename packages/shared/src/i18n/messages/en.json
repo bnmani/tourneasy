@@ -15,7 +15,8 @@
     "optional": "optional",
     "loading": "Loading…",
     "yes": "Yes",
-    "no": "No"
+    "no": "No",
+    "numberRange": "Between {min} and {max}."
   },
   "Header": {
     "homeLink": "Tourneasy, go to home page",
@@ -155,7 +156,8 @@
     "withdrawalClosed": "Withdrawing online is no longer possible. Please contact the organisers.",
     "emailNotVerified": "Please confirm your email address first.",
     "inviteInvalid": "This invitation has expired or has already been used.",
-    "noPlayerProfile": "Your account doesn't have a player profile yet."
+    "noPlayerProfile": "Your account doesn't have a player profile yet.",
+    "lettersOnly": "Only letters, spaces, hyphens and apostrophes."
   },
   "Auth": {
     "login": {
@@ -566,7 +568,9 @@
       "mergeSubmit": "Merge",
       "merged": "Merged into {number}.",
       "mergedInto": "Merged into {number}",
-      "minorNotice": "Minor: use these details for the organisation only."
+      "minorNotice": "Minor: use these details for the organisation only.",
+      "age": "Age",
+      "created": "Added"
     },
     "audit": {
       "title": "Audit log",
@@ -921,5 +925,11 @@
     "expired": "This invitation has expired or has already been answered.",
     "accepted": "You are entered together with {from}.",
     "declined": "You declined the invitation."
+  },
+  "ErrorPage": {
+    "title": "Something went wrong",
+    "text": "This page could not be loaded. Usually this is because a new version of the site has just been released. Reload the page and try again.",
+    "reload": "Reload page",
+    "home": "Go to the home page"
   }
 }

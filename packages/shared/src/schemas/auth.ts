@@ -29,6 +29,22 @@ const optionalText = (max: number) =>
     .optional()
     .transform((v) => (v ? v : undefined));
 
+/**
+ * Names of people: letters in any language, with spaces, hyphens, apostrophes and dots
+ * ("Anne-Marie", "van 't Hof", "J. de Vries"); no digits or other symbols.
+ */
+export const PERSON_NAME_PATTERN = /^\p{L}[\p{L}\p{M}\s'’.-]*$/u;
+export const personNameSchema = (max: number) =>
+  text(max).regex(PERSON_NAME_PATTERN, 'lettersOnly');
+export const optionalPersonNameSchema = (max: number) =>
+  z
+    .string()
+    .trim()
+    .max(max, 'tooLong')
+    .refine((v) => v === '' || PERSON_NAME_PATTERN.test(v), 'lettersOnly')
+    .optional()
+    .transform((v) => (v ? v : undefined));
+
 export const emailSchema = z
   .string({ required_error: 'required' })
   .trim()
@@ -64,9 +80,9 @@ const disciplinesSchema = z.array(z.enum(DISCIPLINES)).max(DISCIPLINES.length).d
 
 export const signUpSchema = z
   .object({
-    firstName: text(60),
-    lastNamePrefix: optionalText(20),
-    lastName: text(80),
+    firstName: personNameSchema(60),
+    lastNamePrefix: optionalPersonNameSchema(20),
+    lastName: personNameSchema(80),
     email: emailSchema,
     phone: phoneSchema,
     password: passwordSchema,
@@ -115,9 +131,9 @@ export const changePasswordSchema = z.object({
 });
 
 export const profileUpdateSchema = z.object({
-  firstName: text(60),
-  lastNamePrefix: optionalText(20),
-  lastName: text(80),
+  firstName: personNameSchema(60),
+  lastNamePrefix: optionalPersonNameSchema(20),
+  lastName: personNameSchema(80),
   phone: phoneSchema,
   dateOfBirth: dateOfBirthSchema,
   gender: z.enum(GENDERS, { errorMap: () => ({ message: 'required' }) }),
@@ -221,4 +237,5 @@ export const KNOWN_ERROR_KEYS = new Set([
   'notEligible',
   'alreadyEntered',
   'maxEvents',
+  'lettersOnly',
 ]);

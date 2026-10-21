@@ -171,3 +171,16 @@ describe('feedback rules (Oct 2026)', () => {
     expect(ok).toMatchObject({ matchesPerEntry: 3, knockoutSize: 16 });
   });
 });
+
+describe('person names (letters only)', () => {
+  it('accepts real names and rejects digits and symbols', async () => {
+    const { personNameSchema, optionalPersonNameSchema } = await import('../schemas/auth');
+    for (const ok of ['Anne-Marie', "van 't Hof", 'J. de Vries', 'Zoë', 'Ömer']) {
+      expect(personNameSchema(80).safeParse(ok).success).toBe(true);
+    }
+    for (const bad of ['Daan2', 'R2-D2', 'Anna!', '#admin', '1990']) {
+      expect(personNameSchema(80).safeParse(bad).error?.issues[0]?.message).toBe('lettersOnly');
+    }
+    expect(optionalPersonNameSchema(80).parse('')).toBeUndefined();
+  });
+});

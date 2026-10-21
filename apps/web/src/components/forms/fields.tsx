@@ -112,6 +112,9 @@ type TextFieldProps = Omit<FieldProps, 'children'> & {
   minLength?: number;
   maxLength?: number;
   inputMode?: 'text' | 'email' | 'tel' | 'numeric';
+  /** Number fields: limits for the browser's arrows and keyboard, shown as a hint. */
+  min?: number;
+  max?: number;
 };
 
 export function TextField({
@@ -121,19 +124,30 @@ export function TextField({
   minLength,
   maxLength,
   inputMode,
+  min,
+  max,
   ...field
 }: TextFieldProps) {
+  const tc = useTranslations('Common');
+  const range =
+    type === 'number' && min !== undefined && max !== undefined
+      ? tc('numberRange', { min, max })
+      : undefined;
+  const hint = [field.hint, range].filter(Boolean).join(' ') || undefined;
   // Never echo passwords back into the form.
   const value =
     type === 'password' ? undefined : (valueOf(field.state, field.name) ?? defaultValue);
   return (
     // key: remount with the echoed value after a failed submit (defaultValue is read once).
-    <Field key={value} {...field}>
+    <Field key={value} {...field} hint={hint}>
       {(a11y) => (
         <input
           {...a11y}
           name={field.name}
           type={type}
+          min={min}
+          max={max}
+          step={type === 'number' ? 1 : undefined}
           required={field.required}
           autoComplete={autoComplete}
           defaultValue={value}

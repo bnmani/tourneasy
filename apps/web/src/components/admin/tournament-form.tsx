@@ -190,6 +190,8 @@ export function TournamentForm({
               <TextField
                 name="newVenue.numberOfCourts"
                 type="number"
+                min={1}
+                max={60}
                 label={tv('numberOfCourts')}
                 state={state}
                 required
@@ -263,6 +265,8 @@ export function TournamentForm({
           <TextField
             name="maxParticipants"
             type="number"
+            min={2}
+            max={5000}
             label={t('maxParticipants')}
             state={state}
             defaultValue={values.maxParticipants}
@@ -279,6 +283,8 @@ export function TournamentForm({
           <TextField
             name="courtsAvailable"
             type="number"
+            min={1}
+            max={60}
             label={t('courtsAvailable')}
             hint={t('courtsAvailableHint')}
             state={state}

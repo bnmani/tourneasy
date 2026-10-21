@@ -136,6 +136,8 @@ export function EventForm({
           <TextField
             name="maxEntries"
             type="number"
+            min={2}
+            max={512}
             label={t('maxEntries')}
             hint={t('maxEntriesHint')}
             state={state}
@@ -179,6 +181,8 @@ export function EventForm({
             <TextField
               name="groupSize"
               type="number"
+              min={3}
+              max={8}
               label={t('groupSize')}
               state={state}
               required
@@ -187,6 +191,8 @@ export function EventForm({
             <TextField
               name="advancePerGroup"
               type="number"
+              min={1}
+              max={4}
               label={t('advancePerGroup')}
               state={state}
               required
@@ -242,6 +248,8 @@ export function EventForm({
           <TextField
             name="pointsCap"
             type="number"
+            min={11}
+            max={40}
             label={t('pointsCap')}
             state={state}
             required

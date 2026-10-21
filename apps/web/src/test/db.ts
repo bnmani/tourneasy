@@ -16,12 +16,20 @@ export const meta = { ip: '203.0.113.7', userAgent: 'Mozilla/5.0 (Macintosh) Chr
 
 let counter = 0;
 
+/** 1 → "a", 27 → "aa": names may not contain digits (letters-only rule, D49). */
+function letters(n: number): string {
+  let out = '';
+  for (let i = n; i > 0; i = Math.floor((i - 1) / 26))
+    out = String.fromCharCode(97 + ((i - 1) % 26)) + out;
+  return out;
+}
+
 /** Signs up a player through the real service; each call uses a fresh email and IP. */
 export async function createPlayer(overrides: Record<string, unknown> = {}) {
   counter += 1;
   const input = {
     firstName: 'Test',
-    lastName: `Player${counter}`,
+    lastName: `Player${letters(counter)}`,
     email: `player${counter}@example.test`,
     phone: '0612345678',
     password: 'Shuttle-Smash-2027',
