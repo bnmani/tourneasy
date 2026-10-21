@@ -7,7 +7,16 @@ export default function robots(): MetadataRoute.Robots {
       userAgent: '*',
       allow: '/',
       // Portal, personal pages and the API are not for search engines.
-      disallow: ['/api/', '/*/admin', '/*/account', '/*/login', '/*/register', '/*/players'],
+      disallow: [
+        '/api/',
+        '/*/admin',
+        '/*/account',
+        '/*/login',
+        '/*/register',
+        '/*/players',
+        '/*/invites',
+        '/*/tournaments/*/enter',
+      ],
     },
     sitemap: `${base}/sitemap.xml`,
   };

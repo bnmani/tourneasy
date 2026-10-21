@@ -32,6 +32,7 @@ const SUCCESS = new Set([
   'merged',
   'organiserAdded',
   'organiserInvited',
+  'cancelled',
 ]);
 
 /** Shows the outcome of the last action from ?status=… (success text or error key). */

@@ -18,6 +18,7 @@ import { Link } from '@/i18n/navigation';
 import { eventLabel } from '@/lib/labels';
 import { pageLocale } from '@/lib/page';
 import { pageMetadata } from '@/lib/seo';
+import { getActor } from '@/server/auth/web';
 import { isAppError } from '@/server/lib/errors';
 import { getPublicTournament } from '@/server/services/public-service';
 
@@ -117,6 +118,7 @@ export default async function TournamentPage({ params }: Props) {
   if (!t) notFound();
 
   const tt = await getTranslations('Tournament');
+  const signedIn = !!(await getActor());
   const tp = await getTranslations('Public');
   const tdt = await getTranslations('DrawTypes');
   const description = pickLocalized(t.description, locale);
@@ -275,8 +277,16 @@ export default async function TournamentPage({ params }: Props) {
             </h2>
             <p className="mt-2 text-sm text-muted-foreground">{entryText}</p>
             {t.phase === 'registrationOpen' && (
-              <Button className="mt-4 w-full" disabled>
-                {tt('entryCtaSoon')}
+              <Button asChild className="mt-4 w-full">
+                {signedIn ? (
+                  <Link href={`/tournaments/${t.slug}/enter`}>{tt('entryCta')}</Link>
+                ) : (
+                  <Link
+                    href={`/login?next=${encodeURIComponent(`/${locale}/tournaments/${t.slug}/enter`)}`}
+                  >
+                    {tt('entryCtaLogin')}
+                  </Link>
+                )}
               </Button>
             )}
           </section>

@@ -45,7 +45,7 @@ export function LoginForm({ locale, next }: { locale: AppLocale; next?: string }
       <p className="text-sm text-muted-foreground">
         {t('noAccount')}{' '}
         <Link
-          href="/register"
+          href={next ? `/register?next=${encodeURIComponent(next)}` : '/register'}
           className="font-medium text-primary underline-offset-4 hover:underline"
         >
           {t('register')}

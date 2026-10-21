@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
-import { FormSuccess } from '@/components/forms/fields';
+import { MyEntries, MyInvites } from '@/components/entry/my-entries';
+import { FormError, FormSuccess } from '@/components/forms/fields';
 import { Button } from '@/components/ui/button';
 import { Link } from '@/i18n/navigation';
 import { firstParam, pageLocale, type LocaleParams, type SearchParams } from '@/lib/page';
@@ -8,6 +9,7 @@ import { cn } from '@/lib/utils';
 import { requireActor } from '@/server/auth/web';
 import { getMyAccount } from '@/server/services/profile-service';
 import { listFollowing } from '@/server/services/public-service';
+import { listMyInvites, listMyRegistrations } from '@/server/services/registration-service';
 import { PlayerList } from '@/components/public/player-list';
 
 export async function generateMetadata({ params }: LocaleParams): Promise<Metadata> {
@@ -43,6 +45,13 @@ export default async function DashboardPage({
   };
   const profile = account.profile;
   const followed = tab === 'following' ? await listFollowing(actor) : [];
+  const entries =
+    profile && (tab === 'upcoming' || tab === 'past') ? await listMyRegistrations(actor) : [];
+  const invites = profile && tab === 'upcoming' ? await listMyInvites(actor) : [];
+  const upcoming = entries.filter((e) => !e.past);
+  const past = entries.filter((e) => e.past);
+  const status = firstParam(query.status);
+  const STATUS_OK = ['entered', 'withdrawn', 'partnerInvited', 'inviteAccepted', 'inviteDeclined'];
 
   return (
     <div className="space-y-6">
@@ -53,6 +62,9 @@ export default async function DashboardPage({
           {profile && tr('memberNumber', { number: profile.memberNumber })}
         </FormSuccess>
       )}
+
+      {status && STATUS_OK.includes(status) && <FormSuccess>{t(status as 'entered')}</FormSuccess>}
+      {status && !STATUS_OK.includes(status) && <FormError state={{ error: status }} />}
 
       <header>
         <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
@@ -89,14 +101,24 @@ export default async function DashboardPage({
 
       <section aria-label={tabLabel[tab]} className="rounded-lg border bg-card p-5 sm:p-6">
         {tab === 'upcoming' && (
-          <div className="space-y-4">
-            <p className="text-muted-foreground">{t('upcomingEmpty')}</p>
-            <Button asChild>
+          <div className="space-y-6">
+            <MyInvites invites={invites} locale={locale} />
+            {upcoming.length > 0 ? (
+              <MyEntries entries={upcoming} locale={locale} showActions />
+            ) : (
+              <p className="text-muted-foreground">{t('upcomingEmpty')}</p>
+            )}
+            <Button asChild variant={upcoming.length > 0 ? 'outline' : 'default'}>
               <Link href="/tournaments">{t('browse')}</Link>
             </Button>
           </div>
         )}
-        {tab === 'past' && <p className="text-muted-foreground">{t('pastEmpty')}</p>}
+        {tab === 'past' &&
+          (past.length > 0 ? (
+            <MyEntries entries={past} locale={locale} showActions={false} />
+          ) : (
+            <p className="text-muted-foreground">{t('pastEmpty')}</p>
+          ))}
         {tab === 'following' &&
           (followed.length === 0 ? (
             <div className="space-y-4">

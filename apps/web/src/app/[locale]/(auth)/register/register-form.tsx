@@ -20,12 +20,13 @@ import { registerAction } from '@/server/actions/auth-actions';
 
 const linkClass = 'font-medium text-primary underline underline-offset-4';
 
-export function RegisterForm({ locale }: { locale: AppLocale }) {
+export function RegisterForm({ locale, next }: { locale: AppLocale; next?: string }) {
   const t = useTranslations('Auth.register');
   const tc = useTranslations('Common');
   const td = useTranslations('Disciplines');
   const tg = useTranslations('Genders');
   const [state, action] = useActionState(registerAction.bind(null, locale), initialFormState);
+  const loginHref = next ? `/login?next=${encodeURIComponent(next)}` : '/login';
 
   const minorOpen = Boolean(
     state.fields?.parentalConsent || state.fields?.guardianName || state.values?.guardianName,
@@ -33,6 +34,7 @@ export function RegisterForm({ locale }: { locale: AppLocale }) {
 
   return (
     <form action={action} className="space-y-6" noValidate>
+      {next && <input type="hidden" name="next" value={next} />}
       <FormError state={state} />
 
       <FormSection title={t('sectionPersonal')}>
@@ -166,7 +168,7 @@ export function RegisterForm({ locale }: { locale: AppLocale }) {
         </SubmitButton>
         <p className="text-sm text-muted-foreground">
           {t('haveAccount')}{' '}
-          <Link href="/login" className={linkClass}>
+          <Link href={loginHref} className={linkClass}>
             {t('login')}
           </Link>
         </p>

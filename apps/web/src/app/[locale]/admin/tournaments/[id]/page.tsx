@@ -19,6 +19,7 @@ import {
 } from '@/server/actions/admin-actions';
 import { getActor, isPortalUser, requirePortal } from '@/server/auth/web';
 import { isAppError } from '@/server/lib/errors';
+import { entryCounts } from '@/server/services/registration-service';
 import { getTournament } from '@/server/services/tournament-service';
 import { venueOptions } from '@/server/services/venue-service';
 import { notFound } from 'next/navigation';
@@ -58,6 +59,12 @@ export default async function AdminTournamentPage({
   const tt = await getTranslations('TournamentTypes');
   const td = await getTranslations('DrawTypes');
   const isAdmin = actor.roles.includes('ADMIN');
+  const counts = await entryCounts(actor, tournament.id);
+  const countOf = (status: string) =>
+    counts.filter((c) => c.status === status).reduce((n, c) => n + c._count._all, 0);
+  const confirmedEntries = countOf('CONFIRMED') + countOf('PENDING');
+  const waitlistedEntries = countOf('WAITLISTED');
+  const liveEntries = confirmedEntries + waitlistedEntries;
   const description = (tournament.description ?? null) as LocalizedText | null;
   const next = STATUS_TRANSITIONS[tournament.status as TournamentStatusCode];
 
@@ -214,7 +221,22 @@ export default async function AdminTournamentPage({
       </section>
 
       <FormSection title={t('tournaments.members')}>
-        <p className="text-sm text-muted-foreground">{t('tournaments.membersSoon')}</p>
+        <p className="text-sm text-muted-foreground">
+          {t('entries.summary', { count: liveEntries })}
+          {liveEntries > 0 && (
+            <>
+              {' · '}
+              {t('entries.counts', { confirmed: confirmedEntries, waitlisted: waitlistedEntries })}
+            </>
+          )}
+        </p>
+        <div>
+          <Button asChild variant="outline" size="sm">
+            <Link href={`/admin/tournaments/${tournament.id}/entries`}>
+              {t('entries.viewEntries')}
+            </Link>
+          </Button>
+        </div>
         <p className="text-sm text-muted-foreground">{t('tournaments.scheduleSoon')}</p>
       </FormSection>
 

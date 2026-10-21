@@ -52,6 +52,21 @@ packages/db       Prisma schema, migrations, seed, client
 packages/shared   translations (nl/en), formatting, Zod schemas, business rules
 ```
 
+## Verifying Phase 4 (registration flow)
+
+1. Log out, open a tournament with open entries and click _Inloggen om in te schrijven_: after logging in
+   (or signing up) you land on the entry form.
+2. The form shows every event with your eligibility (gender, age, level), places taken and the fee.
+   Pick a singles event and a doubles event, enter a partner's member number or email (or tick
+   _Ik zoek nog een partner_), accept the terms and confirm.
+3. _Mijn dashboard → Mijn inschrijvingen_ shows the entries, partner status and _Nog te betalen_.
+   The partner gets an email (test site: Runtime logs) with a link to accept or decline; they can also
+   answer from their own dashboard.
+4. Set an event's maximum to 1 and enter twice: the second entry goes on the waiting list and moves up
+   when the first withdraws (both get an email).
+5. Admin → tournament → _Deelnemers bekijken_: all entries with contact details, filters, cancel, and
+   Excel export.
+
 ## Verifying Phase 3 (public pages)
 
 1. Home: the carousel shows current and upcoming published tournaments; the menu links to every public page.

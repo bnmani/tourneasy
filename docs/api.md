@@ -106,3 +106,21 @@ generated from the shared Zod schemas at **`/api/openapi.json`**.
 
 Only published, non-deleted tournaments are returned. Players appear only when they opted in, have an
 account and are 16 or older (D30); responses never contain email addresses, phone numbers or dates of birth.
+
+## Entries (Phase 4)
+
+All need a signed-in player (Bearer or cookie). Entering needs a verified email address.
+
+| Method   | Path                                       | Purpose                                                                                                        |
+| -------- | ------------------------------------------ | -------------------------------------------------------------------------------------------------------------- |
+| `GET`    | `/api/v1/tournaments/{slug}/entry-options` | Events with my eligibility reasons, places taken, fee, already entered                                         |
+| `POST`   | `/api/v1/tournaments/{slug}/entries`       | `{ events: [{ eventId, partner?, lookingForPartner? }], phone?, acceptTerms: true }` → `201 { registrations }` |
+| `GET`    | `/api/v1/me/registrations`                 | My entries with status, waiting-list position, partner, payment status                                         |
+| `DELETE` | `/api/v1/me/registrations/{id}`            | Withdraw (optional `{ reason }`) until the withdrawal deadline → `204`                                         |
+| `PUT`    | `/api/v1/me/registrations/{id}/partner`    | `{ partner }` invite a (new) partner → `204`                                                                   |
+| `GET`    | `/api/v1/me/invites`                       | Partner invitations waiting for my answer                                                                      |
+| `POST`   | `/api/v1/me/invites/{id}`                  | `{ accept: true                                                                                                | false }` |
+| `GET`    | `/api/v1/admin/tournaments/{id}/entries`   | Participants (organisers); `/export` returns Excel                                                             |
+
+Field errors use keys `event.{eventId}` and `partner.{eventId}`, e.g. `notEligible`, `alreadyEntered`,
+`partnerIneligible`, `partnerRequired`; a full event is not an error but returns `status: "WAITLISTED"`.
