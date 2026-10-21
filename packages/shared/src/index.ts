@@ -4,3 +4,4 @@ export * from './rules';
 export * from './schemas/auth';
 export * from './schemas/admin';
 export * from './schemas/public';
+export * from './schemas/registration';

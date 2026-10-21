@@ -212,4 +212,13 @@ export const KNOWN_ERROR_KEYS = new Set([
   'withdrawalAfterClose',
   'oddMatches',
   'tooFewEntries',
+  'chooseEvent',
+  'partnerRequired',
+  'partnerNotFound',
+  'partnerSelf',
+  'partnerIneligible',
+  'partnerAlreadyEntered',
+  'notEligible',
+  'alreadyEntered',
+  'maxEvents',
 ]);

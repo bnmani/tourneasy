@@ -798,6 +798,9 @@ model Registration {
   holdExpiresAt    DateTime?
   seed             Int?
   notes            String? // organiser-only
+  /// Tournament terms accepted when entering (D48): version and moment, as proof.
+  termsVersion     String?
+  termsAcceptedAt  DateTime?
   createdById      String?            @db.Uuid
   confirmedAt      DateTime?
   cancelledAt      DateTime?
