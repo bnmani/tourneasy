@@ -26,7 +26,11 @@
     "dashboard": "Mijn dashboard",
     "admin": "Beheer",
     "logout": "Uitloggen",
-    "accountMenu": "Accountmenu"
+    "accountMenu": "Accountmenu",
+    "home": "Home",
+    "about": "Over ons",
+    "openMenu": "Menu openen",
+    "closeMenu": "Menu sluiten"
   },
   "LanguageSwitcher": {
     "label": "Taal kiezen",
@@ -39,13 +43,23 @@
     "ctaBrowse": "Bekijk toernooien",
     "ctaRegister": "Account aanmaken",
     "ctaDashboard": "Naar mijn dashboard",
-    "featuresTitle": "Alles voor spelers en organisatoren",
-    "featureFindTitle": "Toernooien vinden",
-    "featureFindText": "Filter op datum, provincie, niveau en onderdeel.",
-    "featureRegisterTitle": "Inschrijven en betalen",
-    "featureRegisterText": "Schrijf je in met je partner en betaal veilig met iDEAL.",
-    "featureFollowTitle": "Uitslagen volgen",
-    "featureFollowText": "Ontvang meldingen over je eigen wedstrijden en die van spelers die je volgt."
+    "featureFollowTitle": "Spelers volgen",
+    "featureFollowText": "Krijg een melding als je clubgenoten of favorieten spelen.",
+    "heroEyebrow": "Badmintontoernooien in Nederland",
+    "heroLine1": "Elke rally,",
+    "heroLine2": "elke uitslag,",
+    "heroLine3": "één plek.",
+    "ctaAbout": "Over Tourneasy",
+    "aboutEyebrow": "Over Tourneasy",
+    "aboutTitle": "Gemaakt voor spelers, clubs en organisatoren",
+    "aboutText": "Eén platform voor de hele toernooidag, van inschrijving tot finale. Organisatoren plannen poules en banen, spelers volgen elke uitslag live.",
+    "featureLiveTitle": "Live uitslagen",
+    "featureLiveText": "Uitslagen staan op elke telefoon zodra ze zijn ingevoerd.",
+    "featurePayTitle": "Betalen met iDEAL",
+    "featurePayText": "Betaal je inschrijfgeld veilig; terugbetalen gaat met één klik.",
+    "featureScheduleTitle": "Slimme planning",
+    "featureScheduleText": "Speelschema en baanindeling worden voorgesteld en zijn met de hand aan te passen.",
+    "illustration": "Gemengd dubbel in actie"
   },
   "Footer": {
     "tagline": "Badmintontoernooien in Nederland",
@@ -526,7 +540,21 @@
       "organiserInvited": "Uitnodiging klaargezet: de rechten gaan in zodra er met dit e-mailadres een account wordt aangemaakt of ingelogd."
     },
     "grantShort": "Toekennen",
-    "revokeShort": "Intrekken"
+    "revokeShort": "Intrekken",
+    "navAppearance": "Weergave",
+    "appearance": {
+      "title": "Weergave",
+      "intro": "Kies het kleurthema van de hele site. De wijziging is direct zichtbaar voor alle bezoekers en wordt vastgelegd in het auditlog.",
+      "default": "standaard",
+      "active": "In gebruik",
+      "use": "Gebruik dit thema",
+      "sampleTitle": "Elke rally,",
+      "sampleHighlight": "elke uitslag.",
+      "sampleCta": "Toernooi zoeken",
+      "sampleLive": "Live",
+      "sampleButton": "Inschrijven"
+    },
+    "clearFilters": "Filters wissen"
   },
   "Legal": {
     "draftNotice": "Concept — deze tekst wordt nog juridisch gecontroleerd.",
@@ -593,5 +621,23 @@
     "SWISS": "Vast aantal rondes zonder uitschakeling; tegenstanders van vergelijkbaar niveau.",
     "GROUPS_KNOCKOUT": "Eerst poules, daarna knock-out met de besten uit elke poule.",
     "HYBRID_ROUND_ROBIN_KNOCKOUT": "Elk team speelt een vast aantal wedstrijden tegen willekeurige tegenstanders in hetzelfde onderdeel. De beste teams uit het totaalklassement gaan door naar de knock-out."
+  },
+  "SiteThemes": {
+    "midnight": {
+      "name": "Midnight Cobalt",
+      "description": "Nachtblauw, perkament en goud. Klassiek en rustig."
+    },
+    "teal": {
+      "name": "Deep Teal",
+      "description": "Diep petrol met roest en turquoise. Sportief en fris."
+    },
+    "aqua": {
+      "name": "Soft Aqua",
+      "description": "Zacht aqua met steengrijs. Licht en vriendelijk."
+    },
+    "night": {
+      "name": "Night Teal",
+      "description": "Donker thema met perzik en petrol. Goed voor avondgebruik."
+    }
   }
 }

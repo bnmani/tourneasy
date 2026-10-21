@@ -148,7 +148,17 @@ Main groups:
 
 ## 4. Phases
 
-0 Foundation · 1 Auth & profiles · 2 Admin core · 3 Public pages · 4 Registration flow ·
-5 Payments · 6 Draws, schedule & results · 7 Notifications & polish · 8 Hardening & launch ·
-9 Mobile app (Expo): auth, browsing, registration + partner invites, Stripe Payment Sheet,
-push notifications, my schedule/results, QR check-in, TestFlight / Play internal testing.
+0 Foundation · 1 Auth & profiles · 2 Admin core · **2.5 Design & theming** · 3 Public pages ·
+4 Registration flow · 5 Payments · 6 Draws, schedule & results · 7 Notifications & polish ·
+8 Hardening & launch · 9 Mobile app (Expo): auth, browsing, registration + partner invites, Stripe
+Payment Sheet, push notifications, my schedule/results, QR check-in, TestFlight / Play internal
+testing.
+
+Additions from the front-end brief (gap analysis, Oct 2026; see DECISIONS.md D44):
+
+| Phase | Added scope                                                                                                                                                                                                                                                                                       |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2.5   | Four site themes with an admin switch, logo, hero artwork, hide-on-scroll menu, mobile menu, restyled pages, "clear filters" in admin lists.                                                                                                                                                      |
+| 3     | Home: carousel of current and upcoming tournaments; menu links to tournaments/live/results/players; public player page (opted-in players only, D30); tournament images (needs the storage decision, D39).                                                                                         |
+| 4     | Entry form with pre-fill for signed-in players; partner by name for partners without an account; terms acceptance stored with version and time; tournament members tab for admins and delegated organisers (with export). Open decision: guest entry or account required (D45).                   |
+| 6     | Schedule workflow: proposed automatically → adjusted by hand → finalised and published; home-page "live now / next on court"; "categories played" column in the players list; player history on the player page; live updates by polling (Hostinger-friendly) unless the host supports streaming. |

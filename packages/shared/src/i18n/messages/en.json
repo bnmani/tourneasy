@@ -26,7 +26,11 @@
     "dashboard": "My dashboard",
     "admin": "Admin",
     "logout": "Log out",
-    "accountMenu": "Account menu"
+    "accountMenu": "Account menu",
+    "home": "Home",
+    "about": "About",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu"
   },
   "LanguageSwitcher": {
     "label": "Choose language",
@@ -39,13 +43,23 @@
     "ctaBrowse": "Browse tournaments",
     "ctaRegister": "Create account",
     "ctaDashboard": "Go to my dashboard",
-    "featuresTitle": "Everything for players and organisers",
-    "featureFindTitle": "Find tournaments",
-    "featureFindText": "Filter by date, province, level and event.",
-    "featureRegisterTitle": "Enter and pay",
-    "featureRegisterText": "Enter together with your partner and pay securely with iDEAL.",
-    "featureFollowTitle": "Follow results",
-    "featureFollowText": "Get notified about your own matches and those of players you follow."
+    "featureFollowTitle": "Follow players",
+    "featureFollowText": "Get notified when your club mates and favourites play.",
+    "heroEyebrow": "Badminton tournaments in the Netherlands",
+    "heroLine1": "Every rally,",
+    "heroLine2": "every result,",
+    "heroLine3": "one place.",
+    "ctaAbout": "About Tourneasy",
+    "aboutEyebrow": "About Tourneasy",
+    "aboutTitle": "Built for players, clubs and organisers",
+    "aboutText": "One platform for the whole tournament day, from entry to final. Organisers plan draws and courts, players follow every result live.",
+    "featureLiveTitle": "Live results",
+    "featureLiveText": "Results reach every phone the moment they are entered.",
+    "featurePayTitle": "Pay with iDEAL",
+    "featurePayText": "Pay your entry fee securely; refunds take one click.",
+    "featureScheduleTitle": "Smart scheduling",
+    "featureScheduleText": "Match schedules and court plans are proposed for you and can be adjusted by hand.",
+    "illustration": "Mixed doubles in action"
   },
   "Footer": {
     "tagline": "Badminton tournaments in the Netherlands",
@@ -526,7 +540,21 @@
       "organiserInvited": "Invitation ready: the rights apply as soon as an account is created or logged in with this email address."
     },
     "grantShort": "Grant",
-    "revokeShort": "Remove"
+    "revokeShort": "Remove",
+    "navAppearance": "Appearance",
+    "appearance": {
+      "title": "Appearance",
+      "intro": "Choose the colour theme for the whole site. The change is visible to all visitors straight away and is recorded in the audit log.",
+      "default": "default",
+      "active": "In use",
+      "use": "Use this theme",
+      "sampleTitle": "Every rally,",
+      "sampleHighlight": "every result.",
+      "sampleCta": "Find a tournament",
+      "sampleLive": "Live",
+      "sampleButton": "Register"
+    },
+    "clearFilters": "Clear filters"
   },
   "Legal": {
     "draftNotice": "Draft — this text is still being reviewed legally.",
@@ -593,5 +621,23 @@
     "SWISS": "Fixed number of rounds without elimination; opponents of similar strength.",
     "GROUPS_KNOCKOUT": "Groups first, then a knockout with the best of each group.",
     "HYBRID_ROUND_ROBIN_KNOCKOUT": "Each team plays a fixed number of matches against random opponents in the same event. The best teams of the overall ranking go to the knockout."
+  },
+  "SiteThemes": {
+    "midnight": {
+      "name": "Midnight Cobalt",
+      "description": "Midnight blue, parchment and gold. Classic and calm."
+    },
+    "teal": {
+      "name": "Deep Teal",
+      "description": "Deep teal with rust and turquoise. Sporty and fresh."
+    },
+    "aqua": {
+      "name": "Soft Aqua",
+      "description": "Soft aqua with stone grey. Light and friendly."
+    },
+    "night": {
+      "name": "Night Teal",
+      "description": "A dark theme with peach and teal. Easy on the eyes at night."
+    }
   }
 }

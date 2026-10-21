@@ -1,6 +1,8 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { X } from 'lucide-react';
+import { useTranslations } from 'next-intl';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useRef, useTransition, type FormEvent, type ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 
@@ -25,6 +27,9 @@ export function FilterBar({
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const lastUrl = useRef<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const t = useTranslations('Admin');
+  const searchParams = useSearchParams();
+  const filtered = [...searchParams.keys()].some((k) => k !== 'page' && k !== 'status');
 
   useEffect(() => () => clearTimeout(timer.current), []);
 
@@ -41,6 +46,18 @@ export function FilterBar({
     if (url === lastUrl.current) return;
     lastUrl.current = url;
     startTransition(() => router.replace(url, { scroll: false }));
+  }
+
+  function clear() {
+    const form = formRef.current;
+    if (!form) return;
+    for (const el of form.elements) {
+      if (el instanceof HTMLSelectElement) el.selectedIndex = 0;
+      else if (el instanceof HTMLInputElement && (el.type === 'checkbox' || el.type === 'radio'))
+        el.checked = false;
+      else if (el instanceof HTMLInputElement && el.type !== 'hidden') el.value = '';
+    }
+    apply();
   }
 
   function onChange(event: FormEvent<HTMLFormElement>) {
@@ -71,6 +88,16 @@ export function FilterBar({
       )}
     >
       {children}
+      {filtered && (
+        <button
+          type="button"
+          onClick={clear}
+          className="inline-flex min-h-10 items-center gap-1 rounded-md px-3 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+        >
+          <X aria-hidden="true" className="size-4" />
+          {t('clearFilters')}
+        </button>
+      )}
     </form>
   );
 }

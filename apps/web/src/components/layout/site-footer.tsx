@@ -1,13 +1,24 @@
+import type { CSSProperties } from 'react';
 import { getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
+import { Logo } from './logo';
+
+// On the dark band the badge is drawn light (and the shuttle dark), like the logo sheet.
+const invertedMark = {
+  '--primary': 'var(--hero-foreground)',
+  '--primary-foreground': 'var(--hero)',
+} as CSSProperties;
 
 export async function SiteFooter() {
   const t = await getTranslations('Footer');
 
   return (
-    <footer className="border-t border-border text-sm text-muted-foreground">
-      <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-6 sm:flex-row sm:items-center sm:justify-between">
-        <p>{t('tagline')}</p>
+    <footer className="bg-hero text-sm text-hero-muted">
+      <div className="mx-auto flex max-w-6xl flex-col gap-5 px-4 py-8 sm:flex-row sm:items-center sm:justify-between">
+        <div className="text-hero-foreground" style={invertedMark}>
+          <Logo />
+          <p className="mt-3 text-hero-muted">{t('tagline')}</p>
+        </div>
         <ul className="flex flex-wrap gap-4">
           <li>
             <Link href="/privacy" className="underline-offset-4 hover:underline">
