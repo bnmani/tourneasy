@@ -37,33 +37,41 @@ const RACKET_SHAFT = 'M234.9 75.5L224 21.6L220 22.4L229.1 76.5Z';
 const POP_CYAN = '#4cc9f0';
 const POP_CORAL = '#f25f5c';
 
-export function HeroArt() {
+/** Phones show a crop centred on the player; wider screens the full composition. */
+export function HeroArt({
+  variant = 'wide',
+  className,
+}: {
+  variant?: 'wide' | 'phone';
+  className?: string;
+}) {
+  const p = `hero-${variant}`;
   return (
     <svg
-      viewBox="0 0 1440 640"
+      viewBox={variant === 'phone' ? '760 40 600 600' : '0 0 1440 640'}
       preserveAspectRatio="xMidYMid slice"
       aria-hidden="true"
       focusable="false"
-      className="pointer-events-none absolute inset-0 size-full"
+      className={`pointer-events-none absolute inset-0 size-full ${className ?? ''}`}
     >
       <defs>
-        <filter id="hero-outline-wide" x="-20%" y="-20%" width="140%" height="140%">
+        <filter id={`${p}-outline-wide`} x="-20%" y="-20%" width="140%" height="140%">
           <feMorphology operator="dilate" radius="5" />
         </filter>
-        <filter id="hero-outline-thin" x="-20%" y="-20%" width="140%" height="140%">
+        <filter id={`${p}-outline-thin`} x="-20%" y="-20%" width="140%" height="140%">
           <feMorphology operator="dilate" radius="2.2" />
         </filter>
-        <pattern id="hero-dots" width="16" height="16" patternUnits="userSpaceOnUse">
+        <pattern id={`${p}-dots`} width="16" height="16" patternUnits="userSpaceOnUse">
           <circle cx="8" cy="8" r="2.4" fill="var(--hero-highlight)" />
         </pattern>
-        <radialGradient id="hero-dots-fade" cx="50%" cy="50%" r="50%">
+        <radialGradient id={`${p}-dots-fade`} cx="50%" cy="50%" r="50%">
           <stop offset="0" stopColor="#fff" stopOpacity="0.9" />
           <stop offset="1" stopColor="#fff" stopOpacity="0" />
         </radialGradient>
-        <mask id="hero-dots-mask">
-          <circle cx="1060" cy="300" r="300" fill="url(#hero-dots-fade)" />
+        <mask id={`${p}-dots-mask`}>
+          <circle cx="1060" cy="300" r="300" fill={`url(#${p}-dots-fade)`} />
         </mask>
-        <symbol id="hero-player" viewBox="0 0 600 600" overflow="visible">
+        <symbol id={`${p}-player`} viewBox="0 0 600 600" overflow="visible">
           {BODY.map((d) => (
             <path key={d} d={d} fill="currentColor" />
           ))}
@@ -84,8 +92,8 @@ export function HeroArt() {
       <rect
         width="1440"
         height="640"
-        fill="url(#hero-dots)"
-        mask="url(#hero-dots-mask)"
+        fill={`url(#${p}-dots)`}
+        mask={`url(#${p}-dots-mask)`}
         opacity="0.35"
       />
       <g strokeLinecap="round" fill="none">
@@ -96,29 +104,29 @@ export function HeroArt() {
 
       <g transform="translate(810 112) scale(0.72)">
         <use
-          href="#hero-player"
+          href={`#${p}-player`}
           width="600"
           height="600"
           color={POP_CYAN}
-          filter="url(#hero-outline-wide)"
+          filter={`url(#${p}-outline-wide)`}
           transform="translate(-9 -5)"
         />
         <use
-          href="#hero-player"
+          href={`#${p}-player`}
           width="600"
           height="600"
           color={POP_CORAL}
-          filter="url(#hero-outline-wide)"
+          filter={`url(#${p}-outline-wide)`}
           transform="translate(9 5)"
         />
         <use
-          href="#hero-player"
+          href={`#${p}-player`}
           width="600"
           height="600"
           color="var(--hero-highlight)"
-          filter="url(#hero-outline-thin)"
+          filter={`url(#${p}-outline-thin)`}
         />
-        <use href="#hero-player" width="600" height="600" color="var(--hero)" />
+        <use href={`#${p}-player`} width="600" height="600" color="var(--hero)" />
       </g>
 
       {/* The shuttle leaving the racket, with speed lines. */}

@@ -46,7 +46,8 @@ export default async function HomePage({ params }: Props) {
   return (
     <>
       <section className="relative overflow-hidden bg-hero text-hero-foreground">
-        <HeroArt />
+        <HeroArt className="max-md:hidden" />
+        <HeroArt variant="phone" className="opacity-60 md:hidden" />
         {/* Keeps the text readable over the artwork; on phones the figures sit behind it. */}
         <div
           aria-hidden="true"

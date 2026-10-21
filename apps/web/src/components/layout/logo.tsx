@@ -23,14 +23,28 @@ export function LogoMark({ className }: { className?: string }) {
 }
 
 /** Full logo: mark, name and tagline. The tagline is part of the brand, so it isn't translated. */
-export function Logo({ className, compact = false }: { className?: string; compact?: boolean }) {
+export function Logo({
+  className,
+  compact = false,
+  taglineFrom,
+}: {
+  className?: string;
+  compact?: boolean;
+  /** Hide the tagline on very narrow screens (the header on small phones). */
+  taglineFrom?: 'sm';
+}) {
   return (
     <span className={cn('flex items-center gap-2.5', className)}>
       <LogoMark className="size-9" />
       <span className="leading-none">
         <span className="block font-heading text-xl font-bold tracking-tight">Tourneasy</span>
         {!compact && (
-          <span className="mt-1 block text-[0.6rem] font-semibold tracking-[0.2em] whitespace-nowrap uppercase opacity-75">
+          <span
+            className={cn(
+              'mt-1 block text-[0.6rem] font-semibold tracking-[0.2em] whitespace-nowrap uppercase opacity-75',
+              taglineFrom === 'sm' && 'max-[420px]:hidden',
+            )}
+          >
             Tournament made easy
           </span>
         )}

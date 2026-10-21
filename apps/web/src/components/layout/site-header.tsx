@@ -66,7 +66,7 @@ export async function SiteHeader() {
         aria-label={t('homeLink')}
         className="shrink-0 rounded-md text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
       >
-        <Logo />
+        <Logo taglineFrom="sm" />
       </Link>
 
       <nav aria-label={t('mainNav')} className="ml-2 hidden items-center gap-0.5 lg:flex">
