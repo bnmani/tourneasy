@@ -22,7 +22,12 @@ export type ErrorCode =
   | 'mergeTwoAccounts'
   | 'csvInvalid'
   | 'inUse'
-  | 'noOpenEvents';
+  | 'noOpenEvents'
+  | 'registrationClosed'
+  | 'withdrawalClosed'
+  | 'emailNotVerified'
+  | 'inviteInvalid'
+  | 'noPlayerProfile';
 
 const HTTP_STATUS: Record<ErrorCode, number> = {
   validation: 422,
@@ -45,6 +50,11 @@ const HTTP_STATUS: Record<ErrorCode, number> = {
   csvInvalid: 422,
   inUse: 409,
   noOpenEvents: 409,
+  registrationClosed: 409,
+  withdrawalClosed: 409,
+  emailNotVerified: 403,
+  inviteInvalid: 410,
+  noPlayerProfile: 409,
 };
 
 export class AppError extends Error {

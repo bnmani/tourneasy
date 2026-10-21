@@ -47,7 +47,8 @@ export async function registerAction(
   } catch (error) {
     return toFormState(error, formData);
   }
-  redirect(`/${locale}/account?welcome=1`);
+  const next = safeRedirectPath(formData.get('next'), '');
+  redirect(next || `/${locale}/account?welcome=1`);
 }
 
 export async function loginAction(
