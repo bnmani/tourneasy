@@ -8,9 +8,18 @@ import { initialFormState } from '@/components/forms/form-state';
 import { savePaymentSettingsAction, unlockSettingsAction } from '@/server/actions/payment-actions';
 
 /** Password prompt that unlocks the Stripe settings (D54). */
-export function UnlockSettingsForm({ locale }: { locale: AppLocale }) {
+export function UnlockSettingsForm({
+  locale,
+  page = 'payments',
+}: {
+  locale: AppLocale;
+  page?: 'payments' | 'email';
+}) {
   const t = useTranslations('Admin.paymentSettings');
-  const [state, action] = useActionState(unlockSettingsAction.bind(null, locale), initialFormState);
+  const [state, action] = useActionState(
+    unlockSettingsAction.bind(null, locale, page),
+    initialFormState,
+  );
   return (
     <form action={action} className="max-w-sm space-y-4" noValidate>
       <FormError state={state} />

@@ -60,3 +60,33 @@ export const paymentSettingsSchema = z.object({
 });
 
 export const unlockSchema = z.object({ password: z.string().min(1, 'required').max(200) });
+
+/** Admin: SMTP settings entered in the portal (D58). An empty password keeps the stored one. */
+export const emailSettingsSchema = z.object({
+  host: z
+    .string()
+    .trim()
+    .min(1, 'required')
+    .max(255, 'tooLong')
+    .regex(/^[a-z0-9.-]+$/i, 'invalid'),
+  port: z.coerce
+    .number({ invalid_type_error: 'invalid' })
+    .int('invalid')
+    .min(1, 'invalid')
+    .max(65535, 'invalid'),
+  security: z.enum(['tls', 'starttls', 'none']),
+  user: z.preprocess(emptyToUndefined, z.string().trim().max(255, 'tooLong').optional()),
+  password: z.preprocess(emptyToUndefined, z.string().max(500, 'tooLong').optional()),
+  /** "Tourneasy <no-reply@tourneasy.app>" or just the address. */
+  from: z
+    .string()
+    .trim()
+    .min(1, 'required')
+    .max(255, 'tooLong')
+    .refine(
+      (v) =>
+        /^[^<>@\s]+@[^<>@\s]+\.[^<>@\s]+$/.test(v) ||
+        /^[^<>]*<[^<>@\s]+@[^<>@\s]+\.[^<>@\s]+>$/.test(v),
+      'emailInvalid',
+    ),
+});

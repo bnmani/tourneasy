@@ -44,7 +44,8 @@ export type ErrorCode =
   | 'nextMatchPlayed'
   | 'resultConflict'
   | 'stageExists'
-  | 'stageNotFinished';
+  | 'stageNotFinished'
+  | 'smtpRejected';
 
 const HTTP_STATUS: Record<ErrorCode, number> = {
   validation: 422,
@@ -89,6 +90,7 @@ const HTTP_STATUS: Record<ErrorCode, number> = {
   resultConflict: 409,
   stageExists: 409,
   stageNotFinished: 409,
+  smtpRejected: 422,
 };
 
 export class AppError extends Error {

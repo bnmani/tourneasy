@@ -182,7 +182,8 @@
     "stageNotFinished": "Not all matches of this round have been played yet.",
     "gameScore": "Game {game} is not a valid final score (e.g. 21-19, 24-22 or 30-29).",
     "tooFewGames": "Not enough games won yet for a winner.",
-    "tooManyGames": "Game {game} is one too many: the match was already decided."
+    "tooManyGames": "Game {game} is one too many: the match was already decided.",
+    "smtpRejected": "The mail server refused the connection or login: {reason}"
   },
   "Auth": {
     "login": {
@@ -853,6 +854,51 @@
       "walkoverWinner": "Walkover, winner:",
       "retiredHelp": "Retirement: enter the score so far and choose the winner.",
       "retiredWinner": "Winner:"
+    },
+    "navEmail": "Email",
+    "emailSettings": {
+      "title": "Email settings",
+      "intro": "The mail server (SMTP) for all emails: confirmations, invitations, receipts and password resets.",
+      "statusPortal": "Email is sent through {host}.",
+      "statusEnvironment": "Email is sent with the server settings (environment variables). Settings saved here take precedence.",
+      "statusOff": "No mail server is set up yet: emails only go to the server log and reach nobody.",
+      "unreadable": "The stored password can’t be read (server secret changed). Please enter it again.",
+      "lastUpdated": "Last changed by {name} on {date}.",
+      "sendTest": "Send a test email to myself",
+      "testSent": "Test email sent to {to}. Check your spam folder too.",
+      "saved": "Saved. The connection and login to the mail server were checked.",
+      "lockedNow": "Locked.",
+      "removed": "Settings removed.",
+      "noEncryptionKey": "The server is missing a secret key (AUTH_SECRET or SETTINGS_ENCRYPTION_KEY), so the password can’t be stored safely.",
+      "locked": "Locked. Enter your password to change the settings for 10 minutes.",
+      "unlockedUntil": "Unlocked until {time}",
+      "lock": "Lock now",
+      "host": "Mail server (SMTP host)",
+      "hostHint": "E.g. smtp.hostinger.com or smtp-relay.brevo.com.",
+      "port": "Port",
+      "security": "Security",
+      "security_tls": "SSL/TLS (usually port 465)",
+      "security_starttls": "STARTTLS (usually port 587)",
+      "security_none": "None (local only)",
+      "user": "Username",
+      "password": "Password",
+      "passwordHint": "Stored encrypted and never shown again.",
+      "passwordStored": "Stored. Leave empty to keep.",
+      "from": "Sender",
+      "fromHint": "As recipients see it, e.g. Tourneasy <no-reply@tourneasy.app>. The address must belong to your mail provider.",
+      "save": "Check and save",
+      "remove": "Remove settings",
+      "removeHint": "Email then falls back to the server settings or only the log.",
+      "removeConfirm": "Yes, remove",
+      "log": "Changes",
+      "logEmpty": "No changes yet.",
+      "action": {
+        "unlock": "Unlocked",
+        "unlockFailed": "Failed unlock attempt",
+        "update": "Settings changed",
+        "clear": "Settings removed",
+        "test": "Test email sent"
+      }
     }
   },
   "Legal": {

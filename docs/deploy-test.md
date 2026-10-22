@@ -32,7 +32,7 @@ Delete these rows from the platform form (they are for local development only):
 | `EMAIL_FROM`                         | `Tourneasy <no-reply@tourneasy.app>`                                                                                                |
 | `NEXT_TELEMETRY_DISABLED`            | `1`                                                                                                                                 |
 | `AUTH_SECRET`                        | random secret (in `.env.test-server`); signs mobile access tokens                                                                   |
-| `EMAIL_TRANSPORT`                    | `log` until an SMTP provider is set up                                                                                              |
+| `EMAIL_TRANSPORT`                    | `log`; the mail server is set in Admin → E-mail (that wins over this)                                                               |
 | `NEXT_SERVER_ACTIONS_ENCRYPTION_KEY` | 32-byte base64 key (in `.env.test-server`); keep it the same across deploys so buttons on pages opened before a deploy keep working |
 | `STRIPE_SECRET_KEY`                  | Stripe → Developers → API keys, **test mode** `sk_test_…` (online payment stays off while empty)                                    |
 | `STRIPE_PUBLISHABLE_KEY`             | the matching `pk_test_…`                                                                                                            |

@@ -83,21 +83,31 @@ export async function refundDecisionAction(locale: AppLocale, refundId: string, 
 const SETTINGS = (locale: AppLocale) => `/${locale}/admin/payments/settings`;
 
 /** Re-enter the password to unlock the Stripe settings for 10 minutes (D54). */
+const UNLOCK_PAGES = {
+  payments: { path: '/admin/payments/settings', scope: 'payments.stripe' },
+  email: { path: '/admin/email', scope: 'email.smtp' },
+} as const;
+
+/** Re-enter the password to unlock the locked settings pages for 10 minutes (D54). */
 export async function unlockSettingsAction(
   locale: AppLocale,
+  page: keyof typeof UNLOCK_PAGES,
   _prev: FormState,
   formData: FormData,
 ): Promise<FormState> {
+  const target = UNLOCK_PAGES[page] ?? UNLOCK_PAGES.payments;
   try {
     await unlockSettings(
       await actorOrThrow(),
       { password: formData.get('password') },
       await currentRequestMeta(),
+      new Date(),
+      target.scope,
     );
   } catch (error) {
     return toFormState(error, formData);
   }
-  redirect(SETTINGS(locale));
+  redirect(`/${locale}${target.path}`);
 }
 
 export async function savePaymentSettingsAction(

@@ -182,7 +182,8 @@
     "stageNotFinished": "Nog niet alle wedstrijden van deze ronde zijn gespeeld.",
     "gameScore": "Game {game} heeft geen geldige eindstand (bijv. 21-19, 24-22 of 30-29).",
     "tooFewGames": "Er zijn nog niet genoeg games gewonnen voor een winnaar.",
-    "tooManyGames": "Game {game} is te veel: de wedstrijd was al beslist."
+    "tooManyGames": "Game {game} is te veel: de wedstrijd was al beslist.",
+    "smtpRejected": "De mailserver weigerde de verbinding of het inloggen: {reason}"
   },
   "Auth": {
     "login": {
@@ -853,6 +854,51 @@
       "walkoverWinner": "Walk-over, winnaar:",
       "retiredHelp": "Opgave: vul de stand tot dan in en kies de winnaar.",
       "retiredWinner": "Winnaar:"
+    },
+    "navEmail": "E-mail",
+    "emailSettings": {
+      "title": "E-mailinstellingen",
+      "intro": "De mailserver (SMTP) voor alle e-mails: bevestigingen, uitnodigingen, betaalbewijzen en wachtwoordherstel.",
+      "statusPortal": "E-mail wordt verstuurd via {host}.",
+      "statusEnvironment": "E-mail wordt verstuurd met de serverinstellingen (omgevingsvariabelen). Instellingen die je hier opslaat gaan voor.",
+      "statusOff": "Er is nog geen mailserver ingesteld: e-mails komen alleen in het serverlogboek en bereiken niemand.",
+      "unreadable": "Het opgeslagen wachtwoord kan niet worden gelezen (geheime serversleutel gewijzigd). Voer het opnieuw in.",
+      "lastUpdated": "Laatst gewijzigd door {name} op {date}.",
+      "sendTest": "Testmail naar mezelf sturen",
+      "testSent": "Testmail verstuurd naar {to}. Kijk ook in je spammap.",
+      "saved": "Opgeslagen. De verbinding en het inloggen bij de mailserver zijn gecontroleerd.",
+      "lockedNow": "Vergrendeld.",
+      "removed": "Instellingen verwijderd.",
+      "noEncryptionKey": "De server mist een geheime sleutel (AUTH_SECRET of SETTINGS_ENCRYPTION_KEY), dus het wachtwoord kan niet veilig worden opgeslagen.",
+      "locked": "Vergrendeld. Voer je wachtwoord in om de instellingen 10 minuten te kunnen wijzigen.",
+      "unlockedUntil": "Ontgrendeld tot {time}",
+      "lock": "Nu vergrendelen",
+      "host": "Mailserver (SMTP-host)",
+      "hostHint": "Bijv. smtp.hostinger.com of smtp-relay.brevo.com.",
+      "port": "Poort",
+      "security": "Beveiliging",
+      "security_tls": "SSL/TLS (meestal poort 465)",
+      "security_starttls": "STARTTLS (meestal poort 587)",
+      "security_none": "Geen (alleen lokaal)",
+      "user": "Gebruikersnaam",
+      "password": "Wachtwoord",
+      "passwordHint": "Wordt versleuteld opgeslagen en nooit meer getoond.",
+      "passwordStored": "Opgeslagen. Leeg laten = niet wijzigen.",
+      "from": "Afzender",
+      "fromHint": "Zoals ontvangers het zien, bijv. Tourneasy <no-reply@tourneasy.app>. Het adres moet bij je mailprovider horen.",
+      "save": "Controleren en opslaan",
+      "remove": "Instellingen verwijderen",
+      "removeHint": "E-mail gaat dan terug naar de serverinstellingen of alleen het logboek.",
+      "removeConfirm": "Ja, verwijderen",
+      "log": "Wijzigingen",
+      "logEmpty": "Nog geen wijzigingen.",
+      "action": {
+        "unlock": "Ontgrendeld",
+        "unlockFailed": "Mislukte ontgrendelpoging",
+        "update": "Instellingen gewijzigd",
+        "clear": "Instellingen verwijderd",
+        "test": "Testmail verstuurd"
+      }
     }
   },
   "Legal": {

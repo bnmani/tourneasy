@@ -25,7 +25,7 @@ import type { Actor } from './session-service';
 
 export const UNLOCK_MINUTES = 10;
 
-async function elevatedUntil(actor: Actor, now: Date): Promise<Date | null> {
+export async function elevatedUntil(actor: Actor, now: Date): Promise<Date | null> {
   const session = await prisma.userSession.findUnique({
     where: { id: actor.sessionId },
     select: { elevatedUntil: true, revokedAt: true },
@@ -73,6 +73,8 @@ export async function unlockSettings(
   input: unknown,
   meta: RequestMeta,
   now = new Date(),
+  /** Which settings page asked (for the log); the unlock covers all locked settings. */
+  scope: string = STRIPE_SETTINGS_KEY,
 ) {
   assertAdmin(actor);
   const { password } = parseInput(unlockSchema, input);
@@ -86,7 +88,7 @@ export async function unlockSettings(
     actorId: actor.userId,
     action: ok ? 'settings.unlock' : 'settings.unlockFailed',
     entityType: 'SiteSetting',
-    entityId: STRIPE_SETTINGS_KEY,
+    entityId: scope,
     meta,
   });
   if (!ok) throw new AppError('wrongPassword', { fields: { password: 'wrongPassword' } });
@@ -106,7 +108,7 @@ export async function lockSettings(actor: Actor) {
   });
 }
 
-async function assertUnlocked(actor: Actor, now: Date) {
+export async function assertUnlocked(actor: Actor, now: Date) {
   assertAdmin(actor);
   if (!(await elevatedUntil(actor, now))) throw new AppError('settingsLocked');
 }
