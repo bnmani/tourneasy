@@ -1,4 +1,5 @@
 import { prisma } from '@tourneasy/db';
+import { randomUUID } from 'node:crypto';
 import nodemailer, { type Transporter } from 'nodemailer';
 import { decryptSecret } from '../lib/secret-box';
 
@@ -71,8 +72,16 @@ export async function loadSmtpConfig(): Promise<SmtpConfig | null> {
   };
 }
 
+/** Domain of the sender address: "Tourneasy <no-reply@tourneasy.app>" → "tourneasy.app". */
+export function senderDomain(from: string): string {
+  return from.match(/@([^>\s]+)/)?.[1]?.toLowerCase() ?? 'tourneasy.app';
+}
+
 export function createSmtpTransport(config: SmtpConfig): Transporter {
   return nodemailer.createTransport({
+    // Greet the mail server as the sender's domain, not the web server's own host name
+    // (a mismatch counts against the email in spam filters).
+    name: senderDomain(config.from),
     host: config.host,
     port: config.port,
     secure: config.security === 'tls',
@@ -122,7 +131,12 @@ export async function sendMail(mail: OutgoingMail): Promise<void> {
     case 'smtp': {
       const { config, transporter } = await current();
       if (!config || !transporter) throw new Error('SMTP is not configured');
-      await transporter.sendMail({ from: config.from, ...mail });
+      await transporter.sendMail({
+        from: config.from,
+        // Message-ID in the sender's domain, matching From and the DKIM signature.
+        messageId: `<${randomUUID()}@${senderDomain(config.from)}>`,
+        ...mail,
+      });
     }
   }
 }

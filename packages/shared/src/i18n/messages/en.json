@@ -864,7 +864,7 @@
       "statusOff": "No mail server is set up yet: emails only go to the server log and reach nobody.",
       "unreadable": "The stored password can’t be read (server secret changed). Please enter it again.",
       "lastUpdated": "Last changed by {name} on {date}.",
-      "sendTest": "Send a test email to myself",
+      "sendTest": "Send test email",
       "testSent": "Test email sent to {to}. Check your spam folder too.",
       "saved": "Saved. The connection and login to the mail server were checked.",
       "lockedNow": "Locked.",
@@ -898,7 +898,10 @@
         "update": "Settings changed",
         "clear": "Settings removed",
         "test": "Test email sent"
-      }
+      },
+      "testTo": "To (empty = your own address)",
+      "testToPlaceholder": "e.g. test-xxxx@srv1.mail-tester.com",
+      "testHint": "Tip: send a test email to the address mail-tester.com gives you; you get a spam score with the reasons."
     }
   },
   "Legal": {
@@ -955,7 +958,11 @@
     "methodCARD": "card",
     "methodBANCONTACT": "Bancontact",
     "methodMANUAL": "paid to the organisers",
-    "methodOTHER": "online"
+    "methodOTHER": "online",
+    "settingsTestSubject": "Your email settings work",
+    "settingsTestBody": "This message was sent through the mail server set up in Tourneasy. If you see it in your inbox, confirmations, invitations and receipts arrive too.",
+    "settingsTestNote": "Is it in your spam folder? Mark it as \"not spam\"; that helps the sender address build a reputation.",
+    "settingsTestButton": "Go to Tourneasy"
   },
   "Provinces": {
     "DRENTHE": "Drenthe",

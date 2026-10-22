@@ -54,10 +54,14 @@ export async function saveEmailSettingsAction(
 }
 
 /** Test email to the admin's own address; the result shows on the page. */
-export async function testEmailAction(locale: AppLocale) {
+export async function testEmailAction(locale: AppLocale, formData: FormData) {
   let query = 'status=testSent';
   try {
-    const to = await sendTestEmail(await actorOrThrow(), await currentRequestMeta());
+    const to = await sendTestEmail(
+      await actorOrThrow(),
+      { to: formData.get('to') ?? undefined },
+      await currentRequestMeta(),
+    );
     query += `&to=${encodeURIComponent(to)}`;
   } catch (error) {
     if (!isAppError(error)) console.error('[email settings] test failed', error);

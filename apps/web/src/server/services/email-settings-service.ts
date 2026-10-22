@@ -6,6 +6,7 @@
  */
 import { prisma, type Prisma } from '@tourneasy/db';
 import { emailSettingsSchema } from '@tourneasy/shared';
+import { z } from 'zod';
 import { sendMail } from '../email/mailer';
 import {
   EMAIL_SETTINGS_KEY,
@@ -14,7 +15,9 @@ import {
   verifySmtp,
   type StoredEmailSettings,
 } from '../email/mailer';
+import { renderEmail } from '../email/templates';
 import { writeAudit } from '../lib/audit';
+import { appUrl } from '../lib/urls';
 import { AppError, validationError } from '../lib/errors';
 import { enforce } from '../lib/rate-limit';
 import type { RequestMeta } from '../lib/request-meta';
@@ -141,26 +144,34 @@ export async function clearEmailSettings(actor: Actor, meta: RequestMeta, now = 
   resetMailerCache();
 }
 
-/** Sends a test email to the admin's own address with the current settings. */
-export async function sendTestEmail(actor: Actor, meta: RequestMeta) {
+const testEmailSchema = z.object({
+  to: z.preprocess(
+    (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
+    z.string().trim().toLowerCase().email('emailInvalid').max(254).optional(),
+  ),
+});
+
+/**
+ * Sends a test email in the normal layout, to the admin's own address or another one (e.g. a
+ * spam checker such as mail-tester.com).
+ */
+export async function sendTestEmail(actor: Actor, input: unknown, meta: RequestMeta) {
   assertAdmin(actor);
-  await enforce(`testmail:user:${actor.userId}`, { limit: 5, windowSeconds: 15 * 60 });
+  const { to } = parseInput(testEmailSchema, input ?? {});
+  await enforce(`testmail:user:${actor.userId}`, { limit: 10, windowSeconds: 15 * 60 });
   const user = await prisma.user.findUniqueOrThrow({
     where: { id: actor.userId },
     select: { email: true, name: true },
   });
-  const nl = actor.locale === 'nl';
+  const recipient = to ?? user.email;
   try {
-    await sendMail({
-      to: user.email,
-      subject: nl ? 'Testmail van Tourneasy' : 'Test email from Tourneasy',
-      text: nl
-        ? `Hallo ${user.name},\n\nDeze testmail laat zien dat de e-mailinstellingen werken.`
-        : `Hi ${user.name},\n\nThis test email shows the email settings work.`,
-      html: nl
-        ? `<p>Hallo ${user.name.replace(/[<>&]/g, '')},</p><p>Deze testmail laat zien dat de e-mailinstellingen werken.</p>`
-        : `<p>Hi ${user.name.replace(/[<>&]/g, '')},</p><p>This test email shows the email settings work.</p>`,
-    });
+    await sendMail(
+      renderEmail(recipient, actor.locale, {
+        kind: 'settingsTest',
+        name: to ? '' : (user.name.split(' ')[0] ?? user.name),
+        url: appUrl(actor.locale, '/'),
+      }),
+    );
   } catch (error) {
     throw new AppError('smtpRejected', {
       reason: error instanceof Error ? error.message.slice(0, 200) : 'error',
@@ -171,9 +182,10 @@ export async function sendTestEmail(actor: Actor, meta: RequestMeta) {
     action: 'settings.email.test',
     entityType: 'SiteSetting',
     entityId: EMAIL_SETTINGS_KEY,
+    after: { to: recipient },
     meta,
   });
-  return user.email;
+  return recipient;
 }
 
 /** Last unlocks and changes for the page (who and when). */

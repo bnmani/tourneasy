@@ -5,6 +5,7 @@ import {
   EMAIL_SETTINGS_KEY,
   loadSmtpConfig,
   resetMailerCache,
+  senderDomain,
   setSmtpVerifierForTests,
 } from '../email/mailer';
 import {
@@ -95,9 +96,21 @@ describe('email settings in the portal', () => {
     ]);
   });
 
-  it('sends a test email to the admin', async () => {
+  it('sends a test email in the normal layout, to the admin or another address', async () => {
     const a = await admin();
-    expect(await sendTestEmail(a.actor, meta)).toBe(a.email);
-    expect(lastMailTo(a.email).mail?.subject).toBe('Testmail van Tourneasy');
+    expect(await sendTestEmail(a.actor, {}, meta)).toBe(a.email);
+    expect(lastMailTo(a.email).mail?.subject).toBe('Je e-mailinstellingen werken');
+    expect(lastMailTo(a.email).mail?.html).toContain('Tourneasy');
+    expect(await sendTestEmail(a.actor, { to: 'Check@Mail-Tester.test' }, meta)).toBe(
+      'check@mail-tester.test',
+    );
+    await expect(sendTestEmail(a.actor, { to: 'nope' }, meta)).rejects.toMatchObject({
+      details: { fields: { to: 'emailInvalid' } },
+    });
+  });
+
+  it('greets the mail server as the sender domain', () => {
+    expect(senderDomain('Tourneasy <no-reply@tourneasy.app>')).toBe('tourneasy.app');
+    expect(senderDomain('info@Example.NL')).toBe('example.nl');
   });
 });

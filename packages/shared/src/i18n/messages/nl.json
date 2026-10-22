@@ -864,7 +864,7 @@
       "statusOff": "Er is nog geen mailserver ingesteld: e-mails komen alleen in het serverlogboek en bereiken niemand.",
       "unreadable": "Het opgeslagen wachtwoord kan niet worden gelezen (geheime serversleutel gewijzigd). Voer het opnieuw in.",
       "lastUpdated": "Laatst gewijzigd door {name} op {date}.",
-      "sendTest": "Testmail naar mezelf sturen",
+      "sendTest": "Testmail sturen",
       "testSent": "Testmail verstuurd naar {to}. Kijk ook in je spammap.",
       "saved": "Opgeslagen. De verbinding en het inloggen bij de mailserver zijn gecontroleerd.",
       "lockedNow": "Vergrendeld.",
@@ -898,7 +898,10 @@
         "update": "Instellingen gewijzigd",
         "clear": "Instellingen verwijderd",
         "test": "Testmail verstuurd"
-      }
+      },
+      "testTo": "Naar (leeg = je eigen adres)",
+      "testToPlaceholder": "bijv. test-xxxx@srv1.mail-tester.com",
+      "testHint": "Tip: stuur een testmail naar het adres dat mail-tester.com je geeft; je krijgt een spamscore met de redenen."
     }
   },
   "Legal": {
@@ -955,7 +958,11 @@
     "methodCARD": "creditcard",
     "methodBANCONTACT": "Bancontact",
     "methodMANUAL": "betaald bij de organisatie",
-    "methodOTHER": "online"
+    "methodOTHER": "online",
+    "settingsTestSubject": "Je e-mailinstellingen werken",
+    "settingsTestBody": "Dit bericht is verstuurd via de mailserver die in Tourneasy is ingesteld. Als je het in je inbox ziet, komen bevestigingen, uitnodigingen en betaalbewijzen ook goed aan.",
+    "settingsTestNote": "Staat het in je spammap? Markeer het als \"geen spam\"; dat helpt de reputatie van het afzenderadres.",
+    "settingsTestButton": "Naar Tourneasy"
   },
   "Provinces": {
     "DRENTHE": "Drenthe",

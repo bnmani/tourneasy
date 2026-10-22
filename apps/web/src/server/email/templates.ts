@@ -49,6 +49,7 @@ type Template =
       method: 'IDEAL' | 'CARD' | 'BANCONTACT' | 'MANUAL' | 'OTHER';
       url: string;
     }
+  | { kind: 'settingsTest'; name: string; url: string }
   | {
       kind: 'refund';
       state: 'requested' | 'processed' | 'rejected';
@@ -188,6 +189,11 @@ export function renderEmail(to: string, locale: AppLocale, template: Template): 
       button = { label: t('entryButton'), url: template.url };
       break;
     }
+    case 'settingsTest':
+      subject = t('settingsTestSubject');
+      paragraphs = [greeting, t('settingsTestBody'), t('settingsTestNote')];
+      button = { label: t('settingsTestButton'), url: template.url };
+      break;
     case 'refund': {
       const params = { amount: template.amount, tournament: template.tournament };
       subject = t('refundSubject', {

@@ -74,12 +74,25 @@ export default async function EmailSettingsPage({ params, searchParams }: Props)
           </p>
         )}
         {settings.active && (
-          <form action={testEmailAction.bind(null, locale)}>
-            <Button type="submit" variant="outline" size="sm">
+          <form
+            action={testEmailAction.bind(null, locale)}
+            className="flex flex-wrap items-end gap-2"
+          >
+            <label className="text-sm">
+              <span className="block text-muted-foreground">{t('testTo')}</span>
+              <input
+                name="to"
+                type="email"
+                placeholder={t('testToPlaceholder')}
+                className="h-10 w-72 max-w-full rounded-md border border-input bg-background px-3 text-base sm:text-sm"
+              />
+            </label>
+            <Button type="submit" variant="outline">
               {t('sendTest')}
             </Button>
           </form>
         )}
+        {settings.active && <p className="text-muted-foreground">{t('testHint')}</p>}
       </section>
 
       <section className="space-y-4 rounded-lg border bg-card p-4 sm:p-6">
