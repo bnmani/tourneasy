@@ -758,7 +758,10 @@
         "unlockFailed": "Mislukte ontgrendelpoging",
         "update": "Sleutels gewijzigd",
         "clear": "Sleutels verwijderd"
-      }
+      },
+      "lastWebhook": "Laatste melding van Stripe: {date} ({type}).",
+      "noWebhookYet": "Nog geen meldingen (webhook) van Stripe ontvangen.",
+      "webhookSilent": "Er zijn online betalingen zonder melding van Stripe: controleer bij Stripe → Webhooks het adres hierboven, dat de endpoint in dezelfde modus (test of live) staat, en het webhook-geheim."
     },
     "draws": {
       "title": "Schema's",

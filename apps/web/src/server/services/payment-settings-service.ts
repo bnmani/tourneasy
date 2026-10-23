@@ -44,10 +44,19 @@ const modeOf = (key: string) => (/_live_/.test(key) ? 'live' : 'test');
 /** What the settings page shows: status and masked values only, never a secret. */
 export async function getPaymentSettings(actor: Actor, now = new Date()) {
   assertAdmin(actor);
-  const [settings, config, until] = await Promise.all([
+  const [settings, config, until, lastEvent, lastOnlinePayment] = await Promise.all([
     stored(),
     loadStripeConfig(),
     elevatedUntil(actor, now),
+    prisma.stripeEvent.findFirst({
+      orderBy: { createdAt: 'desc' },
+      select: { createdAt: true, type: true },
+    }),
+    prisma.payment.findFirst({
+      where: { status: 'SUCCEEDED', stripePaymentIntentId: { not: null } },
+      orderBy: { createdAt: 'desc' },
+      select: { createdAt: true },
+    }),
   ]);
   return {
     unlockedUntil: until,
@@ -56,6 +65,10 @@ export async function getPaymentSettings(actor: Actor, now = new Date()) {
     source: config?.source ?? null,
     mode: config ? modeOf(config.secretKey) : null,
     webhookConfigured: !!config?.webhookSecret,
+    lastWebhook: lastEvent,
+    // Paid online after the last webhook (or none at all): Stripe's events don't reach us.
+    webhookSilent:
+      !!lastOnlinePayment && (!lastEvent || lastEvent.createdAt < lastOnlinePayment.createdAt),
     unreadable: !!settings && !decryptSecret(settings.secretKeyBox),
     stored: settings && {
       publishableKey: settings.publishableKey,

@@ -386,7 +386,11 @@ export async function handleWebhook(rawBody: string, signature: string) {
   let event: GatewayEvent;
   try {
     event = gateway.parseWebhook(rawBody, signature);
-  } catch {
+  } catch (error) {
+    // Usually the webhook secret belongs to another endpoint or mode (test vs live).
+    console.warn('[payments] webhook refused: signature check failed', {
+      reason: error instanceof Error ? error.message.slice(0, 160) : 'error',
+    });
     throw new AppError('validation', { fields: { signature: 'invalid' } });
   }
   const seen = await prisma.stripeEvent.findUnique({ where: { id: event.id } });

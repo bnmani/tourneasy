@@ -56,6 +56,17 @@ export default async function PaymentSettingsPage({ params, searchParams }: Prop
           <p className="text-destructive">{tp('webhookMissing')}</p>
         )}
         {settings.unreadable && <p className="text-destructive">{tp('unreadable')}</p>}
+        {settings.active && (
+          <p className={settings.webhookSilent ? 'text-destructive' : 'text-muted-foreground'}>
+            {settings.lastWebhook
+              ? tp('lastWebhook', {
+                  date: when(settings.lastWebhook.createdAt),
+                  type: settings.lastWebhook.type,
+                })
+              : tp('noWebhookYet')}
+            {settings.webhookSilent && <> {tp('webhookSilent')}</>}
+          </p>
+        )}
         {settings.stored && (
           <p className="text-muted-foreground">
             {tp('lastUpdated', {

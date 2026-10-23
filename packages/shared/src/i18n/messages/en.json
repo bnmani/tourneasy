@@ -758,7 +758,10 @@
         "unlockFailed": "Failed unlock attempt",
         "update": "Keys changed",
         "clear": "Keys removed"
-      }
+      },
+      "lastWebhook": "Last message from Stripe: {date} ({type}).",
+      "noWebhookYet": "No messages (webhook) received from Stripe yet.",
+      "webhookSilent": "There are online payments without a message from Stripe: in Stripe → Webhooks check the address above, that the endpoint is in the same mode (test or live), and the webhook secret."
     },
     "draws": {
       "title": "Draws",
