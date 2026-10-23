@@ -509,10 +509,12 @@
       "refundPercentHint": "E.g. 90 to keep 10% for admin costs.",
       "dayEndTime": "Last match finished by",
       "dayEndTimeHint": "Dutch time; default 22:00.",
-      "matchMinutes": "Minutes per match",
-      "matchMinutesHint": "Length of a time slot in the schedule.",
+      "matchMinutes": "Minutes per match (best of 3)",
+      "matchMinutesHint": "Schedule slot for a match over 2 or 3 games. Best of 5 gets proportionally more time.",
       "restMinutes": "Rest between matches (min)",
-      "restMinutesHint": "Minimum rest for a player between two matches."
+      "restMinutesHint": "Minimum rest for a player between two matches.",
+      "singleGameMinutes": "Minutes per match (1 game)",
+      "singleGameMinutesHint": "Schedule slot for a one-game match, e.g. in groups or preliminary rounds."
     },
     "events": {
       "new": "New event",
@@ -553,7 +555,11 @@
       "koFrom_KO": "The knockout stage",
       "koFrom_QF": "From the quarter-final",
       "koFrom_SF": "From the semi-final",
-      "koFrom_F": "The final only"
+      "koFrom_F": "The final only",
+      "prizePlaces": "Prizes",
+      "prizePlacesHint": "How many places win a prize; sets the podium on the site and in the results email.",
+      "prizePlaces_3": "Top 3 (winner, runner-up and third place)",
+      "prizePlaces_2": "Top 2 (winner and runner-up only)"
     },
     "venues": {
       "title": "Venues",
@@ -845,7 +851,7 @@
       "heading": "Schedule: {tournament}",
       "intro": "The system proposes a schedule over the courts and days; then you adjust and publish it.",
       "desk": "Match desk",
-      "settings": "{minutes} minutes per match, at least {rest} minutes rest, {courts} courts, from {start} to {end}.",
+      "settings": "{minutes} minutes per match (best of 3), {single} minutes for 1 game, at least {rest} minutes rest, {courts} courts, from {start} to {end}.",
       "changeSettings": "Change settings",
       "noVenue": "This tournament has no venue yet: choose one to schedule courts.",
       "propose": "Propose schedule",
@@ -1453,7 +1459,11 @@
     "third": "3rd",
     "knockoutStage": "Knockout stage",
     "bracketRegion": "Draw",
-    "standingsRegion": "Standings"
+    "standingsRegion": "Standings",
+    "eighthFinal": "Round of 16",
+    "roundOf": "Round of {count}",
+    "knockoutRound": "Knockout round {round}",
+    "roundRobinShort": "Group"
   },
   "Matches": {
     "court": "Court {number}",

@@ -7,6 +7,7 @@ import { prisma, type Prisma } from '@tourneasy/db';
 import {
   amsterdamLocalToUtc,
   defaultRestMinutes,
+  slotMinutes,
   formatDate,
   formatTime,
   proposeSchedule,
@@ -15,6 +16,7 @@ import {
   type FixedSlot,
   type ScheduleMatch,
 } from '@tourneasy/shared';
+import { messages } from '@tourneasy/shared/i18n';
 import { z } from 'zod';
 import { writeAudit } from '../lib/audit';
 import { AppError } from '../lib/errors';
@@ -136,6 +138,7 @@ async function loadTournament(tournamentId: string) {
       dayStartTime: true,
       dayEndTime: true,
       matchMinutes: true,
+      singleGameMinutes: true,
       restMinutes: true,
       courtsAvailable: true,
       schedulePublishedAt: true,
@@ -208,6 +211,13 @@ function feedersOf(
 const restFor = (m: MatchRow, tournamentRest: number) =>
   m.draw.event.restMinutes ?? defaultRestMinutes(m.draw.event.drawType, tournamentRest);
 
+/** Slot length of a match: from its number of games, knockout scoring included (D61). */
+const minutesFor = (m: MatchRow, t: Pick<TournamentRow, 'matchMinutes' | 'singleGameMinutes'>) =>
+  slotMinutes(
+    rulesForMatch(m.draw.event, { ...m.draw, round: m.round, bracket: m.bracket }).bestOf,
+    t,
+  );
+
 const proposeSchema = z.object({ mode: z.enum(['all', 'remaining']).default('all') });
 
 /**
@@ -259,17 +269,21 @@ export async function proposeTournamentSchedule(
         (f) => scheduledIds.has(f) && !doneWithoutSlot.some((d) => d.id === f),
       ),
       restMinutes: restFor(m, t.restMinutes),
+      minutes: minutesFor(m, t),
     }));
   // Never plan in the past: today starts at the next 5-minute mark (tests plan fixed days).
   const floor = process.env.NODE_ENV === 'test' ? 0 : Math.ceil(Date.now() / 300_000) * 300_000;
   const days = scheduleDays(t)
     .map((d) => ({ ...d, start: new Date(Math.max(d.start.getTime(), floor)) }))
-    .filter((d) => d.end.getTime() - d.start.getTime() >= t.matchMinutes * 60_000);
+    .filter(
+      (d) =>
+        d.end.getTime() - d.start.getTime() >=
+        Math.min(t.matchMinutes, t.singleGameMinutes) * 60_000,
+    );
   const result = proposeSchedule({
     matches: plan,
     courts: courts.map((c) => c.id),
     days,
-    matchMinutes: t.matchMinutes,
     fixed,
   });
   await prisma.$transaction(
@@ -331,7 +345,8 @@ export async function moveMatch(actor: Actor, matchId: string, input: unknown, m
     throw new AppError('validation', { fields: { courtId: 'invalid' } });
   const start = amsterdamLocalToUtc(startsAt);
   if (!start) throw new AppError('validation', { fields: { startsAt: 'invalid' } });
-  const end = new Date(start.getTime() + t.matchMinutes * 60_000);
+  const row = await prisma.match.findUniqueOrThrow({ where: { id: matchId }, select: matchSelect });
+  const end = new Date(start.getTime() + minutesFor(row, t) * 60_000);
   try {
     await prisma.$transaction(async (tx) => {
       // Update in place, so a moved match counts as "changed" rather than "new".
@@ -378,21 +393,41 @@ export async function swapMatches(actor: Actor, input: unknown, meta: RequestMet
   const sa = slots.find((s) => s.matchId === a);
   const sb = slots.find((s) => s.matchId === b);
   if (!sa || !sb) throw new AppError('notScheduled');
-  await prisma.$transaction(async (tx) => {
-    // The slots stay where they are; the matches change places (matchId is unique, hence
-    // the three steps).
-    await tx.courtSlot.update({ where: { id: sa.id }, data: { matchId: null } });
-    await tx.courtSlot.update({ where: { id: sb.id }, data: { matchId: a } });
-    await tx.courtSlot.update({ where: { id: sa.id }, data: { matchId: b } });
-    await writeAudit(tx, {
-      actorId: actor.userId,
-      action: 'schedule.swap',
-      entityType: 'Match',
-      entityId: a,
-      after: { with: b },
-      meta,
+  const t = await loadTournament(ma.tournamentId);
+  try {
+    await prisma.$transaction(async (tx) => {
+      // The slots stay where they are; the matches change places (matchId is unique, hence
+      // the three steps).
+      await tx.courtSlot.update({ where: { id: sa.id }, data: { matchId: null } });
+      await tx.courtSlot.update({ where: { id: sb.id }, data: { matchId: a } });
+      await tx.courtSlot.update({ where: { id: sa.id }, data: { matchId: b } });
+      // Each match keeps its own length (a one-game match is shorter) from the slot's start.
+      for (const [slot, matchId] of [
+        [sa, b],
+        [sb, a],
+      ] as const) {
+        const row = await tx.match.findUniqueOrThrow({
+          where: { id: matchId },
+          select: matchSelect,
+        });
+        await tx.courtSlot.update({
+          where: { id: slot.id },
+          data: { endsAt: new Date(slot.startsAt.getTime() + minutesFor(row, t) * 60_000) },
+        });
+      }
+      await writeAudit(tx, {
+        actorId: actor.userId,
+        action: 'schedule.swap',
+        entityType: 'Match',
+        entityId: a,
+        after: { with: b },
+        meta,
+      });
     });
-  });
+  } catch (error) {
+    if (String(error).includes('court_slot_no_overlap')) throw new AppError('courtTaken');
+    throw error;
+  }
   await notifySchedule(ma.tournamentId, {
     changed: true,
     key: `swap:${a}:${b}:${Date.now()}`,
@@ -526,18 +561,47 @@ async function notifySchedule(
 }
 
 /** Round name for lists: "Finale", "Halve finale", "Poule A · ronde 2", "Herkansing ronde 3". */
+/**
+ * Where a match sits, for the schedule and the desk: the knockout round by name (final,
+ * semi-final, quarter-final, last 16/32…), or the stage and round before it (group, round
+ * robin, preliminary rounds, Swiss).
+ */
 export function roundLabel(m: MatchRow, locale: 'nl' | 'en') {
-  const nl = locale === 'nl';
-  if (m.bracket === 'F') return nl ? 'Finale' : 'Final';
-  if (m.bracket === 'L') return nl ? `Herkansing ronde ${m.round}` : `Losers round ${m.round}`;
-  if (m.draw.type === 'KNOCKOUT' || m.draw.stage === 'KNOCKOUT') {
-    const left = Math.log2(m.draw.size) - m.round;
-    if (left === 0) return nl ? 'Finale' : 'Final';
-    if (left === 1) return nl ? 'Halve finale' : 'Semi-final';
-    if (left === 2) return nl ? 'Kwartfinale' : 'Quarter-final';
+  const d = messages[locale].Draws as Record<string, string>;
+  const fill = (key: string, params: Record<string, string | number> = {}) =>
+    Object.entries(params).reduce((text, [k, v]) => text.replace(`{${k}}`, String(v)), d[key]!);
+  if (m.bracket === 'F') return d.final!;
+  if (m.bracket === 'L') return fill('losersRound', { round: m.round });
+  if (
+    m.draw.type === 'KNOCKOUT' ||
+    m.draw.type === 'DOUBLE_KNOCKOUT' ||
+    m.draw.stage === 'KNOCKOUT'
+  ) {
+    return knockoutRoundName(Math.log2(m.draw.size) - m.round, m.round, fill);
   }
-  const group = m.draw.name ? `${nl ? 'Poule' : 'Group'} ${m.draw.name} · ` : '';
-  return `${group}${nl ? 'ronde' : 'round'} ${m.round}`;
+  const round = fill('round', { round: m.round }).toLowerCase();
+  if (m.draw.name) return `${fill('group', { name: m.draw.name })} · ${round}`;
+  const stage =
+    m.draw.type === 'SWISS'
+      ? fill('swiss')
+      : m.draw.type === 'HYBRID_ROUND_ROBIN_KNOCKOUT'
+        ? fill('hybrid')
+        : fill('roundRobinShort');
+  return `${stage} · ${round}`;
+}
+
+/** Knockout round names by rounds left before the final (0 = final). */
+export function knockoutRoundName(
+  left: number,
+  round: number,
+  fill: (key: string, params?: Record<string, string | number>) => string,
+) {
+  if (left <= 0) return fill('final');
+  if (left === 1) return fill('semiFinal');
+  if (left === 2) return fill('quarterFinal');
+  if (left === 3) return fill('eighthFinal');
+  if (left <= 6) return fill('roundOf', { count: 2 ** (left + 1) });
+  return fill('knockoutRound', { round });
 }
 
 export type ScheduleItem = ReturnType<typeof toItem>;

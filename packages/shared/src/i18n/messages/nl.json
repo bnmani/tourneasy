@@ -509,10 +509,12 @@
       "refundPercentHint": "Bijv. 90 om 10% administratiekosten te houden.",
       "dayEndTime": "Laatste wedstrijd klaar om",
       "dayEndTimeHint": "Nederlandse tijd; standaard 22:00.",
-      "matchMinutes": "Minuten per wedstrijd",
-      "matchMinutesHint": "Lengte van een tijdslot in de planning.",
+      "matchMinutes": "Minuten per wedstrijd (best of 3)",
+      "matchMinutesHint": "Tijdslot in de planning voor een wedstrijd over 2 of 3 games. Best of 5 krijgt naar verhouding meer tijd.",
       "restMinutes": "Rust tussen wedstrijden (min)",
-      "restMinutesHint": "Minimale rust voor een speler tussen twee wedstrijden."
+      "restMinutesHint": "Minimale rust voor een speler tussen twee wedstrijden.",
+      "singleGameMinutes": "Minuten per wedstrijd (1 game)",
+      "singleGameMinutesHint": "Tijdslot voor een wedstrijd van één game, bijv. in poules of de voorronde."
     },
     "events": {
       "new": "Nieuw onderdeel",
@@ -553,7 +555,11 @@
       "koFrom_KO": "De knock-outfase",
       "koFrom_QF": "Vanaf de kwartfinale",
       "koFrom_SF": "Vanaf de halve finale",
-      "koFrom_F": "Alleen de finale"
+      "koFrom_F": "Alleen de finale",
+      "prizePlaces": "Prijzen",
+      "prizePlacesHint": "Hoeveel plaatsen een prijs krijgen; bepaalt het podium op de site en in de uitslagmail.",
+      "prizePlaces_3": "Top 3 (winnaar, tweede en derde plaats)",
+      "prizePlaces_2": "Top 2 (alleen winnaar en tweede plaats)"
     },
     "venues": {
       "title": "Locaties",
@@ -845,7 +851,7 @@
       "heading": "Planning: {tournament}",
       "intro": "Het systeem stelt een planning voor over de banen en dagen; daarna pas je aan en publiceer je.",
       "desk": "Wedstrijdtafel",
-      "settings": "{minutes} minuten per wedstrijd, minstens {rest} minuten rust, {courts} banen, van {start} tot {end}.",
+      "settings": "{minutes} minuten per wedstrijd (best of 3), {single} minuten bij 1 game, minstens {rest} minuten rust, {courts} banen, van {start} tot {end}.",
       "changeSettings": "Instellingen wijzigen",
       "noVenue": "Dit toernooi heeft nog geen locatie: kies er een om banen te kunnen plannen.",
       "propose": "Planning voorstellen",
@@ -1453,7 +1459,11 @@
     "third": "3e",
     "knockoutStage": "Knock-outfase",
     "bracketRegion": "Speelschema",
-    "standingsRegion": "Stand"
+    "standingsRegion": "Stand",
+    "eighthFinal": "Achtste finale",
+    "roundOf": "Laatste {count}",
+    "knockoutRound": "Knock-out ronde {round}",
+    "roundRobinShort": "Poule"
   },
   "Matches": {
     "court": "Baan {number}",

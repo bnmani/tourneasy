@@ -62,6 +62,7 @@ export default async function EditEventPage({ params }: Params) {
           pointsToWin: event.pointsToWin.toString(),
           pointsCap: event.pointsCap.toString(),
           restMinutes: event.restMinutes?.toString() ?? '',
+          prizePlaces: event.prizePlaces === 2 ? '2' : '3',
           koScoringFrom: (event.koScoringFrom ?? '') as '' | 'KO' | 'QF' | 'SF' | 'F',
           koBestOf: event.koBestOf?.toString() ?? '3',
           koPointsToWin: event.koPointsToWin?.toString() ?? '21',

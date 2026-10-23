@@ -73,6 +73,7 @@ export default async function SchedulePage({ params, searchParams }: Props) {
         <p>
           {ts('settings', {
             minutes: tournament.matchMinutes,
+            single: tournament.singleGameMinutes,
             rest: tournament.restMinutes,
             courts: courts.length,
             start: tournament.dayStartTime ?? '09:00',

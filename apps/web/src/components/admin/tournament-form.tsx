@@ -30,6 +30,7 @@ export type TournamentFormValues = {
   dayStartTime: string;
   dayEndTime: string;
   matchMinutes: string;
+  singleGameMinutes?: string;
   restMinutes: string;
   registrationOpensAt: string;
   registrationClosesAt: string;
@@ -265,6 +266,17 @@ export function TournamentForm({
             hint={t('matchMinutesHint')}
             state={state}
             defaultValue={values.matchMinutes ?? '30'}
+            inputMode="numeric"
+          />
+          <TextField
+            name="singleGameMinutes"
+            type="number"
+            min={5}
+            max={120}
+            label={t('singleGameMinutes')}
+            hint={t('singleGameMinutesHint')}
+            state={state}
+            defaultValue={values.singleGameMinutes ?? '15'}
             inputMode="numeric"
           />
           <TextField

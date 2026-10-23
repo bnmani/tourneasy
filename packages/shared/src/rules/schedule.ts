@@ -4,7 +4,8 @@
  * have finished (plus rest) and none of its known players is still playing or resting.
  * Urgency: earlier rounds first, losers-bracket rounds between the winners rounds, the final
  * last; then the category order and the match number. Matches already on court or played
- * stay where they are and count as occupied time.
+ * stay where they are and count as occupied time. Each match takes its own length: a one-game
+ * match a short slot, best of 3 the normal one (slotMinutes); the grid steps by the shortest.
  */
 
 export type ScheduleMatch = {
@@ -20,6 +21,8 @@ export type ScheduleMatch = {
   feeders: string[];
   /** Minimum rest before this match for its players, in minutes. */
   restMinutes: number;
+  /** Length of this match's slot in minutes (see slotMinutes). */
+  minutes: number;
 };
 
 export type FixedSlot = {
@@ -39,10 +42,12 @@ export function proposeSchedule(input: {
   matches: ScheduleMatch[];
   courts: string[];
   days: ScheduleDay[];
-  matchMinutes: number;
   fixed?: FixedSlot[];
 }): { slots: PlannedSlot[]; unscheduled: string[] } {
-  const slotMs = input.matchMinutes * 60_000;
+  const minutes = input.matches.map((m) => m.minutes);
+  // Step through the day by the greatest common divisor, so 15- and 30-minute slots line up.
+  const gcd = (a: number, b: number): number => (b ? gcd(b, a % b) : a);
+  const stepMs = Math.max(5, minutes.reduce(gcd, minutes[0] ?? 30)) * 60_000;
   const fixed = input.fixed ?? [];
   const courtFree = new Map(input.courts.map((c) => [c, 0]));
   const playerFree = new Map<string, number>(); // end of last match (rest added per match)
@@ -66,16 +71,15 @@ export function proposeSchedule(input: {
     .sort((a, b) => urgency(a) - urgency(b) || a.eventOrder - b.eventOrder || a.number - b.number);
   const slots: PlannedSlot[] = [];
   for (const day of input.days) {
-    for (
-      let t = day.start.getTime();
-      t + slotMs <= day.end.getTime() && pending.length;
-      t += slotMs
-    ) {
+    for (let t = day.start.getTime(); t < day.end.getTime() && pending.length; t += stepMs) {
       for (const court of input.courts) {
-        if ((courtFree.get(court) ?? 0) > t || overlapsFixed(court, t, t + slotMs)) continue;
+        if ((courtFree.get(court) ?? 0) > t) continue;
         const rest = (m: ScheduleMatch) => m.restMinutes * 60_000;
+        const length = (m: ScheduleMatch) => m.minutes * 60_000;
         const index = pending.findIndex(
           (m) =>
+            t + length(m) <= day.end.getTime() &&
+            !overlapsFixed(court, t, t + length(m)) &&
             m.feeders.every((f) => matchEnd.has(f) && matchEnd.get(f)! + rest(m) <= t) &&
             m.players.every(
               (p) => (playerFree.get(p) ?? 0) + (playerFree.has(p) ? rest(m) : 0) <= t,
@@ -83,7 +87,7 @@ export function proposeSchedule(input: {
         );
         if (index < 0) continue;
         const [m] = pending.splice(index, 1);
-        const end = t + slotMs;
+        const end = t + length(m!);
         slots.push({ matchId: m!.id, court, start: new Date(t), end: new Date(end) });
         courtFree.set(court, end);
         matchEnd.set(m!.id, end);
@@ -92,6 +96,19 @@ export function proposeSchedule(input: {
     }
   }
   return { slots, unscheduled: pending.map((m) => m.id) };
+}
+
+/**
+ * Slot length for a match from its number of games: one game the short slot (default 15),
+ * best of 3 the normal one (default 30), best of 5 proportionally longer.
+ */
+export function slotMinutes(
+  bestOf: number,
+  t: { matchMinutes: number; singleGameMinutes: number },
+): number {
+  if (bestOf <= 1) return t.singleGameMinutes;
+  if (bestOf >= 5) return Math.round((t.matchMinutes * 5) / 3 / 5) * 5;
+  return t.matchMinutes;
 }
 
 /** Default rest for a category: hybrid formats play short matches in a row (D56). */

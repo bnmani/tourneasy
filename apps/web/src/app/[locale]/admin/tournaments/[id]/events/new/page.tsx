@@ -60,6 +60,7 @@ export default async function NewEventPage({ params }: Params) {
           pointsToWin: '21',
           pointsCap: '30',
           restMinutes: '',
+          prizePlaces: '3',
           koScoringFrom: '',
           koBestOf: '3',
           koPointsToWin: '21',

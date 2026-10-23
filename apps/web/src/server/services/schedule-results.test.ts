@@ -21,6 +21,7 @@ import {
   proposeTournamentSchedule,
   publicSchedule,
   publishSchedule,
+  roundLabel,
 } from './schedule-service';
 import { actorFromWebToken, createWebSession } from './session-service';
 
@@ -215,6 +216,9 @@ describe('results', () => {
     const podium = await eventPodium(event.id);
     expect(podium?.first).toBeTruthy();
     expect(podium?.third).toHaveLength(2);
+    // Prizes for the top 2 only: no third place.
+    await prisma.tournamentEvent.update({ where: { id: event.id }, data: { prizePlaces: 2 } });
+    expect((await eventPodium(event.id))?.third).toEqual([]);
     const winner = await prisma.drawEntry.findUniqueOrThrow({
       where: {
         id: (await prisma.match.findUniqueOrThrow({ where: { id: final.id } })).winnerEntryId!,
@@ -326,5 +330,30 @@ describe('scoring per stage (D61)', () => {
       },
       meta,
     );
+  });
+});
+
+describe('round names (schedule and desk)', () => {
+  const row = (draw: Record<string, unknown>, match: Record<string, unknown> = {}) =>
+    ({ bracket: 'W', round: 1, ...match, draw: { name: null, stage: 'MAIN', ...draw } }) as never;
+  it('says which stage and knockout round a match is in', () => {
+    const ko = (size: number, round: number) =>
+      roundLabel(row({ type: 'KNOCKOUT', size }, { round }), 'nl');
+    expect([ko(32, 1), ko(32, 2), ko(32, 3), ko(32, 4), ko(32, 5)]).toEqual([
+      'Laatste 32',
+      'Achtste finale',
+      'Kwartfinale',
+      'Halve finale',
+      'Finale',
+    ]);
+    expect(roundLabel(row({ type: 'KNOCKOUT', size: 64 }), 'en')).toBe('Round of 64');
+    expect(roundLabel(row({ type: 'GROUPS_KNOCKOUT', stage: 'GROUP', name: 'A' }), 'nl')).toBe(
+      'Poule A · ronde 1',
+    );
+    expect(roundLabel(row({ type: 'ROUND_ROBIN' }, { round: 2 }), 'nl')).toBe('Poule · ronde 2');
+    expect(roundLabel(row({ type: 'HYBRID_ROUND_ROBIN_KNOCKOUT' }), 'nl')).toBe(
+      'Voorronde · ronde 1',
+    );
+    expect(roundLabel(row({ type: 'SWISS' }, { round: 3 }), 'en')).toBe('Swiss system · round 3');
   });
 });

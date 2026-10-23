@@ -3,6 +3,7 @@ import { ScrollRegion } from '@/components/ui/scroll-region';
 import { cn } from '@/lib/utils';
 import type { EventDraw } from '@/server/services/draw-service';
 import { drawStandings } from '@/server/services/results-service';
+import { knockoutRoundName } from '@/server/services/schedule-service';
 
 type Entry = EventDraw['entries'][number];
 type Match = EventDraw['matches'][number];
@@ -122,17 +123,12 @@ async function Bracket({
   const own = matches.filter((m) => m.bracket === bracket);
   const rounds = [...new Set(own.map((m) => m.round))].sort((x, y) => x - y);
   const last = rounds[rounds.length - 1];
-  const name = (round: number) => {
-    if (bracket === 'L') return t('losersRound', { round });
-    const left = last! - round;
-    return left === 0
-      ? t('final')
-      : left === 1
-        ? t('semiFinal')
-        : left === 2
-          ? t('quarterFinal')
-          : t('round', { round });
-  };
+  const name = (round: number) =>
+    bracket === 'L'
+      ? t('losersRound', { round })
+      : knockoutRoundName(last! - round, round, (key, params) =>
+          t(key as 'final', params as never),
+        );
   return (
     <ScrollRegion label={t('bracketRegion')} className="pb-2">
       <div className="flex gap-6">

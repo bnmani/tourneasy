@@ -650,6 +650,8 @@ model Tournament {
   /// Schedule (D56): minutes per match slot, minimum rest between a player's matches, last
   /// moment a match may end each day ("HH:MM", Europe/Amsterdam), and when it was published.
   matchMinutes         Int                @default(30)
+  /// Slot length for a match of one game (best of 1); matchMinutes is for best of 3.
+  singleGameMinutes    Int                @default(15)
   restMinutes          Int                @default(20)
   dayEndTime           String?
   schedulePublishedAt  DateTime?
@@ -755,6 +757,8 @@ model TournamentEvent {
   knockoutSize    Int? // HYBRID_ROUND_ROBIN_KNOCKOUT: 4, 8, 16 or 32
   /// Rest between a player's matches in this category; null = the tournament's (hybrid: shorter).
   restMinutes     Int?
+  /// Prize places: 3 = winner, runner-up and third place(s); 2 = winner and runner-up only.
+  prizePlaces     Int        @default(3)
   // Eligibility (ranks refer to LevelClass.rank; null = no limit)
   minLevelRank    Int?
   maxLevelRank    Int?

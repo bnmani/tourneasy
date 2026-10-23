@@ -575,8 +575,11 @@ const podiumEntry = {
 export async function eventPodium(eventId: string) {
   const event = await prisma.tournamentEvent.findUniqueOrThrow({
     where: { id: eventId },
-    select: { drawType: true, bestOf: true },
+    select: { drawType: true, bestOf: true, prizePlaces: true },
   });
+  // Two prize places: no third place shown or mailed.
+  const thirds = (names: (string | null)[]) =>
+    event.prizePlaces >= 3 ? (names.filter(Boolean) as string[]) : [];
   const draws = await prisma.draw.findMany({
     where: { eventId, status: { not: 'DRAFT' } },
     select: {
@@ -626,7 +629,7 @@ export async function eventPodium(eventId: string) {
         : ko.matches
             .filter((m) => m.round === Math.log2(ko.size) - 1 && m.status !== 'BYE')
             .map((m) => name(m.winnerEntryId === m.entryAId ? m.entryB : m.entryA));
-    return { first, second, third: third.filter(Boolean) as string[] };
+    return { first, second, third: thirds(third) };
   }
   if (draws.length === 1 && (event.drawType === 'ROUND_ROBIN' || event.drawType === 'SWISS')) {
     const d = draws[0]!;
@@ -639,7 +642,7 @@ export async function eventPodium(eventId: string) {
       return null;
     const rows = drawStandings(d, event.bestOf);
     const at = (i: number) => name(d.entries.find((e) => e.id === rows[i]?.id));
-    return { first: at(0), second: at(1), third: [at(2)].filter(Boolean) as string[] };
+    return { first: at(0), second: at(1), third: thirds([at(2)]) };
   }
   return null;
 }

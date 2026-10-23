@@ -28,6 +28,7 @@ function toData(input: ReturnType<typeof eventSchema.parse>) {
     pointsToWin: input.pointsToWin,
     pointsCap: input.pointsCap,
     restMinutes: input.restMinutes ?? null,
+    prizePlaces: input.prizePlaces,
     koScoringFrom: input.koScoringFrom ?? null,
     koBestOf: input.koScoringFrom ? (input.koBestOf ?? 3) : null,
     koPointsToWin: input.koScoringFrom ? (input.koPointsToWin ?? 21) : null,

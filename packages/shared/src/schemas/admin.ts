@@ -218,6 +218,13 @@ export const tournamentSchema = z
       .min(0, 'invalid')
       .max(180, 'invalid')
       .default(20),
+    /** Slot length for a one-game match (best of 1); matchMinutes is for best of 3. */
+    singleGameMinutes: z.coerce
+      .number({ invalid_type_error: 'invalid' })
+      .int('invalid')
+      .min(5, 'invalid')
+      .max(120, 'invalid')
+      .default(15),
     registrationOpensAt: localDateTime,
     registrationClosesAt: localDateTime,
     withdrawalDeadline: localDateTime,
@@ -344,6 +351,11 @@ export const eventSchema = z
     koPointsCap: optionalInt(11, 40),
     /** Rest between a player's matches in this category; empty = the tournament's (D56). */
     restMinutes: optionalInt(0, 180),
+    /** Prize places: winner and runner-up (2), or also third place (3). */
+    prizePlaces: z.coerce
+      .number()
+      .refine((n) => n === 2 || n === 3, 'invalid')
+      .default(3),
     isOpen: z.boolean().default(true),
   })
   .superRefine((v, ctx) => {

@@ -104,6 +104,7 @@ function toData(input: ReturnType<typeof tournamentSchema.parse>) {
     dayStartTime: input.dayStartTime ?? null,
     dayEndTime: input.dayEndTime ?? null,
     matchMinutes: input.matchMinutes,
+    singleGameMinutes: input.singleGameMinutes,
     restMinutes: input.restMinutes,
     registrationOpensAt: input.registrationOpensAt,
     registrationClosesAt: input.registrationClosesAt,

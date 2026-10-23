@@ -34,6 +34,7 @@ export type EventFormValues = {
   matchesPerEntry: string;
   knockoutSize: string;
   restMinutes: string;
+  prizePlaces: '2' | '3';
   koScoringFrom: '' | 'KO' | 'QF' | 'SF' | 'F';
   koBestOf: string;
   koPointsToWin: string;
@@ -326,6 +327,14 @@ export function EventForm({
           state={state}
           defaultValue={values.restMinutes}
           inputMode="numeric"
+        />
+        <SelectField
+          name="prizePlaces"
+          label={t('prizePlaces')}
+          hint={t('prizePlacesHint')}
+          state={state}
+          defaultValue={values.prizePlaces}
+          options={(['3', '2'] as const).map((v) => ({ value: v, label: t(`prizePlaces_${v}`) }))}
         />
       </FormSection>
 
