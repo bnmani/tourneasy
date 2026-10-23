@@ -91,3 +91,36 @@ describe('profileUpdateSchema', () => {
     expect(r.publicProfile).toBe(false);
   });
 });
+
+describe('repeated password', () => {
+  it('must match when given (web forms), and may be left out (mobile app)', async () => {
+    const { resetPasswordSchema, changePasswordSchema } = await import('./auth');
+    const token = 'x'.repeat(30);
+    expect(
+      resetPasswordSchema.safeParse({
+        token,
+        password: 'Shuttle-Smash-2027',
+        passwordRepeat: 'Shuttle-Smash-2028',
+      }).success,
+    ).toBe(false);
+    expect(
+      resetPasswordSchema.safeParse({
+        token,
+        password: 'Shuttle-Smash-2027',
+        passwordRepeat: 'Shuttle-Smash-2027',
+      }).success,
+    ).toBe(true);
+    expect(resetPasswordSchema.safeParse({ token, password: 'Shuttle-Smash-2027' }).success).toBe(
+      true,
+    );
+    const bad = changePasswordSchema.safeParse({
+      currentPassword: 'a',
+      newPassword: 'Shuttle-Smash-2027',
+      newPasswordRepeat: '',
+    });
+    expect(bad.success ? null : bad.error.issues[0]).toMatchObject({
+      path: ['newPasswordRepeat'],
+      message: 'passwordMismatch',
+    });
+  });
+});

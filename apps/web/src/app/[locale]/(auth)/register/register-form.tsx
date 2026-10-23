@@ -136,6 +136,15 @@ export function RegisterForm({ locale, next }: { locale: AppLocale; next?: strin
           autoComplete="new-password"
           minLength={PASSWORD_MIN_LENGTH}
         />
+        <TextField
+          name="passwordRepeat"
+          type="password"
+          label={t('passwordRepeat')}
+          state={state}
+          required
+          autoComplete="new-password"
+          minLength={PASSWORD_MIN_LENGTH}
+        />
         <CheckboxField
           name="acceptTerms"
           state={state}

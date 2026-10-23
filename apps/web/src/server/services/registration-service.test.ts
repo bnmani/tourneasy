@@ -9,6 +9,7 @@ import {
   listMyRegistrations,
   listTournamentEntries,
   respondToInvite,
+  searchPartners,
   withdrawMyRegistration,
 } from './registration-service';
 import { actorFromWebToken, createWebSession } from './session-service';
@@ -334,5 +335,39 @@ describe('organiser entry list', () => {
     expect(
       await prisma.auditLog.count({ where: { action: 'registration.cancelByOrganiser' } }),
     ).toBe(1);
+  });
+});
+
+describe('partner search (D59)', () => {
+  it('suggests only players who may partner me in this event, without contact details', async () => {
+    const t = await tournament();
+    const gd = await event(t.id, 'GD');
+    const anna = await player({ firstName: 'Anna', gender: 'FEMALE' });
+    const bram = await player({ firstName: 'Bram', lastName: 'Jansen', gender: 'MALE' });
+    await player({ firstName: 'Bea', lastName: 'Jansen', gender: 'FEMALE' }); // same gender: not for mixed
+    const taken = await player({ firstName: 'Bart', lastName: 'Jansen', gender: 'MALE' });
+    await enterTournament(
+      taken.actor,
+      'utrecht-open',
+      { events: [{ eventId: gd.id, lookingForPartner: true }], ...terms },
+      meta,
+      NOW,
+    );
+
+    const found = await searchPartners(anna.actor, 'utrecht-open', gd.id, 'jans');
+    expect(found).toEqual([
+      { memberNumber: bram.profile.memberNumber, name: 'Bram Jansen', club: null },
+    ]);
+    expect(
+      await searchPartners(
+        anna.actor,
+        'utrecht-open',
+        gd.id,
+        bram.profile.memberNumber.toLowerCase(),
+      ),
+    ).toHaveLength(1);
+    expect(await searchPartners(anna.actor, 'utrecht-open', gd.id, 'j')).toEqual([]);
+    // Searching for myself never returns me.
+    expect(await searchPartners(anna.actor, 'utrecht-open', gd.id, 'Anna')).toEqual([]);
   });
 });

@@ -33,6 +33,15 @@ export function ChangePasswordForm() {
         autoComplete="new-password"
         minLength={PASSWORD_MIN_LENGTH}
       />
+      <TextField
+        name="newPasswordRepeat"
+        type="password"
+        label={tr('passwordRepeat')}
+        state={state}
+        required
+        autoComplete="new-password"
+        minLength={PASSWORD_MIN_LENGTH}
+      />
       <SubmitButton>{t('submit')}</SubmitButton>
     </form>
   );

@@ -183,7 +183,8 @@
     "gameScore": "Game {game} is not a valid final score (e.g. 21-19, 24-22 or 30-29).",
     "tooFewGames": "Not enough games won yet for a winner.",
     "tooManyGames": "Game {game} is one too many: the match was already decided.",
-    "smtpRejected": "The mail server refused the connection or login: {reason}"
+    "smtpRejected": "The mail server refused the connection or login: {reason}",
+    "passwordMismatch": "The passwords do not match."
   },
   "Auth": {
     "login": {
@@ -225,7 +226,8 @@
       "acceptPrivacy": "I have read the <link>privacy policy</link>.",
       "submit": "Create account",
       "haveAccount": "Already have an account?",
-      "login": "Log in here"
+      "login": "Log in here",
+      "passwordRepeat": "Repeat password"
     },
     "registered": {
       "title": "Welcome to Tourneasy!",
@@ -331,7 +333,8 @@
     "publicProfileMinor": "Profiles of players under 16 are always private.",
     "email": "Email address",
     "emailHint": "Changing your email address will be possible in a later version.",
-    "saved": "Your profile has been saved."
+    "saved": "Your profile has been saved.",
+    "levelHint": "Level A is the highest, D the lowest. A player may play their own level or higher, never lower. Empty = unknown (the organisers decide)."
   },
   "Security": {
     "title": "Security",
@@ -539,7 +542,8 @@
       "knockoutSize": "Teams advancing to the knockout",
       "knockoutSizeHint": "For example 16: round of 16, quarter-finals, semi-finals and final.",
       "restMinutes": "Rest between matches (min)",
-      "restMinutesHint": "Empty = the tournament’s rest (hybrid defaults to at most 10 minutes)."
+      "restMinutesHint": "Empty = the tournament’s rest (hybrid defaults to at most 10 minutes).",
+      "levelHint": "A is the highest level (strongest players), D the lowest (beginners and recreational players). Players may enter their own level or a higher one, never a lower one: a B player can enter A or B, not C or D. Empty = all levels."
     },
     "venues": {
       "title": "Venues",
@@ -1190,7 +1194,16 @@
     "discount": "Multi-category discount: −{amount}",
     "bundleList": "Price per player: {list}.",
     "bundleTier": "{count, plural, one {# category} other {# categories}} {price}",
-    "payNoteOnline": "After entering you pay online straight away (iDEAL). Your place is held for 30 minutes."
+    "payNoteOnline": "After entering you pay online straight away (iDEAL). Your place is held for 30 minutes.",
+    "partnerSearchPlaceholder": "Search by name or member number",
+    "partnerSearchHint": "Type at least 2 letters and pick your partner from the list.",
+    "partnerSearching": "Searching…",
+    "partnerNoResults": "No player found for \"{query}\" who may play with you in this category.",
+    "partnerInviteInstead": "Partner not listed? Invite by email",
+    "partnerInviteEmail": "Your partner’s email address",
+    "partnerInviteHint": "Your partner gets an invitation to create an account and confirm.",
+    "partnerBackToSearch": "Search instead",
+    "partnerChange": "Change"
   },
   "Reasons": {
     "gender": "Not for your gender",

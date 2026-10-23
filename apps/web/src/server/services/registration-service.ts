@@ -25,6 +25,7 @@ import { hashToken, randomToken } from '../lib/crypto';
 import { AppError, validationError } from '../lib/errors';
 import type { RequestMeta } from '../lib/request-meta';
 import { appUrl } from '../lib/urls';
+import { enforce } from '../lib/rate-limit';
 import { parseInput } from '../lib/validation';
 import { amountsDue, HOLD_MINUTES, paymentsEnabled, PROMOTION_HOURS } from '../payments/pricing';
 import { refundsForCancelledRegistration } from './refund-service';
@@ -1369,4 +1370,72 @@ export async function exportTournamentEntries(
     }
   }
   return { header, rows: data };
+}
+
+// ── Partner search (D59) ───────────────────────────────────────────────────────────
+
+const PARTNER_SEARCH_LIMIT = { limit: 60, windowSeconds: 5 * 60 };
+
+/**
+ * Registered players who could be my partner in a doubles event: matching the name (every
+ * word) or member number, eligible for the event and as a pair with me, not yet entered.
+ * Returns only name, club and member number (no contact details or ages), at most 8.
+ */
+export async function searchPartners(actor: Actor, slug: string, eventId: string, query: string) {
+  const q = query.trim().replace(/\s+/g, ' ').slice(0, 60);
+  if (q.length < 2) return [];
+  await enforce(`partnersearch:user:${actor.userId}`, PARTNER_SEARCH_LIMIT);
+  const [t, me] = await Promise.all([loadTournament(slug), myPlayer(actor)]);
+  const event = t.events.find((e) => e.id === eventId);
+  if (!event || !isDoubles(event.discipline)) return [];
+
+  const words = q.split(' ').filter(Boolean);
+  const byNumber = /^TE\d{6}$/i.test(q);
+  const candidates = await prisma.playerProfile.findMany({
+    where: {
+      deletedAt: null,
+      mergedIntoId: null,
+      id: { not: me.id },
+      ...(byNumber
+        ? { memberNumber: q.toUpperCase() }
+        : {
+            AND: words.map((w) => ({
+              OR: [
+                { firstName: { contains: w, mode: 'insensitive' as const } },
+                { lastName: { contains: w, mode: 'insensitive' as const } },
+                { lastNamePrefix: { contains: w, mode: 'insensitive' as const } },
+              ],
+            })),
+          }),
+    },
+    orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }],
+    take: 40,
+    select: { ...playerSelect, club: { select: { name: true, shortName: true } } },
+  });
+  const entered = new Set(
+    (
+      await prisma.registrationParticipant.findMany({
+        where: {
+          eventId,
+          active: true,
+          playerId: { in: candidates.map((c) => c.id) },
+          registration: { status: { in: LIVE } },
+        },
+        select: { playerId: true },
+      })
+    ).map((r) => r.playerId),
+  );
+  return candidates
+    .filter(
+      (p) =>
+        !entered.has(p.id) &&
+        eligibility(p, event, t.startsOn).length === 0 &&
+        pairEligibility(event.discipline, me, p).length === 0,
+    )
+    .slice(0, 8)
+    .map((p) => ({
+      memberNumber: p.memberNumber,
+      name: fullName(p),
+      club: p.club?.shortName ?? p.club?.name ?? null,
+    }));
 }

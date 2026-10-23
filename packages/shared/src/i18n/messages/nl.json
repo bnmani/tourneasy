@@ -183,7 +183,8 @@
     "gameScore": "Game {game} heeft geen geldige eindstand (bijv. 21-19, 24-22 of 30-29).",
     "tooFewGames": "Er zijn nog niet genoeg games gewonnen voor een winnaar.",
     "tooManyGames": "Game {game} is te veel: de wedstrijd was al beslist.",
-    "smtpRejected": "De mailserver weigerde de verbinding of het inloggen: {reason}"
+    "smtpRejected": "De mailserver weigerde de verbinding of het inloggen: {reason}",
+    "passwordMismatch": "De wachtwoorden zijn niet gelijk."
   },
   "Auth": {
     "login": {
@@ -225,7 +226,8 @@
       "acceptPrivacy": "Ik heb de <link>privacyverklaring</link> gelezen.",
       "submit": "Account aanmaken",
       "haveAccount": "Heb je al een account?",
-      "login": "Log hier in"
+      "login": "Log hier in",
+      "passwordRepeat": "Herhaal wachtwoord"
     },
     "registered": {
       "title": "Welkom bij Tourneasy!",
@@ -331,7 +333,8 @@
     "publicProfileMinor": "Voor spelers jonger dan 16 jaar is het profiel altijd privé.",
     "email": "E-mailadres",
     "emailHint": "Je e-mailadres wijzigen kan in een volgende versie.",
-    "saved": "Je profiel is opgeslagen."
+    "saved": "Je profiel is opgeslagen.",
+    "levelHint": "Niveau A is het hoogste, D het laagste. Een speler mag in zijn eigen niveau of hoger spelen, niet lager. Leeg = onbekend (de organisatie beoordeelt)."
   },
   "Security": {
     "title": "Beveiliging",
@@ -539,7 +542,8 @@
       "knockoutSize": "Aantal teams door naar de knock-out",
       "knockoutSizeHint": "Bijvoorbeeld 16: achtste finales, kwartfinales, halve finales en finale.",
       "restMinutes": "Rust tussen wedstrijden (min)",
-      "restMinutesHint": "Leeg = de rust van het toernooi (bij hybride standaard maximaal 10 minuten)."
+      "restMinutesHint": "Leeg = de rust van het toernooi (bij hybride standaard maximaal 10 minuten).",
+      "levelHint": "A is het hoogste niveau (sterkste spelers), D het laagste (beginners en recreanten). Spelers mogen in hun eigen niveau of hoger inschrijven, niet lager: een B-speler kan dus in A of B, niet in C of D. Leeg = alle niveaus."
     },
     "venues": {
       "title": "Locaties",
@@ -1190,7 +1194,16 @@
     "discount": "Korting voor meerdere onderdelen: −{amount}",
     "bundleList": "Prijs per speler: {list}.",
     "bundleTier": "{count, plural, one {# onderdeel} other {# onderdelen}} {price}",
-    "payNoteOnline": "Na het inschrijven betaal je direct online (iDEAL). Je plek wordt 30 minuten voor je vastgehouden."
+    "payNoteOnline": "Na het inschrijven betaal je direct online (iDEAL). Je plek wordt 30 minuten voor je vastgehouden.",
+    "partnerSearchPlaceholder": "Zoek op naam of lidnummer",
+    "partnerSearchHint": "Typ minstens 2 letters en kies je partner uit de lijst.",
+    "partnerSearching": "Zoeken…",
+    "partnerNoResults": "Geen speler gevonden voor \"{query}\" die met jou in dit onderdeel mag spelen.",
+    "partnerInviteInstead": "Staat je partner er niet bij? Nodig uit per e-mail",
+    "partnerInviteEmail": "E-mailadres van je partner",
+    "partnerInviteHint": "Je partner krijgt een uitnodiging om een account aan te maken en te bevestigen.",
+    "partnerBackToSearch": "Toch zoeken",
+    "partnerChange": "Wijzigen"
   },
   "Reasons": {
     "gender": "Niet voor jouw geslacht",

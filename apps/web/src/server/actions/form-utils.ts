@@ -2,7 +2,14 @@ import 'server-only';
 import type { FormState } from '@/components/forms/form-state';
 import { isAppError } from '../lib/errors';
 
-const SECRET_FIELDS = new Set(['password', 'currentPassword', 'newPassword', 'token']);
+const SECRET_FIELDS = new Set([
+  'password',
+  'passwordRepeat',
+  'currentPassword',
+  'newPassword',
+  'newPasswordRepeat',
+  'token',
+]);
 
 /** FormData → plain object. Checkboxes become booleans, multi-value fields arrays. */
 export function formToObject(

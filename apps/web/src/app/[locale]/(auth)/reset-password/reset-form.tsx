@@ -35,6 +35,15 @@ export function ResetForm({ locale, token }: { locale: AppLocale; token: string 
         autoComplete="new-password"
         minLength={PASSWORD_MIN_LENGTH}
       />
+      <TextField
+        name="passwordRepeat"
+        type="password"
+        label={t('register.passwordRepeat')}
+        state={state}
+        required
+        autoComplete="new-password"
+        minLength={PASSWORD_MIN_LENGTH}
+      />
       <SubmitButton>{t('reset.submit')}</SubmitButton>
     </form>
   );

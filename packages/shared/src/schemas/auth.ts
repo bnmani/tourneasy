@@ -86,6 +86,8 @@ export const signUpSchema = z
     email: emailSchema,
     phone: phoneSchema,
     password: passwordSchema,
+    /** The web form asks twice; the mobile app checks on the phone and may leave this out. */
+    passwordRepeat: z.string().max(PASSWORD_MAX_LENGTH).optional(),
     dateOfBirth: dateOfBirthSchema,
     gender: z.enum(GENDERS, { errorMap: () => ({ message: 'required' }) }),
     preferredDisciplines: disciplinesSchema,
@@ -96,6 +98,9 @@ export const signUpSchema = z
     guardianName: optionalText(120),
   })
   .superRefine((v, ctx) => {
+    if (v.passwordRepeat !== undefined && v.passwordRepeat !== v.password) {
+      ctx.addIssue({ code: 'custom', path: ['passwordRepeat'], message: 'passwordMismatch' });
+    }
     if (parseDateOnly(v.dateOfBirth) && isMinor(v.dateOfBirth)) {
       if (!v.parentalConsent) {
         ctx.addIssue({
@@ -122,13 +127,28 @@ export const forgotPasswordSchema = z.object({ email: emailSchema });
 
 const tokenSchema = z.string().trim().min(20, 'tokenInvalid').max(200, 'tokenInvalid');
 
-export const resetPasswordSchema = z.object({ token: tokenSchema, password: passwordSchema });
+export const resetPasswordSchema = z
+  .object({
+    token: tokenSchema,
+    password: passwordSchema,
+    passwordRepeat: z.string().max(PASSWORD_MAX_LENGTH).optional(),
+  })
+  .refine((v) => v.passwordRepeat === undefined || v.passwordRepeat === v.password, {
+    path: ['passwordRepeat'],
+    message: 'passwordMismatch',
+  });
 export const verifyEmailSchema = z.object({ token: tokenSchema });
 
-export const changePasswordSchema = z.object({
-  currentPassword: z.string().min(1, 'required').max(PASSWORD_MAX_LENGTH),
-  newPassword: passwordSchema,
-});
+export const changePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1, 'required').max(PASSWORD_MAX_LENGTH),
+    newPassword: passwordSchema,
+    newPasswordRepeat: z.string().max(PASSWORD_MAX_LENGTH).optional(),
+  })
+  .refine((v) => v.newPasswordRepeat === undefined || v.newPasswordRepeat === v.newPassword, {
+    path: ['newPasswordRepeat'],
+    message: 'passwordMismatch',
+  });
 
 export const profileUpdateSchema = z.object({
   firstName: personNameSchema(60),
@@ -204,6 +224,7 @@ export function fieldErrors(error: z.ZodError): Record<string, string> {
 }
 
 export const KNOWN_ERROR_KEYS = new Set([
+  'passwordMismatch',
   'smtpRejected',
   'gameScore',
   'tooFewGames',

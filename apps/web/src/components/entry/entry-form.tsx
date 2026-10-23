@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Link } from '@/i18n/navigation';
 import { cn } from '@/lib/utils';
 import { enterAction } from '@/server/actions/registration-actions';
+import { PartnerPicker } from './partner-picker';
 
 export type EntryEventOption = {
   id: string;
@@ -182,27 +183,12 @@ export function EntryForm({
 
                 {checked && e.doubles && (
                   <div className="mt-4 space-y-2 border-t pt-4 sm:pl-8">
-                    <label htmlFor={`partner-${e.id}`} className="text-sm font-medium">
-                      {t('partner')}
-                    </label>
-                    <input
-                      id={`partner-${e.id}`}
-                      name={`partner.${e.id}`}
-                      placeholder={t('partnerPlaceholder')}
-                      disabled={looking[e.id]}
-                      autoComplete="off"
-                      aria-invalid={partnerError ? true : undefined}
-                      aria-describedby={`partner-${e.id}-hint`}
-                      className={inputClass}
+                    <PartnerPicker
+                      slug={slug}
+                      eventId={e.id}
+                      disabled={!!looking[e.id]}
+                      error={partnerError}
                     />
-                    <p id={`partner-${e.id}-hint`} className="text-xs text-muted-foreground">
-                      {t('partnerHint')}
-                    </p>
-                    {partnerError && (
-                      <p role="alert" className="text-sm font-medium text-destructive">
-                        {partnerError}
-                      </p>
-                    )}
                     <label className="flex items-center gap-2 text-sm">
                       <input
                         type="checkbox"

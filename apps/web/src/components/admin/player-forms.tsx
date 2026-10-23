@@ -197,6 +197,7 @@ export function PlayerForm({
             options={levels}
           />
         </div>
+        <p className="text-sm text-muted-foreground">{tp('levelHint')}</p>
       </FormSection>
       <SubmitButton size="lg">{ta('save')}</SubmitButton>
     </form>

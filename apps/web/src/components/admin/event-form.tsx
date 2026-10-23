@@ -99,6 +99,7 @@ export function EventForm({
           <SelectField
             name="levelClassId"
             label={t('level')}
+            hint={t('levelHint')}
             state={state}
             defaultValue={values.levelClassId}
             placeholder={t('anyLevel')}

@@ -11,6 +11,7 @@ import {
   enterTournament,
   invitePartner,
   respondToInvite,
+  searchPartners,
   withdrawMyRegistration,
   type InviteRef,
 } from '../services/registration-service';
@@ -117,4 +118,22 @@ export async function cancelEntryAction(
       await currentRequestMeta(),
     ),
   );
+}
+
+export type PartnerSuggestion = { memberNumber: string; name: string; club: string | null };
+
+/** Live partner search on the entry form (D59); empty when signed out or rate limited. */
+export async function searchPartnersAction(
+  slug: string,
+  eventId: string,
+  query: string,
+): Promise<PartnerSuggestion[]> {
+  const actor = await getActor();
+  if (!actor || typeof query !== 'string') return [];
+  try {
+    return await searchPartners(actor, slug, eventId, query);
+  } catch (error) {
+    if (!isAppError(error)) console.error('[partner search] failed', error);
+    return [];
+  }
 }
