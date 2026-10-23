@@ -496,7 +496,7 @@
       "newVenueHint": "De locatie wordt opgeslagen en is daarna ook te kiezen bij andere toernooien.",
       "sectionPayment": "Betaling en korting",
       "bundleTitle": "Korting bij meerdere onderdelen",
-      "bundleHint": "Optioneel: de totaalprijs die een speler betaalt bij 1, 2 of meer onderdelen (bijv. € 15 / € 25 / € 32). Leeg laten = elk onderdeel kost zijn eigen inschrijfgeld.",
+      "bundleHint": "Optioneel: de totaalprijs die een speler betaalt bij 1, 2 of meer onderdelen (bijv. € 15 / € 25 / € 32). Leeg laten = elk onderdeel kost zijn eigen inschrijfgeld. Er is één vak per onderdeel dat een speler mag kiezen: verhoog \"Maximaal aantal onderdelen per speler\" voor meer vakken.",
       "bundleTier": "{count, plural, one {# onderdeel} other {# onderdelen}} (totaal)",
       "partnerPaymentMode": "Betaling bij dubbelspel",
       "partnerPaymentEACH_PAYS_OWN_SHARE": "Ieder betaalt zijn eigen deel",

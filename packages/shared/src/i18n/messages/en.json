@@ -496,7 +496,7 @@
       "newVenueHint": "The venue is saved and can then be chosen for other tournaments too.",
       "sectionPayment": "Payment and discount",
       "bundleTitle": "Multi-category discount",
-      "bundleHint": "Optional: the total a player pays for entering 1, 2 or more categories (e.g. €15 / €25 / €32). Leave empty = each category costs its own fee.",
+      "bundleHint": "Optional: the total a player pays for entering 1, 2 or more categories (e.g. €15 / €25 / €32). Leave empty = each category costs its own fee. There is one field per category a player may enter: raise \"Maximum events per player\" for more fields.",
       "bundleTier": "{count, plural, one {# category} other {# categories}} (total)",
       "partnerPaymentMode": "Payment for doubles",
       "partnerPaymentEACH_PAYS_OWN_SHARE": "Each player pays their own share",
