@@ -5,13 +5,7 @@ import { getTranslations } from 'next-intl/server';
 import { publicNews } from '@/server/services/news-service';
 
 /** Organiser news on the tournament page (D62); nothing when there is none. */
-export async function TournamentNews({
-  slug,
-  locale,
-}: {
-  slug: string;
-  locale: AppLocale;
-}) {
+export async function TournamentNews({ slug, locale }: { slug: string; locale: AppLocale }) {
   const news = await publicNews(slug, locale);
   if (news.length === 0) return null;
   const t = await getTranslations('Tournament');
