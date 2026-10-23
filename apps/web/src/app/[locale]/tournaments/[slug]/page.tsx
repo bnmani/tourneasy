@@ -29,6 +29,7 @@ import { pageMetadata } from '@/lib/seo';
 import { getActor } from '@/server/auth/web';
 import { isAppError } from '@/server/lib/errors';
 import { LiveMatches } from '@/components/matches/live-matches';
+import { TournamentNews } from '@/components/public/tournament-news';
 import { hasPublishedDraws } from '@/server/services/draw-service';
 import { getPublicTournament } from '@/server/services/public-service';
 
@@ -215,6 +216,9 @@ export default async function TournamentPage({ params }: Props) {
 
       <div className="mx-auto max-w-6xl px-4 pt-8 empty:hidden">
         <LiveMatches locale={locale} slug={t.slug} />
+      </div>
+      <div className="mx-auto max-w-6xl px-4 pt-8 empty:hidden">
+        <TournamentNews slug={t.slug} locale={locale} />
       </div>
       <div className="mx-auto grid max-w-6xl gap-8 px-4 py-8 sm:py-10 lg:grid-cols-[1fr_340px]">
         <div className="min-w-0 space-y-8">

@@ -90,3 +90,13 @@ export const emailSettingsSchema = z.object({
       'emailInvalid',
     ),
 });
+
+/** Organiser news for a tournament (D62). English is optional (Dutch is shown instead). */
+export const newsSchema = z.object({
+  titleNl: z.string().trim().min(1, 'required').max(140, 'tooLong'),
+  titleEn: z.preprocess(emptyToUndefined, z.string().trim().max(140, 'tooLong').optional()),
+  bodyNl: z.string().trim().min(1, 'required').max(5000, 'tooLong'),
+  bodyEn: z.preprocess(emptyToUndefined, z.string().trim().max(5000, 'tooLong').optional()),
+  publish: z.boolean().default(true),
+  email: z.boolean().default(false),
+});

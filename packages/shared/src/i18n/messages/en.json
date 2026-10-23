@@ -184,7 +184,8 @@
     "tooFewGames": "Not enough games won yet for a winner.",
     "tooManyGames": "Game {game} is one too many: the match was already decided.",
     "smtpRejected": "The mail server refused the connection or login: {reason}",
-    "passwordMismatch": "The passwords do not match."
+    "passwordMismatch": "The passwords do not match.",
+    "newsAlreadyEmailed": "This message has already been emailed."
   },
   "Auth": {
     "login": {
@@ -265,7 +266,8 @@
     "dashboard": "Dashboard",
     "profile": "Profile",
     "security": "Security",
-    "privacy": "Privacy"
+    "privacy": "Privacy",
+    "notifications": "Email preferences"
   },
   "Dashboard": {
     "title": "My dashboard",
@@ -680,7 +682,8 @@
       "schedulePublished": "Schedule published.",
       "scheduleUnpublished": "Schedule unpublished.",
       "resultSaved": "Result saved.",
-      "stageCreated": "Next round made."
+      "stageCreated": "Next round made.",
+      "newsEmailed": "The message is being sent to the participants."
     },
     "grantShort": "Grant",
     "revokeShort": "Remove",
@@ -934,6 +937,28 @@
       "testTo": "To (empty = your own address)",
       "testToPlaceholder": "e.g. test-xxxx@srv1.mail-tester.com",
       "testHint": "Tip: send a test email to the address mail-tester.com gives you; you get a spam score with the reasons."
+    },
+    "news": {
+      "title": "News",
+      "heading": "News: {tournament}",
+      "intro": "Messages on the tournament page, optionally emailed to all participants too.",
+      "new": "New message",
+      "list": "Messages",
+      "empty": "No messages yet.",
+      "titleNl": "Title (Dutch)",
+      "titleEn": "Title (English, optional)",
+      "bodyNl": "Message (Dutch)",
+      "bodyEn": "Message (English, optional)",
+      "publishNow": "Publish on the tournament page now",
+      "emailNow": "Also email all participants",
+      "save": "Save",
+      "publish": "Publish",
+      "unpublish": "Unpublish",
+      "email": "Email participants",
+      "delete": "Delete",
+      "publishedAt": "Published {date}",
+      "emailedAt": "emailed {date}",
+      "draft": "Draft"
     }
   },
   "Legal": {
@@ -994,7 +1019,36 @@
     "settingsTestSubject": "Your email settings work",
     "settingsTestBody": "This message was sent through the mail server set up in Tourneasy. If you see it in your inbox, confirmations, invitations and receipts arrive too.",
     "settingsTestNote": "Is it in your spam folder? Mark it as \"not spam\"; that helps the sender address build a reputation.",
-    "settingsTestButton": "Go to Tourneasy"
+    "settingsTestButton": "Go to Tourneasy",
+    "scheduleSubject": "Your matches for {tournament}",
+    "scheduleChangedSubject": "Changed: your matches for {tournament}",
+    "scheduleBody": "The schedule of {tournament} is out. These are your matches:",
+    "scheduleChangedBody": "The schedule of {tournament} has changed. Your matches are now:",
+    "scheduleNote": "Times are estimates; arrive in time and report to the match desk. Later rounds depend on results.",
+    "scheduleButton": "See the schedule",
+    "reminderSubject": "Coming up: {tournament}",
+    "reminderBody": "{tournament} starts soon ({when}). Good to know:",
+    "reminderVenue": "Venue: {venue}",
+    "reminderFirstMatch": "Your first match: {match}",
+    "reminderCheckIn": "Please report to the match desk when you arrive. Have fun!",
+    "deadlineSubject": "Not complete yet: your entry for {tournament}",
+    "deadlineBody": "Entries for {tournament} close on {deadline}. Something is still open:",
+    "deadlineUnpaid": "{event}: still to pay",
+    "deadlineInviteSent": "{event}: your partner hasn’t answered your invitation yet",
+    "deadlineInviteReceived": "{event}: {from} is waiting for your answer to the invitation",
+    "deadlineLooking": "{event}: you’re still looking for a partner",
+    "resultsSubject": "Your results from {tournament}",
+    "resultsBody": "Thank you for playing in {tournament}!",
+    "resultsMatches": "Your matches:",
+    "resultsThanks": "See you at the next tournament!",
+    "resultsButton": "All results",
+    "placing": "{event}: {place}",
+    "placeFirst": "1st place",
+    "placeSecond": "2nd place",
+    "placeThird": "3rd place",
+    "newsButton": "Read on the tournament page",
+    "unsubscribe": "Unsubscribe from these emails",
+    "preferences": "Email preferences"
   },
   "Provinces": {
     "DRENTHE": "Drenthe",
@@ -1125,7 +1179,8 @@
     "koScoring_KO": "Knockout",
     "koScoring_QF": "From quarter-final",
     "koScoring_SF": "From semi-final",
-    "koScoring_F": "Final"
+    "koScoring_F": "Final",
+    "news": "News"
   },
   "Calendar": {
     "title": "Calendar",
@@ -1367,5 +1422,29 @@
     "myMatches": "My matches",
     "history": "Matches played",
     "new": "New"
+  },
+  "Notifications": {
+    "title": "Email preferences",
+    "optional": "You can switch these emails off",
+    "essential": "You always get these emails",
+    "essentialHint": "Entry confirmations, partner invitations, receipts, refunds, password and account messages, and your match times (also when they change).",
+    "save": "Save",
+    "saved": "Saved.",
+    "type": {
+      "TOURNAMENT_REMINDER": "Tournament reminder",
+      "ENTRY_DEADLINE_REMINDER": "Entry deadline reminder",
+      "TOURNAMENT_RESULTS": "Results after a tournament",
+      "ANNOUNCEMENT": "News from the organisers"
+    },
+    "hint": {
+      "TOURNAMENT_REMINDER": "Two days before: venue and your first match.",
+      "ENTRY_DEADLINE_REMINDER": "When something is still open just before entries close: payment, partner, invitation.",
+      "TOURNAMENT_RESULTS": "Your matches and placings afterwards.",
+      "ANNOUNCEMENT": "Messages from the organisers of tournaments you entered."
+    },
+    "unsubscribeTitle": "Unsubscribe",
+    "unsubscribed": "You will no longer get emails for: {kind}.",
+    "unsubscribeInvalid": "This unsubscribe link is not valid (any more). Change your preferences in your account.",
+    "manage": "Manage email preferences"
   }
 }

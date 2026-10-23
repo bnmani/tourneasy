@@ -7,6 +7,8 @@ import { prisma, type Prisma } from '@tourneasy/db';
 import {
   amsterdamLocalToUtc,
   defaultRestMinutes,
+  formatDate,
+  formatTime,
   proposeSchedule,
   restConflicts,
   rulesForMatch,
@@ -18,6 +20,8 @@ import { writeAudit } from '../lib/audit';
 import { AppError } from '../lib/errors';
 import type { RequestMeta } from '../lib/request-meta';
 import { parseInput } from '../lib/validation';
+import { appUrl } from '../lib/urls';
+import { enqueueEmails } from './notification-service';
 import { assertCanManageTournament } from './permissions';
 import { eventText, fullName } from './registration-service';
 import type { Actor } from './session-service';
@@ -39,6 +43,7 @@ const entrySelect = {
           player: {
             select: {
               id: true,
+              userId: true,
               memberNumber: true,
               firstName: true,
               lastNamePrefix: true,
@@ -355,6 +360,11 @@ export async function moveMatch(actor: Actor, matchId: string, input: unknown, m
     if (String(error).includes('court_slot_no_overlap')) throw new AppError('courtTaken');
     throw error;
   }
+  await notifySchedule(m.tournamentId, {
+    changed: true,
+    key: `move:${matchId}:${start.toISOString()}`,
+    matchIds: [matchId],
+  });
 }
 
 /** Exchanges the court and time of two matches. */
@@ -382,6 +392,11 @@ export async function swapMatches(actor: Actor, input: unknown, meta: RequestMet
       after: { with: b },
       meta,
     });
+  });
+  await notifySchedule(ma.tournamentId, {
+    changed: true,
+    key: `swap:${a}:${b}:${Date.now()}`,
+    matchIds: [a, b],
   });
 }
 
@@ -423,6 +438,91 @@ export async function publishSchedule(
       meta,
     });
   });
+  if (publish) {
+    const t = await prisma.tournament.findUniqueOrThrow({
+      where: { id: tournamentId },
+      select: { schedulePublishedAt: true },
+    });
+    await notifySchedule(tournamentId, {
+      changed: false,
+      key: `publish:${t.schedulePublishedAt!.toISOString()}`,
+    });
+  }
+}
+
+/**
+ * Emails players their matches (D62): everyone when the schedule is published, or only the
+ * players of the given matches when one is moved after publishing.
+ */
+async function notifySchedule(
+  tournamentId: string,
+  opts: { changed: boolean; key: string; matchIds?: string[] },
+) {
+  const t = await prisma.tournament.findUniqueOrThrow({
+    where: { id: tournamentId },
+    select: { id: true, name: true, slug: true, schedulePublishedAt: true },
+  });
+  if (!t.schedulePublishedAt) return;
+  const [matches, nums] = await Promise.all([
+    tournamentMatches(tournamentId),
+    numbering(tournamentId),
+  ]);
+  const slotted = matches.filter((m) => m.slot);
+  // Player → their account (players without an account get no email).
+  const accountOf = new Map<string, { userId: string; firstName: string }>();
+  for (const m of slotted) {
+    for (const e of [m.entryA, m.entryB]) {
+      for (const p of e?.registration?.participants ?? []) {
+        if (p.player.userId)
+          accountOf.set(p.player.id, { userId: p.player.userId, firstName: p.player.firstName });
+      }
+    }
+  }
+  const targets = new Set(
+    (opts.matchIds ? slotted.filter((m) => opts.matchIds!.includes(m.id)) : slotted).flatMap(
+      (m) => [...sidePlayers(m.entryA), ...sidePlayers(m.entryB)],
+    ),
+  );
+  const items = {
+    nl: slotted.map((m) => toItem(m, 'nl', null, nums)),
+    en: slotted.map((m) => toItem(m, 'en', null, nums)),
+  };
+  const lines = (playerId: string, locale: 'nl' | 'en') =>
+    items[locale]
+      .filter((i) => i.players.includes(playerId))
+      .map((i) => {
+        const mineA = slotted
+          .find((m) => m.id === i.id)!
+          .entryA?.registration?.participants.some((p) => p.player.id === playerId);
+        const opponent = (mineA ? i.b : i.a) ?? '—';
+        return [
+          `${formatDate(i.startsAt!, locale)} ${formatTime(i.startsAt!, locale)}`,
+          locale === 'nl' ? `baan ${i.court!.number}` : `court ${i.court!.number}`,
+          `${i.event} · ${i.round}`,
+          `${locale === 'nl' ? 'tegen' : 'vs'} ${opponent}`,
+        ].join(' · ');
+      });
+  await enqueueEmails(
+    [...targets]
+      .filter((playerId) => accountOf.has(playerId))
+      .map((playerId) => {
+        const account = accountOf.get(playerId)!;
+        return {
+          userId: account.userId,
+          type: 'MATCH_SCHEDULED' as const,
+          dedupeKey: `SCHEDULE:${t.id}:${account.userId}:${opts.key}`,
+          linkPath: `/tournaments/${t.slug}/schedule`,
+          template: (locale: 'nl' | 'en') => ({
+            kind: 'schedule' as const,
+            name: account.firstName,
+            tournament: t.name,
+            changed: opts.changed,
+            matches: lines(playerId, locale),
+            url: appUrl(locale, `/tournaments/${t.slug}/schedule`),
+          }),
+        };
+      }),
+  );
 }
 
 /** Round name for lists: "Finale", "Halve finale", "Poule A · ronde 2", "Herkansing ronde 3". */

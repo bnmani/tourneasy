@@ -45,7 +45,8 @@ export type ErrorCode =
   | 'resultConflict'
   | 'stageExists'
   | 'stageNotFinished'
-  | 'smtpRejected';
+  | 'smtpRejected'
+  | 'newsAlreadyEmailed';
 
 const HTTP_STATUS: Record<ErrorCode, number> = {
   validation: 422,
@@ -91,6 +92,7 @@ const HTTP_STATUS: Record<ErrorCode, number> = {
   stageExists: 409,
   stageNotFinished: 409,
   smtpRejected: 422,
+  newsAlreadyEmailed: 409,
 };
 
 export class AppError extends Error {

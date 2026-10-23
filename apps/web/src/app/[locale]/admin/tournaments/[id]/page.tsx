@@ -246,6 +246,9 @@ export default async function AdminTournamentPage({
           </Button>{' '}
           <Button asChild variant="outline" size="sm">
             <Link href={`/admin/tournaments/${tournament.id}/matches`}>{t('desk.title')}</Link>
+          </Button>{' '}
+          <Button asChild variant="outline" size="sm">
+            <Link href={`/admin/tournaments/${tournament.id}/news`}>{t('news.title')}</Link>
           </Button>
         </div>
       </FormSection>

@@ -1,0 +1,29 @@
+name: Housekeeping
+
+# Every 15 minutes: payment holds, reminders, deadline and results emails, email queue (D62).
+# The key lives in the repository secret CRON_KEY (its hash is stored in the database).
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: housekeeping
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Call the site
+        env:
+          CRON_KEY: ${{ secrets.CRON_KEY }}
+          SITE_URL: ${{ vars.SITE_URL || 'https://test.tourneasy.app' }}
+        run: |
+          if [ -z "$CRON_KEY" ]; then echo "CRON_KEY secret not set"; exit 0; fi
+          curl --fail-with-body --silent --show-error --max-time 120 \
+            -X POST -H "Authorization: Bearer $CRON_KEY" \
+            "$SITE_URL/api/cron/housekeeping"

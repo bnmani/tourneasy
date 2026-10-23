@@ -184,7 +184,8 @@
     "tooFewGames": "Er zijn nog niet genoeg games gewonnen voor een winnaar.",
     "tooManyGames": "Game {game} is te veel: de wedstrijd was al beslist.",
     "smtpRejected": "De mailserver weigerde de verbinding of het inloggen: {reason}",
-    "passwordMismatch": "De wachtwoorden zijn niet gelijk."
+    "passwordMismatch": "De wachtwoorden zijn niet gelijk.",
+    "newsAlreadyEmailed": "Dit bericht is al gemaild."
   },
   "Auth": {
     "login": {
@@ -265,7 +266,8 @@
     "dashboard": "Dashboard",
     "profile": "Profiel",
     "security": "Beveiliging",
-    "privacy": "Privacy"
+    "privacy": "Privacy",
+    "notifications": "E-mailvoorkeuren"
   },
   "Dashboard": {
     "title": "Mijn dashboard",
@@ -680,7 +682,8 @@
       "schedulePublished": "Planning gepubliceerd.",
       "scheduleUnpublished": "Planning offline gehaald.",
       "resultSaved": "Uitslag opgeslagen.",
-      "stageCreated": "Volgende ronde gemaakt."
+      "stageCreated": "Volgende ronde gemaakt.",
+      "newsEmailed": "Bericht wordt verstuurd naar de deelnemers."
     },
     "grantShort": "Toekennen",
     "revokeShort": "Intrekken",
@@ -934,6 +937,28 @@
       "testTo": "Naar (leeg = je eigen adres)",
       "testToPlaceholder": "bijv. test-xxxx@srv1.mail-tester.com",
       "testHint": "Tip: stuur een testmail naar het adres dat mail-tester.com je geeft; je krijgt een spamscore met de redenen."
+    },
+    "news": {
+      "title": "Nieuws",
+      "heading": "Nieuws: {tournament}",
+      "intro": "Berichten op de toernooipagina, desgewenst ook per e-mail naar alle deelnemers.",
+      "new": "Nieuw bericht",
+      "list": "Berichten",
+      "empty": "Nog geen berichten.",
+      "titleNl": "Titel (Nederlands)",
+      "titleEn": "Titel (Engels, optioneel)",
+      "bodyNl": "Bericht (Nederlands)",
+      "bodyEn": "Bericht (Engels, optioneel)",
+      "publishNow": "Meteen publiceren op de toernooipagina",
+      "emailNow": "Ook mailen naar alle deelnemers",
+      "save": "Opslaan",
+      "publish": "Publiceren",
+      "unpublish": "Offline halen",
+      "email": "Mailen naar deelnemers",
+      "delete": "Verwijderen",
+      "publishedAt": "Gepubliceerd {date}",
+      "emailedAt": "gemaild {date}",
+      "draft": "Concept"
     }
   },
   "Legal": {
@@ -994,7 +1019,36 @@
     "settingsTestSubject": "Je e-mailinstellingen werken",
     "settingsTestBody": "Dit bericht is verstuurd via de mailserver die in Tourneasy is ingesteld. Als je het in je inbox ziet, komen bevestigingen, uitnodigingen en betaalbewijzen ook goed aan.",
     "settingsTestNote": "Staat het in je spammap? Markeer het als \"geen spam\"; dat helpt de reputatie van het afzenderadres.",
-    "settingsTestButton": "Naar Tourneasy"
+    "settingsTestButton": "Naar Tourneasy",
+    "scheduleSubject": "Je wedstrijden voor {tournament}",
+    "scheduleChangedSubject": "Gewijzigd: je wedstrijden voor {tournament}",
+    "scheduleBody": "De planning van {tournament} is bekend. Dit zijn jouw wedstrijden:",
+    "scheduleChangedBody": "De planning van {tournament} is aangepast. Je wedstrijden zijn nu:",
+    "scheduleNote": "Tijden zijn een verwachting; kom op tijd en meld je bij de wedstrijdtafel. Volgende rondes hangen af van de uitslagen.",
+    "scheduleButton": "Bekijk de planning",
+    "reminderSubject": "Binnenkort: {tournament}",
+    "reminderBody": "Nog even en dan begint {tournament} ({when}). Handig om te weten:",
+    "reminderVenue": "Locatie: {venue}",
+    "reminderFirstMatch": "Je eerste wedstrijd: {match}",
+    "reminderCheckIn": "Meld je bij aankomst bij de wedstrijdtafel. Veel plezier!",
+    "deadlineSubject": "Nog niet compleet: je inschrijving voor {tournament}",
+    "deadlineBody": "De inschrijving voor {tournament} sluit op {deadline}. Er staat nog iets open:",
+    "deadlineUnpaid": "{event}: nog te betalen",
+    "deadlineInviteSent": "{event}: je partner heeft je uitnodiging nog niet beantwoord",
+    "deadlineInviteReceived": "{event}: {from} wacht op je antwoord op de uitnodiging",
+    "deadlineLooking": "{event}: je zoekt nog een partner",
+    "resultsSubject": "Je uitslagen van {tournament}",
+    "resultsBody": "Bedankt voor het meedoen aan {tournament}!",
+    "resultsMatches": "Je wedstrijden:",
+    "resultsThanks": "Tot het volgende toernooi!",
+    "resultsButton": "Alle uitslagen",
+    "placing": "{event}: {place}",
+    "placeFirst": "1e plaats",
+    "placeSecond": "2e plaats",
+    "placeThird": "3e plaats",
+    "newsButton": "Lees op de toernooipagina",
+    "unsubscribe": "Afmelden voor deze e-mails",
+    "preferences": "E-mailvoorkeuren"
   },
   "Provinces": {
     "DRENTHE": "Drenthe",
@@ -1125,7 +1179,8 @@
     "koScoring_KO": "Knock-out",
     "koScoring_QF": "Vanaf kwartfinale",
     "koScoring_SF": "Vanaf halve finale",
-    "koScoring_F": "Finale"
+    "koScoring_F": "Finale",
+    "news": "Nieuws"
   },
   "Calendar": {
     "title": "Kalender",
@@ -1367,5 +1422,29 @@
     "myMatches": "Mijn wedstrijden",
     "history": "Gespeelde wedstrijden",
     "new": "Nieuw"
+  },
+  "Notifications": {
+    "title": "E-mailvoorkeuren",
+    "optional": "Deze e-mails kun je uitzetten",
+    "essential": "Deze e-mails krijg je altijd",
+    "essentialHint": "Bevestigingen van je inschrijving, uitnodigingen van partners, betaalbewijzen, terugbetalingen, wachtwoord en accountmeldingen, en je wedstrijdtijden (ook als die veranderen).",
+    "save": "Opslaan",
+    "saved": "Opgeslagen.",
+    "type": {
+      "TOURNAMENT_REMINDER": "Herinnering voor een toernooi",
+      "ENTRY_DEADLINE_REMINDER": "Herinnering voor de sluiting van de inschrijving",
+      "TOURNAMENT_RESULTS": "Uitslagen na een toernooi",
+      "ANNOUNCEMENT": "Nieuws van de organisatie"
+    },
+    "hint": {
+      "TOURNAMENT_REMINDER": "Twee dagen vooraf: locatie en je eerste wedstrijd.",
+      "ENTRY_DEADLINE_REMINDER": "Als er vlak voor de sluiting nog iets openstaat: betaling, partner, uitnodiging.",
+      "TOURNAMENT_RESULTS": "Je wedstrijden en plaatsen na afloop.",
+      "ANNOUNCEMENT": "Berichten van de organisatie van toernooien waarvoor je bent ingeschreven."
+    },
+    "unsubscribeTitle": "Afmelden",
+    "unsubscribed": "Je krijgt geen e-mails meer voor: {kind}.",
+    "unsubscribeInvalid": "Deze afmeldlink klopt niet (meer). Pas je voorkeuren aan in je account.",
+    "manage": "E-mailvoorkeuren beheren"
   }
 }

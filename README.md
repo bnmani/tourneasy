@@ -52,6 +52,16 @@ packages/db       Prisma schema, migrations, seed, client
 packages/shared   translations (nl/en), formatting, Zod schemas, business rules
 ```
 
+## Verifying Phase 7 (notifications)
+
+1. Publish a schedule: every entered player with an account gets their matches by email; move a match → its
+   players get a "Gewijzigd" email.
+2. Admin → tournament → _Nieuws_: post a message (optionally emailed to all participants); it shows on the
+   tournament page.
+3. _Mijn account → E-mailvoorkeuren_: switch optional emails off; the unsubscribe link in an email does the same.
+4. Reminders (2 days before), deadline reminders (3 days before closing) and results (day after) are sent by the
+   Housekeeping workflow on GitHub (every 15 minutes; run it by hand under Actions → Housekeeping).
+
 ## Verifying Phase 6b/6c (schedule, results, live)
 
 1. Tournament form: _Minuten per wedstrijd_, _Rust tussen wedstrijden_, _Laatste wedstrijd klaar om_ (and rest per category).

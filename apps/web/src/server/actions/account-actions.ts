@@ -13,6 +13,7 @@ import { updateMyProfile } from '../services/profile-service';
 import { grantRole, revokeRole } from '../services/role-service';
 import { revokeAllSessions, revokeSession } from '../services/session-service';
 import { formToObject, toFormState } from './form-utils';
+import { OPTIONAL_TYPES, saveMyPreferences } from '../services/notification-service';
 
 async function actorOrThrow() {
   const actor = await getActor();
@@ -101,4 +102,22 @@ export async function changeRoleAction(formData: FormData): Promise<void> {
   revalidatePath('/', 'layout');
   back.searchParams.set('status', status);
   redirect(`${back.pathname}${back.search}`);
+}
+
+/** Email preferences (D62): one checkbox per optional kind. */
+export async function saveNotificationPreferencesAction(
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  try {
+    const actor = await actorOrThrow();
+    await saveMyPreferences(
+      actor,
+      Object.fromEntries(OPTIONAL_TYPES.map((type) => [type, formData.get(type) === 'on'])),
+    );
+    revalidatePath('/', 'layout');
+    return { ok: true };
+  } catch (error) {
+    return toFormState(error, formData);
+  }
 }

@@ -12,6 +12,7 @@ export function AccountNav({ isAdmin }: { isAdmin: boolean }) {
     { href: '/account', label: t('dashboard') },
     { href: '/account/profile', label: t('profile') },
     { href: '/account/security', label: t('security') },
+    { href: '/account/notifications', label: t('notifications') },
     { href: '/account/privacy', label: t('privacy') },
     ...(isAdmin ? [{ href: '/admin', label: ta('nav') }] : []),
   ];

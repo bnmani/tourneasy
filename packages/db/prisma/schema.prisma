@@ -241,6 +241,9 @@ enum NotificationType {
   FOLLOWED_PLAYER_RESULT
   ANNOUNCEMENT
   ROLE_CHANGED
+  /// Phase 7 (D62): open payment / partner before the entry deadline; results after the tournament.
+  ENTRY_DEADLINE_REMINDER
+  TOURNAMENT_RESULTS
 }
 
 enum DevicePlatform {

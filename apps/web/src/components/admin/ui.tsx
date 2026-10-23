@@ -45,6 +45,7 @@ const SUCCESS = new Set([
   'scheduleUnpublished',
   'resultSaved',
   'stageCreated',
+  'newsEmailed',
 ]);
 
 /** Shows the outcome of the last action from ?status=… (success text or error key). */

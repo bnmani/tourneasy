@@ -3,7 +3,13 @@ import { randomUUID } from 'node:crypto';
 import nodemailer, { type Transporter } from 'nodemailer';
 import { decryptSecret } from '../lib/secret-box';
 
-export type OutgoingMail = { to: string; subject: string; text: string; html: string };
+export type OutgoingMail = {
+  to: string;
+  subject: string;
+  text: string;
+  html: string;
+  headers?: Record<string, string>;
+};
 
 /**
  * Where email goes:
