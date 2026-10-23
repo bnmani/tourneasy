@@ -10,6 +10,7 @@ import {
   StatusNotice,
 } from '@/components/admin/ui';
 import { Button } from '@/components/ui/button';
+import { ScrollRegion } from '@/components/ui/scroll-region';
 import { Link } from '@/i18n/navigation';
 import { firstParam, pageLocale, type SearchParams } from '@/lib/page';
 import { cn } from '@/lib/utils';
@@ -175,7 +176,7 @@ export default async function PaymentsPage({ params, searchParams }: Props) {
         {overview.orders.length === 0 ? (
           <p className="text-muted-foreground">{tp('none')}</p>
         ) : (
-          <div className="overflow-x-auto rounded-lg border bg-card">
+          <ScrollRegion label={tp('title')} className="rounded-lg border bg-card">
             <table className="w-full min-w-[48rem] text-left text-sm">
               <thead className="border-b bg-muted/50 text-xs text-muted-foreground uppercase">
                 <tr>
@@ -247,7 +248,7 @@ export default async function PaymentsPage({ params, searchParams }: Props) {
                 ))}
               </tbody>
             </table>
-          </div>
+          </ScrollRegion>
         )}
         <Pagination page={overview.page} pages={overview.pages} href={href} />
       </section>

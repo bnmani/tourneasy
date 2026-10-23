@@ -5,6 +5,7 @@ import { getFormatter, getTranslations } from 'next-intl/server';
 import { AddEntryForm } from '@/components/admin/add-entry-form';
 import { FilterBar, filterInputClass, PageHeader, StatusNotice } from '@/components/admin/ui';
 import { Button } from '@/components/ui/button';
+import { ScrollRegion } from '@/components/ui/scroll-region';
 import { Link } from '@/i18n/navigation';
 import { eventLabel, personName } from '@/lib/labels';
 import { firstParam, pageLocale, type SearchParams } from '@/lib/page';
@@ -133,7 +134,10 @@ export default async function EntriesPage({ params, searchParams }: Props) {
       {entries.length === 0 ? (
         <p className="text-muted-foreground">{t('entries.noEntries')}</p>
       ) : (
-        <div className="overflow-x-auto rounded-lg border bg-card">
+        <ScrollRegion
+          label={t('entries.title', { tournament: tournament.name })}
+          className="rounded-lg border bg-card"
+        >
           <table className="w-full min-w-[48rem] text-left text-sm">
             <thead className="border-b bg-muted/50 text-xs text-muted-foreground uppercase">
               <tr>
@@ -260,7 +264,7 @@ export default async function EntriesPage({ params, searchParams }: Props) {
               })}
             </tbody>
           </table>
-        </div>
+        </ScrollRegion>
       )}
     </>
   );

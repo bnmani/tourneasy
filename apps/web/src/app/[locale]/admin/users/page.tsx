@@ -4,6 +4,7 @@ import { getTranslations } from 'next-intl/server';
 import { FormError, FormSuccess } from '@/components/forms/fields';
 import { Badge, FilterBar, filterInputClass, Pagination } from '@/components/admin/ui';
 import { Button } from '@/components/ui/button';
+import { ScrollRegion } from '@/components/ui/scroll-region';
 import { cn } from '@/lib/utils';
 import { firstParam, pageLocale, type LocaleParams, type SearchParams } from '@/lib/page';
 import { changeRoleAction } from '@/server/actions/account-actions';
@@ -71,7 +72,7 @@ export default async function AdminUsersPage({
       {result.users.length === 0 ? (
         <p className="text-muted-foreground">{t('empty')}</p>
       ) : (
-        <div className="overflow-x-auto rounded-lg border bg-card">
+        <ScrollRegion label={t('users')} className="rounded-lg border bg-card">
           <table className="w-full min-w-[44rem] text-left text-sm">
             <thead className="border-b bg-muted/50 text-xs text-muted-foreground uppercase">
               <tr>
@@ -140,7 +141,7 @@ export default async function AdminUsersPage({
               ))}
             </tbody>
           </table>
-        </div>
+        </ScrollRegion>
       )}
 
       <Pagination page={result.page} pages={result.pages} href={pageHref} />

@@ -111,7 +111,7 @@
   --hero: #88bdbc;
   --hero-foreground: #112d32;
   --hero-muted: #1e3f47;
-  --hero-highlight: #254e58;
+  --hero-highlight: #1f444d; /* 5:1 on the hero (#254e58 was 4.35:1) */
   --hero-card: #f2f7f6;
   --hero-card-foreground: #112d32;
   --live: #a3402e;

@@ -7,6 +7,7 @@ import { getFormatter, getTranslations } from 'next-intl/server';
 import { PlayerAddedNotice } from '@/components/admin/player-added-notice';
 import { Badge, FilterBar, filterInputClass, PageHeader, Pagination } from '@/components/admin/ui';
 import { Button } from '@/components/ui/button';
+import { ScrollRegion } from '@/components/ui/scroll-region';
 import { Link } from '@/i18n/navigation';
 import { personName } from '@/lib/labels';
 import { firstParam, pageLocale, type LocaleParams, type SearchParams } from '@/lib/page';
@@ -196,7 +197,7 @@ export default async function AdminPlayersPage({
       {result.players.length === 0 ? (
         <p className="text-muted-foreground">{t('players.empty')}</p>
       ) : (
-        <div className="overflow-x-auto rounded-lg border bg-card">
+        <ScrollRegion label={t('players.title')} className="rounded-lg border bg-card">
           <table className="w-full min-w-[52rem] text-left text-sm">
             <thead className="border-b bg-muted/50 text-xs text-muted-foreground uppercase">
               <tr>
@@ -245,7 +246,7 @@ export default async function AdminPlayersPage({
               ))}
             </tbody>
           </table>
-        </div>
+        </ScrollRegion>
       )}
       <Pagination page={result.page} pages={result.pages} href={href} />
     </>

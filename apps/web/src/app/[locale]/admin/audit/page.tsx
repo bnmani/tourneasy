@@ -3,6 +3,7 @@ import { adminMetadata } from '@/lib/seo';
 import { getFormatter, getTranslations } from 'next-intl/server';
 import { FilterBar, filterInputClass, PageHeader, Pagination } from '@/components/admin/ui';
 import { Button } from '@/components/ui/button';
+import { ScrollRegion } from '@/components/ui/scroll-region';
 import { firstParam, pageLocale, type LocaleParams, type SearchParams } from '@/lib/page';
 import { requireRole } from '@/server/auth/web';
 import { listAuditLog } from '@/server/services/admin-service';
@@ -56,7 +57,7 @@ export default async function AuditLogPage({
       {result.entries.length === 0 ? (
         <p className="text-muted-foreground">{t('audit.empty')}</p>
       ) : (
-        <div className="overflow-x-auto rounded-lg border bg-card">
+        <ScrollRegion label={t('audit.title')} className="rounded-lg border bg-card">
           <table className="w-full min-w-[46rem] text-left text-sm">
             <thead className="border-b bg-muted/50 text-xs text-muted-foreground uppercase">
               <tr>
@@ -101,7 +102,7 @@ export default async function AuditLogPage({
               ))}
             </tbody>
           </table>
-        </div>
+        </ScrollRegion>
       )}
       <Pagination page={result.page} pages={result.pages} href={href} />
     </>
