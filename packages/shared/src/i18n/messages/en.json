@@ -16,7 +16,8 @@
     "loading": "Loading…",
     "yes": "Yes",
     "no": "No",
-    "numberRange": "Between {min} and {max}."
+    "numberRange": "Between {min} and {max}.",
+    "phoneCountry": "Country (dialling code)"
   },
   "Header": {
     "homeLink": "Tourneasy, go to home page",
@@ -212,12 +213,12 @@
       "lastName": "Last name",
       "email": "Email address",
       "phone": "Mobile number",
-      "phoneHint": "So organisers can reach you on the tournament day.",
+      "phoneHint": "So organisers can reach you on the tournament day. Choose the country and type digits only, e.g. 612345678.",
       "dateOfBirth": "Date of birth",
       "dateOfBirthHint": "Needed for age categories.",
       "gender": "Gender",
       "preferredDisciplines": "Preferred events",
-      "preferredHint": "Choose the events you usually play. You can change this later.",
+      "preferredHint": "Choose the events you usually play; you see the events that match your gender. You can change this later.",
       "password": "Password",
       "passwordHint": "At least {min} characters. A short sentence works well.",
       "minorTitle": "Younger than 16?",

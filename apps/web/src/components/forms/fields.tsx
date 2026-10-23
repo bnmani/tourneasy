@@ -1,8 +1,9 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
+import { joinPhone, PHONE_COUNTRIES, splitPhone } from '@tourneasy/shared';
+import { useLocale, useTranslations } from 'next-intl';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useFormStatus } from 'react-dom';
-import type { ReactNode } from 'react';
 import { Button, type ButtonProps } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import type { FormState } from './form-state';
@@ -156,6 +157,70 @@ export function TextField({
           inputMode={inputMode}
           className={inputClass}
         />
+      )}
+    </Field>
+  );
+}
+
+/**
+ * Phone: country (with dialling code) and the number, digits only (D66). Sends one field,
+ * `name`, in international format (+31612345678); a leading 0 of the number is dropped.
+ */
+export function PhoneField({
+  defaultValue,
+  ...field
+}: Omit<FieldProps, 'children'> & { defaultValue?: string | null }) {
+  const t = useTranslations('Common');
+  const locale = useLocale();
+  const initial = splitPhone(valueOf(field.state, field.name) ?? defaultValue);
+  const [country, setCountry] = useState(initial.country);
+  const [national, setNational] = useState(initial.national);
+  // Country names come from the browser after loading: the server's names can differ slightly
+  // (e.g. "Hongkong" vs "Hongkong SAR"), which would break hydration.
+  const [named, setNamed] = useState(false);
+  useEffect(() => setNamed(true), []);
+  const countries = useMemo(() => {
+    const names = named ? new Intl.DisplayNames([locale], { type: 'region' }) : null;
+    const [first, ...rest] = PHONE_COUNTRIES.map(([code, dial]) => ({
+      code,
+      dial,
+      name: names?.of(code) ?? '',
+    }));
+    return named
+      ? [first!, ...rest.sort((a, b) => a.name.localeCompare(b.name, locale))]
+      : [first!, ...rest];
+  }, [locale, named]);
+  return (
+    <Field {...field}>
+      {(a11y) => (
+        <div className="flex gap-2">
+          <select
+            aria-label={t('phoneCountry')}
+            value={country}
+            onChange={(e) => setCountry(e.target.value)}
+            autoComplete="tel-country-code"
+            className={cn(inputClass, 'w-32 shrink-0 sm:w-36')}
+          >
+            {countries.map((c) => (
+              <option key={c.code} value={c.code}>
+                {`${c.code} +${c.dial}${c.name ? ` · ${c.name}` : ''}`}
+              </option>
+            ))}
+          </select>
+          <input
+            {...a11y}
+            type="tel"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            autoComplete="tel-national"
+            required={field.required}
+            maxLength={15}
+            value={national}
+            onChange={(e) => setNational(e.target.value.replace(/\D/g, ''))}
+            className={inputClass}
+          />
+          <input type="hidden" name={field.name} value={joinPhone(country, national)} />
+        </div>
       )}
     </Field>
   );

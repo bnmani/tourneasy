@@ -16,7 +16,8 @@
     "loading": "Laden…",
     "yes": "Ja",
     "no": "Nee",
-    "numberRange": "Tussen {min} en {max}."
+    "numberRange": "Tussen {min} en {max}.",
+    "phoneCountry": "Land (landnummer)"
   },
   "Header": {
     "homeLink": "Tourneasy, naar de startpagina",
@@ -212,12 +213,12 @@
       "lastName": "Achternaam",
       "email": "E-mailadres",
       "phone": "Mobiel nummer",
-      "phoneHint": "Voor contact op de toernooidag.",
+      "phoneHint": "Voor contact op de toernooidag. Kies het land en typ alleen cijfers, bijv. 612345678.",
       "dateOfBirth": "Geboortedatum",
       "dateOfBirthHint": "Nodig voor leeftijdscategorieën.",
       "gender": "Geslacht",
       "preferredDisciplines": "Voorkeursonderdelen",
-      "preferredHint": "Kies de onderdelen die je meestal speelt. Je kunt dit later aanpassen.",
+      "preferredHint": "Kies de onderdelen die je meestal speelt; je ziet de onderdelen die bij je geslacht passen. Je kunt dit later aanpassen.",
       "password": "Wachtwoord",
       "passwordHint": "Minstens {min} tekens. Een zin van een paar woorden werkt goed.",
       "minorTitle": "Jonger dan 16 jaar?",

@@ -9,3 +9,4 @@ export * from './bundle-pricing';
 export * from './draws';
 export * from './schedule';
 export * from './scoring';
+export * from './phone';

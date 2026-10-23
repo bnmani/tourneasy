@@ -5,7 +5,9 @@
 import { z } from 'zod';
 import { locales } from '../i18n';
 import { ageOn, isMinor, parseDateOnly } from '../rules/age';
+import { disciplinesForGender } from '../rules/eligibility';
 import { isCommonPassword, PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from '../rules/identity';
+import { normalisePhone } from '../rules/phone';
 
 export const DISCIPLINES = ['HE', 'DE', 'HD', 'DD', 'GD'] as const;
 export type DisciplineCode = (typeof DISCIPLINES)[number];
@@ -53,13 +55,28 @@ export const emailSchema = z
   .max(254, 'tooLong')
   .email('emailInvalid');
 
-/** International or Dutch number: digits, spaces, dashes, brackets, optional leading +. */
+/**
+ * Phone number, stored internationally (+31612345678). The form sends country + number joined;
+ * Dutch national input ("06 12 34 56 78") is converted (D66).
+ */
 export const phoneSchema = z
   .string({ required_error: 'required' })
   .trim()
   .min(1, 'required')
-  .regex(/^\+?[0-9][0-9\s\-()]{7,19}$/, 'phoneInvalid')
-  .transform((v) => v.replace(/[\s\-()]/g, ''));
+  .transform((v, ctx) => {
+    const e164 = normalisePhone(v);
+    if (!e164) {
+      ctx.addIssue({ code: 'custom', message: 'phoneInvalid' });
+      return z.NEVER;
+    }
+    return e164;
+  });
+
+/** Optional phone: empty means none. */
+export const optionalPhoneSchema = z.preprocess(
+  (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
+  phoneSchema.optional(),
+);
 
 export const passwordSchema = z
   .string({ required_error: 'required' })
@@ -113,7 +130,12 @@ export const signUpSchema = z
         ctx.addIssue({ code: 'custom', path: ['guardianName'], message: 'required' });
       }
     }
-  });
+  })
+  // Only categories the player's gender can play (D66).
+  .transform((v) => ({
+    ...v,
+    preferredDisciplines: disciplinesForGender(v.preferredDisciplines, v.gender),
+  }));
 export type SignUpInput = z.infer<typeof signUpSchema>;
 
 export const loginSchema = z.object({
@@ -150,53 +172,52 @@ export const changePasswordSchema = z
     message: 'passwordMismatch',
   });
 
-export const profileUpdateSchema = z.object({
-  firstName: personNameSchema(60),
-  lastNamePrefix: optionalPersonNameSchema(20),
-  lastName: personNameSchema(80),
-  phone: phoneSchema,
-  dateOfBirth: dateOfBirthSchema,
-  gender: z.enum(GENDERS, { errorMap: () => ({ message: 'required' }) }),
-  nationality: z
-    .string()
-    .trim()
-    .toUpperCase()
-    .regex(/^[A-Z]{2}$/, 'invalid')
-    .optional()
-    .or(z.literal('').transform(() => undefined)),
-  clubId: z
-    .string()
-    .uuid('invalid')
-    .optional()
-    .or(z.literal('').transform(() => undefined)),
-  federationId: optionalText(20),
-  levelSinglesId: z
-    .string()
-    .uuid()
-    .optional()
-    .or(z.literal('').transform(() => undefined)),
-  levelDoublesId: z
-    .string()
-    .uuid()
-    .optional()
-    .or(z.literal('').transform(() => undefined)),
-  levelMixedId: z
-    .string()
-    .uuid()
-    .optional()
-    .or(z.literal('').transform(() => undefined)),
-  emergencyName: optionalText(120),
-  emergencyPhone: z
-    .string()
-    .trim()
-    .regex(/^\+?[0-9][0-9\s\-()]{7,19}$/, 'phoneInvalid')
-    .transform((v) => v.replace(/[\s\-()]/g, ''))
-    .optional()
-    .or(z.literal('').transform(() => undefined)),
-  preferredDisciplines: disciplinesSchema,
-  locale: z.enum(locales),
-  publicProfile: z.boolean().default(false),
-});
+export const profileUpdateSchema = z
+  .object({
+    firstName: personNameSchema(60),
+    lastNamePrefix: optionalPersonNameSchema(20),
+    lastName: personNameSchema(80),
+    phone: phoneSchema,
+    dateOfBirth: dateOfBirthSchema,
+    gender: z.enum(GENDERS, { errorMap: () => ({ message: 'required' }) }),
+    nationality: z
+      .string()
+      .trim()
+      .toUpperCase()
+      .regex(/^[A-Z]{2}$/, 'invalid')
+      .optional()
+      .or(z.literal('').transform(() => undefined)),
+    clubId: z
+      .string()
+      .uuid('invalid')
+      .optional()
+      .or(z.literal('').transform(() => undefined)),
+    federationId: optionalText(20),
+    levelSinglesId: z
+      .string()
+      .uuid()
+      .optional()
+      .or(z.literal('').transform(() => undefined)),
+    levelDoublesId: z
+      .string()
+      .uuid()
+      .optional()
+      .or(z.literal('').transform(() => undefined)),
+    levelMixedId: z
+      .string()
+      .uuid()
+      .optional()
+      .or(z.literal('').transform(() => undefined)),
+    emergencyName: optionalText(120),
+    emergencyPhone: optionalPhoneSchema,
+    preferredDisciplines: disciplinesSchema,
+    locale: z.enum(locales),
+    publicProfile: z.boolean().default(false),
+  })
+  .transform((v) => ({
+    ...v,
+    preferredDisciplines: disciplinesForGender(v.preferredDisciplines, v.gender),
+  }));
 export type ProfileUpdateInput = z.infer<typeof profileUpdateSchema>;
 
 export const deleteAccountSchema = z.object({

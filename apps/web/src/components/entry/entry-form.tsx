@@ -5,7 +5,7 @@ import type { AppLocale } from '@tourneasy/shared/i18n';
 import { Check, Users } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useActionState, useState, useTransition, type FormEvent } from 'react';
-import { FormError } from '@/components/forms/fields';
+import { FormError, PhoneField } from '@/components/forms/fields';
 import { initialFormState } from '@/components/forms/form-state';
 import { Button } from '@/components/ui/button';
 import { Link } from '@/i18n/navigation';
@@ -24,9 +24,6 @@ export type EntryEventOption = {
   alreadyEntered: boolean;
   reasons: string[];
 };
-
-const inputClass =
-  'h-11 w-full rounded-md border border-input bg-background px-3 text-base sm:text-sm focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none';
 
 /**
  * The entry form. Submitted with startTransition rather than <form action> so React does not
@@ -208,26 +205,15 @@ export function EntryForm({
       </section>
 
       <section className="rounded-lg border bg-card p-5">
-        <label htmlFor="phone" className="text-sm font-medium">
-          {t('mobile')}
-        </label>
-        <input
-          id="phone"
-          name="phone"
-          type="tel"
-          defaultValue={phone}
-          autoComplete="tel"
-          aria-describedby="phone-hint"
-          className={cn(inputClass, 'mt-1.5 sm:max-w-xs')}
-        />
-        <p id="phone-hint" className="mt-1 text-xs text-muted-foreground">
-          {t('mobileHint')}
-        </p>
-        {fieldError('phone') && (
-          <p role="alert" className="mt-1 text-sm font-medium text-destructive">
-            {fieldError('phone')}
-          </p>
-        )}
+        <div className="sm:max-w-md">
+          <PhoneField
+            name="phone"
+            label={t('mobile')}
+            hint={t('mobileHint')}
+            state={state}
+            defaultValue={phone}
+          />
+        </div>
       </section>
 
       <section className="rounded-lg border bg-card p-5">

@@ -38,6 +38,18 @@ export function requiredGender(discipline: Discipline): Gender | null {
   return null;
 }
 
+/** Categories a player of this gender can play: men HE/HD/GD, women DE/DD/GD (D66). */
+export function disciplinesForGender<D extends Discipline>(
+  disciplines: readonly D[],
+  gender: Gender | null | undefined,
+): D[] {
+  if (!gender) return [...disciplines];
+  return disciplines.filter((d) => {
+    const needed = requiredGender(d);
+    return !needed || needed === gender;
+  });
+}
+
 /**
  * Age is taken on the category's reference day in the year the tournament starts
  * (Badminton Nederland: 1 January by default). "U17" has maxAge 16; "V35" has minAge 35.

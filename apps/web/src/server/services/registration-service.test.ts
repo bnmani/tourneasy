@@ -79,7 +79,7 @@ describe('entering a tournament', () => {
     expect(lastMailTo(anna.email).mail?.subject).toContain('Utrecht Open');
     expect(
       (await prisma.playerProfile.findUniqueOrThrow({ where: { id: anna.profile.id } })).phone,
-    ).toBe('0687654321');
+    ).toBe('+31687654321');
     // The same event again is refused.
     await expect(
       enterTournament(

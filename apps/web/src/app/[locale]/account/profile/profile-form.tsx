@@ -1,9 +1,10 @@
 'use client';
 
+import { disciplinesForGender, type Gender } from '@tourneasy/shared/rules';
 import { DISCIPLINES, GENDERS } from '@tourneasy/shared/schemas';
 import { locales } from '@tourneasy/shared/i18n';
 import { useTranslations } from 'next-intl';
-import { useActionState } from 'react';
+import { useActionState, useState } from 'react';
 import {
   CheckboxField,
   CheckboxGroup,
@@ -12,6 +13,7 @@ import {
   FormSuccess,
   SelectField,
   SubmitButton,
+  PhoneField,
   TextField,
 } from '@/components/forms/fields';
 import { initialFormState } from '@/components/forms/form-state';
@@ -31,6 +33,10 @@ export function ProfileForm({ account, options }: { account: MyAccount; options:
   const tg = useTranslations('Genders');
   const tl = useTranslations('LanguageSwitcher');
   const [state, action] = useActionState(updateProfileAction, initialFormState);
+  // Only the categories this gender can play (D66).
+  const [gender, setGender] = useState<string>(
+    String(state.values?.gender ?? account.profile?.gender ?? ''),
+  );
   const p = account.profile!;
   const levelOptions = options.levels.map((l) => ({ value: l.id, label: l.code }));
 
@@ -69,15 +75,12 @@ export function ProfileForm({ account, options }: { account: MyAccount; options:
           <p>{account.email}</p>
           <p className="text-sm text-muted-foreground">{t('emailHint')}</p>
         </div>
-        <TextField
+        <PhoneField
           name="phone"
-          type="tel"
           label={tr('phone')}
           state={state}
           required
           defaultValue={p.phone ?? ''}
-          autoComplete="tel"
-          inputMode="tel"
         />
         <div className="grid gap-4 sm:grid-cols-2">
           <TextField
@@ -88,14 +91,20 @@ export function ProfileForm({ account, options }: { account: MyAccount; options:
             required
             defaultValue={p.dateOfBirth}
           />
-          <SelectField
-            name="gender"
-            label={tr('gender')}
-            state={state}
-            required
-            defaultValue={p.gender}
-            options={GENDERS.map((g) => ({ value: g, label: tg(g) }))}
-          />
+          <div
+            onChange={(e) => {
+              if (e.target instanceof HTMLSelectElement) setGender(e.target.value);
+            }}
+          >
+            <SelectField
+              name="gender"
+              label={tr('gender')}
+              state={state}
+              required
+              defaultValue={p.gender}
+              options={GENDERS.map((g) => ({ value: g, label: tg(g) }))}
+            />
+          </div>
         </div>
         <TextField
           name="nationality"
@@ -113,7 +122,12 @@ export function ProfileForm({ account, options }: { account: MyAccount; options:
           legend={tr('preferredDisciplines')}
           state={state}
           defaultValues={p.preferredDisciplines}
-          options={DISCIPLINES.map((d) => ({ value: d, label: td(d) }))}
+          options={disciplinesForGender(DISCIPLINES, (gender || null) as Gender | null).map(
+            (d) => ({
+              value: d,
+              label: td(d),
+            }),
+          )}
         />
         <SelectField
           name="clubId"
@@ -169,13 +183,11 @@ export function ProfileForm({ account, options }: { account: MyAccount; options:
             state={state}
             defaultValue={p.emergencyName ?? ''}
           />
-          <TextField
+          <PhoneField
             name="emergencyPhone"
-            type="tel"
             label={t('emergencyPhone')}
             state={state}
             defaultValue={p.emergencyPhone ?? ''}
-            inputMode="tel"
           />
         </div>
       </FormSection>

@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { ageOn, isMinor, parseDateOnly } from './age';
+import { disciplinesForGender } from './eligibility';
 import { isCommonPassword, parseLoginIdentifier } from './identity';
+import { joinPhone, normalisePhone, splitPhone } from './phone';
 
 describe('age', () => {
   const on = new Date(Date.UTC(2026, 9, 19)); // 19 Oct 2026
@@ -42,5 +44,27 @@ describe('common passwords', () => {
     expect(isCommonPassword('Wachtwoord123')).toBe(true);
     expect(isCommonPassword('aaaaaaaaaaaa')).toBe(true);
     expect(isCommonPassword('Shuttle-Smash-2027')).toBe(false);
+  });
+});
+
+describe('phone numbers (D66)', () => {
+  it('stores numbers internationally and accepts Dutch and imported formats', () => {
+    expect(normalisePhone('06 12 34 56 78')).toBe('+31612345678');
+    expect(normalisePhone('0031 6-12345678')).toBe('+31612345678');
+    expect(normalisePhone('+32 470 12 34 56')).toBe('+32470123456');
+    expect(normalisePhone('31612345678')).toBe('+31612345678');
+    expect(normalisePhone('06 1234')).toBeNull();
+    expect(normalisePhone('abc')).toBeNull();
+    expect(joinPhone('NL', '0612345678')).toBe('+31612345678');
+    expect(joinPhone('BE', '470123456')).toBe('+32470123456');
+    expect(splitPhone('+352621123456')).toEqual({ country: 'LU', national: '621123456' });
+    expect(splitPhone('0612345678')).toEqual({ country: 'NL', national: '612345678' });
+  });
+
+  it('offers only the categories a gender can play', () => {
+    const all = ['HE', 'DE', 'HD', 'DD', 'GD'] as const;
+    expect(disciplinesForGender(all, 'MALE')).toEqual(['HE', 'HD', 'GD']);
+    expect(disciplinesForGender(all, 'FEMALE')).toEqual(['DE', 'DD', 'GD']);
+    expect(disciplinesForGender(all, null)).toEqual([...all]);
   });
 });

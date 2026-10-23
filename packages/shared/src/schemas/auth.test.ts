@@ -21,9 +21,18 @@ describe('signUpSchema', () => {
     expect(r.success).toBe(true);
     if (r.success) {
       expect(r.data.email).toBe('daan@example.nl');
-      expect(r.data.phone).toBe('0612345678');
+      expect(r.data.phone).toBe('+31612345678');
       expect(r.data.preferredDisciplines).toEqual(['HE', 'GD']);
     }
+  });
+
+  it('keeps only the categories the gender can play', () => {
+    const r = signUpSchema.safeParse({
+      ...adult,
+      gender: 'FEMALE',
+      preferredDisciplines: ['HE', 'DD', 'GD'],
+    });
+    expect(r.success && r.data.preferredDisciplines).toEqual(['DD', 'GD']);
   });
 
   it('requires terms, privacy and a valid phone', () => {

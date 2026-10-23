@@ -6,10 +6,17 @@
 import { z } from 'zod';
 import { parseDateOnly } from '../rules/age';
 import { bundlePricesValid } from '../rules/bundle-pricing';
+import { disciplinesForGender } from '../rules/eligibility';
 import { KO_SCORING_FROM } from '../rules/scoring';
 import { parseEuroToCents } from '../rules/money';
 import { amsterdamLocalToUtc, TIME_OF_DAY_PATTERN } from '../rules/time';
-import { DISCIPLINES, GENDERS, optionalPersonNameSchema, personNameSchema } from './auth';
+import {
+  DISCIPLINES,
+  GENDERS,
+  optionalPersonNameSchema,
+  optionalPhoneSchema,
+  personNameSchema,
+} from './auth';
 
 export const PROVINCES = [
   'DRENTHE',
@@ -104,15 +111,7 @@ const optionalUrl = z.preprocess(
     .pipe(z.string().url('invalid'))
     .optional(),
 );
-const optionalPhone = z.preprocess(
-  emptyToUndefined,
-  z
-    .string()
-    .trim()
-    .regex(/^\+?[0-9][0-9\s\-()]{7,19}$/, 'phoneInvalid')
-    .transform((v) => v.replace(/[\s\-()]/g, ''))
-    .optional(),
-);
+const optionalPhone = optionalPhoneSchema;
 const dateOnly = z
   .string({ required_error: 'required' })
   .min(1, 'required')
@@ -398,30 +397,35 @@ export type EventInput = z.infer<typeof eventSchema>;
 
 // ── Players (admin) ───────────────────────────────────────────────────────────────
 
-export const adminPlayerSchema = z.object({
-  firstName: personNameSchema(60),
-  lastNamePrefix: optionalPersonNameSchema(20),
-  lastName: personNameSchema(80),
-  contactEmail: optionalEmail,
-  phone: optionalPhone,
-  dateOfBirth: dateOnly,
-  gender: z.enum(GENDERS, { errorMap: () => ({ message: 'required' }) }),
-  nationality: z.preprocess(
-    emptyToUndefined,
-    z
-      .string()
-      .trim()
-      .toUpperCase()
-      .regex(/^[A-Z]{2}$/, 'invalid')
-      .optional(),
-  ),
-  clubId: optionalUuid,
-  federationId: optionalText(20),
-  levelSinglesId: optionalUuid,
-  levelDoublesId: optionalUuid,
-  levelMixedId: optionalUuid,
-  preferredDisciplines: z.array(z.enum(DISCIPLINES)).default([]),
-});
+export const adminPlayerSchema = z
+  .object({
+    firstName: personNameSchema(60),
+    lastNamePrefix: optionalPersonNameSchema(20),
+    lastName: personNameSchema(80),
+    contactEmail: optionalEmail,
+    phone: optionalPhone,
+    dateOfBirth: dateOnly,
+    gender: z.enum(GENDERS, { errorMap: () => ({ message: 'required' }) }),
+    nationality: z.preprocess(
+      emptyToUndefined,
+      z
+        .string()
+        .trim()
+        .toUpperCase()
+        .regex(/^[A-Z]{2}$/, 'invalid')
+        .optional(),
+    ),
+    clubId: optionalUuid,
+    federationId: optionalText(20),
+    levelSinglesId: optionalUuid,
+    levelDoublesId: optionalUuid,
+    levelMixedId: optionalUuid,
+    preferredDisciplines: z.array(z.enum(DISCIPLINES)).default([]),
+  })
+  .transform((v) => ({
+    ...v,
+    preferredDisciplines: disciplinesForGender(v.preferredDisciplines, v.gender),
+  }));
 export type AdminPlayerInput = z.infer<typeof adminPlayerSchema>;
 
 export const mergePlayersSchema = z.object({

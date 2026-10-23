@@ -354,7 +354,7 @@ describe('players', () => {
     // Empty cells (phone, club) keep the stored values.
     expect(anna).toMatchObject({
       lastName: 'Peters-Updated',
-      phone: '0612345678',
+      phone: '+31612345678',
       preferredDisciplines: ['DE'],
     });
     expect(anna.club?.name).toBe('BC Utrecht Smash');
@@ -379,7 +379,7 @@ describe('players', () => {
     expect(result).toMatchObject({ created: 1, skipped: 0, errors: [] });
     const lotte = await prisma.playerProfile.findFirstOrThrow({ where: { lastName: 'Bakker' } });
     expect(lotte.dateOfBirth.toISOString().slice(0, 10)).toBe('1990-05-07');
-    expect(lotte.phone).toBe('0612345678');
+    expect(lotte.phone).toBe('+31612345678');
 
     const grid = readXlsx(await exportPlayersXlsx(admin, { q: 'lotte' }));
     expect(grid?.[0]?.slice(0, 2)).toEqual(['memberNumber', 'firstName']);

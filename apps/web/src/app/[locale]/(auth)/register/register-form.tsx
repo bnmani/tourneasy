@@ -1,10 +1,11 @@
 'use client';
 
+import { disciplinesForGender, type Gender } from '@tourneasy/shared/rules';
 import { PASSWORD_MIN_LENGTH } from '@tourneasy/shared/rules';
 import { DISCIPLINES, GENDERS } from '@tourneasy/shared/schemas';
 import type { AppLocale } from '@tourneasy/shared/i18n';
 import { useTranslations } from 'next-intl';
-import { useActionState } from 'react';
+import { useActionState, useState } from 'react';
 import {
   CheckboxField,
   CheckboxGroup,
@@ -12,6 +13,7 @@ import {
   FormSection,
   SelectField,
   SubmitButton,
+  PhoneField,
   TextField,
 } from '@/components/forms/fields';
 import { initialFormState } from '@/components/forms/form-state';
@@ -26,6 +28,8 @@ export function RegisterForm({ locale, next }: { locale: AppLocale; next?: strin
   const td = useTranslations('Disciplines');
   const tg = useTranslations('Genders');
   const [state, action] = useActionState(registerAction.bind(null, locale), initialFormState);
+  // Only the categories this gender can play (D66).
+  const [gender, setGender] = useState<string>(String(state.values?.gender ?? ''));
   const loginHref = next ? `/login?next=${encodeURIComponent(next)}` : '/login';
 
   const minorOpen = Boolean(
@@ -71,16 +75,7 @@ export function RegisterForm({ locale, next }: { locale: AppLocale; next?: strin
           autoComplete="email"
           inputMode="email"
         />
-        <TextField
-          name="phone"
-          type="tel"
-          label={t('phone')}
-          hint={t('phoneHint')}
-          state={state}
-          required
-          autoComplete="tel"
-          inputMode="tel"
-        />
+        <PhoneField name="phone" label={t('phone')} hint={t('phoneHint')} state={state} required />
         <div className="grid gap-4 sm:grid-cols-2">
           <TextField
             name="dateOfBirth"
@@ -91,14 +86,20 @@ export function RegisterForm({ locale, next }: { locale: AppLocale; next?: strin
             required
             autoComplete="bday"
           />
-          <SelectField
-            name="gender"
-            label={t('gender')}
-            state={state}
-            required
-            placeholder="—"
-            options={GENDERS.map((g) => ({ value: g, label: tg(g) }))}
-          />
+          <div
+            onChange={(e) => {
+              if (e.target instanceof HTMLSelectElement) setGender(e.target.value);
+            }}
+          >
+            <SelectField
+              name="gender"
+              label={t('gender')}
+              state={state}
+              required
+              placeholder="—"
+              options={GENDERS.map((g) => ({ value: g, label: tg(g) }))}
+            />
+          </div>
         </div>
         <details open={minorOpen} className="rounded-md border border-dashed p-4">
           <summary className="cursor-pointer font-medium">{t('minorTitle')}</summary>
@@ -121,7 +122,12 @@ export function RegisterForm({ locale, next }: { locale: AppLocale; next?: strin
           legend={t('preferredDisciplines')}
           hint={t('preferredHint')}
           state={state}
-          options={DISCIPLINES.map((d) => ({ value: d, label: td(d) }))}
+          options={disciplinesForGender(DISCIPLINES, (gender || null) as Gender | null).map(
+            (d) => ({
+              value: d,
+              label: td(d),
+            }),
+          )}
         />
       </FormSection>
 
