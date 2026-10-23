@@ -52,6 +52,10 @@ export default async function NewEventPage({ params }: Params) {
           pointsToWin: '21',
           pointsCap: '30',
           restMinutes: '',
+          koScoringFrom: '',
+          koBestOf: '3',
+          koPointsToWin: '21',
+          koPointsCap: '30',
           isOpen: true,
         }}
       />

@@ -4,6 +4,7 @@ import { DISCIPLINES, GENDERS, PLAYER_CSV_COLUMNS } from '@tourneasy/shared/sche
 import type { AppLocale } from '@tourneasy/shared/i18n';
 import { useTranslations } from 'next-intl';
 import { useActionState } from 'react';
+import { cn } from '@/lib/utils';
 import {
   CheckboxGroup,
   FormError,
@@ -199,7 +200,16 @@ export function PlayerForm({
         </div>
         <p className="text-sm text-muted-foreground">{tp('levelHint')}</p>
       </FormSection>
-      <SubmitButton size="lg">{ta('save')}</SubmitButton>
+      {playerId ? (
+        <SubmitButton size="lg">{ta('save')}</SubmitButton>
+      ) : (
+        <div className="flex flex-wrap gap-3">
+          <SubmitButton size="lg">{ta('save')}</SubmitButton>
+          <SubmitButton size="lg" variant="outline" name="next" value="another">
+            {t('saveAndAddAnother')}
+          </SubmitButton>
+        </div>
+      )}
     </form>
   );
 }
@@ -277,6 +287,45 @@ export function ImportPlayersForm() {
                   </li>
                 ))}
               </ul>
+            </section>
+          )}
+          {state.result.rows.length > 0 && (
+            <section className="space-y-2">
+              <h2 className="font-semibold">{t('importLog')}</h2>
+              <p className="text-sm text-muted-foreground">{t('importLogHelp')}</p>
+              <div className="max-h-[28rem] overflow-auto rounded-md border">
+                <table className="w-full text-left text-sm">
+                  <thead className="sticky top-0 border-b bg-muted text-xs text-muted-foreground uppercase">
+                    <tr>
+                      <th className="px-3 py-2">{t('importLogLine')}</th>
+                      <th className="px-3 py-2">{t('importLogName')}</th>
+                      <th className="px-3 py-2">{t('importLogResult')}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {state.result.rows.map((r) => (
+                      <tr
+                        key={r.line}
+                        className={cn(
+                          r.outcome === 'skipped' && 'bg-destructive/5',
+                          (r.outcome === 'updated' || r.note === 'sharedEmail') && 'bg-brand/10',
+                        )}
+                      >
+                        <td className="px-3 py-1.5 tabular-nums">{r.line}</td>
+                        <td className="px-3 py-1.5">{r.name}</td>
+                        <td className="px-3 py-1.5">
+                          {t(`importOutcome.${r.outcome}`, { memberNumber: r.memberNumber ?? '' })}
+                          {r.note && (
+                            <span className="block text-xs text-muted-foreground">
+                              {t(`importNote.${r.note}`, { other: r.sharedWith ?? '' })}
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </section>
           )}
         </div>

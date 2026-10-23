@@ -28,6 +28,10 @@ function toData(input: ReturnType<typeof eventSchema.parse>) {
     pointsToWin: input.pointsToWin,
     pointsCap: input.pointsCap,
     restMinutes: input.restMinutes ?? null,
+    koScoringFrom: input.koScoringFrom ?? null,
+    koBestOf: input.koScoringFrom ? (input.koBestOf ?? 3) : null,
+    koPointsToWin: input.koScoringFrom ? (input.koPointsToWin ?? 21) : null,
+    koPointsCap: input.koScoringFrom ? (input.koPointsCap ?? 30) : null,
     isOpen: input.isOpen,
   };
 }

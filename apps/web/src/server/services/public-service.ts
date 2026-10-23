@@ -244,6 +244,10 @@ export async function getPublicTournament(
           bestOf: true,
           pointsToWin: true,
           pointsCap: true,
+          koScoringFrom: true,
+          koBestOf: true,
+          koPointsToWin: true,
+          koPointsCap: true,
           isOpen: true,
           ageCategory: { select: { code: true, name: true, sortOrder: true } },
           levelClass: { select: { code: true, rank: true } },
@@ -276,6 +280,14 @@ export async function getPublicTournament(
       bestOf: e.bestOf,
       pointsToWin: e.pointsToWin,
       pointsCap: e.pointsCap,
+      knockoutScoring: e.koScoringFrom
+        ? {
+            from: e.koScoringFrom as 'KO' | 'QF' | 'SF' | 'F',
+            bestOf: e.koBestOf ?? e.bestOf,
+            pointsToWin: e.koPointsToWin ?? e.pointsToWin,
+            pointsCap: e.koPointsCap ?? e.pointsCap,
+          }
+        : null,
       isOpen: e.isOpen,
     }));
   const venue = t.venue && !t.venue.deletedAt ? toVenue(t.venue) : null;

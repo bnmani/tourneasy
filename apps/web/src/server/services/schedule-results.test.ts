@@ -290,3 +290,41 @@ describe('results', () => {
     ).not.toBeNull();
   });
 });
+
+describe('scoring per stage (D61)', () => {
+  it('accepts 1 game in the groups and needs best of 3 in the knockout', async () => {
+    const actor = await admin();
+    const { event } = await setup('GROUPS_KNOCKOUT', 4, {
+      groupSize: 4,
+      advancePerGroup: 2,
+      bestOf: 1,
+      koScoringFrom: 'KO',
+      koBestOf: 3,
+      koPointsToWin: 21,
+      koPointsCap: 30,
+    });
+    await generateDraw(actor, event.id, meta, seededRng(9));
+    await publishDraws(actor, event.id, true, meta);
+    const groupMatches = await prisma.match.findMany({ where: { draw: { eventId: event.id } } });
+    for (const m of groupMatches) await recordResult(actor, m.id, { games: [[21, 15]] }, meta);
+    await createKnockoutFromGroups(actor, event.id, meta);
+    const semi = await prisma.match.findFirstOrThrow({
+      where: { draw: { eventId: event.id, stage: 'KNOCKOUT' }, round: 1 },
+    });
+    await expect(recordResult(actor, semi.id, { games: [[21, 15]] }, meta)).rejects.toMatchObject({
+      details: { fields: { games: 'tooFewGames' } },
+    });
+    await recordResult(
+      actor,
+      semi.id,
+      {
+        games: [
+          [21, 15],
+          [18, 21],
+          [21, 19],
+        ],
+      },
+      meta,
+    );
+  });
+});

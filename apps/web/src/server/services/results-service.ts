@@ -8,6 +8,7 @@
 import { prisma, type Prisma } from '@tourneasy/db';
 import {
   checkMatchScore,
+  rulesForMatch,
   nextPowerOfTwo,
   placeKnockout,
   knockoutPlan,
@@ -40,6 +41,8 @@ async function loadMatch(matchId: string, db: Tx | typeof prisma = prisma) {
       drawId: true,
       status: true,
       version: true,
+      round: true,
+      bracket: true,
       winnerEntryId: true,
       entryAId: true,
       entryBId: true,
@@ -52,6 +55,9 @@ async function loadMatch(matchId: string, db: Tx | typeof prisma = prisma) {
       draw: {
         select: {
           status: true,
+          stage: true,
+          type: true,
+          size: true,
           event: {
             select: {
               id: true,
@@ -59,6 +65,10 @@ async function loadMatch(matchId: string, db: Tx | typeof prisma = prisma) {
               bestOf: true,
               pointsToWin: true,
               pointsCap: true,
+              koScoringFrom: true,
+              koBestOf: true,
+              koPointsToWin: true,
+              koPointsCap: true,
             },
           },
         },
@@ -158,7 +168,9 @@ export async function recordResult(
   const m = await authorise(actor, matchId);
   const { games, version } = parseInput(gamesSchema, input);
   if (version !== undefined && version !== m.version) throw new AppError('resultConflict');
-  const check = checkMatchScore(games as Game[], m.draw.event);
+  // The category's scoring, or its knockout scoring for this round (D61).
+  const rules = rulesForMatch(m.draw.event, { ...m.draw, round: m.round, bracket: m.bracket });
+  const check = checkMatchScore(games as Game[], rules);
   if (!check.ok)
     throw validationError({
       games: check.error,

@@ -34,6 +34,10 @@ export type EventFormValues = {
   matchesPerEntry: string;
   knockoutSize: string;
   restMinutes: string;
+  koScoringFrom: '' | 'KO' | 'QF' | 'SF' | 'F';
+  koBestOf: string;
+  koPointsToWin: string;
+  koPointsCap: string;
   bestOf: string;
   pointsToWin: string;
   pointsCap: string;
@@ -71,6 +75,8 @@ export function EventForm({
   const defaultDrawType = submittedDrawType ?? values.drawType;
   const [drawType, setDrawType] = useState(defaultDrawType);
   useEffect(() => setDrawType(defaultDrawType), [state, defaultDrawType]);
+  const submittedKo = state.values?.koScoringFrom as EventFormValues['koScoringFrom'] | undefined;
+  const [koFrom, setKoFrom] = useState(submittedKo ?? values.koScoringFrom ?? '');
 
   return (
     <form action={action} className="space-y-6" noValidate>
@@ -257,6 +263,58 @@ export function EventForm({
             required
             defaultValue={values.pointsCap}
           />
+        </div>
+        <div
+          className="space-y-3 rounded-md border bg-secondary/30 p-4"
+          onChange={(e) => {
+            if (e.target instanceof HTMLSelectElement && e.target.name === 'koScoringFrom')
+              setKoFrom(e.target.value as EventFormValues['koScoringFrom']);
+          }}
+        >
+          <SelectField
+            name="koScoringFrom"
+            label={t('koScoringFrom')}
+            hint={t('koScoringHint')}
+            state={state}
+            defaultValue={values.koScoringFrom ?? ''}
+            placeholder={t('koScoringNone')}
+            options={(drawType === 'GROUPS_KNOCKOUT' || drawType === 'HYBRID_ROUND_ROBIN_KNOCKOUT'
+              ? (['KO', 'QF', 'SF', 'F'] as const)
+              : drawType === 'ROUND_ROBIN' || drawType === 'SWISS'
+                ? ([] as const)
+                : (['QF', 'SF', 'F'] as const)
+            ).map((v) => ({ value: v, label: t(`koFrom_${v}`) }))}
+          />
+          {koFrom && (
+            <div className="grid gap-4 sm:grid-cols-3">
+              <SelectField
+                name="koBestOf"
+                label={t('bestOf')}
+                state={state}
+                required
+                defaultValue={values.koBestOf ?? '3'}
+                options={['1', '3', '5'].map((v) => ({ value: v, label: v }))}
+              />
+              <SelectField
+                name="koPointsToWin"
+                label={t('pointsToWin')}
+                state={state}
+                required
+                defaultValue={values.koPointsToWin ?? '21'}
+                options={['11', '15', '21'].map((v) => ({ value: v, label: v }))}
+              />
+              <TextField
+                name="koPointsCap"
+                type="number"
+                min={11}
+                max={40}
+                label={t('pointsCap')}
+                state={state}
+                required
+                defaultValue={values.koPointsCap ?? '30'}
+              />
+            </div>
+          )}
         </div>
         <TextField
           name="restMinutes"

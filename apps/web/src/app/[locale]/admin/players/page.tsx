@@ -2,6 +2,7 @@ import type { Discipline, Gender } from '@tourneasy/db';
 import { DISCIPLINES, GENDERS } from '@tourneasy/shared/schemas';
 import { ageOn } from '@tourneasy/shared';
 import { getFormatter, getTranslations } from 'next-intl/server';
+import { PlayerAddedNotice } from '@/components/admin/player-added-notice';
 import { Badge, FilterBar, filterInputClass, PageHeader, Pagination } from '@/components/admin/ui';
 import { Button } from '@/components/ui/button';
 import { Link } from '@/i18n/navigation';
@@ -87,7 +88,15 @@ export default async function AdminPlayersPage({
           </>
         }
       />
-      <FilterBar action={`/${locale}/admin/players`} persistent={['sort', 'dir']}>
+      <PlayerAddedNotice
+        name={firstParam(query.added)}
+        number={firstParam(query.number)}
+        showAddAnother
+      />
+      <FilterBar
+        action={`/${locale}/admin/players`}
+        persistent={['sort', 'dir', 'added', 'number']}
+      >
         {filters.sort && <input type="hidden" name="sort" value={filters.sort} />}
         {filters.dir && <input type="hidden" name="dir" value={filters.dir} />}
         <label className="sr-only" htmlFor="q">

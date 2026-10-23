@@ -6,6 +6,7 @@
 import { z } from 'zod';
 import { parseDateOnly } from '../rules/age';
 import { bundlePricesValid } from '../rules/bundle-pricing';
+import { KO_SCORING_FROM } from '../rules/scoring';
 import { parseEuroToCents } from '../rules/money';
 import { amsterdamLocalToUtc, TIME_OF_DAY_PATTERN } from '../rules/time';
 import { DISCIPLINES, GENDERS, optionalPersonNameSchema, personNameSchema } from './auth';
@@ -324,6 +325,23 @@ export const eventSchema = z
       .refine((n) => [11, 15, 21].includes(n), 'invalid')
       .default(21),
     pointsCap: z.coerce.number().int().min(11, 'invalid').max(40, 'invalid').default(30),
+    /** Different scoring for the knockout stage or the last rounds (D61). */
+    koScoringFrom: z.preprocess(emptyToUndefined, z.enum(KO_SCORING_FROM).optional()),
+    koBestOf: z.preprocess(
+      emptyToUndefined,
+      z.coerce
+        .number()
+        .refine((n) => [1, 3, 5].includes(n), 'invalid')
+        .optional(),
+    ),
+    koPointsToWin: z.preprocess(
+      emptyToUndefined,
+      z.coerce
+        .number()
+        .refine((n) => [11, 15, 21].includes(n), 'invalid')
+        .optional(),
+    ),
+    koPointsCap: optionalInt(11, 40),
     /** Rest between a player's matches in this category; empty = the tournament's (D56). */
     restMinutes: optionalInt(0, 180),
     isOpen: z.boolean().default(true),
@@ -354,6 +372,15 @@ export const eventSchema = z
     }
     if (v.pointsCap < v.pointsToWin)
       ctx.addIssue({ code: 'custom', path: ['pointsCap'], message: 'invalid' });
+    if (v.koScoringFrom) {
+      const twoStage =
+        v.drawType === 'GROUPS_KNOCKOUT' || v.drawType === 'HYBRID_ROUND_ROBIN_KNOCKOUT';
+      const hasKnockout = v.drawType !== 'ROUND_ROBIN' && v.drawType !== 'SWISS';
+      if (!hasKnockout || (v.koScoringFrom === 'KO' && !twoStage))
+        ctx.addIssue({ code: 'custom', path: ['koScoringFrom'], message: 'invalid' });
+      if ((v.koPointsCap ?? 30) < (v.koPointsToWin ?? 21))
+        ctx.addIssue({ code: 'custom', path: ['koPointsCap'], message: 'invalid' });
+    }
   });
 export type EventInput = z.infer<typeof eventSchema>;
 

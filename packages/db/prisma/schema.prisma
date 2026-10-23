@@ -759,6 +759,12 @@ model TournamentEvent {
   bestOf          Int        @default(3)
   pointsToWin     Int        @default(21)
   pointsCap       Int        @default(30)
+  /// Different scoring for the knockout stage or the last rounds (D61): from "KO" (the whole
+  /// knockout stage after groups/hybrid), "QF", "SF" or "F"; null = same scoring everywhere.
+  koScoringFrom   String?
+  koBestOf        Int?
+  koPointsToWin   Int?
+  koPointsCap     Int?
   sortOrder       Int        @default(0)
   isOpen          Boolean    @default(true)
   deletedAt       DateTime?

@@ -543,7 +543,14 @@
       "knockoutSizeHint": "For example 16: round of 16, quarter-finals, semi-finals and final.",
       "restMinutes": "Rest between matches (min)",
       "restMinutesHint": "Empty = the tournament’s rest (hybrid defaults to at most 10 minutes).",
-      "levelHint": "A is the highest level (strongest players), D the lowest (beginners and recreational players). Players may enter their own level or a higher one, never a lower one: a B player can enter A or B, not C or D. Empty = all levels."
+      "levelHint": "A is the highest level (strongest players), D the lowest (beginners and recreational players). Players may enter their own level or a higher one, never a lower one: a B player can enter A or B, not C or D. Empty = all levels.",
+      "koScoringFrom": "Different scoring for",
+      "koScoringNone": "No, same scoring everywhere",
+      "koScoringHint": "For example: groups or preliminary round 1 game to 21, the knockout best of 3 as in international tournaments.",
+      "koFrom_KO": "The knockout stage",
+      "koFrom_QF": "From the quarter-final",
+      "koFrom_SF": "From the semi-final",
+      "koFrom_F": "The final only"
     },
     "venues": {
       "title": "Venues",
@@ -622,7 +629,25 @@
       "minorNotice": "Minor: use these details for the organisation only.",
       "age": "Age",
       "created": "Added",
-      "categoriesPlayed": "Categories played"
+      "categoriesPlayed": "Categories played",
+      "importLog": "What happened to each row",
+      "importLogHelp": "Updated = an existing player with the same federation ID, or the same email address and the same name. A shared email address with a different name becomes a new player.",
+      "importLogLine": "Row",
+      "importLogName": "Name",
+      "importLogResult": "Result",
+      "importOutcome": {
+        "created": "New: {memberNumber}",
+        "updated": "Updated: {memberNumber}",
+        "skipped": "Skipped (see errors above)"
+      },
+      "importNote": {
+        "matchedFederationId": "same federation ID",
+        "matchedEmailAndName": "same email address and name",
+        "sharedEmail": "email address shared with {other}"
+      },
+      "saveAndAddAnother": "Save and add another",
+      "playerAdded": "Player {name} added ({number}).",
+      "addAnother": "Add another player"
     },
     "audit": {
       "title": "Audit log",
@@ -1096,7 +1121,11 @@
     "bundle": "Multi-category discount",
     "bundleTier": "{count, plural, one {# category} other {# categories}} {price}",
     "draws": "Draws",
-    "schedule": "Schedule and results"
+    "schedule": "Schedule and results",
+    "koScoring_KO": "Knockout",
+    "koScoring_QF": "From quarter-final",
+    "koScoring_SF": "From semi-final",
+    "koScoring_F": "Final"
   },
   "Calendar": {
     "title": "Calendar",

@@ -79,6 +79,15 @@ export const publicEventSchema = z.object({
   bestOf: z.number().int(),
   pointsToWin: z.number().int(),
   pointsCap: z.number().int(),
+  /** Different scoring for the knockout stage or the last rounds (D61). */
+  knockoutScoring: z
+    .object({
+      from: z.enum(['KO', 'QF', 'SF', 'F']),
+      bestOf: z.number().int(),
+      pointsToWin: z.number().int(),
+      pointsCap: z.number().int(),
+    })
+    .nullable(),
   isOpen: z.boolean(),
 });
 export type PublicEvent = z.infer<typeof publicEventSchema>;

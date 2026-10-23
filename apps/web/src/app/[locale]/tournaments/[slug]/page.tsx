@@ -283,6 +283,16 @@ export default async function TournamentPage({ params }: Props) {
                               cap: e.pointsCap,
                             })}
                           </span>
+                          {e.knockoutScoring && (
+                            <span className="block text-xs text-muted-foreground">
+                              {tt(`koScoring_${e.knockoutScoring.from}`)}:{' '}
+                              {tt('scoring', {
+                                bestOf: e.knockoutScoring.bestOf,
+                                points: e.knockoutScoring.pointsToWin,
+                                cap: e.knockoutScoring.pointsCap,
+                              })}
+                            </span>
+                          )}
                         </td>
                         <td className="px-3 py-3 text-right whitespace-nowrap sm:px-4">
                           {formatEuro(e.feeCents, locale)}

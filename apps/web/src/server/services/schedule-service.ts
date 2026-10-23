@@ -9,6 +9,7 @@ import {
   defaultRestMinutes,
   proposeSchedule,
   restConflicts,
+  rulesForMatch,
   type FixedSlot,
   type ScheduleMatch,
 } from '@tourneasy/shared';
@@ -97,6 +98,10 @@ export const matchSelect = {
           bestOf: true,
           pointsToWin: true,
           pointsCap: true,
+          koScoringFrom: true,
+          koBestOf: true,
+          koPointsToWin: true,
+          koPointsCap: true,
           ageCategory: { select: { code: true, name: true } },
           levelClass: { select: { code: true } },
           tournamentId: true,
@@ -650,7 +655,8 @@ export async function deskMatches(
   const items = matches.map((m) => ({
     ...toItem(m, locale, t.schedulePublishedAt, feeders),
     version: m.version,
-    bestOf: m.draw.event.bestOf,
+    // Score boxes per match: the knockout scoring where it applies (D61).
+    bestOf: rulesForMatch(m.draw.event, { ...m.draw, round: m.round, bracket: m.bracket }).bestOf,
     ready: !!m.entryA?.registration && !!m.entryB?.registration,
   }));
   const done = (s: string) => s === 'COMPLETED' || s === 'WALKOVER' || s === 'RETIRED';

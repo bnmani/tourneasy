@@ -183,3 +183,49 @@ export function swissPairing(
     );
   return { pairs, bye };
 }
+
+export const KO_SCORING_FROM = ['KO', 'QF', 'SF', 'F'] as const;
+export type KoScoringFrom = (typeof KO_SCORING_FROM)[number];
+
+export type EventScoring = ScoringRules & {
+  koScoringFrom: string | null;
+  koBestOf: number | null;
+  koPointsToWin: number | null;
+  koPointsCap: number | null;
+};
+
+export type MatchPosition = {
+  /** Draw stage: GROUP, MAIN or KNOCKOUT (the knockout made after groups or hybrid). */
+  stage: string;
+  /** Draw type: KNOCKOUT, DOUBLE_KNOCKOUT, ROUND_ROBIN, … */
+  type: string;
+  /** Bracket size (knockout). */
+  size: number;
+  round: number;
+  /** W, L (losers bracket) or F (double-knockout final). */
+  bracket: string;
+};
+
+/**
+ * Scoring for one match (D61): the category's scoring, or its knockout scoring for the
+ * knockout stage ("KO") or from the quarter-final / semi-final / final on. Losers-bracket
+ * rounds keep the normal scoring; the double-knockout final counts as a final.
+ */
+export function rulesForMatch(event: EventScoring, match: MatchPosition): ScoringRules {
+  const base = { bestOf: event.bestOf, pointsToWin: event.pointsToWin, pointsCap: event.pointsCap };
+  const from = event.koScoringFrom as KoScoringFrom | null;
+  if (!from) return base;
+  const knockout =
+    match.stage === 'KNOCKOUT' || match.type === 'KNOCKOUT' || match.type === 'DOUBLE_KNOCKOUT';
+  if (!knockout || match.bracket === 'L') return base;
+  const ko = {
+    bestOf: event.koBestOf ?? base.bestOf,
+    pointsToWin: event.koPointsToWin ?? base.pointsToWin,
+    pointsCap: event.koPointsCap ?? base.pointsCap,
+  };
+  if (from === 'KO') return match.stage === 'KNOCKOUT' ? ko : base;
+  if (match.bracket === 'F') return ko;
+  const roundsLeft = Math.log2(Math.max(2, match.size)) - match.round;
+  const limit = from === 'QF' ? 2 : from === 'SF' ? 1 : 0;
+  return roundsLeft <= limit ? ko : base;
+}

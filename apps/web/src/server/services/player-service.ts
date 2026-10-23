@@ -457,12 +457,35 @@ export function playerXlsxTemplate(): Uint8Array {
   return toXlsx('Spelers', [...PLAYER_CSV_COLUMNS], TEMPLATE_ROWS);
 }
 
+export type ImportRowLog = {
+  line: number;
+  name: string;
+  outcome: 'created' | 'updated' | 'skipped';
+  memberNumber?: string;
+  /** Why an existing player was matched, or that an email is shared with someone else. */
+  note?: 'matchedFederationId' | 'matchedEmailAndName' | 'sharedEmail';
+  sharedWith?: string;
+};
+
 export type ImportResult = {
   created: number;
   updated: number;
   skipped: number;
   errors: { line: number; field: string; error: string }[];
+  /** What happened to every row (D60). */
+  rows: ImportRowLog[];
 };
+
+/** "José  de Vries" → "jose de vries": names compared without case, accents or extra spaces. */
+const nameKey = (...parts: (string | null | undefined)[]) =>
+  parts
+    .filter(Boolean)
+    .join(' ')
+    .normalize('NFD')
+    .replace(/\p{M}/gu, '')
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim();
 
 const MAX_IMPORT_ROWS = 2000;
 
@@ -521,7 +544,7 @@ async function importPlayerRows(
     if (c.shortName) clubByName.set(c.shortName.toLowerCase(), c.id);
   }
 
-  const result: ImportResult = { created: 0, updated: 0, skipped: 0, errors: [] };
+  const result: ImportResult = { created: 0, updated: 0, skipped: 0, errors: [], rows: [] };
   for (const [index, row] of rows.entries()) {
     const line = index + 2; // header is line 1
     const preferred = (row.preferredevents ?? '')
@@ -547,20 +570,36 @@ async function importPlayerRows(
       for (const [field, error] of Object.entries(fieldErrors(parsed.error)))
         result.errors.push({ line, field, error });
       result.skipped += 1;
+      result.rows.push({
+        line,
+        name: [row.firstname, row.lastnameprefix, row.lastname].filter(Boolean).join(' ') || '—',
+        outcome: 'skipped',
+      });
       continue;
     }
     const data = parsed.data;
-    const existing = await prisma.playerProfile.findFirst({
-      where: {
-        deletedAt: null,
-        OR: [
-          ...(data.federationId ? [{ federationId: data.federationId }] : []),
-          ...(data.contactEmail
-            ? [{ contactEmail: data.contactEmail }, { user: { email: data.contactEmail } }]
-            : []),
-        ],
-      },
-    });
+    const rowName = [data.firstName, data.lastNamePrefix, data.lastName].filter(Boolean).join(' ');
+    // Same player = same federation ID, or same email AND same name (D60). Families and
+    // couples often share one email address: a different name is a different player.
+    const byFederation = data.federationId
+      ? await prisma.playerProfile.findFirst({
+          where: { deletedAt: null, federationId: data.federationId },
+        })
+      : null;
+    const sameEmail = data.contactEmail
+      ? await prisma.playerProfile.findMany({
+          where: {
+            deletedAt: null,
+            OR: [{ contactEmail: data.contactEmail }, { user: { email: data.contactEmail } }],
+          },
+        })
+      : [];
+    const wanted = nameKey(data.firstName, data.lastNamePrefix, data.lastName);
+    const byEmailAndName = sameEmail.find(
+      (p) => nameKey(p.firstName, p.lastNamePrefix, p.lastName) === wanted,
+    );
+    const existing = byFederation ?? byEmailAndName ?? null;
+    const sharedWith = !existing ? sameEmail[0] : undefined;
     try {
       if (existing) {
         // Empty cells leave existing values alone (an export→edit→import round trip is safe).
@@ -579,23 +618,43 @@ async function importPlayerRows(
           },
         });
         result.updated += 1;
+        result.rows.push({
+          line,
+          name: rowName,
+          outcome: 'updated',
+          memberNumber: existing.memberNumber,
+          note: byFederation ? 'matchedFederationId' : 'matchedEmailAndName',
+        });
       } else {
-        await prisma.$transaction(async (tx) => {
-          await tx.playerProfile.create({
+        const created = await prisma.$transaction(async (tx) =>
+          tx.playerProfile.create({
             data: {
               ...profileData(data),
               memberNumber: await nextMemberNumber(tx),
               contactEmail: data.contactEmail ?? null,
               publicProfile: false,
             },
-          });
-        });
+          }),
+        );
         result.created += 1;
+        result.rows.push({
+          line,
+          name: rowName,
+          outcome: 'created',
+          memberNumber: created.memberNumber,
+          ...(sharedWith
+            ? {
+                note: 'sharedEmail' as const,
+                sharedWith: `${sharedWith.memberNumber} ${[sharedWith.firstName, sharedWith.lastName].join(' ')}`,
+              }
+            : {}),
+        });
       }
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
         result.errors.push({ line, field: 'federationId', error: 'duplicate' });
         result.skipped += 1;
+        result.rows.push({ line, name: rowName, outcome: 'skipped' });
       } else {
         throw error;
       }

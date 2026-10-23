@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { checkMatchScore, gameWinner, standings, swissPairing } from './scoring';
+import { checkMatchScore, gameWinner, rulesForMatch, standings, swissPairing } from './scoring';
 
 const bwf = { bestOf: 3, pointsToWin: 21, pointsCap: 30 };
 
@@ -160,5 +160,77 @@ describe('Swiss pairing', () => {
       ['a', 'c'],
       ['b', 'e'],
     ]);
+  });
+});
+
+describe('scoring per stage (D61)', () => {
+  const event = {
+    bestOf: 1,
+    pointsToWin: 21,
+    pointsCap: 30,
+    koScoringFrom: 'SF' as string | null,
+    koBestOf: 3,
+    koPointsToWin: 21,
+    koPointsCap: 30,
+  };
+  const ko = (round: number, size = 16, bracket = 'W') => ({
+    stage: 'MAIN',
+    type: 'KNOCKOUT',
+    size,
+    round,
+    bracket,
+  });
+
+  it('uses the knockout scoring from the chosen round on', () => {
+    expect(rulesForMatch(event, ko(1)).bestOf).toBe(1);
+    expect(rulesForMatch(event, ko(2)).bestOf).toBe(1); // quarter-final
+    expect(rulesForMatch(event, ko(3)).bestOf).toBe(3); // semi-final
+    expect(rulesForMatch(event, ko(4)).bestOf).toBe(3); // final
+    expect(rulesForMatch({ ...event, koScoringFrom: 'F' }, ko(3)).bestOf).toBe(1);
+    expect(rulesForMatch({ ...event, koScoringFrom: 'QF' }, ko(2)).bestOf).toBe(3);
+  });
+
+  it('uses it for the whole knockout stage after groups, not in the groups', () => {
+    const groups = { ...event, koScoringFrom: 'KO' };
+    expect(
+      rulesForMatch(groups, {
+        stage: 'GROUP',
+        type: 'GROUPS_KNOCKOUT',
+        size: 4,
+        round: 1,
+        bracket: 'W',
+      }).bestOf,
+    ).toBe(1);
+    expect(
+      rulesForMatch(groups, {
+        stage: 'KNOCKOUT',
+        type: 'KNOCKOUT',
+        size: 8,
+        round: 1,
+        bracket: 'W',
+      }).bestOf,
+    ).toBe(3);
+  });
+
+  it('keeps the normal scoring without a choice and in the losers bracket', () => {
+    expect(rulesForMatch({ ...event, koScoringFrom: null }, ko(4)).bestOf).toBe(1);
+    expect(
+      rulesForMatch(event, {
+        stage: 'MAIN',
+        type: 'DOUBLE_KNOCKOUT',
+        size: 8,
+        round: 4,
+        bracket: 'L',
+      }).bestOf,
+    ).toBe(1);
+    expect(
+      rulesForMatch(event, {
+        stage: 'MAIN',
+        type: 'DOUBLE_KNOCKOUT',
+        size: 8,
+        round: 1,
+        bracket: 'F',
+      }).bestOf,
+    ).toBe(3);
   });
 });

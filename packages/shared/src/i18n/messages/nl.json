@@ -543,7 +543,14 @@
       "knockoutSizeHint": "Bijvoorbeeld 16: achtste finales, kwartfinales, halve finales en finale.",
       "restMinutes": "Rust tussen wedstrijden (min)",
       "restMinutesHint": "Leeg = de rust van het toernooi (bij hybride standaard maximaal 10 minuten).",
-      "levelHint": "A is het hoogste niveau (sterkste spelers), D het laagste (beginners en recreanten). Spelers mogen in hun eigen niveau of hoger inschrijven, niet lager: een B-speler kan dus in A of B, niet in C of D. Leeg = alle niveaus."
+      "levelHint": "A is het hoogste niveau (sterkste spelers), D het laagste (beginners en recreanten). Spelers mogen in hun eigen niveau of hoger inschrijven, niet lager: een B-speler kan dus in A of B, niet in C of D. Leeg = alle niveaus.",
+      "koScoringFrom": "Andere telling voor",
+      "koScoringNone": "Nee, overal dezelfde telling",
+      "koScoringHint": "Bijvoorbeeld: poules of voorronde 1 game tot 21, de knock-out best of 3 zoals bij internationale toernooien.",
+      "koFrom_KO": "De knock-outfase",
+      "koFrom_QF": "Vanaf de kwartfinale",
+      "koFrom_SF": "Vanaf de halve finale",
+      "koFrom_F": "Alleen de finale"
     },
     "venues": {
       "title": "Locaties",
@@ -622,7 +629,25 @@
       "minorNotice": "Minderjarige speler: gegevens alleen voor organisatie gebruiken.",
       "age": "Leeftijd",
       "created": "Toegevoegd",
-      "categoriesPlayed": "Onderdelen gespeeld"
+      "categoriesPlayed": "Onderdelen gespeeld",
+      "importLog": "Wat er met elke regel is gebeurd",
+      "importLogHelp": "Bijgewerkt = een bestaande speler met hetzelfde bondsnummer, of hetzelfde e-mailadres én dezelfde naam. Een gedeeld e-mailadres met een andere naam wordt een nieuwe speler.",
+      "importLogLine": "Regel",
+      "importLogName": "Naam",
+      "importLogResult": "Resultaat",
+      "importOutcome": {
+        "created": "Nieuw: {memberNumber}",
+        "updated": "Bijgewerkt: {memberNumber}",
+        "skipped": "Overgeslagen (zie fouten hierboven)"
+      },
+      "importNote": {
+        "matchedFederationId": "zelfde bondsnummer",
+        "matchedEmailAndName": "zelfde e-mailadres en naam",
+        "sharedEmail": "e-mailadres gedeeld met {other}"
+      },
+      "saveAndAddAnother": "Opslaan en nog een toevoegen",
+      "playerAdded": "Speler {name} toegevoegd ({number}).",
+      "addAnother": "Nog een speler toevoegen"
     },
     "audit": {
       "title": "Auditlog",
@@ -1096,7 +1121,11 @@
     "bundle": "Korting meerdere onderdelen",
     "bundleTier": "{count, plural, one {# onderdeel} other {# onderdelen}} {price}",
     "draws": "Schema's",
-    "schedule": "Planning en uitslagen"
+    "schedule": "Planning en uitslagen",
+    "koScoring_KO": "Knock-out",
+    "koScoring_QF": "Vanaf kwartfinale",
+    "koScoring_SF": "Vanaf halve finale",
+    "koScoring_F": "Finale"
   },
   "Calendar": {
     "title": "Kalender",

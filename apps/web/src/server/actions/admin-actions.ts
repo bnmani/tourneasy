@@ -247,10 +247,19 @@ export async function savePlayerAction(
 ) {
   return submit(formData, async (actor, meta) => {
     const input = formToObject(formData, { arrays: ['preferredDisciplines'] });
-    const player = playerId
-      ? await updatePlayer(actor, playerId, input, meta)
-      : await createPlayer(actor, input, meta);
-    return `/${locale}/admin/players/${player.id}?status=saved`;
+    if (playerId) {
+      await updatePlayer(actor, playerId, input, meta);
+      return `/${locale}/admin/players/${playerId}?status=saved`;
+    }
+    // New player: back to the list, or straight to an empty form for the next one.
+    const player = await createPlayer(actor, input, meta);
+    const added = new URLSearchParams({
+      added: [player.firstName, player.lastNamePrefix, player.lastName].filter(Boolean).join(' '),
+      number: player.memberNumber,
+    });
+    return formData.get('next') === 'another'
+      ? `/${locale}/admin/players/new?${added}`
+      : `/${locale}/admin/players?${added}`;
   });
 }
 
