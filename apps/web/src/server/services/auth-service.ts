@@ -235,6 +235,7 @@ export async function sendVerificationEmail(userId: string): Promise<void> {
       memberNumber: user.playerProfile?.memberNumber ?? '',
       url: appUrl(locale, `/verify-email?token=${encodeURIComponent(token)}`),
     }),
+    { always: true },
   );
 }
 
@@ -290,6 +291,7 @@ export async function requestPasswordReset(input: unknown, meta: RequestMeta): P
       name: user.playerProfile?.firstName ?? user.name,
       url: appUrl(locale, `/reset-password?token=${encodeURIComponent(token)}`),
     }),
+    { always: true },
   );
 }
 
@@ -371,5 +373,6 @@ async function sendPasswordChangedEmail(user: {
       kind: 'passwordChanged',
       name: user.playerProfile?.firstName ?? user.name,
     }),
+    { always: true },
   );
 }

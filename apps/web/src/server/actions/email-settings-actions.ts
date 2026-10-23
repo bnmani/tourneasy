@@ -11,6 +11,7 @@ import {
   clearEmailSettings,
   saveEmailSettings,
   sendTestEmail,
+  setEmailSending,
 } from '../services/email-settings-service';
 import { toFormState } from './form-utils';
 
@@ -85,5 +86,23 @@ export async function clearEmailSettingsAction(locale: AppLocale) {
     status = isAppError(error) ? error.code : 'unexpected';
   }
   revalidatePath('/', 'layout');
+  redirect(`${PAGE(locale)}?status=${status}`);
+}
+
+/** The pause switch and the test addresses that still get email while paused. */
+export async function setEmailSendingAction(locale: AppLocale, formData: FormData) {
+  let status = formData.get('paused') === '1' ? 'paused' : 'resumed';
+  if (formData.has('allowOnly')) status = 'allowSaved';
+  try {
+    await setEmailSending(
+      await actorOrThrow(),
+      { paused: formData.get('paused'), allow: formData.get('allow') ?? '' },
+      await currentRequestMeta(),
+    );
+  } catch (error) {
+    if (!isAppError(error)) console.error('[email settings] sending switch failed', error);
+    status = isAppError(error) && error.code === 'validation' ? 'allowInvalid' : 'unexpected';
+  }
+  revalidatePath(PAGE(locale));
   redirect(`${PAGE(locale)}?status=${status}`);
 }

@@ -941,11 +941,29 @@
         "unlockFailed": "Failed unlock attempt",
         "update": "Settings changed",
         "clear": "Settings removed",
-        "test": "Test email sent"
+        "test": "Test email sent",
+        "paused": "Email switched off",
+        "resumed": "Email switched on",
+        "allowList": "Test addresses changed"
       },
       "testTo": "To (empty = your own address)",
       "testToPlaceholder": "e.g. test-xxxx@srv1.mail-tester.com",
-      "testHint": "Tip: send a test email to the address mail-tester.com gives you; you get a spam score with the reasons."
+      "testHint": "Tip: send a test email to the address mail-tester.com gives you; you get a spam score with the reasons.",
+      "sendingTitle": "Sending email",
+      "sendingOn": "On: email goes to all players.",
+      "sendingOff": "Off (test mode): email only goes to admins, organisers and the test addresses below. Everything else is not sent.",
+      "sendingAlways": "Sign-up confirmations and password resets always go out, because the person asks for them.",
+      "sendingSwitch": "Send email to players",
+      "sendingBy": "Last switched by {name} on {date}.",
+      "allowLabel": "Test addresses that still get email in test mode",
+      "allowHint": "Separated by commas or new lines. At most 50.",
+      "allowSave": "Save test addresses",
+      "paused": "Email is off: only admins, organisers and test addresses still get email.",
+      "resumed": "Email is on again for all players.",
+      "allowSaved": "Test addresses saved.",
+      "allowInvalid": "One of the test addresses is not a valid email address.",
+      "pausedBanner": "Test mode: email to players is off.",
+      "pausedBannerLink": "Email settings"
     },
     "news": {
       "title": "News",

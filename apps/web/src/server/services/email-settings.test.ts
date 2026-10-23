@@ -3,6 +3,8 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { createPlayer, lastMailTo, meta, resetDatabase } from '@/test/db';
 import {
   EMAIL_SETTINGS_KEY,
+  outbox,
+  sendMail,
   loadSmtpConfig,
   resetMailerCache,
   senderDomain,
@@ -13,7 +15,9 @@ import {
   getEmailSettings,
   saveEmailSettings,
   sendTestEmail,
+  setEmailSending,
 } from './email-settings-service';
+import { deliverQueued, enqueueEmails } from './notification-service';
 import { unlockSettings } from './payment-settings-service';
 import { actorFromWebToken, createWebSession } from './session-service';
 
@@ -112,5 +116,46 @@ describe('email settings in the portal', () => {
   it('greets the mail server as the sender domain', () => {
     expect(senderDomain('Tourneasy <no-reply@tourneasy.app>')).toBe('tourneasy.app');
     expect(senderDomain('info@Example.NL')).toBe('example.nl');
+  });
+});
+
+describe('pausing email for testing', () => {
+  it('only reaches admins, organisers and test addresses while paused, and is logged', async () => {
+    const a = await admin();
+    const [anna, tester, org] = [await createPlayer(), await createPlayer(), await createPlayer()];
+    await prisma.userRole.create({ data: { userId: org.userId, role: Role.ORGANISER } });
+    await expect(
+      setEmailSending(a.actor, { paused: '1', allow: 'nope' }, meta),
+    ).rejects.toMatchObject({ code: 'validation' });
+    await setEmailSending(a.actor, { paused: '1', allow: `${tester.email.toUpperCase()}, ` }, meta);
+
+    const news = (p: { userId: string }) => ({
+      userId: p.userId,
+      type: 'ANNOUNCEMENT' as const,
+      dedupeKey: `TEST:${p.userId}`,
+      linkPath: '/',
+      template: () => ({ kind: 'settingsTest' as const, name: 'x', url: 'https://x.test' }),
+    });
+    outbox.length = 0; // sign-up mails of the players above
+    await enqueueEmails([anna, tester, org, a].map(news));
+    expect(await deliverQueued()).toMatchObject({ sent: 3, held: 1 });
+    expect(outbox.map((m) => m.to).sort()).toEqual([a.email, org.email, tester.email].sort());
+    expect(await prisma.notification.findFirst({ where: { userId: anna.userId } })).toMatchObject({
+      status: 'SKIPPED',
+      error: 'sendingPaused',
+    });
+
+    // What the person asked for themselves still goes.
+    const mail = { to: anna.email, subject: 'Reset', text: 't', html: 'h' };
+    expect(await sendMail(mail)).toBe('held');
+    expect(await sendMail(mail, { always: true })).toBe('sent');
+
+    await setEmailSending(a.actor, { paused: '0', allow: '' }, meta);
+    expect(await sendMail(mail)).toBe('sent');
+    expect((await getEmailSettings(a.actor)).sending).toMatchObject({ paused: false, allow: [] });
+    expect((await emailSettingsLog(a.actor)).map((l) => l.action)).toEqual([
+      'settings.email.resumed',
+      'settings.email.paused',
+    ]);
   });
 });

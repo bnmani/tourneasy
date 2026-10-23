@@ -9,10 +9,13 @@ import { emailSettingsSchema } from '@tourneasy/shared';
 import { z } from 'zod';
 import { sendMail } from '../email/mailer';
 import {
+  EMAIL_SENDING_KEY,
   EMAIL_SETTINGS_KEY,
+  loadSendingSettings,
   loadSmtpConfig,
   resetMailerCache,
   verifySmtp,
+  type SendingSettings,
   type StoredEmailSettings,
 } from '../email/mailer';
 import { renderEmail } from '../email/templates';
@@ -35,12 +38,14 @@ async function stored(): Promise<StoredEmailSettings | null> {
 /** What the page shows: status and settings without the password. */
 export async function getEmailSettings(actor: Actor, now = new Date()) {
   assertAdmin(actor);
-  const [settings, config, until] = await Promise.all([
+  const [settings, config, until, sending] = await Promise.all([
     stored(),
     loadSmtpConfig(),
     elevatedUntil(actor, now),
+    loadSendingSettings(),
   ]);
   return {
+    sending: sending && { ...sending, updatedAt: new Date(sending.updatedAt) },
     unlockedUntil: until,
     canEncrypt: canEncrypt(),
     active: config !== null,
@@ -171,6 +176,7 @@ export async function sendTestEmail(actor: Actor, input: unknown, meta: RequestM
         name: to ? '' : (user.name.split(' ')[0] ?? user.name),
         url: appUrl(actor.locale, '/'),
       }),
+      { always: true },
     );
   } catch (error) {
     throw new AppError('smtpRejected', {
@@ -186,6 +192,71 @@ export async function sendTestEmail(actor: Actor, input: unknown, meta: RequestM
     meta,
   });
   return recipient;
+}
+
+const sendingSchema = z.object({
+  paused: z.preprocess((v) => v === true || v === '1' || v === 'on', z.boolean()),
+  // Test addresses, separated by commas, spaces or new lines.
+  allow: z.preprocess(
+    (v) =>
+      typeof v === 'string'
+        ? [
+            ...new Set(
+              v
+                .toLowerCase()
+                .split(/[\s,;]+/)
+                .filter(Boolean),
+            ),
+          ]
+        : (v ?? []),
+    z.array(z.string().email('emailInvalid').max(254)).max(50),
+  ),
+});
+
+/**
+ * The pause switch for testing: while paused, email only reaches admins, organisers and the
+ * listed test addresses. Not locked (pausing must be quick), but every switch is logged.
+ */
+export async function setEmailSending(
+  actor: Actor,
+  input: unknown,
+  meta: RequestMeta,
+  now = new Date(),
+) {
+  assertAdmin(actor);
+  const data = parseInput(sendingSchema, input);
+  const user = await prisma.user.findUniqueOrThrow({
+    where: { id: actor.userId },
+    select: { name: true },
+  });
+  const before = await loadSendingSettings();
+  const value: SendingSettings = {
+    paused: data.paused,
+    allow: data.allow,
+    updatedByName: user.name,
+    updatedAt: now.toISOString(),
+  };
+  await prisma.$transaction(async (tx) => {
+    await tx.siteSetting.upsert({
+      where: { key: EMAIL_SENDING_KEY },
+      create: { key: EMAIL_SENDING_KEY, value: value as unknown as Prisma.InputJsonValue },
+      update: { value: value as unknown as Prisma.InputJsonValue },
+    });
+    await writeAudit(tx, {
+      actorId: actor.userId,
+      action:
+        data.paused === (before?.paused ?? false)
+          ? 'settings.email.allowList'
+          : data.paused
+            ? 'settings.email.paused'
+            : 'settings.email.resumed',
+      entityType: 'SiteSetting',
+      entityId: EMAIL_SETTINGS_KEY,
+      after: { paused: data.paused, allow: data.allow },
+      meta,
+    });
+  });
+  resetMailerCache();
 }
 
 /** Last unlocks and changes for the page (who and when). */

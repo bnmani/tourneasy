@@ -143,13 +143,16 @@ export async function enqueueEmails(items: QueuedEmail[]): Promise<number> {
   return count;
 }
 
-let delivering: Promise<{ sent: number; failed: number }> | null = null;
+let delivering: Promise<{ sent: number; failed: number; held: number }> | null = null;
 
 /** Sends queued emails (oldest first). One run at a time per server process. */
-export function deliverQueued(limit = 200): Promise<{ sent: number; failed: number }> {
+export function deliverQueued(
+  limit = 200,
+): Promise<{ sent: number; failed: number; held: number }> {
   delivering ??= (async () => {
     let sent = 0;
     let failed = 0;
+    let held = 0;
     try {
       const queued = await prisma.notification.findMany({
         where: { status: 'QUEUED', channel: 'EMAIL' },
@@ -167,7 +170,7 @@ export function deliverQueued(limit = 200): Promise<{ sent: number; failed: numb
         const { to, template } = n.payload as unknown as Payload;
         const locale = n.locale as AppLocale;
         try {
-          await sendMail(
+          const result = await sendMail(
             renderEmail(
               to,
               locale,
@@ -180,7 +183,13 @@ export function deliverQueued(limit = 200): Promise<{ sent: number; failed: numb
                 : {},
             ),
           );
-          sent += 1;
+          if (result === 'held') {
+            held += 1;
+            await prisma.notification.update({
+              where: { id: n.id },
+              data: { status: 'SKIPPED', sentAt: null, error: 'sendingPaused' },
+            });
+          } else sent += 1;
         } catch (error) {
           failed += 1;
           await prisma.notification.update({
@@ -195,7 +204,7 @@ export function deliverQueued(limit = 200): Promise<{ sent: number; failed: numb
     } finally {
       delivering = null;
     }
-    return { sent, failed };
+    return { sent, failed, held };
   })();
   return delivering;
 }

@@ -49,10 +49,33 @@ export type SmtpConfig = {
   source: 'portal' | 'environment';
 };
 
+/**
+ * Pause switch for testing (Admin → E-mail): while paused, email only goes to admins,
+ * organisers and the listed test addresses; everything else is held (logged, not sent).
+ * Emails a person asks for themselves (sign-up confirmation, password reset) always go.
+ */
+export const EMAIL_SENDING_KEY = 'email.sending';
+
+export type SendingSettings = {
+  paused: boolean;
+  allow: string[];
+  updatedByName: string;
+  updatedAt: string;
+};
+
+export async function loadSendingSettings(): Promise<SendingSettings | null> {
+  const row = await prisma.siteSetting.findUnique({ where: { key: EMAIL_SENDING_KEY } });
+  return (row?.value as SendingSettings | undefined) ?? null;
+}
+
 const DEFAULT_FROM = 'Tourneasy <no-reply@tourneasy.app>';
 const CACHE_MS = 60_000;
-let cached: { config: SmtpConfig | null; transporter: Transporter | null; until: number } | null =
-  null;
+let cached: {
+  config: SmtpConfig | null;
+  transporter: Transporter | null;
+  sending: SendingSettings | null;
+  until: number;
+} | null = null;
 
 /** SMTP settings from the portal, else from the environment; null = no SMTP. */
 export async function loadSmtpConfig(): Promise<SmtpConfig | null> {
@@ -105,10 +128,11 @@ export function resetMailerCache() {
 
 async function current() {
   if (cached && cached.until > Date.now()) return cached;
-  const config = await loadSmtpConfig();
+  const [config, sending] = await Promise.all([loadSmtpConfig(), loadSendingSettings()]);
   cached = {
     config,
     transporter: config ? createSmtpTransport(config) : null,
+    sending,
     until: Date.now() + CACHE_MS,
   };
   return cached;
@@ -123,17 +147,45 @@ async function mode(): Promise<Mode> {
   return config ? 'smtp' : 'log';
 }
 
-export async function sendMail(mail: OutgoingMail): Promise<void> {
+/** While paused: may this address still get email? Admins, organisers and listed addresses. */
+async function allowedWhilePaused(to: string, sending: SendingSettings) {
+  const address = to.trim().toLowerCase();
+  if (sending.allow.includes(address)) return true;
+  const staff = await prisma.user.count({
+    where: {
+      email: address,
+      deletedAt: null,
+      roles: { some: { role: { in: ['ADMIN', 'ORGANISER'] } } },
+    },
+  });
+  return staff > 0;
+}
+
+export type SendOptions = {
+  /** The recipient asked for this email themselves: sent even while sending is paused. */
+  always?: boolean;
+};
+
+/** Sends one email; 'held' when sending is paused for this recipient. */
+export async function sendMail(
+  mail: OutgoingMail,
+  options: SendOptions = {},
+): Promise<'sent' | 'held'> {
+  const { sending } = await current();
+  if (sending?.paused && !options.always && !(await allowedWhilePaused(mail.to, sending))) {
+    console.info('[email:held]', JSON.stringify({ to: mail.to, subject: mail.subject }));
+    return 'held';
+  }
   switch (await mode()) {
     case 'memory':
       outbox.push(mail);
-      return;
+      return 'sent';
     case 'log':
       console.info(
         '[email:log]',
         JSON.stringify({ to: mail.to, subject: mail.subject, text: mail.text }),
       );
-      return;
+      return 'sent';
     case 'smtp': {
       const { config, transporter } = await current();
       if (!config || !transporter) throw new Error('SMTP is not configured');
@@ -143,6 +195,7 @@ export async function sendMail(mail: OutgoingMail): Promise<void> {
         messageId: `<${randomUUID()}@${senderDomain(config.from)}>`,
         ...mail,
       });
+      return 'sent';
     }
   }
 }
@@ -151,9 +204,9 @@ export async function sendMail(mail: OutgoingMail): Promise<void> {
  * Account emails must not break the user's action (sign-up, reset request) when the mail
  * server hiccups; failures are logged and the user can ask for the email again.
  */
-export async function sendMailSafely(mail: OutgoingMail): Promise<void> {
+export async function sendMailSafely(mail: OutgoingMail, options: SendOptions = {}): Promise<void> {
   try {
-    await sendMail(mail);
+    await sendMail(mail, options);
   } catch (error) {
     console.error('[email] sending failed', { to: mail.to, subject: mail.subject, error });
   }

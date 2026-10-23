@@ -941,11 +941,29 @@
         "unlockFailed": "Mislukte ontgrendelpoging",
         "update": "Instellingen gewijzigd",
         "clear": "Instellingen verwijderd",
-        "test": "Testmail verstuurd"
+        "test": "Testmail verstuurd",
+        "paused": "E-mails uitgezet",
+        "resumed": "E-mails aangezet",
+        "allowList": "Testadressen gewijzigd"
       },
       "testTo": "Naar (leeg = je eigen adres)",
       "testToPlaceholder": "bijv. test-xxxx@srv1.mail-tester.com",
-      "testHint": "Tip: stuur een testmail naar het adres dat mail-tester.com je geeft; je krijgt een spamscore met de redenen."
+      "testHint": "Tip: stuur een testmail naar het adres dat mail-tester.com je geeft; je krijgt een spamscore met de redenen.",
+      "sendingTitle": "E-mails versturen",
+      "sendingOn": "Aan: e-mails gaan naar alle spelers.",
+      "sendingOff": "Uit (testmodus): e-mails gaan alleen naar beheerders, organisatoren en de testadressen hieronder. De rest wordt niet verstuurd.",
+      "sendingAlways": "Bevestigingsmails bij aanmelden en wachtwoordherstel gaan altijd, want die vraagt iemand zelf aan.",
+      "sendingSwitch": "E-mails naar spelers versturen",
+      "sendingBy": "Laatst omgezet door {name} op {date}.",
+      "allowLabel": "Testadressen die tijdens de testmodus wel e-mail krijgen",
+      "allowHint": "Gescheiden door komma’s of nieuwe regels. Maximaal 50.",
+      "allowSave": "Testadressen opslaan",
+      "paused": "E-mails staan uit: alleen beheerders, organisatoren en testadressen krijgen nog e-mail.",
+      "resumed": "E-mails staan weer aan voor alle spelers.",
+      "allowSaved": "Testadressen opgeslagen.",
+      "allowInvalid": "Een van de testadressen is geen geldig e-mailadres.",
+      "pausedBanner": "Testmodus: e-mails naar spelers staan uit.",
+      "pausedBannerLink": "E-mailinstellingen"
     },
     "news": {
       "title": "Nieuws",
