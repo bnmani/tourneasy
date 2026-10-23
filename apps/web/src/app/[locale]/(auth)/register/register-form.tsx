@@ -1,7 +1,7 @@
 'use client';
 
 import { disciplinesForGender, type Gender } from '@tourneasy/shared/rules';
-import { PASSWORD_MIN_LENGTH } from '@tourneasy/shared/rules';
+import { isMinor, parseDateOnly, PASSWORD_MIN_LENGTH } from '@tourneasy/shared/rules';
 import { DISCIPLINES, GENDERS } from '@tourneasy/shared/schemas';
 import type { AppLocale } from '@tourneasy/shared/i18n';
 import { useTranslations } from 'next-intl';
@@ -32,9 +32,9 @@ export function RegisterForm({ locale, next }: { locale: AppLocale; next?: strin
   const [gender, setGender] = useState<string>(String(state.values?.gender ?? ''));
   const loginHref = next ? `/login?next=${encodeURIComponent(next)}` : '/login';
 
-  const minorOpen = Boolean(
-    state.fields?.parentalConsent || state.fields?.guardianName || state.values?.guardianName,
-  );
+  // Parental consent only shows once the birth date says the player is under 16.
+  const [dateOfBirth, setDateOfBirth] = useState(String(state.values?.dateOfBirth ?? ''));
+  const minor = parseDateOnly(dateOfBirth) !== null && isMinor(dateOfBirth);
 
   return (
     <form action={action} className="space-y-6" noValidate>
@@ -77,15 +77,21 @@ export function RegisterForm({ locale, next }: { locale: AppLocale; next?: strin
         />
         <PhoneField name="phone" label={t('phone')} hint={t('phoneHint')} state={state} required />
         <div className="grid gap-4 sm:grid-cols-2">
-          <TextField
-            name="dateOfBirth"
-            type="date"
-            label={t('dateOfBirth')}
-            hint={t('dateOfBirthHint')}
-            state={state}
-            required
-            autoComplete="bday"
-          />
+          <div
+            onChange={(e) => {
+              if (e.target instanceof HTMLInputElement) setDateOfBirth(e.target.value);
+            }}
+          >
+            <TextField
+              name="dateOfBirth"
+              type="date"
+              label={t('dateOfBirth')}
+              hint={t('dateOfBirthHint')}
+              state={state}
+              required
+              autoComplete="bday"
+            />
+          </div>
           <div
             onChange={(e) => {
               if (e.target instanceof HTMLSelectElement) setGender(e.target.value);
@@ -101,19 +107,30 @@ export function RegisterForm({ locale, next }: { locale: AppLocale; next?: strin
             />
           </div>
         </div>
-        <details open={minorOpen} className="rounded-md border border-dashed p-4">
-          <summary className="cursor-pointer font-medium">{t('minorTitle')}</summary>
-          <div className="mt-3 space-y-4">
+        {minor && (
+          <section
+            aria-labelledby="minor-title"
+            className="space-y-4 rounded-md border border-dashed p-4"
+          >
+            <h3 id="minor-title" className="font-medium">
+              {t('minorTitle')}
+            </h3>
             <p className="text-sm text-muted-foreground">{t('minorText')}</p>
             <TextField
               name="guardianName"
               label={t('guardianName')}
               state={state}
+              required
               maxLength={120}
             />
-            <CheckboxField name="parentalConsent" label={t('parentalConsent')} state={state} />
-          </div>
-        </details>
+            <CheckboxField
+              name="parentalConsent"
+              label={t('parentalConsent')}
+              state={state}
+              required
+            />
+          </section>
+        )}
       </FormSection>
 
       <FormSection title={t('sectionPlaying')}>
