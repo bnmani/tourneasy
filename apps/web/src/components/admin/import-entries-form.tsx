@@ -2,6 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import { useActionState } from 'react';
+import { cn } from '@/lib/utils';
 import { FormError, FormSuccess, SubmitButton } from '@/components/forms/fields';
 import { initialFormState } from '@/components/forms/form-state';
 import { importEntriesAction, type EntryImportState } from '@/server/actions/admin-actions';
@@ -50,21 +51,53 @@ export function ImportEntriesForm({
               created: state.result.created,
               waitlisted: state.result.waitlisted,
               skipped: state.result.skipped,
+              newPlayers: state.result.newPlayers,
             })}
           </FormSuccess>
-          {state.result.errors.length > 0 && (
-            <section>
-              <h2 className="font-semibold">{tp('importErrors')}</h2>
-              <ul className="mt-2 list-inside list-disc space-y-1 text-sm">
-                {state.result.errors.slice(0, 200).map((e, i) => (
-                  <li key={i}>
-                    {tp('importLine', {
-                      line: e.line,
-                      message: `${e.field}: ${te.has(e.error as 'invalid') ? te(e.error as 'invalid', { min: 10, minutes: 15 }) : e.error}`,
-                    })}
-                  </li>
-                ))}
-              </ul>
+          {state.result.rows.length > 0 && (
+            <section className="space-y-2">
+              <h2 className="font-semibold">{t('importLog')}</h2>
+              <div className="max-h-[28rem] overflow-auto rounded-md border">
+                <table className="w-full text-left text-sm">
+                  <thead className="sticky top-0 border-b bg-muted text-xs text-muted-foreground uppercase">
+                    <tr>
+                      <th className="px-3 py-2">{tp('importLogLine')}</th>
+                      <th className="px-3 py-2">{t('importLogEntry')}</th>
+                      <th className="px-3 py-2">{tp('importLogResult')}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {state.result.rows.map((r) => (
+                      <tr
+                        key={r.line}
+                        className={cn(
+                          r.outcome === 'skipped' && 'bg-destructive/5',
+                          r.outcome === 'waitlisted' && 'bg-brand/10',
+                        )}
+                      >
+                        <td className="px-3 py-1.5 tabular-nums">{r.line}</td>
+                        <td className="px-3 py-1.5">{r.name || '—'}</td>
+                        <td className="px-3 py-1.5">
+                          {t(`importOutcome.${r.outcome}`)}
+                          {r.error && (
+                            <span className="block text-xs text-destructive">
+                              {r.field}:{' '}
+                              {te.has(r.error as 'invalid')
+                                ? te(r.error as 'invalid', { min: 10, minutes: 15 })
+                                : r.error}
+                            </span>
+                          )}
+                          {r.newPlayers.length > 0 && (
+                            <span className="block text-xs text-muted-foreground">
+                              {t('importNewPlayers', { numbers: r.newPlayers.join(', ') })}
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </section>
           )}
         </div>

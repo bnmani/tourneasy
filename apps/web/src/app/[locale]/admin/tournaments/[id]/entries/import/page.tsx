@@ -5,7 +5,7 @@ import { PageHeader } from '@/components/admin/ui';
 import { Button } from '@/components/ui/button';
 import { Link } from '@/i18n/navigation';
 import { pageLocale } from '@/lib/page';
-import { requireRole } from '@/server/auth/web';
+import { requirePortal } from '@/server/auth/web';
 import { isAppError } from '@/server/lib/errors';
 import { ENTRY_IMPORT_COLUMNS } from '@/server/services/entry-import-service';
 import { getTournament } from '@/server/services/tournament-service';
@@ -18,7 +18,7 @@ type Props = { params: Promise<{ locale: string; id: string }> };
 export default async function ImportEntriesPage({ params }: Props) {
   const locale = await pageLocale(params);
   const { id } = await params;
-  const actor = await requireRole(locale, 'ADMIN');
+  const actor = await requirePortal(locale);
   const tournament = await getTournament(actor, id).catch((e) => {
     if (isAppError(e) && e.code === 'notFound') return null;
     throw e;

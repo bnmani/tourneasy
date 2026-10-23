@@ -181,14 +181,14 @@ export async function getPlayer(actor: Actor, id: string) {
   return player;
 }
 
-async function nextMemberNumber(tx: Prisma.TransactionClient): Promise<string> {
+export async function nextMemberNumber(tx: Prisma.TransactionClient): Promise<string> {
   const [row] = await tx.$queryRaw<
     { value: bigint }[]
   >`SELECT nextval('member_number_seq') AS value`;
   return `TE${row!.value.toString()}`;
 }
 
-function profileData(input: ReturnType<typeof adminPlayerSchema.parse>) {
+export function profileData(input: ReturnType<typeof adminPlayerSchema.parse>) {
   return {
     firstName: input.firstName,
     lastNamePrefix: input.lastNamePrefix ?? null,
@@ -477,7 +477,7 @@ export type ImportResult = {
 };
 
 /** "José  de Vries" → "jose de vries": names compared without case, accents or extra spaces. */
-const nameKey = (...parts: (string | null | undefined)[]) =>
+export const nameKey = (...parts: (string | null | undefined)[]) =>
   parts
     .filter(Boolean)
     .join(' ')

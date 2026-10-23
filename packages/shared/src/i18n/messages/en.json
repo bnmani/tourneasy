@@ -185,7 +185,8 @@
     "tooManyGames": "Game {game} is one too many: the match was already decided.",
     "smtpRejected": "The mail server refused the connection or login: {reason}",
     "passwordMismatch": "The passwords do not match.",
-    "newsAlreadyEmailed": "This message has already been emailed."
+    "newsAlreadyEmailed": "This message has already been emailed.",
+    "emailShared": "Several players use this email address; please add the name too."
   },
   "Auth": {
     "login": {
@@ -726,8 +727,16 @@
       "markPaid": "Paid at the desk",
       "import": "Import",
       "importTitle": "Import participants: {tournament}",
-      "importHelp": "Upload an Excel or CSV file with the columns: {columns}. One row per entry; the category as in the export (e.g. \"Men's doubles · Seniors\"). Players must already exist (import them under Players first). This page’s export can be imported back too. Full categories go to the waiting list; no emails are sent.",
-      "importResult": "{created} entered, {waitlisted} on the waiting list, {skipped} skipped."
+      "importHelp": "Upload an Excel or CSV file with one row per entry: the category (as in the export, e.g. \"Men's doubles · Seniors\"), the player and for doubles the partner (columns starting with partner). The member number is enough when you know it; otherwise name, gender (M/F) and date of birth, optionally email and club. Players who don't exist yet are created automatically. Columns: {columns}. Full categories go to the waiting list; no emails are sent.",
+      "importResult": "{created} entered, {waitlisted} on the waiting list, {skipped} skipped, {newPlayers} new players created.",
+      "importLog": "What happened to each row",
+      "importLogEntry": "Entry",
+      "importOutcome": {
+        "created": "Entered",
+        "waitlisted": "On the waiting list",
+        "skipped": "Skipped"
+      },
+      "importNewPlayers": "New player(s): {numbers}"
     },
     "navPayments": "Payments",
     "payments": {
@@ -959,6 +968,30 @@
       "publishedAt": "Published {date}",
       "emailedAt": "emailed {date}",
       "draft": "Draft"
+    },
+    "addEntry": {
+      "title": "Add entry",
+      "intro": "Choose a category and search the player(s) by name or member number. Not listed yet? Choose \"New player\" and enter name, gender and date of birth. After saving you can enter the next pair straight away.",
+      "event": "Category",
+      "player": "Player",
+      "player1": "Player 1",
+      "player2": "Player 2 (partner)",
+      "submit": "Add",
+      "added": "Added: {name} – {event}.",
+      "addedWaitlist": "Put on the waiting list (category full): {name} – {event}.",
+      "change": "Change",
+      "searchPlaceholder": "Search by name or member number",
+      "searchHint": "Type at least 2 letters.",
+      "searching": "Searching…",
+      "noResults": "No player found who may play in this category.",
+      "newPlayer": "New player",
+      "backToSearch": "Search instead",
+      "firstName": "First name",
+      "prefix": "Prefix",
+      "lastName": "Last name",
+      "gender": "Gender",
+      "dateOfBirth": "Date of birth",
+      "emailOptional": "Email (optional)"
     }
   },
   "Legal": {

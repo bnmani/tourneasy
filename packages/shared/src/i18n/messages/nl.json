@@ -185,7 +185,8 @@
     "tooManyGames": "Game {game} is te veel: de wedstrijd was al beslist.",
     "smtpRejected": "De mailserver weigerde de verbinding of het inloggen: {reason}",
     "passwordMismatch": "De wachtwoorden zijn niet gelijk.",
-    "newsAlreadyEmailed": "Dit bericht is al gemaild."
+    "newsAlreadyEmailed": "Dit bericht is al gemaild.",
+    "emailShared": "Meerdere spelers gebruiken dit e-mailadres; vul ook de naam in."
   },
   "Auth": {
     "login": {
@@ -726,8 +727,16 @@
       "markPaid": "Betaald aan de balie",
       "import": "Importeren",
       "importTitle": "Deelnemers importeren: {tournament}",
-      "importHelp": "Upload een Excel- of CSV-bestand met de kolommen: {columns}. Eén regel per inschrijving; het onderdeel zoals in de export (bijv. \"Herendubbel · Senioren\"). Spelers moeten al bestaan (importeer ze eerst onder Spelers). De export van deze pagina kan ook terug worden geïmporteerd. Volle onderdelen gaan naar de wachtlijst; er worden geen e-mails verstuurd.",
-      "importResult": "{created} ingeschreven, {waitlisted} op de wachtlijst, {skipped} overgeslagen."
+      "importHelp": "Upload een Excel- of CSV-bestand met één regel per inschrijving: het onderdeel (zoals in de export, bijv. \"Herendubbel · Senioren\"), de speler en bij dubbels de partner (kolommen die met partner beginnen). Ken je het lidnummer, dan is dat genoeg; anders naam, geslacht (M/V) en geboortedatum, eventueel e-mail en club. Spelers die nog niet bestaan worden automatisch aangemaakt. Kolommen: {columns}. Volle onderdelen gaan naar de wachtlijst; er worden geen e-mails verstuurd.",
+      "importResult": "{created} ingeschreven, {waitlisted} op de wachtlijst, {skipped} overgeslagen, {newPlayers} nieuwe spelers aangemaakt.",
+      "importLog": "Wat er met elke regel is gebeurd",
+      "importLogEntry": "Inschrijving",
+      "importOutcome": {
+        "created": "Ingeschreven",
+        "waitlisted": "Op de wachtlijst",
+        "skipped": "Overgeslagen"
+      },
+      "importNewPlayers": "Nieuwe speler(s): {numbers}"
     },
     "navPayments": "Betalingen",
     "payments": {
@@ -959,6 +968,30 @@
       "publishedAt": "Gepubliceerd {date}",
       "emailedAt": "gemaild {date}",
       "draft": "Concept"
+    },
+    "addEntry": {
+      "title": "Inschrijving toevoegen",
+      "intro": "Kies een onderdeel en zoek de speler(s) op naam of lidnummer. Staat iemand er nog niet in? Kies \"Nieuwe speler\" en vul naam, geslacht en geboortedatum in. Na opslaan kun je direct het volgende paar invoeren.",
+      "event": "Onderdeel",
+      "player": "Speler",
+      "player1": "Speler 1",
+      "player2": "Speler 2 (partner)",
+      "submit": "Toevoegen",
+      "added": "Toegevoegd: {name} – {event}.",
+      "addedWaitlist": "Op de wachtlijst gezet (onderdeel vol): {name} – {event}.",
+      "change": "Wijzigen",
+      "searchPlaceholder": "Zoek op naam of lidnummer",
+      "searchHint": "Typ minstens 2 letters.",
+      "searching": "Zoeken…",
+      "noResults": "Geen speler gevonden die in dit onderdeel mag spelen.",
+      "newPlayer": "Nieuwe speler",
+      "backToSearch": "Toch zoeken",
+      "firstName": "Voornaam",
+      "prefix": "Tussenv.",
+      "lastName": "Achternaam",
+      "gender": "Geslacht",
+      "dateOfBirth": "Geboortedatum",
+      "emailOptional": "E-mail (optioneel)"
     }
   },
   "Legal": {

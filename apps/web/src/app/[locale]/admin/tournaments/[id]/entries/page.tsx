@@ -2,6 +2,7 @@ import type { RegistrationStatus } from '@tourneasy/db';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getFormatter, getTranslations } from 'next-intl/server';
+import { AddEntryForm } from '@/components/admin/add-entry-form';
 import { FilterBar, filterInputClass, PageHeader, StatusNotice } from '@/components/admin/ui';
 import { Button } from '@/components/ui/button';
 import { Link } from '@/i18n/navigation';
@@ -62,11 +63,9 @@ export default async function EntriesPage({ params, searchParams }: Props) {
             <Button asChild variant="outline">
               <Link href={`/admin/tournaments/${id}`}>{t('back')}</Link>
             </Button>
-            {actor.roles.includes('ADMIN') && (
-              <Button asChild variant="outline">
-                <Link href={`/admin/tournaments/${id}/entries/import`}>{t('entries.import')}</Link>
-              </Button>
-            )}
+            <Button asChild variant="outline">
+              <Link href={`/admin/tournaments/${id}/entries/import`}>{t('entries.import')}</Link>
+            </Button>
             <Button asChild>
               <a href={`/api/v1/admin/tournaments/${id}/entries/export?${exportQuery}`} download>
                 {t('entries.export')}
@@ -76,6 +75,20 @@ export default async function EntriesPage({ params, searchParams }: Props) {
         }
       />
       <StatusNotice status={firstParam(query.status)} />
+
+      <details className="rounded-lg border bg-card p-4 sm:p-6" open={entries.length === 0}>
+        <summary className="cursor-pointer text-lg font-semibold">{t('addEntry.title')}</summary>
+        <p className="mt-2 mb-4 text-sm text-muted-foreground">{t('addEntry.intro')}</p>
+        <AddEntryForm
+          locale={locale}
+          tournamentId={id}
+          events={tournament.events.map((e) => ({
+            id: e.id,
+            label: eventLabel(e, locale),
+            doubles: e.discipline === 'HD' || e.discipline === 'DD' || e.discipline === 'GD',
+          }))}
+        />
+      </details>
 
       <FilterBar action={`/${locale}/admin/tournaments/${id}/entries`}>
         <label className="sr-only" htmlFor="eventId">

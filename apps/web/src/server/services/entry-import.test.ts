@@ -3,7 +3,11 @@ import { toCsv } from '@tourneasy/shared';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createPlayer, meta, resetDatabase } from '@/test/db';
 import { toXlsx } from '../lib/xlsx';
-import { importTournamentEntries } from './entry-import-service';
+import {
+  addEntryAsOrganiser,
+  importTournamentEntries,
+  searchPlayersForEntry,
+} from './entry-import-service';
 import { exportTournamentEntries } from './registration-service';
 import { actorFromWebToken, createWebSession } from './session-service';
 
@@ -40,17 +44,20 @@ async function setup() {
   return { t, de, gd };
 }
 
+const csv2 = (header: string[], rows: string[][]) => new TextEncoder().encode(toCsv(header, rows));
+const admin = async () => (await player({}, Role.ADMIN)).actor;
+
 const csv = (rows: string[][]) =>
   new TextEncoder().encode(
     toCsv(['event', 'memberNumber', 'email', 'partnerMemberNumber', 'partnerEmail'], rows),
   );
 
 describe('importing participants', () => {
-  it('is for admins only', async () => {
+  it("is for the tournament's organisers and admins only", async () => {
     const { t } = await setup();
     const anna = await player();
     await expect(importTournamentEntries(anna.actor, t.id, csv([]), meta)).rejects.toMatchObject({
-      code: 'forbidden',
+      code: 'notFound',
     });
   });
 
@@ -147,5 +154,116 @@ describe('importing participants', () => {
       meta,
     );
     expect(again).toMatchObject({ created: 0, skipped: 1 });
+  });
+});
+
+describe('one-step import and add-entry screen (D63)', () => {
+  const header = [
+    'event',
+    'firstName',
+    'lastName',
+    'gender',
+    'dateOfBirth',
+    'email',
+    'partnerFirstName',
+    'partnerLastName',
+    'partnerGender',
+    'partnerDateOfBirth',
+  ];
+
+  it('creates missing players from the file and enters the pairs, once', async () => {
+    const { t, gd } = await setup();
+    const actor = await admin();
+    const file = csv2(header, [
+      [
+        'Gemengd dubbel',
+        'Kees',
+        'Visser',
+        'M',
+        '12-04-1990',
+        'kees@example.test',
+        'Anna',
+        'Bos',
+        'V',
+        '1992-08-01',
+      ],
+      [
+        'Gemengd dubbel',
+        'Piet',
+        'Smit',
+        'man',
+        '1985-01-01',
+        '',
+        'Ria',
+        'Smit',
+        'vrouw',
+        '1987-03-03',
+      ],
+    ]);
+    const first = await importTournamentEntries(actor, t.id, file, meta);
+    expect(first).toMatchObject({ created: 2, skipped: 0, newPlayers: 4 });
+    expect(first.rows[0]).toMatchObject({ name: 'Kees Visser / Anna Bos', outcome: 'created' });
+    expect(first.rows[0]!.newPlayers).toHaveLength(2);
+    expect(await prisma.registration.count({ where: { eventId: gd.id } })).toBe(2);
+
+    // The same file again: players are recognised (name + date of birth), entries not doubled.
+    const again = await importTournamentEntries(actor, t.id, file, meta);
+    expect(again).toMatchObject({ created: 0, newPlayers: 0, skipped: 2 });
+    expect(again.rows.map((r) => r.error)).toEqual(['alreadyEntered', 'alreadyEntered']);
+    expect(await prisma.playerProfile.count({ where: { lastName: 'Smit' } })).toBe(2);
+  });
+
+  it('lets a tournament organiser add a pair by hand, with a new player', async () => {
+    const { t, gd } = await setup();
+    const organiser = await createPlayer();
+    await prisma.userRole.create({ data: { userId: organiser.userId, role: Role.ORGANISER } });
+    await prisma.tournamentOrganiser.create({
+      data: { tournamentId: t.id, userId: organiser.userId },
+    });
+    const actor = (await actorFromWebToken(
+      (await createWebSession(organiser.userId, meta, true)).token,
+    ))!;
+    const bram = await createPlayer({ firstName: 'Bram', lastName: 'Jansen', gender: 'MALE' });
+    const bramProfile = await prisma.playerProfile.findUniqueOrThrow({
+      where: { userId: bram.userId },
+    });
+
+    // The partner search only offers women for a man in mixed doubles.
+    await createPlayer({ firstName: 'Lotte', lastName: 'Jansen', gender: 'FEMALE' });
+    const options = await searchPlayersForEntry(
+      actor,
+      t.id,
+      gd.id,
+      'jansen',
+      bramProfile.memberNumber,
+    );
+    expect(options.map((o) => o.name)).toEqual(['Lotte Jansen']);
+
+    const added = await addEntryAsOrganiser(
+      actor,
+      t.id,
+      {
+        eventId: gd.id,
+        player: { memberNumber: bramProfile.memberNumber },
+        partner: {
+          new: {
+            firstName: 'Noor',
+            lastName: 'Peters',
+            gender: 'FEMALE',
+            dateOfBirth: '1999-02-02',
+          },
+        },
+      },
+      meta,
+    );
+    expect(added).toMatchObject({ status: 'CONFIRMED', name: 'Bram Jansen / Noor Peters' });
+    await expect(
+      addEntryAsOrganiser(
+        actor,
+        t.id,
+        { eventId: gd.id, player: { memberNumber: bramProfile.memberNumber } },
+        meta,
+      ),
+    ).rejects.toMatchObject({ details: { fields: { partner: 'partnerRequired' } } });
   });
 });
