@@ -25,9 +25,12 @@ function DateBlock({ day, locale }: { day: string; locale: AppLocale }) {
 export async function TournamentCard({
   tournament: t,
   locale,
+  heading: Heading = 'h3',
 }: {
   tournament: PublicTournamentSummary;
   locale: AppLocale;
+  /** The card title's level: h2 when the list sits right under the page title. */
+  heading?: 'h2' | 'h3';
 }) {
   const tt = await getTranslations('Tournaments');
   const fee = formatFeeRange(t.feeFromCents, t.feeToCents, locale);
@@ -36,14 +39,14 @@ export async function TournamentCard({
       <div className="flex items-start gap-4">
         <DateBlock day={t.startsOn} locale={locale} />
         <div className="min-w-0">
-          <h3 className="font-heading text-lg leading-snug font-semibold">
+          <Heading className="font-heading text-lg leading-snug font-semibold">
             <Link
               href={`/tournaments/${t.slug}`}
               className="after:absolute after:inset-0 focus-visible:outline-none"
             >
               {t.name}
             </Link>
-          </h3>
+          </Heading>
           <p className="mt-0.5 text-sm text-muted-foreground">
             {formatDayRange(t.startsOn, t.endsOn, locale)}
           </p>

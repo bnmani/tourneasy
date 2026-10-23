@@ -154,7 +154,7 @@ export default async function TournamentsPage({
           <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {result.data.map((tournament) => (
               <li key={tournament.slug}>
-                <TournamentCard tournament={tournament} locale={locale} />
+                <TournamentCard tournament={tournament} locale={locale} heading="h2" />
               </li>
             ))}
           </ul>

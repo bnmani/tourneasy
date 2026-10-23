@@ -1,4 +1,5 @@
 import { getTranslations } from 'next-intl/server';
+import { ScrollRegion } from '@/components/ui/scroll-region';
 import { cn } from '@/lib/utils';
 import type { EventDraw } from '@/server/services/draw-service';
 import { drawStandings } from '@/server/services/results-service';
@@ -109,10 +110,13 @@ async function Bracket({
   matches,
   entries,
   bracket,
+  heading: RoundHeading = 'h4',
 }: {
   matches: Match[];
   entries: Map<string, Entry>;
   bracket: 'W' | 'L';
+  /** Level of the round titles: h3 when no heading sits above the bracket. */
+  heading?: 'h3' | 'h4';
 }) {
   const t = await getTranslations('Draws');
   const own = matches.filter((m) => m.bracket === bracket);
@@ -130,13 +134,13 @@ async function Bracket({
           : t('round', { round });
   };
   return (
-    <div className="overflow-x-auto pb-2">
+    <ScrollRegion label={t('bracketRegion')} className="pb-2">
       <div className="flex gap-6">
         {rounds.map((round) => (
           <div key={round} className="flex shrink-0 flex-col">
-            <h4 className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+            <RoundHeading className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
               {name(round)}
-            </h4>
+            </RoundHeading>
             <div className="flex flex-1 flex-col justify-around gap-3">
               {own
                 .filter((m) => m.round === round)
@@ -147,7 +151,7 @@ async function Bracket({
           </div>
         ))}
       </div>
-    </div>
+    </ScrollRegion>
   );
 }
 
@@ -194,7 +198,12 @@ export async function DrawView({ draws }: { draws: EventDraw[] }) {
               {draw.type === 'DOUBLE_KNOCKOUT' && (
                 <h3 className="font-semibold">{t('winnersBracket')}</h3>
               )}
-              <Bracket matches={draw.matches} entries={entries} bracket="W" />
+              <Bracket
+                matches={draw.matches}
+                entries={entries}
+                bracket="W"
+                heading={draw.stage === 'KNOCKOUT' || draw.type === 'DOUBLE_KNOCKOUT' ? 'h4' : 'h3'}
+              />
               {draw.type === 'DOUBLE_KNOCKOUT' && (
                 <>
                   <h3 className="font-semibold">{t('losersBracket')}</h3>
@@ -241,7 +250,7 @@ async function StandingsTable({ draw, entries }: { draw: EventDraw; entries: Map
   const t = await getTranslations('Draws');
   const rows = drawStandings(draw);
   return (
-    <div className="overflow-x-auto">
+    <ScrollRegion label={t('standingsRegion')}>
       <table className="w-full text-sm">
         <thead className="text-xs text-muted-foreground uppercase">
           <tr className="border-b">
@@ -290,6 +299,6 @@ async function StandingsTable({ draw, entries }: { draw: EventDraw; entries: Map
           })}
         </tbody>
       </table>
-    </div>
+    </ScrollRegion>
   );
 }

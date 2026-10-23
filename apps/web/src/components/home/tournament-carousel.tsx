@@ -82,11 +82,11 @@ export function TournamentCarousel({
           </span>
         </div>
         <div className="min-w-0" aria-live={paused ? 'polite' : 'off'}>
-          <h3 className="font-heading text-2xl leading-tight font-semibold">
+          <h2 className="font-heading text-2xl leading-tight font-semibold">
             <Link href={`/tournaments/${item.slug}`} className="underline-offset-4 hover:underline">
               {item.name}
             </Link>
-          </h3>
+          </h2>
           <p className="mt-1 opacity-85">{item.dates}</p>
           {item.place && (
             <p className="mt-1 flex items-center gap-1.5 opacity-85">

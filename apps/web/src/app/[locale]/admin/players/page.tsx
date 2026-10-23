@@ -1,3 +1,5 @@
+import type { Metadata } from 'next';
+import { adminMetadata } from '@/lib/seo';
 import type { Discipline, Gender } from '@tourneasy/db';
 import { DISCIPLINES, GENDERS } from '@tourneasy/shared/schemas';
 import { ageOn } from '@tourneasy/shared';
@@ -18,7 +20,13 @@ import {
   type PlayerFilters,
 } from '@/server/services/player-service';
 
-export const metadata = { robots: { index: false } };
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  return adminMetadata(params, 'players.title');
+}
 
 export default async function AdminPlayersPage({
   params,

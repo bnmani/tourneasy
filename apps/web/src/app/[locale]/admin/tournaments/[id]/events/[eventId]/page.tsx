@@ -1,3 +1,5 @@
+import type { Metadata } from 'next';
+import { adminMetadata } from '@/lib/seo';
 import { centsToEuroInput } from '@tourneasy/shared/rules';
 import type { LocalizedText } from '@tourneasy/shared/i18n';
 import { getTranslations } from 'next-intl/server';
@@ -12,7 +14,13 @@ import { eventOptions, getEvent } from '@/server/services/event-service';
 
 type Params = { params: Promise<{ locale: string; id: string; eventId: string }> };
 
-export const metadata = { robots: { index: false } };
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  return adminMetadata(params, 'events.edit');
+}
 
 export default async function EditEventPage({ params }: Params) {
   const locale = await pageLocale(params);

@@ -1213,7 +1213,8 @@
     "koScoring_QF": "Vanaf kwartfinale",
     "koScoring_SF": "Vanaf halve finale",
     "koScoring_F": "Finale",
-    "news": "Nieuws"
+    "news": "Nieuws",
+    "eventsTable": "Onderdelen en inschrijfgeld"
   },
   "Calendar": {
     "title": "Kalender",
@@ -1432,7 +1433,9 @@
     "first": "1e",
     "second": "2e",
     "third": "3e",
-    "knockoutStage": "Knock-outfase"
+    "knockoutStage": "Knock-outfase",
+    "bracketRegion": "Speelschema",
+    "standingsRegion": "Stand"
   },
   "Matches": {
     "court": "Baan {number}",

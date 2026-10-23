@@ -1213,7 +1213,8 @@
     "koScoring_QF": "From quarter-final",
     "koScoring_SF": "From semi-final",
     "koScoring_F": "Final",
-    "news": "News"
+    "news": "News",
+    "eventsTable": "Events and entry fees"
   },
   "Calendar": {
     "title": "Calendar",
@@ -1432,7 +1433,9 @@
     "first": "1st",
     "second": "2nd",
     "third": "3rd",
-    "knockoutStage": "Knockout stage"
+    "knockoutStage": "Knockout stage",
+    "bracketRegion": "Draw",
+    "standingsRegion": "Standings"
   },
   "Matches": {
     "court": "Court {number}",

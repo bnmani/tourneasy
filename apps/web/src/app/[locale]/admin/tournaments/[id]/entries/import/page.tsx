@@ -1,3 +1,5 @@
+import type { Metadata } from 'next';
+import { adminMetadata } from '@/lib/seo';
 import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { ImportEntriesForm } from '@/components/admin/import-entries-form';
@@ -10,7 +12,13 @@ import { isAppError } from '@/server/lib/errors';
 import { ENTRY_IMPORT_COLUMNS } from '@/server/services/entry-import-service';
 import { getTournament } from '@/server/services/tournament-service';
 
-export const metadata = { robots: { index: false } };
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  return adminMetadata(params, 'entries.import');
+}
 
 type Props = { params: Promise<{ locale: string; id: string }> };
 

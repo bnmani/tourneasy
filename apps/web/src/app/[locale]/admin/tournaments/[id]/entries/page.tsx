@@ -243,6 +243,7 @@ export default async function EntriesPage({ params, searchParams }: Props) {
                           >
                             <input
                               name="reason"
+                              aria-label={t('entries.cancelReason')}
                               placeholder={t('entries.cancelReason')}
                               maxLength={500}
                               className={cn(filterInputClass, 'sm:w-full sm:min-w-0')}

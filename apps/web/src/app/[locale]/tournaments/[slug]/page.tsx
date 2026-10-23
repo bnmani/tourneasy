@@ -22,6 +22,7 @@ import { getTranslations } from 'next-intl/server';
 import { cache } from 'react';
 import { InfoList, PageHero, PhaseBadge } from '@/components/public/ui';
 import { Button } from '@/components/ui/button';
+import { ScrollRegion } from '@/components/ui/scroll-region';
 import { Link } from '@/i18n/navigation';
 import { eventLabel } from '@/lib/labels';
 import { pageLocale } from '@/lib/page';
@@ -244,7 +245,7 @@ export default async function TournamentPage({ params }: Props) {
             {t.events.length === 0 ? (
               <p className="mt-3 text-muted-foreground">{tt('noEvents')}</p>
             ) : (
-              <div className="mt-4 overflow-x-auto rounded-lg border bg-card">
+              <ScrollRegion label={tt('eventsTable')} className="mt-4 rounded-lg border bg-card">
                 <table className="w-full text-left text-sm">
                   <thead className="border-b bg-muted/60 text-xs text-muted-foreground uppercase">
                     <tr>
@@ -308,7 +309,7 @@ export default async function TournamentPage({ params }: Props) {
                     ))}
                   </tbody>
                 </table>
-              </div>
+              </ScrollRegion>
             )}
           </section>
         </div>

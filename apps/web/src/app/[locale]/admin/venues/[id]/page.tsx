@@ -1,3 +1,5 @@
+import type { Metadata } from 'next';
+import { adminMetadata } from '@/lib/seo';
 import type { LocalizedText } from '@tourneasy/shared/i18n';
 import { getTranslations } from 'next-intl/server';
 import { notFound } from 'next/navigation';
@@ -10,7 +12,13 @@ import { archiveVenueAction } from '@/server/actions/admin-actions';
 import { requireRole } from '@/server/auth/web';
 import { getVenue } from '@/server/services/venue-service';
 
-export const metadata = { robots: { index: false } };
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  return adminMetadata(params, 'venues.title');
+}
 
 type Params = { params: Promise<{ locale: string; id: string }> };
 const nl = (v: unknown) => (v as LocalizedText | null)?.nl ?? '';

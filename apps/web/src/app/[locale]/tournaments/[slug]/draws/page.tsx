@@ -81,6 +81,19 @@ export default async function TournamentDrawsPage({ params, searchParams }: Prop
               ))}
             </nav>
             {current && <Podium eventId={current.event.id} />}
+            {current && (
+              <h2 className="sr-only">
+                {eventLabel(
+                  {
+                    discipline: current.event.discipline,
+                    name: current.event.name as never,
+                    ageCategory: current.event.ageCategory as never,
+                    levelClass: current.event.levelClass,
+                  },
+                  locale,
+                )}
+              </h2>
+            )}
             {current && <DrawView draws={current.draws} />}
             <AutoRefresh seconds={60} />
           </>

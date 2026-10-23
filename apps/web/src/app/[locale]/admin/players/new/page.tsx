@@ -1,3 +1,5 @@
+import type { Metadata } from 'next';
+import { adminMetadata } from '@/lib/seo';
 import { getTranslations } from 'next-intl/server';
 import { PlayerForm } from '@/components/admin/player-forms';
 import { PageHeader } from '@/components/admin/ui';
@@ -6,7 +8,13 @@ import { firstParam, pageLocale, type LocaleParams, type SearchParams } from '@/
 import { requireRole } from '@/server/auth/web';
 import { getProfileOptions } from '@/server/services/profile-service';
 
-export const metadata = { robots: { index: false } };
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  return adminMetadata(params, 'players.new');
+}
 
 export default async function NewPlayerPage({
   params,

@@ -1,3 +1,5 @@
+import type { Metadata } from 'next';
+import { adminMetadata } from '@/lib/seo';
 import { getTranslations } from 'next-intl/server';
 import { Badge, FilterBar, filterInputClass, PageHeader, Pagination } from '@/components/admin/ui';
 import { Button } from '@/components/ui/button';
@@ -6,7 +8,13 @@ import { firstParam, pageLocale, type LocaleParams, type SearchParams } from '@/
 import { requireRole } from '@/server/auth/web';
 import { listClubs } from '@/server/services/club-service';
 
-export const metadata = { robots: { index: false } };
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  return adminMetadata(params, 'clubs.title');
+}
 
 export default async function AdminClubsPage({
   params,
