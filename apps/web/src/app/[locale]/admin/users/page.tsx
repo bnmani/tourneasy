@@ -1,16 +1,17 @@
 import { ASSIGNABLE_ROLES } from '@tourneasy/shared/schemas';
 import type { Metadata } from 'next';
-import { getTranslations } from 'next-intl/server';
+import { getFormatter, getTranslations } from 'next-intl/server';
 import { FormError, FormSuccess } from '@/components/forms/fields';
 import { Badge, FilterBar, filterInputClass, Pagination } from '@/components/admin/ui';
 import { BulkRemove, SelectRow } from '@/components/admin/bulk-remove';
+import { SortHeader } from '@/components/admin/sort-header';
 import { Button } from '@/components/ui/button';
 import { ScrollRegion } from '@/components/ui/scroll-region';
 import { cn } from '@/lib/utils';
 import { firstParam, pageLocale, type LocaleParams, type SearchParams } from '@/lib/page';
 import { changeRoleAction, removeUsersAction } from '@/server/actions/account-actions';
 import { getActor, requireRole } from '@/server/auth/web';
-import { listUsers } from '@/server/services/role-service';
+import { listUsers, USER_SORTS, type UserSort } from '@/server/services/role-service';
 
 export async function generateMetadata({ params }: LocaleParams): Promise<Metadata> {
   const locale = await pageLocale(params);
@@ -30,14 +31,27 @@ export default async function AdminUsersPage({
   const q = firstParam(query.q) ?? '';
   const page = Number(firstParam(query.page) ?? '1') || 1;
   const status = firstParam(query.status);
-  const result = await listUsers(actor, { q, page });
+  const sortParam = firstParam(query.sort);
+  const sort = (USER_SORTS as readonly string[]).includes(sortParam ?? '')
+    ? (sortParam as UserSort)
+    : 'name';
+  const dir = firstParam(query.dir) === 'desc' ? 'desc' : 'asc';
+  const result = await listUsers(actor, { q, page, sort, dir });
 
   const t = await getTranslations('Admin');
   const tr = await getTranslations('Roles');
   const tb = await getTranslations('Admin.usersBulk');
-  const returnTo = `/${locale}/admin/users${q ? `?${new URLSearchParams({ q })}` : ''}`;
-  const pageHref = (p: number) =>
-    `/admin/users?${new URLSearchParams({ ...(q ? { q } : {}), page: String(p) })}`;
+  // Search, sort and page survive role changes, removals and paging.
+  const listQuery = new URLSearchParams({ ...(q ? { q } : {}), sort, dir });
+  const returnTo = `/${locale}/admin/users?${listQuery}`;
+  const pageHref = (p: number) => `/admin/users?${listQuery}&page=${p}`;
+  const format = await getFormatter();
+  const sortProps = {
+    current: sort,
+    dir,
+    href: (column: string, d: 'asc' | 'desc') =>
+      `/admin/users?${new URLSearchParams({ ...(q ? { q } : {}), sort: column, dir: d })}`,
+  } as const;
 
   return (
     <div className="space-y-6">
@@ -61,6 +75,8 @@ export default async function AdminUsersPage({
         <label htmlFor="user-search" className="sr-only">
           {t('search')}
         </label>
+        <input type="hidden" name="sort" value={sort} />
+        <input type="hidden" name="dir" value={dir} />
         <input
           id="user-search"
           name="q"
@@ -88,21 +104,17 @@ export default async function AdminUsersPage({
         <p className="text-muted-foreground">{t('empty')}</p>
       ) : (
         <ScrollRegion label={t('users')} className="rounded-lg border bg-card">
-          <table className="w-full min-w-[44rem] text-left text-sm">
+          <table className="w-full min-w-[60rem] text-left text-sm">
             <thead className="border-b bg-muted/50 text-xs text-muted-foreground uppercase">
               <tr>
                 <th scope="col" className="w-10 px-3 py-2">
                   <span className="sr-only">{tb('selectPage')}</span>
                 </th>
-                <th scope="col" className="px-3 py-2">
-                  {t('name')}
-                </th>
-                <th scope="col" className="px-3 py-2">
-                  {t('email')}
-                </th>
-                <th scope="col" className="px-3 py-2">
-                  {t('roles')}
-                </th>
+                <SortHeader column="name" label={t('name')} {...sortProps} />
+                <SortHeader column="member" label={t('memberNumber')} {...sortProps} />
+                <SortHeader column="email" label={t('email')} {...sortProps} />
+                <SortHeader column="roles" label={t('roles')} {...sortProps} />
+                <SortHeader column="created" label={t('usersJoined')} {...sortProps} />
                 {ASSIGNABLE_ROLES.map((role) => (
                   <th key={role} scope="col" className="px-3 py-2">
                     {t('grant', { role: tr(role).toLowerCase() })}
@@ -127,9 +139,9 @@ export default async function AdminUsersPage({
                     {u.id === actor.userId && (
                       <span className="text-muted-foreground"> ({t('you')})</span>
                     )}
-                    {u.memberNumber && (
-                      <span className="block text-xs text-muted-foreground">{u.memberNumber}</span>
-                    )}
+                  </td>
+                  <td className="px-3 py-2 whitespace-nowrap text-muted-foreground tabular-nums">
+                    {u.memberNumber ?? '—'}
                   </td>
                   <td className="max-w-64 truncate px-3 py-2">{u.email}</td>
                   <td className="px-3 py-2">
@@ -138,6 +150,9 @@ export default async function AdminUsersPage({
                         <Badge key={r}>{tr(r)}</Badge>
                       ))}
                     </span>
+                  </td>
+                  <td className="px-3 py-2 text-xs whitespace-nowrap text-muted-foreground">
+                    {format.dateTime(u.createdAt, { dateStyle: 'short' })}
                   </td>
                   {ASSIGNABLE_ROLES.map((role) => {
                     const has = u.roles.includes(role);

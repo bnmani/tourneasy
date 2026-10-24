@@ -23,7 +23,29 @@ export function hasRole(actor: Actor | null, role: Role): boolean {
 
 const PAGE_SIZE = 20;
 
-export async function listUsers(actor: Actor, params: { q?: string; page?: number }) {
+export const USER_SORTS = ['name', 'member', 'email', 'roles', 'created'] as const;
+export type UserSort = (typeof USER_SORTS)[number];
+
+function userOrder(sort: UserSort, dir: 'asc' | 'desc'): Prisma.UserOrderByWithRelationInput[] {
+  switch (sort) {
+    case 'member':
+      return [{ playerProfile: { memberNumber: dir } }, { name: 'asc' }];
+    case 'email':
+      return [{ email: dir }];
+    // Most roles first (admins and organisers together), then by name.
+    case 'roles':
+      return [{ roles: { _count: dir === 'asc' ? 'desc' : 'asc' } }, { name: 'asc' }];
+    case 'created':
+      return [{ createdAt: dir }];
+    default:
+      return [{ name: dir }, { email: 'asc' }];
+  }
+}
+
+export async function listUsers(
+  actor: Actor,
+  params: { q?: string; page?: number; sort?: UserSort; dir?: 'asc' | 'desc' },
+) {
   assertAdmin(actor);
   const q = params.q?.trim().slice(0, 100);
   const page = Math.max(1, Math.floor(params.page ?? 1));
@@ -44,13 +66,14 @@ export async function listUsers(actor: Actor, params: { q?: string; page?: numbe
     prisma.user.count({ where }),
     prisma.user.findMany({
       where,
-      orderBy: [{ createdAt: 'asc' }],
+      orderBy: userOrder(params.sort ?? 'name', params.dir ?? 'asc'),
       skip: (page - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
       select: {
         id: true,
         name: true,
         email: true,
+        createdAt: true,
         roles: { select: { role: true } },
         playerProfile: { select: { memberNumber: true } },
       },
@@ -66,6 +89,7 @@ export async function listUsers(actor: Actor, params: { q?: string; page?: numbe
       email: u.email,
       memberNumber: u.playerProfile?.memberNumber ?? null,
       roles: u.roles.map((r) => r.role),
+      createdAt: u.createdAt,
     })),
   };
 }

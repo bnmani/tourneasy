@@ -1200,7 +1200,8 @@
       "password": "Your own password to confirm",
       "confirm": "{count, plural, one {Yes, remove # player} other {Yes, remove # players}}",
       "removed": "{count, plural, =0 {No players removed (already removed).} one {# player removed.} other {# players removed.}}"
-    }
+    },
+    "usersJoined": "Member since"
   },
   "Legal": {
     "draftNotice": "Draft — this text is still being reviewed legally.",

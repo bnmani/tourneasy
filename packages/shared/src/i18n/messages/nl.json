@@ -1200,7 +1200,8 @@
       "password": "Je eigen wachtwoord ter bevestiging",
       "confirm": "{count, plural, one {Ja, # speler verwijderen} other {Ja, # spelers verwijderen}}",
       "removed": "{count, plural, =0 {Geen spelers verwijderd (al verwijderd).} one {# speler verwijderd.} other {# spelers verwijderd.}}"
-    }
+    },
+    "usersJoined": "Lid sinds"
   },
   "Legal": {
     "draftNotice": "Concept — deze tekst wordt nog juridisch gecontroleerd.",

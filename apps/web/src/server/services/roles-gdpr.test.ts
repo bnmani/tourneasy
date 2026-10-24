@@ -58,6 +58,18 @@ describe('roles', () => {
     expect(await prisma.userRole.count({ where: { role: 'ADMIN' } })).toBe(1);
   });
 
+  it('sorts users by name, email, roles or date joined', async () => {
+    const admin = await makeAdmin((await createPlayer({ firstName: 'Mila' })).userId);
+    await createPlayer({ firstName: 'Anna' });
+    await createPlayer({ firstName: 'Zoe' });
+    const names = async (sort: 'name' | 'roles' | 'created', dir: 'asc' | 'desc' = 'asc') =>
+      (await listUsers(admin, { sort, dir })).users.map((u) => u.name.split(' ')[0]);
+    expect(await names('name')).toEqual(['Anna', 'Mila', 'Zoe']);
+    expect(await names('name', 'desc')).toEqual(['Zoe', 'Mila', 'Anna']);
+    expect((await names('roles'))[0]).toBe('Mila'); // the admin has the most roles
+    expect(await names('created', 'desc')).toEqual(['Zoe', 'Anna', 'Mila']);
+  });
+
   it('searches users by name, email or member number', async () => {
     const admin = await makeAdmin((await createPlayer()).userId);
     const target = await createPlayer({ firstName: 'Lotte', email: 'lotte@example.test' });
