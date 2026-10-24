@@ -6,6 +6,7 @@ import { UnlockSettingsForm } from '@/components/admin/payment-settings-forms';
 import { PageHeader } from '@/components/admin/ui';
 import { FormSuccess } from '@/components/forms/fields';
 import { Button } from '@/components/ui/button';
+import { Link } from '@/i18n/navigation';
 import { cn } from '@/lib/utils';
 import { firstParam, pageLocale, type SearchParams } from '@/lib/page';
 import {
@@ -34,6 +35,7 @@ export default async function EmailSettingsPage({ params, searchParams }: Props)
   const query = await searchParams;
   const [settings, log] = await Promise.all([getEmailSettings(actor), emailSettingsLog(actor)]);
   const t = await getTranslations('Admin.emailSettings');
+  const tt = await getTranslations('Admin.emailTemplates');
   const te = await getTranslations('Errors');
   const format = await getFormatter();
   const when = (d: Date) => format.dateTime(d, { dateStyle: 'medium', timeStyle: 'short' });
@@ -141,6 +143,16 @@ export default async function EmailSettingsPage({ params, searchParams }: Props)
             </Button>
           </form>
         </details>
+      </section>
+
+      <section className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-card p-4 text-sm sm:p-6">
+        <div>
+          <p className="font-semibold">{tt('manage')}</p>
+          <p className="text-muted-foreground">{tt('manageHint')}</p>
+        </div>
+        <Button asChild variant="outline">
+          <Link href="/admin/email/templates">{tt('manage')}</Link>
+        </Button>
       </section>
 
       <section className="space-y-3 rounded-lg border bg-card p-4 text-sm sm:p-6">

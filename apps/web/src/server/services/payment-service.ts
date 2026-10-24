@@ -433,7 +433,7 @@ async function sendReceipt(orderId: string) {
   });
   const locale = order.user.locale as AppLocale;
   await sendMailSafely(
-    renderEmail(order.user.email, locale, {
+    await renderEmail(order.user.email, locale, {
       kind: 'paymentReceipt',
       name: order.user.name.split(' ')[0] ?? order.user.name,
       tournament: order.tournament.name,

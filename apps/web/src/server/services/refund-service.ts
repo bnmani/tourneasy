@@ -255,7 +255,7 @@ async function notifyRefund(refundId: string, kind: 'requested' | 'processed' | 
   const user = refund.payment.order.user;
   const locale = user.locale as AppLocale;
   await sendMailSafely(
-    renderEmail(user.email, locale, {
+    await renderEmail(user.email, locale, {
       kind: 'refund',
       state: kind,
       name: user.name.split(' ')[0] ?? user.name,

@@ -171,7 +171,7 @@ export function deliverQueued(
         const locale = n.locale as AppLocale;
         try {
           const result = await sendMail(
-            renderEmail(
+            await renderEmail(
               to,
               locale,
               template,

@@ -7,6 +7,7 @@
 import { messages, type AppLocale } from '@tourneasy/shared/i18n';
 import { createTranslator } from 'next-intl';
 import type { OutgoingMail } from './mailer';
+import { emailTextOverrides } from './text-overrides';
 
 /** A tournament's own logo at the top of its emails (D67). */
 export type EmailLogo = { url: string; width: number; height: number; alt: string };
@@ -174,13 +175,30 @@ ${footerLinks ? `<p style="margin:8px 0 0;font-size:12px;color:#4a5568">${footer
 /** Links for optional emails (D62): unsubscribe from this kind, and the preferences page. */
 export type EmailOptions = { unsubscribeUrl?: string; preferencesUrl?: string };
 
-export function renderEmail(
+/** Renders an email with the texts edited in the portal (D69) over the defaults. */
+export async function renderEmail(
+  to: string,
+  locale: AppLocale,
+  template: Template,
+  options: EmailOptions = {},
+): Promise<OutgoingMail> {
+  const overrides = await emailTextOverrides();
+  return renderEmailWith(overrides[locale], to, locale, template, options);
+}
+
+/** Renders with the given text overrides (keys under Email.*), e.g. a draft in the editor. */
+export function renderEmailWith(
+  texts: Record<string, string>,
   to: string,
   locale: AppLocale,
   template: Template,
   options: EmailOptions = {},
 ): OutgoingMail {
-  const t = createTranslator({ locale, messages: messages[locale], namespace: 'Email' });
+  const t = createTranslator({
+    locale,
+    messages: { ...messages[locale], Email: { ...messages[locale].Email, ...texts } },
+    namespace: 'Email',
+  });
   const greeting = template.name ? t('greeting', { name: template.name }) : t('greetingAnon');
   const footer = t('footer');
 

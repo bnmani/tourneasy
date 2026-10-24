@@ -229,7 +229,7 @@ export async function sendVerificationEmail(userId: string): Promise<void> {
 
   const locale = user.locale as AppLocale;
   await sendMailSafely(
-    renderEmail(user.email, locale, {
+    await renderEmail(user.email, locale, {
       kind: 'verifyEmail',
       name: user.playerProfile?.firstName ?? user.name,
       memberNumber: user.playerProfile?.memberNumber ?? '',
@@ -286,7 +286,7 @@ export async function requestPasswordReset(input: unknown, meta: RequestMeta): P
 
   const locale = user.locale as AppLocale;
   await sendMailSafely(
-    renderEmail(user.email, locale, {
+    await renderEmail(user.email, locale, {
       kind: 'resetPassword',
       name: user.playerProfile?.firstName ?? user.name,
       url: appUrl(locale, `/reset-password?token=${encodeURIComponent(token)}`),
@@ -369,7 +369,7 @@ async function sendPasswordChangedEmail(user: {
   playerProfile: { firstName: string } | null;
 }): Promise<void> {
   await sendMailSafely(
-    renderEmail(user.email, user.locale as AppLocale, {
+    await renderEmail(user.email, user.locale as AppLocale, {
       kind: 'passwordChanged',
       name: user.playerProfile?.firstName ?? user.name,
     }),

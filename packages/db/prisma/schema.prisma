@@ -754,6 +754,18 @@ model TournamentLogo {
   tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
 }
 
+/// Email text edited in the admin portal (D69): replaces the default text of one key under
+/// Email.* in one language. No row = the default text from the app.
+model EmailTextOverride {
+  locale      String
+  key         String
+  text        String
+  updatedById String?  @db.Uuid
+  updatedAt   DateTime @updatedAt
+
+  @@id([locale, key])
+}
+
 model TournamentEvent {
   id              String     @id @default(uuid()) @db.Uuid
   tournamentId    String     @db.Uuid

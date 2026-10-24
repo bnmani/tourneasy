@@ -312,7 +312,7 @@ export async function addOrganiser(
     });
     const locale = user.locale as AppLocale;
     await sendMailSafely(
-      renderEmail(user.email, locale, {
+      await renderEmail(user.email, locale, {
         kind: 'roleChanged',
         name: user.name,
         role: `${messages[locale].Roles.ORGANISER} – ${tournament.name}`,

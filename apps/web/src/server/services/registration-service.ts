@@ -486,7 +486,7 @@ export async function enterTournament(
   const label = (eventId: string, l: AppLocale) =>
     eventText(planned.find((p) => p.event.id === eventId)!.event, l);
   await sendMailSafely(
-    renderEmail(player.user?.email ?? '', locale, {
+    await renderEmail(player.user?.email ?? '', locale, {
       kind: 'entryConfirmed',
       logo,
       name: player.firstName,
@@ -504,7 +504,7 @@ export async function enterTournament(
   );
   for (const invite of invites) {
     await sendMailSafely(
-      renderEmail(invite.email, invite.locale, {
+      await renderEmail(invite.email, invite.locale, {
         kind: 'partnerInvite',
         logo,
         name: invite.name,
@@ -758,7 +758,7 @@ export async function invitePartner(
   if (email) {
     const locale = (resolved.player?.user?.locale as AppLocale | undefined) ?? actor.locale;
     await sendMailSafely(
-      renderEmail(email, locale, {
+      await renderEmail(email, locale, {
         kind: 'partnerInvite',
         name: resolved.player?.firstName ?? '',
         from: fullName(player),
@@ -936,7 +936,7 @@ export async function respondToInvite(
   const locale = (inviter.user?.locale as AppLocale | undefined) ?? 'nl';
   if (inviter.user?.email) {
     await sendMailSafely(
-      renderEmail(inviter.user.email, locale, {
+      await renderEmail(inviter.user.email, locale, {
         kind: accept ? 'inviteAccepted' : 'inviteDeclined',
         name: inviter.firstName,
         partner: fullName(me),
@@ -1058,7 +1058,7 @@ async function notifyPromoted(registrationIds: string[]) {
       if (!user) continue;
       const locale = user.locale as AppLocale;
       await sendMailSafely(
-        renderEmail(user.email, locale, {
+        await renderEmail(user.email, locale, {
           kind: 'waitlistPromoted',
           name: p.player.firstName,
           tournament: r.event.tournament.name,
@@ -1168,7 +1168,7 @@ export async function withdrawMyRegistration(
     if (!user) continue;
     const locale = user.locale as AppLocale;
     await sendMailSafely(
-      renderEmail(user.email, locale, {
+      await renderEmail(user.email, locale, {
         kind: 'entryWithdrawn',
         name: p.player.firstName,
         tournament: r.event.tournament.name,

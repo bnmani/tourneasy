@@ -171,7 +171,7 @@ export async function sendTestEmail(actor: Actor, input: unknown, meta: RequestM
   const recipient = to ?? user.email;
   try {
     await sendMail(
-      renderEmail(recipient, actor.locale, {
+      await renderEmail(recipient, actor.locale, {
         kind: 'settingsTest',
         name: to ? '' : (user.name.split(' ')[0] ?? user.name),
         url: appUrl(actor.locale, '/'),
