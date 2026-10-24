@@ -31,6 +31,7 @@ import { amountsDue, HOLD_MINUTES, paymentsEnabled, PROMOTION_HOURS } from '../p
 import { refundsForCancelledRegistration } from './refund-service';
 import { assertCanManageTournament } from './permissions';
 import type { Actor } from './session-service';
+import { emailLogo } from './logo-service';
 
 export const ACTIVE: RegistrationStatus[] = ['PENDING', 'CONFIRMED'];
 const LIVE: RegistrationStatus[] = ['PENDING', 'CONFIRMED', 'WAITLISTED'];
@@ -481,11 +482,13 @@ export async function enterTournament(
   }
 
   const locale = actor.locale;
+  const logo = await emailLogo(t.id, t.name);
   const label = (eventId: string, l: AppLocale) =>
     eventText(planned.find((p) => p.event.id === eventId)!.event, l);
   await sendMailSafely(
     renderEmail(player.user?.email ?? '', locale, {
       kind: 'entryConfirmed',
+      logo,
       name: player.firstName,
       tournament: t.name,
       lines: created.map((c) =>
@@ -503,6 +506,7 @@ export async function enterTournament(
     await sendMailSafely(
       renderEmail(invite.email, invite.locale, {
         kind: 'partnerInvite',
+        logo,
         name: invite.name,
         from: fullName(player),
         tournament: t.name,

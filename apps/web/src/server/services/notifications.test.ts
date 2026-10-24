@@ -5,6 +5,8 @@ import { outbox } from '@/server/email/mailer';
 import { createPlayer, meta, resetDatabase } from '@/test/db';
 import { generateDraw, publishDraws } from './draw-service';
 import { deadlineReminders, resultsSummaries, tournamentReminders } from './jobs-service';
+import { GET as logoGet } from '@/app/api/v1/tournament-logos/[id]/route';
+import { imageInfo, removeTournamentLogo, setTournamentLogo, tournamentLogo } from './logo-service';
 import { createNews } from './news-service';
 import {
   deliverQueued,
@@ -227,5 +229,72 @@ describe('notifications (D62)', () => {
     const mail = sentTo('p0@example.test').find((m) => m.subject.startsWith('Je uitslagen'))!;
     expect(mail.text.match(/(gewonnen|verloren) tegen/g)).toHaveLength(3);
     expect(t.id).toBeTruthy();
+  });
+});
+
+/** A PNG header of the given size (enough for the type and size checks). */
+function png(width: number, height: number, extra = 0) {
+  const bytes = new Uint8Array(33 + extra);
+  bytes.set([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 13, 0x49, 0x48, 0x44, 0x52]);
+  new DataView(bytes.buffer).setUint32(16, width);
+  new DataView(bytes.buffer).setUint32(20, height);
+  return bytes;
+}
+
+describe('tournament logo (D67)', () => {
+  it('reads PNG and JPEG headers and refuses anything else', () => {
+    expect(imageInfo(png(400, 100))).toEqual({ mimeType: 'image/png', width: 400, height: 100 });
+    // JPEG: start of image, an APP0 segment, then the frame header with height and width.
+    const jpeg = new Uint8Array([
+      0xff, 0xd8, 0xff, 0xe0, 0, 4, 0, 0, 0xff, 0xc0, 0, 17, 8, 0, 120, 1, 44, 3, 0, 0,
+    ]);
+    expect(imageInfo(jpeg)).toEqual({ mimeType: 'image/jpeg', width: 300, height: 120 });
+    expect(imageInfo(new TextEncoder().encode('<svg onload="x()"></svg>'))).toBeNull();
+  });
+
+  it('is set by the tournament managers, served publicly and shown in its emails', async () => {
+    const actor = await admin();
+    const { t, players } = await setup({
+      startsOn: new Date('2027-03-13'),
+      endsOn: new Date('2027-03-13'),
+    });
+    const player = await actorFor(players[0]!.userId);
+    await expect(
+      setTournamentLogo(player, t.id, { bytes: png(400, 100) }, meta),
+    ).rejects.toMatchObject({ code: 'notFound' });
+    await expect(
+      setTournamentLogo(actor, t.id, { bytes: png(400, 100, 1024 * 1024) }, meta),
+    ).rejects.toMatchObject({ code: 'logoTooLarge' });
+    await expect(
+      setTournamentLogo(actor, t.id, { bytes: new TextEncoder().encode('GIF89a…') }, meta),
+    ).rejects.toMatchObject({ code: 'logoInvalid' });
+
+    await setTournamentLogo(actor, t.id, { bytes: png(400, 100) }, meta);
+    const logo = (await tournamentLogo(t.id))!;
+    expect(logo).toMatchObject({ width: 400, height: 100 });
+    const response = await logoGet(new Request(logo.url), {
+      params: Promise.resolve({ id: t.id }),
+    });
+    expect(response.headers.get('content-type')).toBe('image/png');
+    expect(response.headers.get('cache-control')).toContain('immutable');
+
+    await createNews(
+      actor,
+      t.id,
+      { titleNl: 'Parkeren', bodyNl: 'Parkeer achter.', publish: true, email: true },
+      meta,
+    );
+    await deliverQueued();
+    const html = sentTo('p0@example.test').at(-1)!.html;
+    // 56 px high keeps 4:1 → 224 px wide.
+    expect(html).toContain(
+      `<img src="${logo.url.replace(/&/g, '&amp;')}" alt="Utrecht Open" width="224" height="56"`,
+    );
+
+    await removeTournamentLogo(actor, t.id, meta);
+    expect(await tournamentLogo(t.id)).toBeNull();
+    expect(
+      (await logoGet(new Request(logo.url), { params: Promise.resolve({ id: t.id }) })).status,
+    ).toBe(404);
   });
 });

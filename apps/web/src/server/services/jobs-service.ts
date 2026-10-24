@@ -14,6 +14,7 @@ import { paymentsEnabled } from '../payments/pricing';
 import { deliverQueued, enqueueEmails, type QueuedEmail } from './notification-service';
 import { expireStaleHolds, eventText, fullName } from './registration-service';
 import { eventPodium, playerHistory } from './results-service';
+import { emailLogo } from './logo-service';
 
 const DAY = 86_400_000;
 const day = (d: Date) => d.toISOString().slice(0, 10);
@@ -59,6 +60,7 @@ export async function tournamentReminders(now = new Date()) {
   });
   let queued = 0;
   for (const t of tournaments) {
+    const logo = await emailLogo(t.id, t.name);
     const players = await participants(t.id);
     const firstSlots = t.schedulePublishedAt
       ? await prisma.courtSlot.findMany({
@@ -124,6 +126,7 @@ export async function tournamentReminders(now = new Date()) {
         const first = firstFor(p.id);
         return {
           kind: 'tournamentReminder',
+          logo,
           name: p.firstName,
           tournament: t.name,
           when: formatDayRange(day(t.startsOn), day(t.endsOn), locale, 'long'),
@@ -155,6 +158,7 @@ export async function deadlineReminders(now = new Date()) {
   const online = await paymentsEnabled();
   let queued = 0;
   for (const t of tournaments) {
+    const logo = await emailLogo(t.id, t.name);
     const eventSelect = {
       discipline: true,
       name: true,
@@ -256,6 +260,7 @@ export async function deadlineReminders(now = new Date()) {
         linkPath: '/account?tab=upcoming',
         template: (locale) => ({
           kind: 'deadlineReminder',
+          logo,
           name: o.firstName,
           tournament: t.name,
           deadline: `${formatDate(t.registrationClosesAt, locale)} ${formatTime(t.registrationClosesAt, locale)}`,
@@ -301,6 +306,7 @@ export async function resultsSummaries(now = new Date()) {
   });
   let queued = 0;
   for (const t of tournaments) {
+    const logo = await emailLogo(t.id, t.name);
     const podiums = await Promise.all(
       t.events.map(async (e) => ({ event: e, podium: await eventPodium(e.id) })),
     );
@@ -336,6 +342,7 @@ export async function resultsSummaries(now = new Date()) {
         linkPath: `/tournaments/${t.slug}/draws`,
         template: (locale) => ({
           kind: 'results',
+          logo,
           name: p.firstName,
           tournament: t.name,
           placings: placings(locale),

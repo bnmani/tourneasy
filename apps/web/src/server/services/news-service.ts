@@ -14,6 +14,7 @@ import { parseInput } from '../lib/validation';
 import { enqueueEmails } from './notification-service';
 import { assertCanManageTournament } from './permissions';
 import type { Actor } from './session-service';
+import { emailLogo } from './logo-service';
 
 type Localized = { nl: string; en?: string };
 const pick = (v: unknown, locale: AppLocale) => {
@@ -133,6 +134,7 @@ export async function emailNews(actor: Actor, newsId: string, meta: RequestMeta)
     select: { player: { select: { userId: true, firstName: true } } },
   });
   const players = [...new Map(rows.map((r) => [r.player.userId!, r.player])).values()];
+  const logo = await emailLogo(t.id, t.name);
   const count = await enqueueEmails(
     players.map((p) => ({
       userId: p.userId!,
@@ -141,6 +143,7 @@ export async function emailNews(actor: Actor, newsId: string, meta: RequestMeta)
       linkPath: `/tournaments/${t.slug}`,
       template: (locale: AppLocale) => ({
         kind: 'news' as const,
+        logo,
         name: p.firstName,
         tournament: t.name,
         title: pick(news.title, locale),

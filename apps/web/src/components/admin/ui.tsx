@@ -26,6 +26,8 @@ export function PageHeader({
 
 const SUCCESS = new Set([
   'saved',
+  'logoSaved',
+  'logoRemoved',
   'created',
   'archived',
   'deleted',

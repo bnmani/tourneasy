@@ -15,10 +15,13 @@ import {
   deleteEventAction,
   publishTournamentAction,
   removeOrganiserAction,
+  removeTournamentLogoAction,
   tournamentStatusAction,
+  uploadTournamentLogoAction,
 } from '@/server/actions/admin-actions';
 import { getActor, isPortalUser, requirePortal } from '@/server/auth/web';
 import { isAppError } from '@/server/lib/errors';
+import { tournamentLogo } from '@/server/services/logo-service';
 import { entryCounts } from '@/server/services/registration-service';
 import { getTournament } from '@/server/services/tournament-service';
 import { venueOptions } from '@/server/services/venue-service';
@@ -60,6 +63,7 @@ export default async function AdminTournamentPage({
   const td = await getTranslations('DrawTypes');
   const isAdmin = actor.roles.includes('ADMIN');
   const counts = await entryCounts(actor, tournament.id);
+  const logo = await tournamentLogo(tournament.id);
   const countOf = (status: string) =>
     counts.filter((c) => c.status === status).reduce((n, c) => n + c._count._all, 0);
   const confirmedEntries = countOf('CONFIRMED') + countOf('PENDING');
@@ -115,6 +119,58 @@ export default async function AdminTournamentPage({
           </form>
         </div>
         <p className="text-sm text-muted-foreground">{t('tournaments.publishHint')}</p>
+      </section>
+
+      <section
+        id="logo"
+        aria-labelledby="logo-title"
+        className="space-y-3 rounded-lg border bg-card p-4 sm:p-6"
+      >
+        <h2 id="logo-title" className="text-lg font-semibold">
+          {t('tournaments.logoTitle')}
+        </h2>
+        <p className="text-sm text-muted-foreground">{t('tournaments.logoIntro')}</p>
+        {logo ? (
+          // eslint-disable-next-line @next/next/no-img-element -- served by our own endpoint
+          <img
+            src={logo.url}
+            alt={t('tournaments.logoAlt', { tournament: tournament.name })}
+            width={Math.round((logo.width / logo.height) * 64)}
+            height={64}
+            className="h-16 w-auto max-w-full rounded border bg-white object-contain p-1"
+          />
+        ) : (
+          <p className="text-sm">{t('tournaments.logoNone')}</p>
+        )}
+        <form
+          action={uploadTournamentLogoAction.bind(null, locale, tournament.id)}
+          className="flex flex-wrap items-end gap-3"
+        >
+          <label className="text-sm">
+            <span className="block font-medium">{t('tournaments.logoFile')}</span>
+            <input
+              type="file"
+              name="logo"
+              accept="image/png,image/jpeg"
+              required
+              aria-describedby="logo-hint"
+              className="mt-1 block text-sm file:mr-3 file:rounded-md file:border file:bg-secondary file:px-3 file:py-2 file:text-sm"
+            />
+          </label>
+          <Button type="submit" variant="outline">
+            {logo ? t('tournaments.logoReplace') : t('tournaments.logoUpload')}
+          </Button>
+        </form>
+        <p id="logo-hint" className="text-sm text-muted-foreground">
+          {t('tournaments.logoHint')}
+        </p>
+        {logo && (
+          <form action={removeTournamentLogoAction.bind(null, locale, tournament.id)}>
+            <Button type="submit" size="sm" variant="ghost" className="text-destructive">
+              {t('tournaments.logoRemove')}
+            </Button>
+          </form>
+        )}
       </section>
 
       <section id="events" className="space-y-4 rounded-lg border bg-card p-4 sm:p-6">

@@ -32,6 +32,7 @@ import { isAppError } from '@/server/lib/errors';
 import { LiveMatches } from '@/components/matches/live-matches';
 import { TournamentNews } from '@/components/public/tournament-news';
 import { hasPublishedDraws } from '@/server/services/draw-service';
+import { pageLogo } from '@/server/services/logo-service';
 import { getPublicTournament } from '@/server/services/public-service';
 
 type Props = { params: Promise<{ locale: string; slug: string }> };
@@ -165,6 +166,7 @@ export default async function TournamentPage({ params }: Props) {
       <PageHero
         eyebrow={<PhaseBadge phase={t.phase} />}
         title={t.name}
+        logo={await pageLogo(t.slug, t.name)}
         intro={
           <>
             {formatDayRange(t.startsOn, t.endsOn, locale, 'long')}

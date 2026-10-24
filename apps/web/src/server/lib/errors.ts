@@ -46,7 +46,9 @@ export type ErrorCode =
   | 'stageExists'
   | 'stageNotFinished'
   | 'smtpRejected'
-  | 'newsAlreadyEmailed';
+  | 'newsAlreadyEmailed'
+  | 'logoTooLarge'
+  | 'logoInvalid';
 
 const HTTP_STATUS: Record<ErrorCode, number> = {
   validation: 422,
@@ -93,6 +95,8 @@ const HTTP_STATUS: Record<ErrorCode, number> = {
   stageNotFinished: 409,
   smtpRejected: 422,
   newsAlreadyEmailed: 409,
+  logoTooLarge: 413,
+  logoInvalid: 422,
 };
 
 export class AppError extends Error {

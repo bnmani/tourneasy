@@ -17,7 +17,8 @@
     "yes": "Yes",
     "no": "No",
     "numberRange": "Between {min} and {max}.",
-    "phoneCountry": "Country (dialling code)"
+    "phoneCountry": "Country (dialling code)",
+    "moreInfo": "More information"
   },
   "Header": {
     "homeLink": "Tourneasy, go to home page",
@@ -187,7 +188,9 @@
     "smtpRejected": "The mail server refused the connection or login: {reason}",
     "passwordMismatch": "The passwords do not match.",
     "newsAlreadyEmailed": "This message has already been emailed.",
-    "emailShared": "Several players use this email address; please add the name too."
+    "emailShared": "Several players use this email address; please add the name too.",
+    "logoTooLarge": "The logo is too large: at most 1 MB.",
+    "logoInvalid": "Choose a PNG or JPG file."
   },
   "Auth": {
     "login": {
@@ -515,7 +518,16 @@
       "restMinutes": "Rest between matches (min)",
       "restMinutesHint": "Minimum rest for a player between two matches.",
       "singleGameMinutes": "Minutes per match (1 game)",
-      "singleGameMinutesHint": "Schedule slot for a one-game match, e.g. in groups or preliminary rounds."
+      "singleGameMinutesHint": "Schedule slot for a one-game match, e.g. in groups or preliminary rounds.",
+      "logoTitle": "Tournament logo",
+      "logoIntro": "Optional. Shown on the tournament page and at the top of every email about this tournament (schedule, reminders, news, results, entries).",
+      "logoFile": "Logo file",
+      "logoHint": "PNG or JPG, at most 1 MB. A landscape logo on a white or transparent background works best.",
+      "logoUpload": "Save logo",
+      "logoReplace": "Save another logo",
+      "logoRemove": "Remove logo",
+      "logoNone": "No logo yet.",
+      "logoAlt": "Logo of {tournament}"
     },
     "events": {
       "new": "New event",
@@ -691,7 +703,9 @@
       "scheduleUnpublished": "Schedule unpublished.",
       "resultSaved": "Result saved.",
       "stageCreated": "Next round made.",
-      "newsEmailed": "The message is being sent to the participants."
+      "newsEmailed": "The message is being sent to the participants.",
+      "logoSaved": "Logo saved.",
+      "logoRemoved": "Logo removed."
     },
     "grantShort": "Grant",
     "revokeShort": "Remove",

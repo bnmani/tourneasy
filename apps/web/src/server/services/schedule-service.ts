@@ -27,6 +27,7 @@ import { enqueueEmails } from './notification-service';
 import { assertCanManageTournament } from './permissions';
 import { eventText, fullName } from './registration-service';
 import type { Actor } from './session-service';
+import { emailLogo } from './logo-service';
 
 type Tx = Prisma.TransactionClient;
 
@@ -537,6 +538,7 @@ async function notifySchedule(
           `${locale === 'nl' ? 'tegen' : 'vs'} ${opponent}`,
         ].join(' · ');
       });
+  const logo = await emailLogo(t.id, t.name);
   await enqueueEmails(
     [...targets]
       .filter((playerId) => accountOf.has(playerId))
@@ -549,6 +551,7 @@ async function notifySchedule(
           linkPath: `/tournaments/${t.slug}/schedule`,
           template: (locale: 'nl' | 'en') => ({
             kind: 'schedule' as const,
+            logo,
             name: account.firstName,
             tournament: t.name,
             changed: opts.changed,

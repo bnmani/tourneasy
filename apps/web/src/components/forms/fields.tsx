@@ -7,6 +7,7 @@ import { useFormStatus } from 'react-dom';
 import { Button, type ButtonProps } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import type { FormState } from './form-state';
+import { InfoTip } from './info-tip';
 
 const ERROR_PARAMS = { min: 10, minutes: 15 };
 
@@ -66,27 +67,25 @@ export function Field({ name, label, state, hint, required, children }: FieldPro
     .join(' ');
   return (
     <div className="space-y-1.5">
-      <label htmlFor={id} className="block text-sm font-medium">
-        {label}
-        {required ? (
-          <span aria-hidden="true" className="text-destructive">
-            {' '}
-            *
-          </span>
-        ) : (
-          <span className="font-normal text-muted-foreground"> ({tc('optional')})</span>
-        )}
-      </label>
+      <div className="relative flex items-center gap-1">
+        <label htmlFor={id} className="text-sm font-medium">
+          {label}
+          {required ? (
+            <span aria-hidden="true" className="text-destructive">
+              {' '}
+              *
+            </span>
+          ) : (
+            <span className="font-normal text-muted-foreground"> ({tc('optional')})</span>
+          )}
+        </label>
+        {hint && <InfoTip id={`${id}-hint`} text={hint} />}
+      </div>
       {children?.({
         id,
         'aria-invalid': error ? true : undefined,
         'aria-describedby': describedBy || undefined,
       })}
-      {hint && (
-        <p id={`${id}-hint`} className="text-sm text-muted-foreground">
-          {hint}
-        </p>
-      )}
       {error && (
         <p id={`${id}-error`} className="text-sm text-destructive">
           {t(error as 'invalid', ERROR_PARAMS)}
@@ -353,12 +352,10 @@ export function CheckboxGroup({
   );
   return (
     <fieldset className="space-y-2" aria-describedby={hint ? `field-${name}-hint` : undefined}>
-      <legend className="text-sm font-medium">{legend}</legend>
-      {hint && (
-        <p id={`field-${name}-hint`} className="text-sm text-muted-foreground">
-          {hint}
-        </p>
-      )}
+      <legend className="relative flex items-center gap-1 text-sm font-medium">
+        {legend}
+        {hint && <InfoTip id={`field-${name}-hint`} text={hint} />}
+      </legend>
       <div className="grid gap-2 sm:grid-cols-2">
         {options.map((o) => (
           <label

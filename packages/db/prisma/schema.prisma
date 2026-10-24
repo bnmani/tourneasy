@@ -684,6 +684,7 @@ model Tournament {
   announcements    Announcement[]
   orders           Order[]
   courtSlots       CourtSlot[]
+  logo             TournamentLogo?
 
   @@index([status, startsOn])
   @@index([startsOn])
@@ -741,6 +742,18 @@ model TournamentDocument {
 
 /// An event within a tournament, e.g. "HE U17 B". Gender eligibility follows from the discipline
 /// (HE/HD male, DE/DD female, GD one of each).
+/// The tournament's own logo (D67): shown on its page and at the top of its emails. Small
+/// PNG/JPEG kept in the database (no file storage needed); served by /api/v1/tournament-logos.
+model TournamentLogo {
+  tournamentId String     @id @db.Uuid
+  mimeType     String
+  data         Bytes
+  width        Int
+  height       Int
+  updatedAt    DateTime   @updatedAt
+  tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+}
+
 model TournamentEvent {
   id              String     @id @default(uuid()) @db.Uuid
   tournamentId    String     @db.Uuid

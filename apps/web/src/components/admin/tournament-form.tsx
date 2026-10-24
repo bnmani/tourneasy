@@ -18,6 +18,7 @@ import {
   TextAreaField,
   TextField,
 } from '@/components/forms/fields';
+import { InfoTip } from '@/components/forms/info-tip';
 import { initialFormState } from '@/components/forms/form-state';
 import { saveTournamentAction } from '@/server/actions/admin-actions';
 
@@ -363,9 +364,11 @@ export function TournamentForm({
       </FormSection>
 
       <FormSection title={t('sectionPayment')}>
-        <fieldset className="space-y-3">
-          <legend className="text-sm font-medium">{t('bundleTitle')}</legend>
-          <p className="text-sm text-muted-foreground">{t('bundleHint')}</p>
+        <fieldset className="space-y-3" aria-describedby="bundle-hint">
+          <legend className="relative flex items-center gap-1 text-sm font-medium">
+            {t('bundleTitle')}
+            <InfoTip id="bundle-hint" text={t('bundleHint')} />
+          </legend>
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-5">
             {Array.from({ length: maxEvents }, (_, i) => (
               <TextField

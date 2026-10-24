@@ -8,7 +8,12 @@ import { messages, type AppLocale } from '@tourneasy/shared/i18n';
 import { createTranslator } from 'next-intl';
 import type { OutgoingMail } from './mailer';
 
-export type Template =
+/** A tournament's own logo at the top of its emails (D67). */
+export type EmailLogo = { url: string; width: number; height: number; alt: string };
+
+export type Template = TemplateBody & { logo?: EmailLogo | null };
+
+type TemplateBody =
   | { kind: 'verifyEmail'; name: string; memberNumber: string; url: string }
   | { kind: 'resetPassword'; name: string; url: string }
   | { kind: 'passwordChanged'; name: string }
@@ -131,11 +136,23 @@ function paragraphHtml(paragraphs: string[]) {
   return out.join('');
 }
 
+/** Logo shown 56px high (at most 240px wide), with fixed dimensions for Outlook. */
+function logoHtml(logo: EmailLogo) {
+  let height = 56;
+  let width = Math.round((logo.width / logo.height) * height);
+  if (width > 240) {
+    height = Math.round((240 / width) * height);
+    width = 240;
+  }
+  return `<p style="margin:0 0 12px"><img src="${escapeHtml(logo.url)}" alt="${escapeHtml(logo.alt)}" width="${width}" height="${height}" style="display:block;border:0;outline:none;width:${width}px;height:${height}px"></p>`;
+}
+
 function layout(
   paragraphs: string[],
   button?: { label: string; url: string },
   footer?: string,
   links?: { label: string; url: string }[],
+  logo?: EmailLogo | null,
 ) {
   const cta = button
     ? `<p style="margin:24px 0"><a href="${escapeHtml(button.url)}" style="background:#2e4a67;color:#ffffff;padding:12px 20px;border-radius:8px;text-decoration:none;display:inline-block;font-weight:600">${escapeHtml(button.label)}</a></p>
@@ -147,7 +164,7 @@ function layout(
   return `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"></head><body style="margin:0;background:#f4f0e8;font-family:Arial,Helvetica,sans-serif;color:#0f1e33">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:24px 12px">
 <table role="presentation" width="100%" style="max-width:560px;background:#ffffff;border-radius:12px;padding:28px" cellpadding="0" cellspacing="0"><tr><td>
-<p style="margin:0 0 20px;font-size:20px;font-weight:700;color:#2e4a67">Tourneasy</p>
+${logo ? logoHtml(logo) : ''}<p style="margin:0 0 20px;font-size:${logo ? 13 : 20}px;font-weight:700;color:#2e4a67">Tourneasy</p>
 ${paragraphHtml(paragraphs)}${cta}
 ${footer ? `<p style="margin:24px 0 0;font-size:12px;color:#4a5568">${escapeHtml(footer)}</p>` : ''}
 ${footerLinks ? `<p style="margin:8px 0 0;font-size:12px;color:#4a5568">${footerLinks}</p>` : ''}
@@ -354,7 +371,7 @@ export function renderEmail(
     to,
     subject,
     text: links.length ? `${text}\n\n${links.map((l) => `${l.label}: ${l.url}`).join('\n')}` : text,
-    html: layout(paragraphs, button, footer, links),
+    html: layout(paragraphs, button, footer, links, template.logo),
   };
   if (options.unsubscribeUrl) {
     // One-click unsubscribe (RFC 8058): mail apps show their own "unsubscribe" button.

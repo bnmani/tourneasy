@@ -8,17 +8,30 @@ export function PageHero({
   eyebrow,
   title,
   intro,
+  logo,
   children,
 }: {
   eyebrow?: ReactNode;
   title: string;
   intro?: ReactNode;
+  /** A tournament's own logo (D67), on a white tile so any logo reads on the dark hero. */
+  logo?: { url: string; width: number; height: number; alt: string } | null;
   children?: ReactNode;
 }) {
   return (
     <section className="relative overflow-hidden bg-hero text-hero-foreground">
       <CourtLines className="opacity-[0.12]" />
       <div className="relative mx-auto max-w-6xl px-4 py-10 sm:py-14">
+        {logo && (
+          // eslint-disable-next-line @next/next/no-img-element -- served by our own endpoint
+          <img
+            src={logo.url}
+            alt={logo.alt}
+            width={Math.round((logo.width / logo.height) * 56)}
+            height={56}
+            className="mb-4 h-14 w-auto max-w-[min(16rem,100%)] rounded-md bg-white object-contain p-1.5"
+          />
+        )}
         {eyebrow && (
           <div className="mb-3 text-xs font-bold tracking-[0.14em] text-hero-highlight uppercase">
             {eyebrow}

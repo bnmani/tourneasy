@@ -17,7 +17,8 @@
     "yes": "Ja",
     "no": "Nee",
     "numberRange": "Tussen {min} en {max}.",
-    "phoneCountry": "Land (landnummer)"
+    "phoneCountry": "Land (landnummer)",
+    "moreInfo": "Meer informatie"
   },
   "Header": {
     "homeLink": "Tourneasy, naar de startpagina",
@@ -187,7 +188,9 @@
     "smtpRejected": "De mailserver weigerde de verbinding of het inloggen: {reason}",
     "passwordMismatch": "De wachtwoorden zijn niet gelijk.",
     "newsAlreadyEmailed": "Dit bericht is al gemaild.",
-    "emailShared": "Meerdere spelers gebruiken dit e-mailadres; vul ook de naam in."
+    "emailShared": "Meerdere spelers gebruiken dit e-mailadres; vul ook de naam in.",
+    "logoTooLarge": "Het logo is te groot: maximaal 1 MB.",
+    "logoInvalid": "Kies een PNG- of JPG-bestand."
   },
   "Auth": {
     "login": {
@@ -515,7 +518,16 @@
       "restMinutes": "Rust tussen wedstrijden (min)",
       "restMinutesHint": "Minimale rust voor een speler tussen twee wedstrijden.",
       "singleGameMinutes": "Minuten per wedstrijd (1 game)",
-      "singleGameMinutesHint": "Tijdslot voor een wedstrijd van één game, bijv. in poules of de voorronde."
+      "singleGameMinutesHint": "Tijdslot voor een wedstrijd van één game, bijv. in poules of de voorronde.",
+      "logoTitle": "Logo van het toernooi",
+      "logoIntro": "Optioneel. Staat op de toernooipagina en bovenaan alle e-mails over dit toernooi (planning, herinneringen, nieuws, uitslagen, inschrijvingen).",
+      "logoFile": "Logobestand",
+      "logoHint": "PNG of JPG, maximaal 1 MB. Een liggend logo op een witte of transparante achtergrond werkt het best.",
+      "logoUpload": "Logo opslaan",
+      "logoReplace": "Ander logo opslaan",
+      "logoRemove": "Logo verwijderen",
+      "logoNone": "Nog geen logo.",
+      "logoAlt": "Logo van {tournament}"
     },
     "events": {
       "new": "Nieuw onderdeel",
@@ -691,7 +703,9 @@
       "scheduleUnpublished": "Planning offline gehaald.",
       "resultSaved": "Uitslag opgeslagen.",
       "stageCreated": "Volgende ronde gemaakt.",
-      "newsEmailed": "Bericht wordt verstuurd naar de deelnemers."
+      "newsEmailed": "Bericht wordt verstuurd naar de deelnemers.",
+      "logoSaved": "Logo opgeslagen.",
+      "logoRemoved": "Logo verwijderd."
     },
     "grantShort": "Toekennen",
     "revokeShort": "Intrekken",

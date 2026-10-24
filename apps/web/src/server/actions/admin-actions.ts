@@ -13,6 +13,7 @@ import { AppError } from '../lib/errors';
 import type { RequestMeta } from '../lib/request-meta';
 import { setClubArchived, createClub, updateClub } from '../services/club-service';
 import { createEvent, deleteEvent, updateEvent } from '../services/event-service';
+import { LOGO_MAX_BYTES, removeTournamentLogo, setTournamentLogo } from '../services/logo-service';
 import { importTournamentEntries, type EntryImportResult } from '../services/entry-import-service';
 import {
   createPlayer,
@@ -324,6 +325,37 @@ export async function importEntriesAction(
   } catch (error) {
     return toFormState(error, new FormData());
   }
+}
+
+/** Tournament logo (D67): upload or replace; the outcome shows via ?status= on the page. */
+export async function uploadTournamentLogoAction(
+  locale: AppLocale,
+  tournamentId: string,
+  formData: FormData,
+) {
+  await act(
+    `/${locale}/admin/tournaments/${tournamentId}`,
+    async (actor, meta) => {
+      const file = formData.get('logo');
+      if (!(file instanceof File) || file.size === 0) throw new AppError('logoInvalid');
+      if (file.size > LOGO_MAX_BYTES) throw new AppError('logoTooLarge');
+      await setTournamentLogo(
+        actor,
+        tournamentId,
+        { bytes: new Uint8Array(await file.arrayBuffer()) },
+        meta,
+      );
+    },
+    'logoSaved',
+  );
+}
+
+export async function removeTournamentLogoAction(locale: AppLocale, tournamentId: string) {
+  await act(
+    `/${locale}/admin/tournaments/${tournamentId}`,
+    (actor, meta) => removeTournamentLogo(actor, tournamentId, meta),
+    'logoRemoved',
+  );
 }
 
 export async function setSiteThemeAction(locale: AppLocale, formData: FormData) {
