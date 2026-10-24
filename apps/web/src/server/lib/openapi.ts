@@ -14,14 +14,22 @@ import {
   publicVenueSchema,
   publicVenueRefSchema,
 } from '@tourneasy/shared';
-import type { ZodObject, ZodRawShape, ZodTypeAny } from 'zod';
 import { z } from 'zod';
-import { zodToJsonSchema } from 'zod-to-json-schema';
 
-const schema = (s: ZodTypeAny) => zodToJsonSchema(s, { target: 'openApi3', $refStrategy: 'none' });
+/** JSON Schema (OpenAPI 3.0 flavour) of a Zod schema; queries describe what may be sent. */
+const schema = (s: z.ZodType, io: 'input' | 'output' = 'output') => {
+  const json = z.toJSONSchema(s, {
+    target: 'openapi-3.0',
+    io,
+    // Transforms and dates have no JSON Schema of their own; describe them as "any".
+    unrepresentable: 'any',
+  }) as Record<string, unknown>;
+  delete json.$schema;
+  return json;
+};
 
-function queryParameters(s: ZodObject<ZodRawShape>) {
-  const json = schema(s) as { properties?: Record<string, object> };
+function queryParameters(s: z.ZodObject) {
+  const json = schema(s, 'input') as { properties?: Record<string, object> };
   return Object.entries(json.properties ?? {}).map(([name, prop]) => ({
     name,
     in: 'query',
@@ -38,7 +46,7 @@ const pathParam = (name: string, description: string) => ({
   schema: { type: 'string' },
 });
 
-const ok = (description: string, s: ZodTypeAny) => ({
+const ok = (description: string, s: z.ZodType) => ({
   200: { description, content: { 'application/json': { schema: schema(s) } } },
   304: { description: 'Not modified (matching If-None-Match)' },
 });
@@ -176,7 +184,7 @@ export function buildOpenApi(serverUrl: string) {
                   error: z.object({
                     code: z.string(),
                     message: z.string(),
-                    details: z.record(z.unknown()),
+                    details: z.record(z.string(), z.unknown()),
                     requestId: z.string(),
                   }),
                 }),

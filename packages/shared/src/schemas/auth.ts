@@ -18,7 +18,7 @@ export const ASSIGNABLE_ROLES = ['ORGANISER', 'ADMIN'] as const;
 
 const text = (max: number) =>
   z
-    .string({ required_error: 'required', invalid_type_error: 'required' })
+    .string({ error: 'required' })
     .trim()
     .min(1, 'required')
     .max(max, 'tooLong');
@@ -48,7 +48,7 @@ export const optionalPersonNameSchema = (max: number) =>
     .transform((v) => (v ? v : undefined));
 
 export const emailSchema = z
-  .string({ required_error: 'required' })
+  .string({ error: 'required' })
   .trim()
   .toLowerCase()
   .min(1, 'required')
@@ -60,7 +60,7 @@ export const emailSchema = z
  * Dutch national input ("06 12 34 56 78") is converted (D66).
  */
 export const phoneSchema = z
-  .string({ required_error: 'required' })
+  .string({ error: 'required' })
   .trim()
   .min(1, 'required')
   .transform((v, ctx) => {
@@ -79,13 +79,13 @@ export const optionalPhoneSchema = z.preprocess(
 );
 
 export const passwordSchema = z
-  .string({ required_error: 'required' })
+  .string({ error: 'required' })
   .min(PASSWORD_MIN_LENGTH, 'passwordTooShort')
   .max(PASSWORD_MAX_LENGTH, 'passwordTooLong')
   .refine((p) => !isCommonPassword(p), 'passwordTooCommon');
 
 export const dateOfBirthSchema = z
-  .string({ required_error: 'required' })
+  .string({ error: 'required' })
   .min(1, 'required')
   .refine((v) => parseDateOnly(v) !== null, 'dateInvalid')
   .refine((v) => {
@@ -106,11 +106,11 @@ export const signUpSchema = z
     /** The web form asks twice; the mobile app checks on the phone and may leave this out. */
     passwordRepeat: z.string().max(PASSWORD_MAX_LENGTH).optional(),
     dateOfBirth: dateOfBirthSchema,
-    gender: z.enum(GENDERS, { errorMap: () => ({ message: 'required' }) }),
+    gender: z.enum(GENDERS, { error: 'required' }),
     preferredDisciplines: disciplinesSchema,
     locale: z.enum(locales).default('nl'),
-    acceptTerms: z.literal(true, { errorMap: () => ({ message: 'mustAccept' }) }),
-    acceptPrivacy: z.literal(true, { errorMap: () => ({ message: 'mustAccept' }) }),
+    acceptTerms: z.literal(true, { error: 'mustAccept' }),
+    acceptPrivacy: z.literal(true, { error: 'mustAccept' }),
     parentalConsent: z.boolean().optional(),
     guardianName: optionalText(120),
   })
@@ -140,7 +140,7 @@ export type SignUpInput = z.infer<typeof signUpSchema>;
 
 export const loginSchema = z.object({
   identifier: text(254),
-  password: z.string({ required_error: 'required' }).min(1, 'required').max(PASSWORD_MAX_LENGTH),
+  password: z.string({ error: 'required' }).min(1, 'required').max(PASSWORD_MAX_LENGTH),
   rememberMe: z.boolean().default(true),
 });
 export type LoginInput = z.infer<typeof loginSchema>;
@@ -179,7 +179,7 @@ export const profileUpdateSchema = z
     lastName: personNameSchema(80),
     phone: phoneSchema,
     dateOfBirth: dateOfBirthSchema,
-    gender: z.enum(GENDERS, { errorMap: () => ({ message: 'required' }) }),
+    gender: z.enum(GENDERS, { error: 'required' }),
     nationality: z
       .string()
       .trim()
@@ -222,7 +222,7 @@ export type ProfileUpdateInput = z.infer<typeof profileUpdateSchema>;
 
 export const deleteAccountSchema = z.object({
   password: z.string().min(1, 'required').max(PASSWORD_MAX_LENGTH),
-  confirm: z.literal(true, { errorMap: () => ({ message: 'mustAccept' }) }),
+  confirm: z.literal(true, { error: 'mustAccept' }),
 });
 
 export const roleChangeSchema = z.object({

@@ -77,7 +77,7 @@ export const STATUS_TRANSITIONS: Record<TournamentStatusCode, TournamentStatusCo
 };
 
 const text = (max: number) =>
-  z.string({ required_error: 'required' }).trim().min(1, 'required').max(max, 'tooLong');
+  z.string({ error: 'required' }).trim().min(1, 'required').max(max, 'tooLong');
 const optionalText = (max: number) =>
   z
     .string()
@@ -91,7 +91,7 @@ const optionalInt = (min: number, max: number) =>
   z.preprocess(
     emptyToUndefined,
     z.coerce
-      .number({ invalid_type_error: 'invalid' })
+      .number({ error: 'invalid' })
       .int('invalid')
       .min(min, 'invalid')
       .max(max, 'invalid')
@@ -113,12 +113,12 @@ const optionalUrl = z.preprocess(
 );
 const optionalPhone = optionalPhoneSchema;
 const dateOnly = z
-  .string({ required_error: 'required' })
+  .string({ error: 'required' })
   .min(1, 'required')
   .refine((v) => parseDateOnly(v) !== null, 'dateInvalid')
   .transform((v) => parseDateOnly(v)!);
 const localDateTime = z
-  .string({ required_error: 'required' })
+  .string({ error: 'required' })
   .min(1, 'required')
   .refine((v) => amsterdamLocalToUtc(v) !== null, 'dateInvalid')
   .transform((v) => amsterdamLocalToUtc(v)!);
@@ -135,7 +135,7 @@ export const venueSchema = z
     houseNumber: text(20),
     postcode: z.string().trim().toUpperCase().min(1, 'required').max(12, 'tooLong'),
     city: text(80),
-    province: z.enum(PROVINCES, { errorMap: () => ({ message: 'required' }) }),
+    province: z.enum(PROVINCES, { error: 'required' }),
     country: z
       .string()
       .trim()
@@ -143,7 +143,7 @@ export const venueSchema = z
       .regex(/^[A-Z]{2}$/, 'invalid')
       .default('NL'),
     numberOfCourts: z.coerce
-      .number({ invalid_type_error: 'invalid' })
+      .number({ error: 'invalid' })
       .int('invalid')
       .min(1, 'invalid')
       .max(60, 'invalid'),
@@ -206,20 +206,20 @@ export const tournamentSchema = z
     ),
     /** Schedule (D56): minutes per match slot and minimum rest between a player's matches. */
     matchMinutes: z.coerce
-      .number({ invalid_type_error: 'invalid' })
+      .number({ error: 'invalid' })
       .int('invalid')
       .min(10, 'invalid')
       .max(120, 'invalid')
       .default(30),
     restMinutes: z.coerce
-      .number({ invalid_type_error: 'invalid' })
+      .number({ error: 'invalid' })
       .int('invalid')
       .min(0, 'invalid')
       .max(180, 'invalid')
       .default(20),
     /** Slot length for a one-game match (best of 1); matchMinutes is for best of 3. */
     singleGameMinutes: z.coerce
-      .number({ invalid_type_error: 'invalid' })
+      .number({ error: 'invalid' })
       .int('invalid')
       .min(5, 'invalid')
       .max(120, 'invalid')
@@ -243,7 +243,7 @@ export const tournamentSchema = z
     partnerPaymentMode: z.enum(PARTNER_PAYMENT_MODES).default('EACH_PAYS_OWN_SHARE'),
     refundPolicy: z.enum(REFUND_POLICIES).default('ADMIN_APPROVAL'),
     refundPercent: z.coerce
-      .number({ invalid_type_error: 'invalid' })
+      .number({ error: 'invalid' })
       .int('invalid')
       .min(0, 'invalid')
       .max(100, 'invalid')
@@ -306,13 +306,13 @@ export const organiserEmailSchema = z.object({
 
 export const eventSchema = z
   .object({
-    discipline: z.enum(DISCIPLINES, { errorMap: () => ({ message: 'required' }) }),
+    discipline: z.enum(DISCIPLINES, { error: 'required' }),
     ageCategoryId: optionalUuid,
     levelClassId: optionalUuid,
     nameNl: optionalText(80),
     nameEn: optionalText(80),
     fee: z
-      .string({ required_error: 'required' })
+      .string({ error: 'required' })
       .min(1, 'required')
       .refine((v) => parseEuroToCents(v) !== null, 'feeInvalid')
       .transform((v) => parseEuroToCents(v)!),
@@ -405,7 +405,7 @@ export const adminPlayerSchema = z
     contactEmail: optionalEmail,
     phone: optionalPhone,
     dateOfBirth: dateOnly,
-    gender: z.enum(GENDERS, { errorMap: () => ({ message: 'required' }) }),
+    gender: z.enum(GENDERS, { error: 'required' }),
     nationality: z.preprocess(
       emptyToUndefined,
       z
@@ -458,5 +458,5 @@ export type SiteTheme = (typeof SITE_THEMES)[number];
 export const DEFAULT_SITE_THEME: SiteTheme = 'midnight';
 
 export const siteThemeSchema = z.object({
-  theme: z.enum(SITE_THEMES, { errorMap: () => ({ message: 'invalid' }) }),
+  theme: z.enum(SITE_THEMES, { error: 'invalid' }),
 });

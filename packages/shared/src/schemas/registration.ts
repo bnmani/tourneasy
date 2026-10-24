@@ -21,7 +21,7 @@ export const entrySchema = z.object({
   events: z.array(entryEventSchema).min(1, 'chooseEvent').max(10, 'maxEvents'),
   /** Optional: update the mobile number on the profile while entering. */
   phone: z.preprocess(emptyToUndefined, phoneSchema.optional()),
-  acceptTerms: z.literal(true, { errorMap: () => ({ message: 'mustAccept' }) }),
+  acceptTerms: z.literal(true, { error: 'mustAccept' }),
 });
 export type EntryInput = z.infer<typeof entrySchema>;
 
@@ -70,7 +70,7 @@ export const emailSettingsSchema = z.object({
     .max(255, 'tooLong')
     .regex(/^[a-z0-9.-]+$/i, 'invalid'),
   port: z.coerce
-    .number({ invalid_type_error: 'invalid' })
+    .number({ error: 'invalid' })
     .int('invalid')
     .min(1, 'invalid')
     .max(65535, 'invalid'),
