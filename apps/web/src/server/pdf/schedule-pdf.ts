@@ -148,13 +148,13 @@ export async function buildSchedulePdf(input: SchedulePdfInput): Promise<Uint8Ar
   // Columns: x offset and width.
   const width = PAGE[0] - 2 * MARGIN;
   const cols = {
-    time: { x: 0, w: 46 },
-    court: { x: 46, w: 54 },
-    number: { x: 100, w: 34 },
-    event: { x: 134, w: 168 },
-    round: { x: 302, w: 116 },
-    match: { x: 418, w: width - 418 - 92 },
-    result: { x: width - 92, w: 92 },
+    time: { x: 0, w: 44 },
+    court: { x: 44, w: 42 },
+    number: { x: 86, w: 34 },
+    event: { x: 120, w: 140 },
+    round: { x: 260, w: 104 },
+    match: { x: 364, w: width - 364 - 84 },
+    result: { x: width - 84, w: 84 },
   };
   const SIZE = 9;
   const LEADING = 11.5;
@@ -278,7 +278,8 @@ export async function buildSchedulePdf(input: SchedulePdfInput): Promise<Uint8Ar
     const cells = {
       event: wrap(m.event, regular, SIZE, cols.event.w - 8),
       round: wrap(m.round, regular, SIZE, cols.round.w - 8),
-      match: wrap(players, regular, SIZE, cols.match.w - 8),
+      // Players are printed in bold: measure them in bold too.
+      match: wrap(players, bold, SIZE, cols.match.w - 10),
       result: wrap(result, regular, SIZE, cols.result.w - 8),
     };
     const lines = Math.max(...Object.values(cells).map((c) => c.length));
