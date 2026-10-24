@@ -1,7 +1,7 @@
 {
   "Metadata": {
     "siteName": "Tourneasy",
-    "title": "Tourneasy — badmintontoernooien in Nederland",
+    "title": "Tourneasy — Tournament made easy",
     "description": "Vind badmintontoernooien, schrijf je in, betaal met iDEAL en volg wedstrijden en uitslagen live."
   },
   "Common": {
@@ -52,7 +52,7 @@
     "ctaDashboard": "Naar mijn dashboard",
     "featureFollowTitle": "Spelers volgen",
     "featureFollowText": "Krijg een melding als je clubgenoten of favorieten spelen.",
-    "heroEyebrow": "Badmintontoernooien in Nederland",
+    "heroEyebrow": "Tournament made easy",
     "heroLine1": "Elke rally,",
     "heroLine2": "elke uitslag,",
     "heroLine3": "één plek.",
@@ -74,7 +74,6 @@
     "allTournaments": "Alle toernooien"
   },
   "Footer": {
-    "tagline": "Badmintontoernooien in Nederland",
     "copyright": "© {year} Tourneasy",
     "privacy": "Privacyverklaring",
     "terms": "Algemene voorwaarden"

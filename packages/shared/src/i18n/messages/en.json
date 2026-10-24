@@ -1,7 +1,7 @@
 {
   "Metadata": {
     "siteName": "Tourneasy",
-    "title": "Tourneasy — badminton tournaments in the Netherlands",
+    "title": "Tourneasy — Tournament made easy",
     "description": "Find badminton tournaments, enter online, pay with iDEAL and follow matches and results live."
   },
   "Common": {
@@ -52,7 +52,7 @@
     "ctaDashboard": "Go to my dashboard",
     "featureFollowTitle": "Follow players",
     "featureFollowText": "Get notified when your club mates and favourites play.",
-    "heroEyebrow": "Badminton tournaments in the Netherlands",
+    "heroEyebrow": "Tournament made easy",
     "heroLine1": "Every rally,",
     "heroLine2": "every result,",
     "heroLine3": "one place.",
@@ -74,7 +74,6 @@
     "allTournaments": "All tournaments"
   },
   "Footer": {
-    "tagline": "Badminton tournaments in the Netherlands",
     "copyright": "© {year} Tourneasy",
     "privacy": "Privacy policy",
     "terms": "Terms and conditions"

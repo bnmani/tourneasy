@@ -16,8 +16,8 @@ export async function SiteFooter() {
     <footer className="bg-hero text-sm text-hero-muted">
       <div className="mx-auto flex max-w-6xl flex-col gap-5 px-4 py-8 sm:flex-row sm:items-center sm:justify-between">
         <div className="text-hero-foreground" style={invertedMark}>
+          {/* The logo carries the tagline, "Tournament made easy". */}
           <Logo />
-          <p className="mt-3 text-hero-muted">{t('tagline')}</p>
         </div>
         <ul className="flex flex-wrap gap-4">
           <li>
