@@ -129,7 +129,8 @@ export function EmailTemplateEditor({
             <p className="text-sm">{t('previewSubject', { subject: state.preview.subject })}</p>
             <iframe
               title={t('previewTitle')}
-              sandbox=""
+              // Same origin only so our images load under the site's CSP; scripts stay blocked.
+              sandbox="allow-same-origin"
               srcDoc={state.preview.html}
               className="h-[640px] w-full rounded-lg border bg-white"
             />

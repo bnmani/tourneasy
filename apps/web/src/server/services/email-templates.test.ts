@@ -65,6 +65,8 @@ describe('email template editor (D69)', () => {
     await requestPasswordReset({ email: 'anna@example.test' }, meta);
     expect(outbox.at(-1)).toMatchObject({ subject: 'Je nieuwe Tourneasy-wachtwoord' });
     expect(outbox.at(-1)!.html).toContain('Kies wachtwoord');
+    // No tournament logo: the Tourneasy mark heads the email.
+    expect(outbox.at(-1)!.html).toContain('/email/tourneasy-mark.png');
     const en = await previewEmailTemplate(actor, 'resetPassword', 'en', {});
     expect(en.subject).toBe('Choose a new password');
 

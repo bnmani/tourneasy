@@ -291,6 +291,8 @@ describe('tournament logo (D67)', () => {
       `<img src="${logo.url.replace(/&/g, '&amp;')}" alt="Utrecht Open" width="224" height="56"`,
     );
 
+    expect(html).not.toContain('tourneasy-mark.png');
+
     await removeTournamentLogo(actor, t.id, meta);
     expect(await tournamentLogo(t.id)).toBeNull();
     expect(

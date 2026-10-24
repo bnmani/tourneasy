@@ -7,6 +7,7 @@
 import { messages, type AppLocale } from '@tourneasy/shared/i18n';
 import { createTranslator } from 'next-intl';
 import type { OutgoingMail } from './mailer';
+import { siteUrl } from '../lib/urls';
 import { emailTextOverrides } from './text-overrides';
 
 /** A tournament's own logo at the top of its emails (D67). */
@@ -148,6 +149,12 @@ function logoHtml(logo: EmailLogo) {
   return `<p style="margin:0 0 12px"><img src="${escapeHtml(logo.url)}" alt="${escapeHtml(logo.alt)}" width="${width}" height="${height}" style="display:block;border:0;outline:none;width:${width}px;height:${height}px"></p>`;
 }
 
+/** Without a tournament logo: the Tourneasy mark (PNG, mail apps don't show SVG) and name. */
+function brandHtml() {
+  const mark = siteUrl('/email/tourneasy-mark.png');
+  return `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 20px"><tr><td style="padding:0 10px 0 0;vertical-align:middle"><img src="${escapeHtml(mark)}" alt="" width="40" height="40" style="display:block;border:0;outline:none;width:40px;height:40px"></td><td style="vertical-align:middle;font-size:20px;font-weight:700;color:#2e4a67">Tourneasy</td></tr></table>`;
+}
+
 function layout(
   paragraphs: string[],
   button?: { label: string; url: string },
@@ -165,7 +172,7 @@ function layout(
   return `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"></head><body style="margin:0;background:#f4f0e8;font-family:Arial,Helvetica,sans-serif;color:#0f1e33">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:24px 12px">
 <table role="presentation" width="100%" style="max-width:560px;background:#ffffff;border-radius:12px;padding:28px" cellpadding="0" cellspacing="0"><tr><td>
-${logo ? logoHtml(logo) : ''}<p style="margin:0 0 20px;font-size:${logo ? 13 : 20}px;font-weight:700;color:#2e4a67">Tourneasy</p>
+${logo ? `${logoHtml(logo)}<p style="margin:0 0 20px;font-size:13px;font-weight:700;color:#2e4a67">Tourneasy</p>` : brandHtml()}
 ${paragraphHtml(paragraphs)}${cta}
 ${footer ? `<p style="margin:24px 0 0;font-size:12px;color:#4a5568">${escapeHtml(footer)}</p>` : ''}
 ${footerLinks ? `<p style="margin:8px 0 0;font-size:12px;color:#4a5568">${footerLinks}</p>` : ''}
