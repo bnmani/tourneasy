@@ -193,7 +193,9 @@
     "logoInvalid": "Kies een PNG- of JPG-bestand.",
     "templatePlaceholder": "Gebruik alleen de velden die bij deze tekst staan.",
     "templateSyntax": "Controleer de accolades: elk veld staat tussen een openende en een sluitende accolade.",
-    "templateOneLine": "Een onderwerp past op één regel."
+    "templateOneLine": "Een onderwerp past op één regel.",
+    "removeSelf": "Je kunt je eigen account hier niet verwijderen.",
+    "removeStaff": "De selectie bevat een beheerder of organisator. Trek eerst hun rol in."
   },
   "Auth": {
     "login": {
@@ -1175,6 +1177,17 @@
         "settingsTestNote": "Tip",
         "settingsTestButton": "Knop"
       }
+    },
+    "usersBulk": {
+      "select": "{name} selecteren",
+      "protected": "Beheerders, organisatoren en je eigen account kun je hier niet verwijderen.",
+      "selectPage": "Alles op deze pagina selecteren",
+      "selected": "{count, plural, =0 {Niets geselecteerd} one {# account geselecteerd} other {# accounts geselecteerd}}",
+      "remove": "{count, plural, one {Geselecteerd account verwijderen} other {# geselecteerde accounts verwijderen}}",
+      "removeHint": "Verwijderen kan niet ongedaan worden gemaakt. Naam, e-mail, telefoon en inloggegevens worden gewist; uitslagen blijven staan als \"Deleted player\". Beheerders en organisatoren kun je pas verwijderen nadat hun rol is ingetrokken.",
+      "password": "Je eigen wachtwoord ter bevestiging",
+      "confirm": "{count, plural, one {Ja, # account verwijderen} other {Ja, # accounts verwijderen}}",
+      "removed": "{count, plural, =0 {Geen accounts verwijderd (al verwijderd).} one {# account verwijderd.} other {# accounts verwijderd.}}"
     }
   },
   "Legal": {

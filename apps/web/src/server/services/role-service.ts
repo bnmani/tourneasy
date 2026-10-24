@@ -5,13 +5,17 @@
 import { Prisma, prisma, Role } from '@tourneasy/db';
 import { fieldErrors, roleChangeSchema } from '@tourneasy/shared';
 import { messages, type AppLocale } from '@tourneasy/shared/i18n';
+import { z } from 'zod';
 import { sendMailSafely } from '../email/mailer';
 import { renderEmail } from '../email/templates';
 import { writeAudit } from '../lib/audit';
 import { AppError, validationError } from '../lib/errors';
+import { verifyPassword } from '../lib/password';
 import type { RequestMeta } from '../lib/request-meta';
+import { parseInput } from '../lib/validation';
+import { anonymiseUser } from './gdpr-service';
 import { assertAdmin } from './permissions';
-import type { Actor } from './session-service';
+import { type Actor, revokeAllSessions } from './session-service';
 
 export function hasRole(actor: Actor | null, role: Role): boolean {
   return !!actor && actor.roles.includes(role);
@@ -145,4 +149,51 @@ export async function revokeRole(actor: Actor, input: unknown, meta: RequestMeta
     { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
   );
   if (removed) await notifyRoleChange(userId, role, false);
+}
+
+const removeUsersSchema = z.object({
+  userIds: z.array(z.string().uuid('invalid')).min(1, 'required').max(100, 'invalid'),
+  password: z.string().min(1, 'required').max(200),
+});
+
+/**
+ * Admin: removes accounts in bulk to keep the site clean (D72). Same erasure as a player's own
+ * deletion (anonymised; results stay as "Deleted player"). Needs the admin's own password; never
+ * the admin themselves, and never admins or organisers (take the role away first). Logged.
+ */
+export async function removeUsers(actor: Actor, input: unknown, meta: RequestMeta) {
+  assertAdmin(actor);
+  const { userIds, password } = parseInput(removeUsersSchema, input);
+  const ids = [...new Set(userIds)];
+  if (ids.includes(actor.userId)) throw new AppError('removeSelf');
+  const me = await prisma.user.findUniqueOrThrow({
+    where: { id: actor.userId },
+    select: { passwordHash: true },
+  });
+  if (!me.passwordHash || !(await verifyPassword(me.passwordHash, password)))
+    throw new AppError('wrongPassword', { fields: { password: 'wrongPassword' } });
+  const users = await prisma.user.findMany({
+    where: { id: { in: ids }, anonymisedAt: null, deletedAt: null },
+    select: { id: true, roles: { select: { role: true } } },
+  });
+  if (users.some((u) => u.roles.some((r) => r.role !== 'PLAYER')))
+    throw new AppError('removeStaff');
+  const now = new Date();
+  await prisma.$transaction(
+    async (tx) => {
+      for (const u of users) {
+        await anonymiseUser(tx, u.id, now);
+        await writeAudit(tx, {
+          actorId: actor.userId,
+          action: 'user.delete.byAdmin',
+          entityType: 'User',
+          entityId: u.id,
+          meta,
+        });
+      }
+    },
+    { timeout: 60_000 },
+  );
+  for (const u of users) await revokeAllSessions(u.id);
+  return users.length;
 }

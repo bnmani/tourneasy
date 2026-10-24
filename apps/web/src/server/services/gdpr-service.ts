@@ -86,51 +86,7 @@ export async function deleteMyAccount(actor: Actor, input: unknown): Promise<voi
 
   const now = new Date();
   await prisma.$transaction(async (tx) => {
-    await tx.user.update({
-      where: { id: user.id },
-      data: {
-        email: `deleted+${user.id}@invalid.tourneasy`,
-        name: 'Deleted user',
-        passwordHash: null,
-        image: null,
-        isActive: false,
-        anonymisedAt: now,
-        deletedAt: now,
-        emailVerifiedAt: null,
-      },
-    });
-    const profile = await tx.playerProfile.findUnique({ where: { userId: user.id } });
-    if (profile) {
-      const dob = profile.dateOfBirth;
-      await tx.playerProfile.update({
-        where: { id: profile.id },
-        data: {
-          firstName: 'Deleted',
-          lastNamePrefix: null,
-          lastName: 'player',
-          // Keep only the birth year: results by age category stay meaningful.
-          dateOfBirth: new Date(Date.UTC(dob.getUTCFullYear(), 0, 1)),
-          phone: null,
-          nationality: null,
-          federationId: null,
-          photoKey: null,
-          emergencyName: null,
-          emergencyPhone: null,
-          publicProfile: false,
-          deletedAt: now,
-        },
-      });
-    }
-    await tx.userRole.deleteMany({ where: { userId: user.id, role: { not: 'PLAYER' } } });
-    await tx.deviceToken.deleteMany({ where: { userId: user.id } });
-    await tx.notificationPreference.deleteMany({ where: { userId: user.id } });
-    await tx.playerFollow.deleteMany({ where: { followerUserId: user.id } });
-    await tx.verificationToken.deleteMany({ where: { identifier: `email-verify:${user.id}` } });
-    await tx.passwordResetToken.deleteMany({ where: { userId: user.id } });
-    await tx.userSession.updateMany({
-      where: { userId: user.id },
-      data: { ipAddress: null, userAgent: null, deviceName: null },
-    });
+    await anonymiseUser(tx, user.id, now);
     await writeAudit(tx, {
       actorId: user.id,
       action: 'user.delete.anonymise',
@@ -140,6 +96,63 @@ export async function deleteMyAccount(actor: Actor, input: unknown): Promise<voi
     });
   });
   await revokeAllSessions(user.id);
+}
+
+type Tx = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
+
+/**
+ * Erasure by anonymisation (art. 17): the account and its player profile lose their personal
+ * data; entries, results and payments stay, shown as "Deleted player". Used by the player's
+ * own deletion and by an admin removing accounts (D72).
+ */
+export async function anonymiseUser(tx: Tx, userId: string, now: Date) {
+  const user = { id: userId };
+  await tx.user.update({
+    where: { id: user.id },
+    data: {
+      email: `deleted+${user.id}@invalid.tourneasy`,
+      name: 'Deleted user',
+      passwordHash: null,
+      image: null,
+      isActive: false,
+      anonymisedAt: now,
+      deletedAt: now,
+      emailVerifiedAt: null,
+    },
+  });
+  const profile = await tx.playerProfile.findUnique({ where: { userId: user.id } });
+  if (profile) {
+    const dob = profile.dateOfBirth;
+    await tx.playerProfile.update({
+      where: { id: profile.id },
+      data: {
+        firstName: 'Deleted',
+        lastNamePrefix: null,
+        lastName: 'player',
+        // Keep only the birth year: results by age category stay meaningful.
+        dateOfBirth: new Date(Date.UTC(dob.getUTCFullYear(), 0, 1)),
+        phone: null,
+        contactEmail: null,
+        nationality: null,
+        federationId: null,
+        photoKey: null,
+        emergencyName: null,
+        emergencyPhone: null,
+        publicProfile: false,
+        deletedAt: now,
+      },
+    });
+  }
+  await tx.userRole.deleteMany({ where: { userId: user.id, role: { not: 'PLAYER' } } });
+  await tx.deviceToken.deleteMany({ where: { userId: user.id } });
+  await tx.notificationPreference.deleteMany({ where: { userId: user.id } });
+  await tx.playerFollow.deleteMany({ where: { followerUserId: user.id } });
+  await tx.verificationToken.deleteMany({ where: { identifier: `email-verify:${user.id}` } });
+  await tx.passwordResetToken.deleteMany({ where: { userId: user.id } });
+  await tx.userSession.updateMany({
+    where: { userId: user.id },
+    data: { ipAddress: null, userAgent: null, deviceName: null },
+  });
 }
 
 /** Consents I have given (shown on the privacy page). */

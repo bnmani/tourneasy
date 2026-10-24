@@ -48,7 +48,9 @@ export type ErrorCode =
   | 'smtpRejected'
   | 'newsAlreadyEmailed'
   | 'logoTooLarge'
-  | 'logoInvalid';
+  | 'logoInvalid'
+  | 'removeSelf'
+  | 'removeStaff';
 
 const HTTP_STATUS: Record<ErrorCode, number> = {
   validation: 422,
@@ -97,6 +99,8 @@ const HTTP_STATUS: Record<ErrorCode, number> = {
   newsAlreadyEmailed: 409,
   logoTooLarge: 413,
   logoInvalid: 422,
+  removeSelf: 409,
+  removeStaff: 409,
 };
 
 export class AppError extends Error {

@@ -10,7 +10,7 @@ import { safeRedirectPath } from '../lib/urls';
 import { changePassword } from '../services/auth-service';
 import { deleteMyAccount } from '../services/gdpr-service';
 import { updateMyProfile } from '../services/profile-service';
-import { grantRole, revokeRole } from '../services/role-service';
+import { grantRole, removeUsers, revokeRole } from '../services/role-service';
 import { revokeAllSessions, revokeSession } from '../services/session-service';
 import { formToObject, toFormState } from './form-utils';
 import { OPTIONAL_TYPES, saveMyPreferences } from '../services/notification-service';
@@ -98,6 +98,27 @@ export async function changeRoleAction(formData: FormData): Promise<void> {
   } catch (error) {
     status = error instanceof AppError ? error.code : 'unexpected';
     if (!(error instanceof AppError)) console.error('[action] role change failed', error);
+  }
+  revalidatePath('/', 'layout');
+  back.searchParams.set('status', status);
+  redirect(`${back.pathname}${back.search}`);
+}
+
+/** Admin: remove the selected accounts (D72); outcome as ?status=removed&count=… */
+export async function removeUsersAction(formData: FormData): Promise<void> {
+  const back = new URL(safeRedirectPath(formData.get('returnTo'), '/'), 'http://local');
+  back.searchParams.delete('count');
+  let status = 'removed';
+  try {
+    const count = await removeUsers(
+      await actorOrThrow(),
+      { userIds: formData.getAll('userIds'), password: formData.get('password') },
+      await currentRequestMeta(),
+    );
+    back.searchParams.set('count', String(count));
+  } catch (error) {
+    status = error instanceof AppError ? error.code : 'unexpected';
+    if (!(error instanceof AppError)) console.error('[action] remove users failed', error);
   }
   revalidatePath('/', 'layout');
   back.searchParams.set('status', status);

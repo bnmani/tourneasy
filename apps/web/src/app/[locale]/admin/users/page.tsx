@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import { FormError, FormSuccess } from '@/components/forms/fields';
 import { Badge, FilterBar, filterInputClass, Pagination } from '@/components/admin/ui';
+import { BulkRemoveUsers, SelectUser } from '@/components/admin/bulk-remove-users';
 import { Button } from '@/components/ui/button';
 import { ScrollRegion } from '@/components/ui/scroll-region';
 import { cn } from '@/lib/utils';
@@ -33,6 +34,7 @@ export default async function AdminUsersPage({
 
   const t = await getTranslations('Admin');
   const tr = await getTranslations('Roles');
+  const tb = await getTranslations('Admin.usersBulk');
   const returnTo = `/${locale}/admin/users${q ? `?${new URLSearchParams({ q })}` : ''}`;
   const pageHref = (p: number) =>
     `/admin/users?${new URLSearchParams({ ...(q ? { q } : {}), page: String(p) })}`;
@@ -46,7 +48,12 @@ export default async function AdminUsersPage({
 
       {status === 'granted' && <FormSuccess>{t('granted')}</FormSuccess>}
       {status === 'revoked' && <FormSuccess>{t('revokedRole')}</FormSuccess>}
-      {status && !['granted', 'revoked'].includes(status) && (
+      {status === 'removed' && (
+        <FormSuccess>
+          {tb('removed', { count: Number(firstParam(query.count) ?? '0') })}
+        </FormSuccess>
+      )}
+      {status && !['granted', 'revoked', 'removed'].includes(status) && (
         <FormError state={{ error: status }} />
       )}
 
@@ -69,6 +76,7 @@ export default async function AdminUsersPage({
       </FilterBar>
 
       <p className="text-sm text-muted-foreground">{t('total', { count: result.total })}</p>
+      {result.users.length > 0 && <BulkRemoveUsers returnTo={returnTo} />}
       {result.users.length === 0 ? (
         <p className="text-muted-foreground">{t('empty')}</p>
       ) : (
@@ -76,6 +84,9 @@ export default async function AdminUsersPage({
           <table className="w-full min-w-[44rem] text-left text-sm">
             <thead className="border-b bg-muted/50 text-xs text-muted-foreground uppercase">
               <tr>
+                <th scope="col" className="w-10 px-3 py-2">
+                  <span className="sr-only">{tb('selectPage')}</span>
+                </th>
                 <th scope="col" className="px-3 py-2">
                   {t('name')}
                 </th>
@@ -95,6 +106,13 @@ export default async function AdminUsersPage({
             <tbody className="divide-y">
               {result.users.map((u) => (
                 <tr key={u.id} className="align-middle">
+                  <td className="px-3 py-2">
+                    <SelectUser
+                      id={u.id}
+                      name={u.name}
+                      disabled={u.id === actor.userId || u.roles.some((r) => r !== 'PLAYER')}
+                    />
+                  </td>
                   <td className="px-3 py-2">
                     <span className="font-medium">{u.name}</span>
                     {u.id === actor.userId && (

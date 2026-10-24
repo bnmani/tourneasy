@@ -193,7 +193,9 @@
     "logoInvalid": "Choose a PNG or JPG file.",
     "templatePlaceholder": "Only use the fields listed for this text.",
     "templateSyntax": "Check the braces: every field sits between an opening and a closing brace.",
-    "templateOneLine": "A subject fits on one line."
+    "templateOneLine": "A subject fits on one line.",
+    "removeSelf": "You can’t remove your own account here.",
+    "removeStaff": "The selection includes an admin or organiser. Take their role away first."
   },
   "Auth": {
     "login": {
@@ -1175,6 +1177,17 @@
         "settingsTestNote": "Tip",
         "settingsTestButton": "Button"
       }
+    },
+    "usersBulk": {
+      "select": "Select {name}",
+      "protected": "Admins, organisers and your own account can’t be removed here.",
+      "selectPage": "Select all on this page",
+      "selected": "{count, plural, =0 {Nothing selected} one {# account selected} other {# accounts selected}}",
+      "remove": "{count, plural, one {Remove selected account} other {Remove # selected accounts}}",
+      "removeHint": "This can’t be undone. Name, email, phone and login are erased; results stay as \"Deleted player\". Admins and organisers can only be removed after their role is taken away.",
+      "password": "Your own password to confirm",
+      "confirm": "{count, plural, one {Yes, remove # account} other {Yes, remove # accounts}}",
+      "removed": "{count, plural, =0 {No accounts removed (already removed).} one {# account removed.} other {# accounts removed.}}"
     }
   },
   "Legal": {

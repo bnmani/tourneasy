@@ -4,7 +4,7 @@ import { createPlayer, lastMailTo, meta, resetDatabase } from '@/test/db';
 import { authenticate } from './auth-service';
 import { deleteMyAccount, exportMyData } from './gdpr-service';
 import { getMyAccount, updateMyProfile } from './profile-service';
-import { grantRole, listUsers, revokeRole } from './role-service';
+import { grantRole, listUsers, removeUsers, revokeRole } from './role-service';
 import { actorFromWebToken, createWebSession, type Actor } from './session-service';
 
 beforeEach(resetDatabase);
@@ -161,5 +161,68 @@ describe('GDPR', () => {
     await expect(deleteMyAccount(admin, { password, confirm: true })).rejects.toMatchObject({
       code: 'lastAdmin',
     });
+  });
+});
+
+describe('admin removes accounts (D72)', () => {
+  it('removes selected players in one go, with the admin password, and keeps staff safe', async () => {
+    const adminPlayer = await createPlayer();
+    const admin = await makeAdmin(adminPlayer.userId);
+    const [a, b] = [await createPlayer(), await createPlayer()];
+    const organiser = await createPlayer();
+    await prisma.userRole.create({ data: { userId: organiser.userId, role: Role.ORGANISER } });
+    const aSession = await actorFor(a.userId);
+
+    // Only admins, with their own password; never themselves or staff.
+    await expect(
+      removeUsers(aSession, { userIds: [b.userId], password: a.password }, meta),
+    ).rejects.toMatchObject({ code: 'forbidden' });
+    await expect(
+      removeUsers(admin, { userIds: [a.userId], password: 'wrong-password' }, meta),
+    ).rejects.toMatchObject({ code: 'wrongPassword' });
+    await expect(
+      removeUsers(
+        admin,
+        { userIds: [a.userId, adminPlayer.userId], password: adminPlayer.password },
+        meta,
+      ),
+    ).rejects.toMatchObject({ code: 'removeSelf' });
+    await expect(
+      removeUsers(
+        admin,
+        { userIds: [a.userId, organiser.userId], password: adminPlayer.password },
+        meta,
+      ),
+    ).rejects.toMatchObject({ code: 'removeStaff' });
+    expect(await prisma.user.count({ where: { anonymisedAt: { not: null } } })).toBe(0);
+
+    const removed = await removeUsers(
+      admin,
+      { userIds: [a.userId, b.userId, b.userId], password: adminPlayer.password },
+      meta,
+    );
+    expect(removed).toBe(2);
+    const gone = await prisma.user.findUniqueOrThrow({
+      where: { id: a.userId },
+      include: { playerProfile: true },
+    });
+    expect(gone).toMatchObject({ name: 'Deleted user', isActive: false });
+    expect(gone.email).toBe(`deleted+${a.userId}@invalid.tourneasy`);
+    expect(gone.playerProfile).toMatchObject({
+      firstName: 'Deleted',
+      phone: null,
+      contactEmail: null,
+    });
+    // Logged out, gone from the list, and logged as the admin's action.
+    expect(await actorFromWebToken('x')).toBeNull();
+    expect((await listUsers(admin, {})).users.map((u) => u.id)).not.toContain(a.userId);
+    expect(
+      await prisma.auditLog.count({
+        where: { action: 'user.delete.byAdmin', actorId: admin.userId },
+      }),
+    ).toBe(2);
+    expect(await prisma.userSession.count({ where: { userId: a.userId, revokedAt: null } })).toBe(
+      0,
+    );
   });
 });
