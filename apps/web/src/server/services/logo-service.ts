@@ -89,6 +89,10 @@ export async function removeTournamentLogo(actor: Actor, tournamentId: string, m
   });
 }
 
+/** Public address of a logo; the version in the URL lets browsers cache it forever. */
+export const logoUrlFor = (tournamentId: string, updatedAt: Date) =>
+  siteUrl(`/api/v1/tournament-logos/${tournamentId}?v=${updatedAt.getTime()}`);
+
 export type LogoRef = { url: string; width: number; height: number };
 
 /** Public address and size of a tournament's logo, or null when it has none. */
@@ -99,8 +103,7 @@ export async function tournamentLogo(tournamentId: string): Promise<LogoRef | nu
   });
   if (!logo) return null;
   return {
-    // The version in the URL lets browsers and mail clients cache it forever.
-    url: siteUrl(`/api/v1/tournament-logos/${tournamentId}?v=${logo.updatedAt.getTime()}`),
+    url: logoUrlFor(tournamentId, logo.updatedAt),
     width: logo.width,
     height: logo.height,
   };

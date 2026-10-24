@@ -4,6 +4,7 @@ import { createPlayer, lastMailTo, meta, resetDatabase } from '@/test/db';
 import { authenticate } from './auth-service';
 import { deleteMyAccount, exportMyData } from './gdpr-service';
 import { getMyAccount, updateMyProfile } from './profile-service';
+import { removePlayers } from './player-service';
 import { grantRole, listUsers, removeUsers, revokeRole } from './role-service';
 import { actorFromWebToken, createWebSession, type Actor } from './session-service';
 
@@ -224,5 +225,58 @@ describe('admin removes accounts (D72)', () => {
     expect(await prisma.userSession.count({ where: { userId: a.userId, revokedAt: null } })).toBe(
       0,
     );
+  });
+});
+
+describe('admin removes players (D72)', () => {
+  it('removes players with and without an account, keeping staff and self safe', async () => {
+    const adminPlayer = await createPlayer();
+    const admin = await makeAdmin(adminPlayer.userId);
+    const withAccount = await createPlayer();
+    const profile = (userId: string) =>
+      prisma.playerProfile.findUniqueOrThrow({ where: { userId } });
+    const loose = await prisma.playerProfile.create({
+      data: {
+        memberNumber: 'TE900001',
+        firstName: 'Kees',
+        lastName: 'Visser',
+        gender: 'MALE',
+        dateOfBirth: new Date('1990-04-12'),
+        contactEmail: 'kees@example.test',
+        phone: '+31612345678',
+      },
+    });
+    const organiser = await createPlayer();
+    await prisma.userRole.create({ data: { userId: organiser.userId, role: Role.ORGANISER } });
+    const pw = adminPlayer.password;
+
+    await expect(
+      removePlayers(admin, { ids: [(await profile(adminPlayer.userId)).id], password: pw }, meta),
+    ).rejects.toMatchObject({ code: 'removeSelf' });
+    await expect(
+      removePlayers(admin, { ids: [(await profile(organiser.userId)).id], password: pw }, meta),
+    ).rejects.toMatchObject({ code: 'removeStaff' });
+    await expect(
+      removePlayers(admin, { ids: [loose.id], password: 'nope-nope' }, meta),
+    ).rejects.toMatchObject({ code: 'wrongPassword' });
+
+    const n = await removePlayers(
+      admin,
+      { ids: [loose.id, (await profile(withAccount.userId)).id], password: pw },
+      meta,
+    );
+    expect(n).toBe(2);
+    expect(await prisma.playerProfile.findUniqueOrThrow({ where: { id: loose.id } })).toMatchObject(
+      {
+        firstName: 'Deleted',
+        lastName: 'player',
+        contactEmail: null,
+        phone: null,
+      },
+    );
+    expect(
+      await prisma.user.findUniqueOrThrow({ where: { id: withAccount.userId } }),
+    ).toMatchObject({ name: 'Deleted user', isActive: false });
+    expect(await prisma.auditLog.count({ where: { action: 'player.delete.byAdmin' } })).toBe(2);
   });
 });

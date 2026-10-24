@@ -112,7 +112,7 @@ export async function removeUsersAction(formData: FormData): Promise<void> {
   try {
     const count = await removeUsers(
       await actorOrThrow(),
-      { userIds: formData.getAll('userIds'), password: formData.get('password') },
+      { userIds: formData.getAll('ids'), password: formData.get('password') },
       await currentRequestMeta(),
     );
     back.searchParams.set('count', String(count));

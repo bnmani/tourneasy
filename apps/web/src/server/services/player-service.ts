@@ -3,6 +3,7 @@
  * edit, merge duplicates, CSV export and import. Admin only.
  */
 import { prisma, type Discipline, type Gender, Prisma } from '@tourneasy/db';
+import { z } from 'zod';
 import {
   adminPlayerSchema,
   DISCIPLINES,
@@ -18,8 +19,10 @@ import { excelSerialToIsoDate, looksLikeXlsx, readXlsx, toXlsx } from '../lib/xl
 import { AppError } from '../lib/errors';
 import type { RequestMeta } from '../lib/request-meta';
 import { pageCount, pageParams, parseInput } from '../lib/validation';
+import { verifyPassword } from '../lib/password';
+import { anonymiseProfile, anonymiseUser } from './gdpr-service';
 import { assertAdmin } from './permissions';
-import type { Actor } from './session-service';
+import { type Actor, revokeAllSessions } from './session-service';
 
 /** Columns the admin player list can be sorted by. */
 export const PLAYER_SORTS = ['name', 'number', 'gender', 'club', 'age', 'created'] as const;
@@ -104,7 +107,9 @@ const listSelect = {
   federationId: true,
   createdAt: true,
   club: { select: { id: true, name: true } },
-  user: { select: { id: true, email: true, emailVerifiedAt: true } },
+  user: {
+    select: { id: true, email: true, emailVerifiedAt: true, roles: { select: { role: true } } },
+  },
 } satisfies Prisma.PlayerProfileSelect;
 
 type PlayerRow = Prisma.PlayerProfileGetPayload<{ select: typeof listSelect }>;
@@ -668,4 +673,51 @@ async function importPlayerRows(
     meta,
   });
   return result;
+}
+
+const removePlayersSchema = z.object({
+  ids: z.array(z.string().uuid('invalid')).min(1, 'required').max(100, 'invalid'),
+  password: z.string().min(1, 'required').max(200),
+});
+
+/**
+ * Admin: removes players in bulk (D72), with or without an account. Same erasure as an
+ * account deletion: personal data anonymised, entries and results kept as "Deleted player".
+ * Needs the admin's password; never the admin's own player or admins/organisers. Logged.
+ */
+export async function removePlayers(actor: Actor, input: unknown, meta: RequestMeta) {
+  assertAdmin(actor);
+  const { ids, password } = parseInput(removePlayersSchema, input);
+  const me = await prisma.user.findUniqueOrThrow({
+    where: { id: actor.userId },
+    select: { passwordHash: true },
+  });
+  if (!me.passwordHash || !(await verifyPassword(me.passwordHash, password)))
+    throw new AppError('wrongPassword', { fields: { password: 'wrongPassword' } });
+  const players = await prisma.playerProfile.findMany({
+    where: { id: { in: [...new Set(ids)] }, deletedAt: null },
+    select: { id: true, userId: true, user: { select: { roles: { select: { role: true } } } } },
+  });
+  if (players.some((p) => p.userId === actor.userId)) throw new AppError('removeSelf');
+  if (players.some((p) => p.user?.roles.some((r) => r.role !== 'PLAYER')))
+    throw new AppError('removeStaff');
+  const now = new Date();
+  await prisma.$transaction(
+    async (tx) => {
+      for (const p of players) {
+        if (p.userId) await anonymiseUser(tx, p.userId, now);
+        else await anonymiseProfile(tx, p.id, now);
+        await writeAudit(tx, {
+          actorId: actor.userId,
+          action: 'player.delete.byAdmin',
+          entityType: 'PlayerProfile',
+          entityId: p.id,
+          meta,
+        });
+      }
+    },
+    { timeout: 60_000 },
+  );
+  for (const p of players) if (p.userId) await revokeAllSessions(p.userId);
+  return players.length;
 }

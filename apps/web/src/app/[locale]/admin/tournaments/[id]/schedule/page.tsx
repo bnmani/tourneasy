@@ -1,3 +1,4 @@
+import { FileDown } from 'lucide-react';
 import { formatDate, formatTime, utcToAmsterdamLocal } from '@tourneasy/shared';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
@@ -55,6 +56,15 @@ export default async function SchedulePage({ params, searchParams }: Props) {
         intro={ts('intro')}
         actions={
           <>
+            <Button asChild>
+              <a
+                href={`/api/v1/tournaments/${tournament.slug}/schedule.pdf?lang=${locale}`}
+                download
+              >
+                <FileDown aria-hidden="true" />
+                {ts('downloadPdf')}
+              </a>
+            </Button>
             <Button asChild variant="outline">
               <Link href={`/admin/tournaments/${id}/matches`}>{ts('desk')}</Link>
             </Button>

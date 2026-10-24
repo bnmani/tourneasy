@@ -23,6 +23,9 @@ import {
   publishSchedule,
   roundLabel,
 } from './schedule-service';
+import { PDFDocument } from 'pdf-lib';
+import { buildSchedulePdf, pdfSafe } from '../pdf/schedule-pdf';
+import { schedulePdf } from './schedule-pdf-service';
 import { actorFromWebToken, createWebSession } from './session-service';
 
 beforeEach(resetDatabase);
@@ -355,5 +358,47 @@ describe('round names (schedule and desk)', () => {
       'Voorronde · ronde 1',
     );
     expect(roundLabel(row({ type: 'SWISS' }, { round: 3 }), 'en')).toBe('Swiss system · round 3');
+  });
+});
+
+describe('schedule PDF (D73)', () => {
+  it('is for managers before publishing (draft) and for everyone after', async () => {
+    const actor = await admin();
+    const { t, event } = await setup('ROUND_ROBIN', 4);
+    await generateDraw(actor, event.id, meta, seededRng(1));
+    await publishDraws(actor, event.id, true, meta);
+    await proposeTournamentSchedule(actor, t.id, {}, meta);
+    await expect(schedulePdf(null, t.slug, 'nl')).rejects.toMatchObject({ code: 'notFound' });
+    const draft = await schedulePdf(actor, t.slug, 'nl');
+    expect(draft.filename).toBe('speelschema-utrecht-open.pdf');
+    expect(Buffer.from(draft.bytes).subarray(0, 5).toString()).toBe('%PDF-');
+    await publishSchedule(actor, t.id, true, meta);
+    const pub = await schedulePdf(null, t.slug, 'en');
+    expect(pub.filename).toBe('schedule-utrecht-open.pdf');
+    expect((await PDFDocument.load(pub.bytes)).getTitle()).toBe('Match schedule – Utrecht Open');
+  });
+
+  it('runs over several pages and copes with any name', async () => {
+    expect(pdfSafe('Zoë Łukasz Nguyễn 🏸')).toBe('Zoë Lukasz Nguyen ?');
+    const start = new Date('2027-03-13T08:00:00Z');
+    const bytes = await buildSchedulePdf({
+      locale: 'nl',
+      tournament: { name: 'Utrecht Open', when: '13 maart', venue: null, url: 'https://x.test' },
+      logo: null,
+      draft: false,
+      generatedAt: start,
+      matches: Array.from({ length: 120 }, (_, i) => ({
+        number: i + 1,
+        event: 'Gemengd dubbel · Senioren · B',
+        round: 'Poule A · ronde 1',
+        a: 'Łukasz Kowalski / Zoë de Vries-van den Berg',
+        b: null,
+        startsAt: new Date(start.getTime() + Math.floor(i / 6) * 1_800_000),
+        court: { number: (i % 6) + 1, name: null },
+        status: 'SCHEDULED',
+        sets: [],
+      })),
+    });
+    expect((await PDFDocument.load(bytes)).getPageCount()).toBeGreaterThan(3);
   });
 });

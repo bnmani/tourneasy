@@ -3,12 +3,12 @@ import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import { FormError, FormSuccess } from '@/components/forms/fields';
 import { Badge, FilterBar, filterInputClass, Pagination } from '@/components/admin/ui';
-import { BulkRemoveUsers, SelectUser } from '@/components/admin/bulk-remove-users';
+import { BulkRemove, SelectRow } from '@/components/admin/bulk-remove';
 import { Button } from '@/components/ui/button';
 import { ScrollRegion } from '@/components/ui/scroll-region';
 import { cn } from '@/lib/utils';
 import { firstParam, pageLocale, type LocaleParams, type SearchParams } from '@/lib/page';
-import { changeRoleAction } from '@/server/actions/account-actions';
+import { changeRoleAction, removeUsersAction } from '@/server/actions/account-actions';
 import { getActor, requireRole } from '@/server/auth/web';
 import { listUsers } from '@/server/services/role-service';
 
@@ -76,7 +76,14 @@ export default async function AdminUsersPage({
       </FilterBar>
 
       <p className="text-sm text-muted-foreground">{t('total', { count: result.total })}</p>
-      {result.users.length > 0 && <BulkRemoveUsers returnTo={returnTo} />}
+      {result.users.length > 0 && (
+        <BulkRemove
+          formId="bulk-remove-users"
+          texts="Admin.usersBulk"
+          action={removeUsersAction}
+          returnTo={returnTo}
+        />
+      )}
       {result.users.length === 0 ? (
         <p className="text-muted-foreground">{t('empty')}</p>
       ) : (
@@ -107,7 +114,9 @@ export default async function AdminUsersPage({
               {result.users.map((u) => (
                 <tr key={u.id} className="align-middle">
                   <td className="px-3 py-2">
-                    <SelectUser
+                    <SelectRow
+                      formId="bulk-remove-users"
+                      texts="Admin.usersBulk"
                       id={u.id}
                       name={u.name}
                       disabled={u.id === actor.userId || u.roles.some((r) => r !== 'PLAYER')}

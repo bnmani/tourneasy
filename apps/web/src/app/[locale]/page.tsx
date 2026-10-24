@@ -103,6 +103,7 @@ export default async function HomePage({ params }: Props) {
               phaseLabel: tph(f.phase),
               disciplines: f.disciplines,
               fee: formatFeeRange(f.feeFromCents, f.feeToCents, locale as AppLocale),
+              logoUrl: f.logoUrl,
             }))}
             labels={{
               region: t('carouselLabel'),

@@ -1,3 +1,4 @@
+import { FileDown } from 'lucide-react';
 import { formatDate, formatTime, utcToAmsterdamLocal } from '@tourneasy/shared';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
@@ -45,9 +46,24 @@ export default async function TournamentSchedulePage({ params }: Props) {
   return (
     <>
       <PageHero title={t('scheduleTitle', { tournament: tournament.name })}>
-        <Link href={`/tournaments/${slug}`} className="text-sm underline-offset-4 hover:underline">
-          ← {t('backToTournament')}
-        </Link>
+        <div className="flex flex-wrap items-center gap-4">
+          <Link
+            href={`/tournaments/${slug}`}
+            className="text-sm underline-offset-4 hover:underline"
+          >
+            ← {t('backToTournament')}
+          </Link>
+          {schedule.published && (
+            <a
+              href={`/api/v1/tournaments/${slug}/schedule.pdf?lang=${locale}`}
+              download
+              className="inline-flex items-center gap-2 rounded-md bg-brand px-3 py-2 text-sm font-semibold text-brand-foreground hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+            >
+              <FileDown aria-hidden="true" className="size-4" />
+              {t('downloadPdf')}
+            </a>
+          )}
+        </div>
       </PageHero>
       <div className="mx-auto max-w-6xl space-y-8 px-4 py-8 sm:py-10">
         <AutoRefresh seconds={60} />

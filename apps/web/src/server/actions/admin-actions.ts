@@ -21,8 +21,10 @@ import {
   mergePlayers,
   updatePlayer,
   type ImportResult,
+  removePlayers,
 } from '../services/player-service';
 import type { Actor } from '../services/session-service';
+import { safeRedirectPath } from '../lib/urls';
 import {
   addOrganiser,
   changeTournamentStatus,
@@ -356,6 +358,28 @@ export async function removeTournamentLogoAction(locale: AppLocale, tournamentId
     (actor, meta) => removeTournamentLogo(actor, tournamentId, meta),
     'logoRemoved',
   );
+}
+
+/** Admin: remove the selected players (D72); outcome as ?status=removed&count=… */
+export async function removePlayersAction(formData: FormData) {
+  const back = new URL(safeRedirectPath(formData.get('returnTo'), '/'), 'http://local');
+  back.searchParams.delete('count');
+  back.searchParams.delete('page');
+  let status = 'removed';
+  try {
+    const count = await removePlayers(
+      await actorOrThrow(),
+      { ids: formData.getAll('ids'), password: formData.get('password') },
+      await currentRequestMeta(),
+    );
+    back.searchParams.set('count', String(count));
+  } catch (error) {
+    status = error instanceof AppError ? error.code : 'unexpected';
+    if (!(error instanceof AppError)) console.error('[admin action] remove players failed', error);
+  }
+  revalidatePath('/', 'layout');
+  back.searchParams.set('status', status);
+  redirect(`${back.pathname}${back.search}`);
 }
 
 export async function setSiteThemeAction(locale: AppLocale, formData: FormData) {

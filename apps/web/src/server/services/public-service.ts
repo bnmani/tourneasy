@@ -22,6 +22,7 @@ import {
 import { AppError } from '../lib/errors';
 import { parseInput } from '../lib/validation';
 import type { Actor } from './session-service';
+import { logoUrlFor } from './logo-service';
 
 // ── Paging ─────────────────────────────────────────────────────────────────────────
 
@@ -58,6 +59,8 @@ const PUBLISHED: Prisma.TournamentWhereInput = { isPublished: true, deletedAt: n
 const LIVE_EVENTS = { where: { deletedAt: null } } as const;
 
 const summarySelect = {
+  id: true,
+  logo: { select: { updatedAt: true } },
   slug: true,
   name: true,
   status: true,
@@ -90,6 +93,7 @@ function toSummary(t: SummaryRow, now: Date): PublicTournamentSummary {
     eventCount: t.events.length,
     feeFromCents: fees.length ? Math.min(...fees) : null,
     feeToCents: fees.length ? Math.max(...fees) : null,
+    logoUrl: t.logo ? logoUrlFor(t.id, t.logo.updatedAt) : null,
   };
 }
 

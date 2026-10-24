@@ -121,28 +121,7 @@ export async function anonymiseUser(tx: Tx, userId: string, now: Date) {
     },
   });
   const profile = await tx.playerProfile.findUnique({ where: { userId: user.id } });
-  if (profile) {
-    const dob = profile.dateOfBirth;
-    await tx.playerProfile.update({
-      where: { id: profile.id },
-      data: {
-        firstName: 'Deleted',
-        lastNamePrefix: null,
-        lastName: 'player',
-        // Keep only the birth year: results by age category stay meaningful.
-        dateOfBirth: new Date(Date.UTC(dob.getUTCFullYear(), 0, 1)),
-        phone: null,
-        contactEmail: null,
-        nationality: null,
-        federationId: null,
-        photoKey: null,
-        emergencyName: null,
-        emergencyPhone: null,
-        publicProfile: false,
-        deletedAt: now,
-      },
-    });
-  }
+  if (profile) await anonymiseProfile(tx, profile.id, now);
   await tx.userRole.deleteMany({ where: { userId: user.id, role: { not: 'PLAYER' } } });
   await tx.deviceToken.deleteMany({ where: { userId: user.id } });
   await tx.notificationPreference.deleteMany({ where: { userId: user.id } });
@@ -152,6 +131,31 @@ export async function anonymiseUser(tx: Tx, userId: string, now: Date) {
   await tx.userSession.updateMany({
     where: { userId: user.id },
     data: { ipAddress: null, userAgent: null, deviceName: null },
+  });
+}
+
+/** The player profile part of the erasure; also for players without an account (D72). */
+export async function anonymiseProfile(tx: Tx, profileId: string, now: Date) {
+  const profile = await tx.playerProfile.findUniqueOrThrow({ where: { id: profileId } });
+  const dob = profile.dateOfBirth;
+  await tx.playerProfile.update({
+    where: { id: profile.id },
+    data: {
+      firstName: 'Deleted',
+      lastNamePrefix: null,
+      lastName: 'player',
+      // Keep only the birth year: results by age category stay meaningful.
+      dateOfBirth: new Date(Date.UTC(dob.getUTCFullYear(), 0, 1)),
+      phone: null,
+      contactEmail: null,
+      nationality: null,
+      federationId: null,
+      photoKey: null,
+      emergencyName: null,
+      emergencyPhone: null,
+      publicProfile: false,
+      deletedAt: now,
+    },
   });
 }
 

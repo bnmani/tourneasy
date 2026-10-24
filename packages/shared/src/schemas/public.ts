@@ -60,6 +60,7 @@ export const publicTournamentSummarySchema = z.object({
   eventCount: z.number().int(),
   feeFromCents: z.number().int().nullable(),
   feeToCents: z.number().int().nullable(),
+  logoUrl: z.string().nullable().describe("The tournament's own logo (PNG/JPEG), if any"),
 });
 export type PublicTournamentSummary = z.infer<typeof publicTournamentSummarySchema>;
 

@@ -14,6 +14,8 @@ export type CarouselItem = {
   phaseLabel: string;
   disciplines: string[];
   fee: string | null;
+  /** The tournament's own logo, shown on a white tile instead of the court pattern. */
+  logoUrl?: string | null;
 };
 
 const INTERVAL_MS = 6000;
@@ -68,8 +70,22 @@ export function TournamentCarousel({
           aria-hidden="true"
           className="relative h-32 overflow-hidden rounded-lg bg-[linear-gradient(135deg,var(--primary),var(--brand))] md:h-40"
         >
-          <div className="absolute inset-0 bg-[repeating-linear-gradient(90deg,transparent_0_46px,rgb(255_255_255/0.14)_46px_48px)]" />
-          <div className="absolute inset-y-0 left-1/2 w-0.5 bg-white/40" />
+          {item.logoUrl ? (
+            <div className="absolute inset-0 flex items-center justify-center bg-white p-4 pt-10">
+              {/* eslint-disable-next-line @next/next/no-img-element -- served by our own endpoint */}
+              <img
+                src={item.logoUrl}
+                alt=""
+                className="max-h-full max-w-full object-contain"
+                loading="lazy"
+              />
+            </div>
+          ) : (
+            <>
+              <div className="absolute inset-0 bg-[repeating-linear-gradient(90deg,transparent_0_46px,rgb(255_255_255/0.14)_46px_48px)]" />
+              <div className="absolute inset-y-0 left-1/2 w-0.5 bg-white/40" />
+            </>
+          )}
           <span
             className={cn(
               'absolute top-3 left-3 rounded-full px-2.5 py-0.5 text-xs font-bold',

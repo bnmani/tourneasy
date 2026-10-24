@@ -893,7 +893,8 @@
       "swap": "Swap",
       "remove": "Take off the schedule",
       "place": "Schedule",
-      "empty": "Nothing to schedule yet. Publish the draws per category first."
+      "empty": "Nothing to schedule yet. Publish the draws per category first.",
+      "downloadPdf": "Schedule as PDF"
     },
     "desk": {
       "title": "Match desk",
@@ -1188,6 +1189,17 @@
       "password": "Your own password to confirm",
       "confirm": "{count, plural, one {Yes, remove # account} other {Yes, remove # accounts}}",
       "removed": "{count, plural, =0 {No accounts removed (already removed).} one {# account removed.} other {# accounts removed.}}"
+    },
+    "playersBulk": {
+      "select": "Select {name}",
+      "protected": "Admins, organisers and your own player profile can’t be removed here.",
+      "selectPage": "Select all on this page",
+      "selected": "{count, plural, =0 {Nothing selected} one {# player selected} other {# players selected}}",
+      "remove": "{count, plural, one {Remove selected player} other {Remove # selected players}}",
+      "removeHint": "This can’t be undone. Name, contact details and (with an account) the login are erased; entries and results stay as \"Deleted player\". Admins and organisers can only be removed after their role is taken away.",
+      "password": "Your own password to confirm",
+      "confirm": "{count, plural, one {Yes, remove # player} other {Yes, remove # players}}",
+      "removed": "{count, plural, =0 {No players removed (already removed).} one {# player removed.} other {# players removed.}}"
     }
   },
   "Legal": {
@@ -1657,7 +1669,8 @@
     "versus": "vs {name}",
     "myMatches": "My matches",
     "history": "Matches played",
-    "new": "New"
+    "new": "New",
+    "downloadPdf": "Schedule as PDF"
   },
   "Notifications": {
     "title": "Email preferences",

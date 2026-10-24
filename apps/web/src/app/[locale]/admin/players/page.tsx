@@ -8,6 +8,9 @@ import { PlayerAddedNotice } from '@/components/admin/player-added-notice';
 import { Badge, FilterBar, filterInputClass, PageHeader, Pagination } from '@/components/admin/ui';
 import { Button } from '@/components/ui/button';
 import { ScrollRegion } from '@/components/ui/scroll-region';
+import { BulkRemove, SelectRow } from '@/components/admin/bulk-remove';
+import { FormError, FormSuccess } from '@/components/forms/fields';
+import { removePlayersAction } from '@/server/actions/admin-actions';
 import { Link } from '@/i18n/navigation';
 import { personName } from '@/lib/labels';
 import { firstParam, pageLocale, type LocaleParams, type SearchParams } from '@/lib/page';
@@ -56,6 +59,8 @@ export default async function AdminPlayersPage({
   const t = await getTranslations('Admin');
   const td = await getTranslations('Disciplines');
   const tg = await getTranslations('Genders');
+  const tb = await getTranslations('Admin.playersBulk');
+  const status = firstParam(query.status);
   const filterQuery = new URLSearchParams(
     Object.entries(filters).filter(
       (e): e is [string, string] => typeof e[1] === 'string' && e[1] !== '',
@@ -193,7 +198,22 @@ export default async function AdminPlayersPage({
         </Button>
       </FilterBar>
 
+      {status === 'removed' && (
+        <FormSuccess>
+          {tb('removed', { count: Number(firstParam(query.count) ?? '0') })}
+        </FormSuccess>
+      )}
+      {status && status !== 'removed' && <FormError state={{ error: status }} />}
+
       <p className="text-sm text-muted-foreground">{t('total', { count: result.total })}</p>
+      {result.players.length > 0 && (
+        <BulkRemove
+          formId="bulk-remove-players"
+          texts="Admin.playersBulk"
+          action={removePlayersAction}
+          returnTo={`/${locale}/admin/players?${filterQuery}`}
+        />
+      )}
       {result.players.length === 0 ? (
         <p className="text-muted-foreground">{t('players.empty')}</p>
       ) : (
@@ -201,6 +221,9 @@ export default async function AdminPlayersPage({
           <table className="w-full min-w-[52rem] text-left text-sm">
             <thead className="border-b bg-muted/50 text-xs text-muted-foreground uppercase">
               <tr>
+                <th scope="col" className="w-10 px-3 py-2">
+                  <span className="sr-only">{tb('selectPage')}</span>
+                </th>
                 <SortHeader column="name" label={t('name')} {...sortProps} />
                 <th scope="col" className="px-3 py-2">
                   {t('players.contact')}
@@ -220,6 +243,18 @@ export default async function AdminPlayersPage({
             <tbody className="divide-y">
               {result.players.map((p) => (
                 <tr key={p.id}>
+                  <td className="px-3 py-2">
+                    <SelectRow
+                      formId="bulk-remove-players"
+                      texts="Admin.playersBulk"
+                      id={p.id}
+                      name={personName(p)}
+                      disabled={
+                        p.user?.id === actor.userId ||
+                        !!p.user?.roles.some((r) => r.role !== 'PLAYER')
+                      }
+                    />
+                  </td>
                   <td className="px-3 py-2">
                     <Link href={`/admin/players/${p.id}`} className="font-medium hover:underline">
                       {personName(p)}

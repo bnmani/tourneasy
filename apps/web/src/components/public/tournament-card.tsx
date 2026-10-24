@@ -38,7 +38,7 @@ export async function TournamentCard({
     <article className="group relative flex h-full flex-col gap-4 rounded-lg border bg-card p-5 text-card-foreground transition-shadow focus-within:ring-2 focus-within:ring-ring hover:shadow-md">
       <div className="flex items-start gap-4">
         <DateBlock day={t.startsOn} locale={locale} />
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <Heading className="font-heading text-lg leading-snug font-semibold">
             <Link
               href={`/tournaments/${t.slug}`}
@@ -59,6 +59,15 @@ export async function TournamentCard({
             </p>
           )}
         </div>
+        {t.logoUrl && (
+          // eslint-disable-next-line @next/next/no-img-element -- served by our own endpoint
+          <img
+            src={t.logoUrl}
+            alt=""
+            loading="lazy"
+            className="h-10 w-auto max-w-24 shrink-0 object-contain"
+          />
+        )}
       </div>
       {t.disciplines.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
