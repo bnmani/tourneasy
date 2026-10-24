@@ -17,11 +17,7 @@ export type GenderCode = (typeof GENDERS)[number];
 export const ASSIGNABLE_ROLES = ['ORGANISER', 'ADMIN'] as const;
 
 const text = (max: number) =>
-  z
-    .string({ error: 'required' })
-    .trim()
-    .min(1, 'required')
-    .max(max, 'tooLong');
+  z.string({ error: 'required' }).trim().min(1, 'required').max(max, 'tooLong');
 
 const optionalText = (max: number) =>
   z
