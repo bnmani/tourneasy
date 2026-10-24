@@ -61,8 +61,10 @@ export function PayButton({
   }
 
   useEffect(() => {
+    // Only on first render: the dashboard opens the window straight after entering. Opening
+    // fetches the checkout from the server, a real side effect, so it belongs in an effect.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (autoOpen) void open();
-    // Only on first render: the dashboard opens the window straight after entering.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

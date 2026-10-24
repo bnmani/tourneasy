@@ -8,7 +8,7 @@ import {
 } from '@tourneasy/shared/schemas';
 import { pickLocalized, type AppLocale, type LocalizedText } from '@tourneasy/shared/i18n';
 import { useTranslations } from 'next-intl';
-import { useActionState, useEffect, useState } from 'react';
+import { useActionState, useState } from 'react';
 import {
   CheckboxField,
   FormError,
@@ -75,7 +75,11 @@ export function EventForm({
   const submittedDrawType = state.values?.drawType as EventFormValues['drawType'] | undefined;
   const defaultDrawType = submittedDrawType ?? values.drawType;
   const [drawType, setDrawType] = useState(defaultDrawType);
-  useEffect(() => setDrawType(defaultDrawType), [state, defaultDrawType]);
+  const [seenState, setSeenState] = useState(state);
+  if (state !== seenState) {
+    setSeenState(state);
+    setDrawType(defaultDrawType);
+  }
   const submittedKo = state.values?.koScoringFrom as EventFormValues['koScoringFrom'] | undefined;
   const [koFrom, setKoFrom] = useState(submittedKo ?? values.koScoringFrom ?? '');
 

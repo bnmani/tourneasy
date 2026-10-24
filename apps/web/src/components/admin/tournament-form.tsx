@@ -9,7 +9,7 @@ import {
 } from '@tourneasy/shared/schemas';
 import type { AppLocale } from '@tourneasy/shared/i18n';
 import { useTranslations } from 'next-intl';
-import { useActionState, useEffect, useState } from 'react';
+import { useActionState, useState } from 'react';
 import {
   FormError,
   FormSection,
@@ -77,7 +77,11 @@ export function TournamentForm({
   const submittedType = state.values?.type as TournamentFormValues['type'] | undefined;
   const defaultType = submittedType ?? values.type ?? 'SELF';
   const [type, setType] = useState(defaultType);
-  useEffect(() => setType(defaultType), [state, defaultType]);
+  const [seenState, setSeenState] = useState(state);
+  if (state !== seenState) {
+    setSeenState(state);
+    setType(defaultType);
+  }
   const submittedVenue = state.values?.venueId;
   const [venueId, setVenueId] = useState(
     (typeof submittedVenue === 'string' ? submittedVenue : values.venueId) ?? '',

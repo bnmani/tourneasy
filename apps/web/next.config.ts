@@ -60,7 +60,6 @@ const nextConfig: NextConfig = {
     // actions, whose default limit is 1 MB.
     serverActions: { bodySizeLimit: '3mb' },
   },
-  eslint: { ignoreDuringBuilds: true },
   typescript: { ignoreBuildErrors: true },
   async headers() {
     return [{ source: '/:path*', headers: securityHeaders }];

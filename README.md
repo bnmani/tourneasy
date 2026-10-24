@@ -46,7 +46,7 @@ Set `AUTH_SECRET` in `.env` (`openssl rand -base64 48`) for the mobile token end
 ## Repository layout
 
 ```
-apps/web          Next.js 15 app (pages, REST API, server actions)
+apps/web          Next.js 16 app (pages, REST API, server actions)
 apps/mobile       reserved for the Expo app (Phase 9)
 packages/db       Prisma schema, migrations, seed, client
 packages/shared   translations (nl/en), formatting, Zod schemas, business rules

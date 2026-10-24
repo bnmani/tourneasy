@@ -30,7 +30,12 @@ export function SmartHeader({
   const lastY = useRef(0);
   const pathname = usePathname();
 
-  useEffect(() => setOpen(false), [pathname]);
+  // Close the menu after navigating.
+  const [seenPath, setSeenPath] = useState(pathname);
+  if (pathname !== seenPath) {
+    setSeenPath(pathname);
+    setOpen(false);
+  }
 
   useEffect(() => {
     lastY.current = window.scrollY;

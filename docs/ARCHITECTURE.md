@@ -8,7 +8,7 @@ Built web-first, API-first, so a React Native (Expo) app can follow without back
 
 ```
                 ┌──────────────────────────┐        ┌──────────────────────────┐
-                │  apps/web (Next.js 15)   │        │ apps/mobile (Expo, later)│
+                │  apps/web (Next.js 16)   │        │ apps/mobile (Expo, later)│
                 │  RSC pages, server       │        │  typed API client         │
                 │  actions (thin), i18n    │        │  Stripe Payment Sheet     │
                 └────────────┬─────────────┘        └────────────┬─────────────┘
@@ -72,7 +72,7 @@ Built web-first, API-first, so a React Native (Expo) app can follow without back
 ```
 tourneasy/
 ├── apps/
-│   ├── web/                              # Next.js 15 App Router
+│   ├── web/                              # Next.js 16 App Router
 │   │   ├── src/
 │   │   │   ├── app/
 │   │   │   │   ├── [locale]/
@@ -98,7 +98,7 @@ tourneasy/
 │   │   │   │   └── lib/                  # errors, logger, rate limit, audit, http helpers
 │   │   │   ├── emails/                   # React Email templates (nl/en)
 │   │   │   ├── i18n/                     # next-intl routing/request config
-│   │   │   └── middleware.ts             # locale routing + auth gate
+│   │   │   └── proxy.ts                  # locale routing (Next 16 "proxy")
 │   │   ├── e2e/                          # Playwright
 │   │   └── next.config.ts
 │   └── mobile/                           # reserved (Phase 9, Expo)

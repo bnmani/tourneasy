@@ -44,7 +44,11 @@ export function AddEntryForm({
   const event = events.find((e) => e.id === eventId);
   // A fresh pair of fields after each saved entry.
   const round = state.added?.count ?? 0;
-  useEffect(() => setPlayer(null), [round]);
+  const [seenRound, setSeenRound] = useState(round);
+  if (round !== seenRound) {
+    setSeenRound(round);
+    setPlayer(null);
+  }
   const fieldError = (key: string) => {
     const code = Object.entries(state.fields ?? {}).find(
       ([k]) => k === key || k.startsWith(`${key}.`),

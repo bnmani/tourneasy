@@ -2,7 +2,7 @@
 
 import { joinPhone, PHONE_COUNTRIES, splitPhone } from '@tourneasy/shared';
 import { useLocale, useTranslations } from 'next-intl';
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useMemo, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { useFormStatus } from 'react-dom';
 import { Button, type ButtonProps } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -176,8 +176,11 @@ export function PhoneField({
   const [national, setNational] = useState(initial.national);
   // Country names come from the browser after loading: the server's names can differ slightly
   // (e.g. "Hongkong" vs "Hongkong SAR"), which would break hydration.
-  const [named, setNamed] = useState(false);
-  useEffect(() => setNamed(true), []);
+  const named = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
   const countries = useMemo(() => {
     const names = named ? new Intl.DisplayNames([locale], { type: 'region' }) : null;
     const [first, ...rest] = PHONE_COUNTRIES.map(([code, dial]) => ({
