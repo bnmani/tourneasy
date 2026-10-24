@@ -93,7 +93,13 @@ export async function loadSmtpConfig(): Promise<SmtpConfig | null> {
   return {
     host: process.env.SMTP_HOST,
     port,
-    security: port === 465 ? 'tls' : 'starttls',
+    // A mail server on this machine (Mailpit in development) has no TLS.
+    security:
+      port === 465
+        ? 'tls'
+        : ['localhost', '127.0.0.1', '::1'].includes(process.env.SMTP_HOST)
+          ? 'none'
+          : 'starttls',
     user: process.env.SMTP_USER ?? null,
     password: process.env.SMTP_PASSWORD ?? null,
     from: process.env.EMAIL_FROM ?? DEFAULT_FROM,

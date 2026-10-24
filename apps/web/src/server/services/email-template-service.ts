@@ -5,6 +5,7 @@
  * the default itself means "use the default". Every save, reset and test send is logged.
  */
 import { prisma } from '@tourneasy/db';
+import { formatDate, formatDayRange } from '@tourneasy/shared';
 import { messages, type AppLocale } from '@tourneasy/shared/i18n';
 import { createTranslator } from 'next-intl';
 import {
@@ -15,13 +16,14 @@ import {
   type EmailTemplateKind,
 } from '../email/catalogue';
 import { sendMail } from '../email/mailer';
-import { renderEmailWith } from '../email/templates';
+import { renderEmailWith, type Template } from '../email/templates';
 import { clearEmailTextCache, emailTextOverrides } from '../email/text-overrides';
 import { writeAudit } from '../lib/audit';
 import { AppError, validationError } from '../lib/errors';
 import { enforce } from '../lib/rate-limit';
 import type { RequestMeta } from '../lib/request-meta';
 import { appUrl } from '../lib/urls';
+import { emailLogo } from './logo-service';
 import { assertAdmin } from './permissions';
 import type { Actor } from './session-service';
 
@@ -196,17 +198,19 @@ export async function previewEmailTemplate(
   locale: string,
   draft: Record<string, unknown>,
   to = 'voorbeeld@example.test',
+  tournamentId?: string | null,
 ) {
   assertAdmin(actor);
   const [k, l] = parseTarget(kind, locale);
   const { changed, unchanged } = checkDraft(k, l, draft);
+  const sample = await withTournament(sampleTemplate(k, l, appUrl(l, '/')), l, tournamentId);
   const saved = { ...(await emailTextOverrides())[l] };
   for (const key of unchanged) delete saved[key];
   const mail = renderEmailWith(
     { ...saved, ...changed },
     to,
     l,
-    sampleTemplate(k, l, appUrl(l, '/')),
+    sample,
     // Show the unsubscribe links where an email can have them.
     k === 'common' || ['tournamentReminder', 'deadlineReminder', 'results', 'news'].includes(k)
       ? {
@@ -218,6 +222,53 @@ export async function previewEmailTemplate(
   return { subject: mail.subject, html: mail.html, text: mail.text };
 }
 
+/** Tournaments to preview with (newest first). */
+export async function previewTournaments(actor: Actor) {
+  assertAdmin(actor);
+  return prisma.tournament.findMany({
+    where: { deletedAt: null },
+    orderBy: { startsOn: 'desc' },
+    take: 50,
+    select: { id: true, name: true },
+  });
+}
+
+/**
+ * The example data with a real tournament's name, dates, venue, page and logo, so the
+ * preview and test show the email as that tournament's players would get it.
+ */
+async function withTournament(sample: Template, locale: AppLocale, tournamentId?: string | null) {
+  if (!tournamentId || !('tournament' in sample)) return sample;
+  const t = await prisma.tournament.findFirst({
+    where: { id: tournamentId, deletedAt: null },
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      startsOn: true,
+      endsOn: true,
+      venue: { select: { name: true, street: true, houseNumber: true, city: true } },
+    },
+  });
+  if (!t) return sample;
+  const day = (d: Date) => d.toISOString().slice(0, 10);
+  return {
+    ...sample,
+    tournament: t.name,
+    url: appUrl(locale, `/tournaments/${t.slug}`),
+    logo: await emailLogo(t.id, t.name),
+    ...(sample.kind === 'tournamentReminder'
+      ? {
+          when: formatDayRange(day(t.startsOn), day(t.endsOn), locale, 'long'),
+          venue: t.venue
+            ? `${t.venue.name}, ${t.venue.street} ${t.venue.houseNumber}, ${t.venue.city}`
+            : null,
+          firstMatch: `${formatDate(t.startsOn, locale)} 10:30 · ${locale === 'nl' ? 'baan' : 'court'} 3`,
+        }
+      : {}),
+  } as Template;
+}
+
 /** Sends the preview to the admin's own address. */
 export async function sendEmailTemplateTest(
   actor: Actor,
@@ -225,6 +276,7 @@ export async function sendEmailTemplateTest(
   locale: string,
   draft: Record<string, unknown>,
   meta: RequestMeta,
+  tournamentId?: string | null,
 ) {
   assertAdmin(actor);
   await enforce(`templatetest:user:${actor.userId}`, { limit: 10, windowSeconds: 15 * 60 });
@@ -232,16 +284,23 @@ export async function sendEmailTemplateTest(
     where: { id: actor.userId },
     select: { email: true },
   });
-  const preview = await previewEmailTemplate(actor, kind, locale, draft, user.email);
-  await sendMail(
-    {
-      to: user.email,
-      subject: `[Test] ${preview.subject}`,
-      text: preview.text,
-      html: preview.html,
-    },
-    { always: true },
-  );
+  const preview = await previewEmailTemplate(actor, kind, locale, draft, user.email, tournamentId);
+  try {
+    await sendMail(
+      {
+        to: user.email,
+        subject: `[Test] ${preview.subject}`,
+        text: preview.text,
+        html: preview.html,
+      },
+      { always: true },
+    );
+  } catch (error) {
+    // Show the mail server's reason, as the email settings page does.
+    throw new AppError('smtpRejected', {
+      reason: error instanceof Error ? error.message.slice(0, 200) : 'error',
+    });
+  }
   await writeAudit(prisma, {
     actorId: actor.userId,
     action: 'settings.emailTemplate.test',

@@ -1177,7 +1177,13 @@
         "settingsTestBody": "Tekst",
         "settingsTestNote": "Tip",
         "settingsTestButton": "Knop"
-      }
+      },
+      "previewWith": "Voorbeeld en testmail met toernooi",
+      "previewExample": "Voorbeeldgegevens (Utrecht Open)",
+      "previewWithHint": "Alleen voor het voorbeeld en de testmail: de teksten gelden voor alle toernooien. Een bericht naar de deelnemers van één toernooi sturen?",
+      "newsLink": "Gebruik Nieuws bij dat toernooi.",
+      "unsaved": "Niet opgeslagen wijzigingen: klik op Opslaan om ze te bewaren.",
+      "notSavedYet": "Let op: je wijzigingen zijn nog niet opgeslagen."
     },
     "usersBulk": {
       "select": "{name} selecteren",

@@ -88,6 +88,24 @@ describe('email template editor (D69)', () => {
       [admin.email, '[Test] Speeltijden Utrecht Open'],
     ]);
 
+    // A real tournament for the preview: its name, page and dates instead of the example.
+    const t = await prisma.tournament.create({
+      data: {
+        name: 'Almere Open',
+        slug: 'almere-open',
+        startsOn: new Date('2027-05-08'),
+        endsOn: new Date('2027-05-09'),
+        registrationOpensAt: new Date('2027-01-01'),
+        registrationClosesAt: new Date('2027-04-01'),
+        entryDeadline: new Date('2027-04-01'),
+        withdrawalDeadline: new Date('2027-04-01'),
+      },
+    });
+    const real = await previewEmailTemplate(actor, 'tournamentReminder', 'nl', {}, undefined, t.id);
+    expect(real.subject).toBe('Binnenkort: Almere Open');
+    expect(real.text).toContain('/nl/tournaments/almere-open');
+    expect(real.text).toContain('8 mei 2027');
+
     // Saving the default text again (or resetting) brings back the default.
     await resetEmailTemplate(actor, 'resetPassword', 'nl', meta);
     expect(await prisma.emailTextOverride.count()).toBe(0);

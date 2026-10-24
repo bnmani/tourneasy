@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { useActionState } from 'react';
+import { useActionState, useEffect, useState } from 'react';
 import { FormError, FormSuccess } from '@/components/forms/fields';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -27,10 +27,15 @@ export function EmailTemplateEditor({
   kind,
   lang,
   texts,
+  tournaments,
+  newsHref,
 }: {
   kind: string;
   lang: string;
   texts: Text[];
+  /** Tournaments to preview with: their name, dates and logo instead of the example. */
+  tournaments: { id: string; name: string }[];
+  newsHref: string;
 }) {
   const t = useTranslations('Admin.emailTemplates');
   const te = useTranslations('Errors');
@@ -42,14 +47,64 @@ export function EmailTemplateEditor({
     const v = state.values?.[x.key];
     return typeof v === 'string' ? v : x.text;
   };
+  // Changes since the last save: a preview or test send doesn't save them.
+  const [dirty, setDirty] = useState(false);
+  const [seenState, setSeenState] = useState(state);
+  if (state !== seenState) {
+    setSeenState(state);
+    if (state.notice?.key === 'saved') setDirty(false);
+  }
+  useEffect(() => {
+    if (!dirty) return;
+    const warn = (e: BeforeUnloadEvent) => e.preventDefault();
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [dirty]);
+  const previewTournament =
+    typeof state.values?.previewTournament === 'string' ? state.values.previewTournament : '';
   return (
     <div className="grid gap-6 xl:grid-cols-2">
-      <form action={action} className="space-y-5" noValidate>
+      <form
+        action={action}
+        onChange={(e) => {
+          if ((e.target as HTMLElement).getAttribute('name') !== 'previewTournament')
+            setDirty(true);
+        }}
+        className="space-y-5"
+        noValidate
+      >
         <FormError state={state} />
         {state.notice?.key === 'saved' && <FormSuccess>{t('saved')}</FormSuccess>}
         {state.notice?.key === 'testSent' && (
-          <FormSuccess>{t('testSent', { to: state.notice.to ?? '' })}</FormSuccess>
+          <FormSuccess>
+            {t('testSent', { to: state.notice.to ?? '' })} {dirty && t('notSavedYet')}
+          </FormSuccess>
         )}
+        <div className="space-y-1.5 rounded-md border bg-secondary/40 p-3">
+          <label htmlFor="tpl-preview-tournament" className="block text-sm font-medium">
+            {t('previewWith')}
+          </label>
+          <select
+            key={previewTournament}
+            id="tpl-preview-tournament"
+            name="previewTournament"
+            defaultValue={previewTournament}
+            className={cn(inputClass, 'h-11')}
+          >
+            <option value="">{t('previewExample')}</option>
+            {tournaments.map((x) => (
+              <option key={x.id} value={x.id}>
+                {x.name}
+              </option>
+            ))}
+          </select>
+          <p className="text-xs text-muted-foreground">
+            {t('previewWithHint')}{' '}
+            <a href={newsHref} className="underline underline-offset-2">
+              {t('newsLink')}
+            </a>
+          </p>
+        </div>
         {texts.map((x) => {
           const id = `tpl-${x.key}`;
           const error = state.fields?.[x.key];
@@ -108,6 +163,11 @@ export function EmailTemplateEditor({
           );
         })}
         <p className="text-sm text-muted-foreground">{t('emptyHint')}</p>
+        {dirty && (
+          <p role="status" className="text-sm font-medium text-amber-700 dark:text-amber-400">
+            {t('unsaved')}
+          </p>
+        )}
         <div className="flex flex-wrap gap-2">
           <Button type="submit" name="intent" value="save" disabled={pending}>
             {t('save')}

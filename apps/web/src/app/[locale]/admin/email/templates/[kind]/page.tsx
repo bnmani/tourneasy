@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils';
 import { resetEmailTemplateAction } from '@/server/actions/email-template-actions';
 import { requireRole } from '@/server/auth/web';
 import { isEmailTemplateKind } from '@/server/email/catalogue';
-import { getEmailTemplate } from '@/server/services/email-template-service';
+import { getEmailTemplate, previewTournaments } from '@/server/services/email-template-service';
 
 type Props = {
   params: Promise<{ locale: string; kind: string }>;
@@ -38,7 +38,10 @@ export default async function EmailTemplatePage({ params, searchParams }: Props)
   const query = await searchParams;
   const lang = firstParam(query.lang) === 'en' ? 'en' : 'nl';
   if (!isEmailTemplateKind(kind)) notFound();
-  const texts = await getEmailTemplate(actor, kind, lang);
+  const [texts, tournaments] = await Promise.all([
+    getEmailTemplate(actor, kind, lang),
+    previewTournaments(actor),
+  ]);
   const t = await getTranslations('Admin.emailTemplates');
   const te = await getTranslations('Errors');
   const status = firstParam(query.status);
@@ -74,7 +77,14 @@ export default async function EmailTemplatePage({ params, searchParams }: Props)
           </Link>
         ))}
       </nav>
-      <EmailTemplateEditor key={lang} kind={kind} lang={lang} texts={texts} />
+      <EmailTemplateEditor
+        key={lang}
+        kind={kind}
+        lang={lang}
+        texts={texts}
+        tournaments={tournaments}
+        newsHref={`/${locale}/admin/tournaments`}
+      />
       {texts.some((x) => x.changed) && (
         <details className="rounded-lg border bg-card p-4 text-sm">
           <summary className="cursor-pointer font-medium text-destructive">{t('reset')}</summary>

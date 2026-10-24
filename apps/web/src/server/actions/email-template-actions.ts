@@ -34,6 +34,7 @@ export async function emailTemplateAction(
 ): Promise<EmailTemplateState> {
   const intent = formData.get('intent');
   const draft = formToObject(formData);
+  const tournamentId = (formData.get('previewTournament') as string | null) || null;
   const values = Object.fromEntries(
     [...formData.entries()].filter(([, v]) => typeof v === 'string') as [string, string][],
   );
@@ -44,9 +45,9 @@ export async function emailTemplateAction(
       await saveEmailTemplate(actor, kind, lang, draft, meta);
       revalidatePath('/', 'layout');
     }
-    const preview = await previewEmailTemplate(actor, kind, lang, draft);
+    const preview = await previewEmailTemplate(actor, kind, lang, draft, undefined, tournamentId);
     if (intent === 'test') {
-      const to = await sendEmailTemplateTest(actor, kind, lang, draft, meta);
+      const to = await sendEmailTemplateTest(actor, kind, lang, draft, meta, tournamentId);
       return { values, preview, notice: { key: 'testSent', to } };
     }
     return {

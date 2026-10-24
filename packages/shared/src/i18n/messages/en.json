@@ -1177,7 +1177,13 @@
         "settingsTestBody": "Text",
         "settingsTestNote": "Tip",
         "settingsTestButton": "Button"
-      }
+      },
+      "previewWith": "Preview and test email with tournament",
+      "previewExample": "Example data (Utrecht Open)",
+      "previewWithHint": "Only for the preview and the test email: the texts apply to all tournaments. Want to message the participants of one tournament?",
+      "newsLink": "Use News for that tournament.",
+      "unsaved": "Unsaved changes: click Save to keep them.",
+      "notSavedYet": "Note: your changes are not saved yet."
     },
     "usersBulk": {
       "select": "Select {name}",
