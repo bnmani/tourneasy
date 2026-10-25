@@ -80,5 +80,7 @@ describe('check-in per day (D74)', () => {
     // 23:30 UTC on the 13th is already the 14th in the Netherlands.
     expect(checkedInFor(at('2027-03-13T23:30:00Z'), '2027-03-14', '2027-03-13')).toBe(true);
     expect(checkedInFor(null, '2027-03-13', '2027-03-13')).toBe(false);
+    // Present now counts for a match from an earlier day that hasn't been played.
+    expect(checkedInFor(at('2027-03-14T08:00:00Z'), '2027-03-13', '2027-03-12')).toBe(true);
   });
 });

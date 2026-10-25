@@ -52,8 +52,9 @@ export const TIME_OF_DAY_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 /**
  * Whether a check-in counts for a match day (D74), days as YYYY-MM-DD in Dutch time: a check-in
- * on that day counts; on the tournament's first day an earlier one counts too (the evening
- * before, or testing ahead); on later days players check in again.
+ * on that day or later counts (a match running late, a player present now); on the
+ * tournament's first day an earlier one counts too (the evening before, or testing ahead). Only
+ * a check-in from an earlier day doesn't carry over to day 2 and later: players check in again.
  */
 export function checkedInFor(
   checkedInAt: Date | null | undefined,
@@ -62,5 +63,5 @@ export function checkedInFor(
 ): boolean {
   if (!checkedInAt) return false;
   const on = utcToAmsterdamLocal(checkedInAt).slice(0, 10);
-  return on === day || (day === firstDay && on < day);
+  return on >= day || day === firstDay;
 }

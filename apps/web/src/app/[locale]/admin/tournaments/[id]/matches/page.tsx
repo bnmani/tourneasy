@@ -21,7 +21,7 @@ import { requirePortal } from '@/server/auth/web';
 import { CheckInList } from '@/components/desk/check-in-list';
 import { CheckInToggle, QuickButton } from '@/components/desk/quick-buttons';
 import { AutoRefresh } from '@/components/matches/auto-refresh';
-import { checkInList } from '@/server/services/checkin-service';
+import { amsterdamDay, checkInList } from '@/server/services/checkin-service';
 import type { Actor } from '@/server/services/session-service';
 import { formatDate, formatEuro, formatTime } from '@tourneasy/shared';
 import type { AppLocale } from '@tourneasy/shared/i18n';
@@ -87,6 +87,8 @@ export default async function DeskPage({ params, searchParams }: Props) {
     const limit = desk.tournament.noShowMinutes;
     if (!limit || !item.startsAt || !['SCHEDULED', 'CALLED'].includes(item.status)) return null;
     if (now < item.startsAt.getTime() + limit * 60_000) return null;
+    // Only on the match day: older unplayed matches don't need an alarm.
+    if (amsterdamDay(item.startsAt) !== amsterdamDay(new Date(now))) return null;
     const missing = item.checkIn
       .flat()
       .filter((p) => !p.checkedIn)
