@@ -526,7 +526,9 @@ export async function markShareAsPaid(
 export type PaymentFilters = { tournamentId?: string; status?: OrderStatus; page?: number };
 
 export async function paymentsOverview(actor: Actor, filters: PaymentFilters = {}) {
-  assertAdmin(actor);
+  // One tournament: its organisers too (D75); all tournaments: admins only.
+  if (filters.tournamentId) await assertCanManageTournament(actor, filters.tournamentId);
+  else assertAdmin(actor);
   const page = Math.max(1, filters.page ?? 1);
   const where: Prisma.OrderWhereInput = {
     ...(filters.tournamentId ? { tournamentId: filters.tournamentId } : {}),
@@ -620,7 +622,8 @@ export async function paymentsOverview(actor: Actor, filters: PaymentFilters = {
 
 /** Paid and refunded orders as a table for the Excel export. */
 export async function exportPayments(actor: Actor, filters: PaymentFilters) {
-  assertAdmin(actor);
+  if (filters.tournamentId) await assertCanManageTournament(actor, filters.tournamentId);
+  else assertAdmin(actor);
   const orders = await prisma.order.findMany({
     where: {
       ...(filters.tournamentId ? { tournamentId: filters.tournamentId } : {}),

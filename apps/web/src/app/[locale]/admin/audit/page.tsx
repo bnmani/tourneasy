@@ -1,3 +1,4 @@
+import { auditLabel } from '@/lib/labels';
 import type { Metadata } from 'next';
 import { adminMetadata } from '@/lib/seo';
 import { getFormatter, getTranslations } from 'next-intl/server';
@@ -32,6 +33,7 @@ export default async function AuditLogPage({
   const action = firstParam(query.action) ?? '';
   const result = await listAuditLog(actor, { action, page: Number(firstParam(query.page) ?? 1) });
   const t = await getTranslations('Admin');
+  const ta = await getTranslations('AuditActions');
   const format = await getFormatter();
   const href = (p: number) =>
     `/admin/audit?${new URLSearchParams({ ...(action ? { action } : {}), page: String(p) })}`;
@@ -91,7 +93,10 @@ export default async function AuditLogPage({
                       t('audit.system')
                     )}
                   </td>
-                  <td className="px-3 py-2 font-mono text-xs">{e.action}</td>
+                  <td className="px-3 py-2">
+                    <div>{auditLabel(ta, e.action)}</div>
+                    <div className="font-mono text-xs text-muted-foreground">{e.action}</div>
+                  </td>
                   <td className="px-3 py-2">
                     <div>{e.entityType}</div>
                     <div className="max-w-md font-mono text-xs break-all text-muted-foreground">

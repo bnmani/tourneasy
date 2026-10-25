@@ -51,17 +51,41 @@ export async function listTournaments(
       select: {
         id: true,
         name: true,
+        slug: true,
         status: true,
         type: true,
         isPublished: true,
         startsOn: true,
         endsOn: true,
+        maxParticipants: true,
         venue: { select: { name: true, city: true } },
         _count: { select: { events: { where: { deletedAt: null } } } },
       },
     }),
   ]);
-  return { tournaments, total, page, pages: pageCount(total) };
+  // Entries per tournament: active (confirmed or awaiting payment) and on the waiting list.
+  const counts = tournaments.length
+    ? await prisma.registration.findMany({
+        where: {
+          status: { in: ['CONFIRMED', 'PENDING', 'WAITLISTED'] },
+          event: { tournamentId: { in: tournaments.map((x) => x.id) }, deletedAt: null },
+        },
+        select: { status: true, event: { select: { tournamentId: true } } },
+      })
+    : [];
+  const entries = (id: string, waiting: boolean) =>
+    counts.filter((c) => c.event.tournamentId === id && (c.status === 'WAITLISTED') === waiting)
+      .length;
+  return {
+    tournaments: tournaments.map((x) => ({
+      ...x,
+      entries: entries(x.id, false),
+      waitlisted: entries(x.id, true),
+    })),
+    total,
+    page,
+    pages: pageCount(total),
+  };
 }
 
 /**

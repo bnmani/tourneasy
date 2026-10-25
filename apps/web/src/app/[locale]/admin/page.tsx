@@ -1,3 +1,5 @@
+import { needsAttention } from '@/server/services/progress-service';
+import { auditLabel } from '@/lib/labels';
 import { TOURNAMENT_STATUSES } from '@tourneasy/shared/schemas';
 import type { Metadata } from 'next';
 import { getFormatter, getTranslations } from 'next-intl/server';
@@ -19,9 +21,10 @@ export async function generateMetadata({ params }: LocaleParams): Promise<Metada
 export default async function AdminDashboardPage({ params }: LocaleParams) {
   const locale = await pageLocale(params);
   const actor = await requirePortal(locale);
-  const data = await getDashboard(actor);
+  const [data, attention] = await Promise.all([getDashboard(actor), needsAttention(actor)]);
   const t = await getTranslations('Admin');
   const ts = await getTranslations('TournamentStatuses');
+  const ta = await getTranslations('AuditActions');
   const format = await getFormatter();
   const isAdmin = actor.roles.includes('ADMIN');
 
@@ -45,6 +48,38 @@ export default async function AdminDashboardPage({ params }: LocaleParams) {
           )
         }
       />
+
+      <section aria-labelledby="attention-title" className="space-y-2">
+        <h2 id="attention-title" className="font-semibold">
+          {t('attention.title')}
+        </h2>
+        {attention.length === 0 ? (
+          <p className="rounded-lg border bg-card p-4 text-sm text-muted-foreground">
+            {t('attention.none')}
+          </p>
+        ) : (
+          <ul className="divide-y rounded-lg border border-amber-500/50 bg-amber-500/5">
+            {attention.map((a) => (
+              <li key={`${a.tournamentId}-${a.key}`}>
+                <Link
+                  href={a.href}
+                  className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm hover:bg-amber-500/10 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                >
+                  <span>
+                    <span className="font-medium">
+                      {t(`attention.${a.key}`, { count: a.count })}
+                    </span>
+                    <span className="text-muted-foreground"> · {a.tournament}</span>
+                  </span>
+                  <span aria-hidden="true" className="font-semibold text-primary">
+                    →
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       {stats.length > 0 && (
         <ul className="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -123,7 +158,7 @@ export default async function AdminDashboardPage({ params }: LocaleParams) {
               <ul className="mt-3 divide-y text-sm">
                 {data.recent.map((r) => (
                   <li key={r.id} className="flex justify-between gap-3 py-2">
-                    <span className="font-mono text-xs">{r.action}</span>
+                    <span>{auditLabel(ta, r.action)}</span>
                     <span className="text-muted-foreground">
                       {r.actor?.name ?? t('audit.system')} · {format.relativeTime(r.createdAt)}
                     </span>

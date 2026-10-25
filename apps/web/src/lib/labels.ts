@@ -34,3 +34,12 @@ export function personName(p: {
 }): string {
   return [p.firstName, p.lastNamePrefix, p.lastName].filter(Boolean).join(' ');
 }
+
+/** Readable text for an audit log code ("checkin.in" → "Speler aangemeld"); the code if unknown. */
+export function auditLabel(
+  t: { has: (key: never) => boolean; (key: never): string },
+  action: string,
+): string {
+  const key = action.replace(/\./g, '_') as never;
+  return t.has(key) ? t(key) : action;
+}

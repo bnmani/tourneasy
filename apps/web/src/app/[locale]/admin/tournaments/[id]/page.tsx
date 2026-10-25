@@ -22,6 +22,8 @@ import {
 import { getActor, isPortalUser, requirePortal } from '@/server/auth/web';
 import { isAppError } from '@/server/lib/errors';
 import { tournamentLogo } from '@/server/services/logo-service';
+import { setupChecklist } from '@/server/services/progress-service';
+import { SetupChecklist } from '@/components/admin/setup-checklist';
 import { entryCounts } from '@/server/services/registration-service';
 import { getTournament } from '@/server/services/tournament-service';
 import { venueOptions } from '@/server/services/venue-service';
@@ -64,6 +66,7 @@ export default async function AdminTournamentPage({
   const isAdmin = actor.roles.includes('ADMIN');
   const counts = await entryCounts(actor, tournament.id);
   const logo = await tournamentLogo(tournament.id);
+  const setup = await setupChecklist(actor, tournament.id);
   const countOf = (status: string) =>
     counts.filter((c) => c.status === status).reduce((n, c) => n + c._count._all, 0);
   const confirmedEntries = countOf('CONFIRMED') + countOf('PENDING');
@@ -84,7 +87,9 @@ export default async function AdminTournamentPage({
       />
       <StatusNotice status={status} />
 
-      <section className="flex flex-col gap-4 rounded-lg border bg-card p-4 sm:p-5">
+      <SetupChecklist steps={setup.steps} next={setup.next} />
+
+      <section id="status" className="flex flex-col gap-4 rounded-lg border bg-card p-4 sm:p-5">
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-sm text-muted-foreground">{t('tournaments.status')}:</span>
           <Badge tone="primary">{ts(tournament.status)}</Badge>
@@ -309,7 +314,9 @@ export default async function AdminTournamentPage({
         </div>
       </FormSection>
 
-      <h2 className="pt-2 text-lg font-semibold">{t('edit')}</h2>
+      <h2 id="edit" className="pt-2 text-lg font-semibold">
+        {t('edit')}
+      </h2>
       <TournamentForm
         locale={locale}
         tournamentId={tournament.id}

@@ -4,7 +4,7 @@ import { useTranslations } from 'next-intl';
 import { Link, usePathname, useRouter } from '@/i18n/navigation';
 import { cn } from '@/lib/utils';
 
-const SECTIONS = ['', 'entries', 'draws', 'schedule', 'matches', 'news'] as const;
+const SECTIONS = ['', 'entries', 'draws', 'schedule', 'matches', 'payments', 'news'] as const;
 type Section = (typeof SECTIONS)[number];
 
 /**

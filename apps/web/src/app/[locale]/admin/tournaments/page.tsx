@@ -100,8 +100,46 @@ export default async function AdminTournamentsPage({
                   {' · '}
                   {t('tournaments.events')}: {x._count.events}
                 </p>
+                <p className="text-sm">
+                  <span className="font-medium">
+                    {x.maxParticipants
+                      ? t('tournaments.entriesOf', { count: x.entries, max: x.maxParticipants })
+                      : t('tournaments.entriesCount', { count: x.entries })}
+                  </span>
+                  {x.waitlisted > 0 && (
+                    <span className="text-muted-foreground">
+                      {' · '}
+                      {t('tournaments.waitlistedCount', { count: x.waitlisted })}
+                    </span>
+                  )}
+                </p>
+                <div className="mt-2 flex flex-wrap gap-2 text-sm">
+                  <Link
+                    href={`/admin/tournaments/${x.id}/entries`}
+                    className="font-medium text-primary hover:underline"
+                  >
+                    {t('tournaments.quickEntries')}
+                  </Link>
+                  <Link
+                    href={`/admin/tournaments/${x.id}/matches?view=checkin`}
+                    className="font-medium text-primary hover:underline"
+                  >
+                    {t('tournaments.quickDesk')}
+                  </Link>
+                  {x.isPublished && (
+                    <Link
+                      href={`/tournaments/${x.slug}`}
+                      className="font-medium text-primary hover:underline"
+                    >
+                      {t('tournaments.quickPublic')}
+                    </Link>
+                  )}
+                </div>
               </div>
               <div className="flex flex-wrap gap-1">
+                {x.status === 'OPEN' && !x.isPublished && (
+                  <Badge tone="muted">⚠ {t('tournaments.openNotPublished')}</Badge>
+                )}
                 <Badge>{ts(x.status)}</Badge>
                 {x.type === 'THIRD_PARTY' && <Badge tone="muted">{tt('THIRD_PARTY')}</Badge>}
                 <Badge tone={x.isPublished ? 'primary' : 'muted'}>
