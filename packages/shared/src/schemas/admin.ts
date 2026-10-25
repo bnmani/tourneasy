@@ -217,6 +217,13 @@ export const tournamentSchema = z
       .min(0, 'invalid')
       .max(180, 'invalid')
       .default(20),
+    /** Desk: warn when a player isn't checked in this long after the start (D74). */
+    noShowMinutes: z.coerce
+      .number({ error: 'invalid' })
+      .int('invalid')
+      .min(0, 'invalid')
+      .max(120, 'invalid')
+      .default(10),
     /** Slot length for a one-game match (best of 1); matchMinutes is for best of 3. */
     singleGameMinutes: z.coerce
       .number({ error: 'invalid' })

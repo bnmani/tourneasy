@@ -8,6 +8,8 @@ import {
   amsterdamLocalToUtc,
   defaultRestMinutes,
   slotMinutes,
+  utcToAmsterdamLocal,
+  checkedInFor,
   formatDate,
   formatTime,
   proposeSchedule,
@@ -140,6 +142,7 @@ async function loadTournament(tournamentId: string) {
       dayEndTime: true,
       matchMinutes: true,
       singleGameMinutes: true,
+      noShowMinutes: true,
       restMinutes: true,
       courtsAvailable: true,
       schedulePublishedAt: true,
@@ -609,7 +612,14 @@ export function knockoutRoundName(
 
 export type ScheduleItem = ReturnType<typeof toItem>;
 
-function toItem(m: MatchRow, locale: 'nl' | 'en', publishedAt: Date | null, nums: Numbering) {
+function toItem(
+  m: MatchRow,
+  locale: 'nl' | 'en',
+  publishedAt: Date | null,
+  nums: Numbering,
+  /** The tournament's first day (YYYY-MM-DD): check-ins count per day from there (D74). */
+  firstDay?: string,
+) {
   const placeholder = (slot: 'A' | 'B') => {
     const feeder = nums.feeders.get(`${m.id}${slot}`);
     const n = feeder ? nums.numberOf.get(feeder.matchId) : undefined;
@@ -648,7 +658,14 @@ function toItem(m: MatchRow, locale: 'nl' | 'en', publishedAt: Date | null, nums
         e?.registration?.participants.map((p) => ({
           id: p.id,
           name: fullName(p.player),
-          checkedIn: !!p.checkedInAt,
+          // Checked in for this match's day (D74): later tournament days start fresh.
+          checkedIn: firstDay
+            ? checkedInFor(
+                p.checkedInAt,
+                utcToAmsterdamLocal(m.slot?.startsAt ?? new Date()).slice(0, 10),
+                firstDay,
+              )
+            : !!p.checkedInAt,
         })) ?? [],
     ),
   };
@@ -820,7 +837,7 @@ export async function deskMatches(
     numbering(tournamentId),
   ]);
   const items = matches.map((m) => ({
-    ...toItem(m, locale, t.schedulePublishedAt, feeders),
+    ...toItem(m, locale, t.schedulePublishedAt, feeders, t.startsOn.toISOString().slice(0, 10)),
     version: m.version,
     // Score boxes per match: the knockout scoring where it applies (D61).
     bestOf: rulesForMatch(m.draw.event, { ...m.draw, round: m.round, bracket: m.bracket }).bestOf,

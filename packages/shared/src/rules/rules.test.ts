@@ -3,6 +3,7 @@ import { ageOn, isMinor, parseDateOnly } from './age';
 import { disciplinesForGender } from './eligibility';
 import { isCommonPassword, parseLoginIdentifier } from './identity';
 import { joinPhone, normalisePhone, splitPhone } from './phone';
+import { checkedInFor } from './time';
 
 describe('age', () => {
   const on = new Date(Date.UTC(2026, 9, 19)); // 19 Oct 2026
@@ -66,5 +67,18 @@ describe('phone numbers (D66)', () => {
     expect(disciplinesForGender(all, 'MALE')).toEqual(['HE', 'HD', 'GD']);
     expect(disciplinesForGender(all, 'FEMALE')).toEqual(['DE', 'DD', 'GD']);
     expect(disciplinesForGender(all, null)).toEqual([...all]);
+  });
+});
+
+describe('check-in per day (D74)', () => {
+  it('counts on the day, before the first day, but not for a later day', () => {
+    const at = (iso: string) => new Date(iso);
+    expect(checkedInFor(at('2027-03-13T08:00:00Z'), '2027-03-13', '2027-03-13')).toBe(true);
+    expect(checkedInFor(at('2027-03-12T19:00:00Z'), '2027-03-13', '2027-03-13')).toBe(true);
+    expect(checkedInFor(at('2027-03-13T08:00:00Z'), '2027-03-14', '2027-03-13')).toBe(false);
+    expect(checkedInFor(at('2027-03-14T07:30:00Z'), '2027-03-14', '2027-03-13')).toBe(true);
+    // 23:30 UTC on the 13th is already the 14th in the Netherlands.
+    expect(checkedInFor(at('2027-03-13T23:30:00Z'), '2027-03-14', '2027-03-13')).toBe(true);
+    expect(checkedInFor(null, '2027-03-13', '2027-03-13')).toBe(false);
   });
 });

@@ -1,6 +1,6 @@
 import { prisma, Role, type DrawType } from '@tourneasy/db';
 import { seededRng } from '@tourneasy/shared';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createPlayer, meta, resetDatabase } from '@/test/db';
 import { generateDraw, getDrawSetup, publishDraws } from './draw-service';
 import {
@@ -25,6 +25,7 @@ import {
 } from './schedule-service';
 import { PDFDocument } from 'pdf-lib';
 import { buildSchedulePdf, pdfSafe } from '../pdf/schedule-pdf';
+import { checkInList, payAtDesk, setPlayerCheckIn } from './checkin-service';
 import { schedulePdf } from './schedule-pdf-service';
 import { actorFromWebToken, createWebSession } from './session-service';
 
@@ -400,5 +401,62 @@ describe('schedule PDF (D73)', () => {
       })),
     });
     expect((await PDFDocument.load(bytes)).getPageCount()).toBeGreaterThan(3);
+  });
+});
+
+describe('desk check-in (D74)', () => {
+  afterEach(() => vi.useRealTimers());
+
+  it('lists the day, checks a player in for all matches that day, and takes payment', async () => {
+    const actor = await admin();
+    const { t, event, players } = await setup('ROUND_ROBIN', 4, { feeCents: 1250 });
+    // Nothing scheduled yet: every entrant is on the list.
+    expect((await checkInList(actor, t.id, '2027-03-13')).players).toHaveLength(4);
+
+    await generateDraw(actor, event.id, meta, seededRng(1));
+    await publishDraws(actor, event.id, true, meta);
+    await proposeTournamentSchedule(actor, t.id, {}, meta);
+    const day1 = await checkInList(actor, t.id, '2027-03-13');
+    expect(day1.days).toEqual(['2027-03-13', '2027-03-14']);
+    expect(day1.players.map((p) => [p.matches, p.present, p.unpaidCents])).toEqual(
+      Array(4).fill([3, false, 1250]),
+    );
+    expect((await checkInList(actor, t.id, '2027-03-14')).players).toHaveLength(0);
+
+    // On the day itself: one tap for all of the player's matches.
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2027-03-13T08:30:00Z'));
+    const anna = players[0]!.profile.id;
+    await setPlayerCheckIn(actor, t.id, anna, true, meta);
+    const list = await checkInList(actor, t.id, '2027-03-13');
+    expect(list.players.find((p) => p.playerId === anna)?.present).toBe(true);
+    const desk = await deskMatches(actor, t.id, 'open');
+    const annaShare = await prisma.registrationParticipant.findFirstOrThrow({
+      where: { playerId: anna },
+    });
+    const annaSides = desk.items
+      .flatMap((i) => i.checkIn.flat())
+      .filter((p) => p.id === annaShare.id);
+    expect(annaSides.length).toBe(3);
+    expect(annaSides.every((p) => p.checkedIn)).toBe(true);
+
+    // Pay at the desk: everything open at once, then nothing left.
+    expect(await payAtDesk(actor, t.id, anna, meta)).toBe(1);
+    expect(
+      (await checkInList(actor, t.id, '2027-03-13')).players.find((p) => p.playerId === anna)
+        ?.unpaidCents,
+    ).toBe(0);
+    await expect(payAtDesk(actor, t.id, anna, meta)).rejects.toMatchObject({
+      code: 'statusTransition',
+    });
+
+    // The evening before the first day counts for that day (later days start fresh).
+    vi.setSystemTime(new Date('2027-03-12T18:00:00Z'));
+    const bram = players[1]!.profile.id;
+    await setPlayerCheckIn(actor, t.id, bram, true, meta);
+    expect(
+      (await checkInList(actor, t.id, '2027-03-13')).players.find((p) => p.playerId === bram)
+        ?.present,
+    ).toBe(true);
   });
 });

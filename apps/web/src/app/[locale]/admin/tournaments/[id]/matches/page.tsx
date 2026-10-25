@@ -8,22 +8,30 @@ import { Link } from '@/i18n/navigation';
 import { firstParam, pageLocale, type SearchParams } from '@/lib/page';
 import { cn } from '@/lib/utils';
 import {
-  checkInAction,
   knockoutStageAction,
+  quickCheckInAction,
+  quickStartMatchAction,
+  quickWalkoverAction,
   resultAction,
   retireAction,
-  startMatchAction,
   swissRoundAction,
   walkoverAction,
 } from '@/server/actions/match-actions';
 import { requirePortal } from '@/server/auth/web';
+import { CheckInList } from '@/components/desk/check-in-list';
+import { CheckInToggle, QuickButton } from '@/components/desk/quick-buttons';
+import { AutoRefresh } from '@/components/matches/auto-refresh';
+import { checkInList } from '@/server/services/checkin-service';
+import type { Actor } from '@/server/services/session-service';
+import { formatDate, formatEuro, formatTime } from '@tourneasy/shared';
+import type { AppLocale } from '@tourneasy/shared/i18n';
 import { isAppError } from '@/server/lib/errors';
 import { drawOverview } from '@/server/services/draw-service';
 import { stageStatus } from '@/server/services/results-service';
 import { deskMatches } from '@/server/services/schedule-service';
 
 type Props = { params: Promise<{ locale: string; id: string }>; searchParams: SearchParams };
-const VIEWS = ['now', 'next', 'open', 'done'] as const;
+const VIEWS = ['checkin', 'now', 'next', 'open', 'done'] as const;
 type View = (typeof VIEWS)[number];
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -45,10 +53,12 @@ export default async function DeskPage({ params, searchParams }: Props) {
   const view: View = (VIEWS as readonly string[]).includes(requested ?? '')
     ? (requested as View)
     : 'next';
-  const desk = await deskMatches(actor, id, view, locale).catch((e) => {
-    if (isAppError(e) && e.code === 'notFound') return null;
-    throw e;
-  });
+  const desk = await deskMatches(actor, id, view === 'checkin' ? 'next' : view, locale).catch(
+    (e) => {
+      if (isAppError(e) && e.code === 'notFound') return null;
+      throw e;
+    },
+  );
   if (!desk) notFound();
   const events = await drawOverview(actor, id);
   const stages = await Promise.all(
@@ -67,6 +77,30 @@ export default async function DeskPage({ params, searchParams }: Props) {
           .filter(Boolean)
           .map((g) => g.split('-').map(Number) as [number, number])
       : null;
+
+  // No-show (D74): this long after the start, someone on a side isn't checked in yet. With
+  // exactly one side complete, offer that side the walkover (never automatic).
+  // Server component, rendered afresh on every refresh: reading the clock here is intended.
+  // eslint-disable-next-line react-hooks/purity
+  const now = Date.now();
+  const noShow = (item: (typeof desk.items)[number]) => {
+    const limit = desk.tournament.noShowMinutes;
+    if (!limit || !item.startsAt || !['SCHEDULED', 'CALLED'].includes(item.status)) return null;
+    if (now < item.startsAt.getTime() + limit * 60_000) return null;
+    const missing = item.checkIn
+      .flat()
+      .filter((p) => !p.checkedIn)
+      .map((p) => p.name);
+    if (missing.length === 0) return null;
+    const complete = item.checkIn.map((side) => side.length > 0 && side.every((p) => p.checkedIn));
+    const winner = complete[0] && !complete[1] ? 'A' : complete[1] && !complete[0] ? 'B' : null;
+    return {
+      late: Math.floor((now - item.startsAt.getTime()) / 60_000),
+      missing,
+      winner: winner as 'A' | 'B' | null,
+      winnerName: (winner === 'A' ? item.a : item.b) ?? '',
+    };
+  };
 
   return (
     <>
@@ -117,6 +151,7 @@ export default async function DeskPage({ params, searchParams }: Props) {
         </section>
       )}
 
+      <AutoRefresh seconds={10} />
       <nav aria-label={td('views')} className="flex gap-2 overflow-x-auto pb-1">
         {VIEWS.map((v) => (
           <Link
@@ -133,7 +168,9 @@ export default async function DeskPage({ params, searchParams }: Props) {
         ))}
       </nav>
 
-      {desk.items.length === 0 ? (
+      {view === 'checkin' ? (
+        <CheckInView actor={actor} tournamentId={id} locale={locale} day={firstParam(query.day)} />
+      ) : desk.items.length === 0 ? (
         <p className="text-muted-foreground">{td('empty')}</p>
       ) : (
         <div className="grid gap-3 lg:grid-cols-2">
@@ -144,48 +181,53 @@ export default async function DeskPage({ params, searchParams }: Props) {
               <MatchLine key={item.id} item={item} locale={locale}>
                 {item.ready && (
                   <div className="space-y-3 border-t pt-3">
+                    {noShow(item) && (
+                      <div
+                        role="alert"
+                        className="space-y-2 rounded-md border border-amber-500/60 bg-amber-500/10 p-2 text-sm"
+                      >
+                        <p className="font-medium">
+                          {td('noShow', {
+                            names: noShow(item)!.missing.join(', '),
+                            minutes: noShow(item)!.late,
+                          })}
+                        </p>
+                        {noShow(item)!.winner && (
+                          <QuickButton
+                            size="sm"
+                            variant="outline"
+                            action={quickWalkoverAction.bind(null, item.id, noShow(item)!.winner!)}
+                            confirm={td('noShowConfirm', { name: noShow(item)!.winnerName })}
+                          >
+                            {td('noShowWalkover', { name: noShow(item)!.winnerName })}
+                          </QuickButton>
+                        )}
+                      </div>
+                    )}
                     <div className="grid gap-2 sm:grid-cols-2">
                       {item.checkIn.map((side, s) => (
                         <div key={s} className="space-y-1">
                           {side.map((p) => (
-                            <form
+                            <CheckInToggle
                               key={p.id}
-                              action={checkInAction.bind(
-                                null,
-                                locale,
-                                id,
-                                p.id,
-                                !p.checkedIn,
-                                view,
-                                `m-${item.id}`,
-                              )}
-                            >
-                              <button
-                                type="submit"
-                                className={cn(
-                                  'flex min-h-8 w-full items-center gap-2 rounded-md border px-2 text-left text-xs',
-                                  p.checkedIn ? 'border-primary bg-secondary' : 'border-dashed',
-                                )}
-                                aria-pressed={p.checkedIn}
-                              >
-                                <span aria-hidden="true">{p.checkedIn ? '✓' : '○'}</span>
-                                <span className="truncate">{p.name}</span>
-                                <span className="ml-auto text-muted-foreground">
-                                  {p.checkedIn ? td('present') : td('checkIn')}
-                                </span>
-                              </button>
-                            </form>
+                              name={p.name}
+                              checkedIn={p.checkedIn}
+                              toggle={quickCheckInAction.bind(null, p.id, !p.checkedIn)}
+                              labels={{ present: td('present'), checkIn: td('checkIn') }}
+                            />
                           ))}
                         </div>
                       ))}
                     </div>
 
                     {item.status === 'SCHEDULED' && (
-                      <form action={startMatchAction.bind(null, locale, id, item.id, view)}>
-                        <Button type="submit" size="sm" variant="outline">
-                          {td('onCourt')}
-                        </Button>
-                      </form>
+                      <QuickButton
+                        size="sm"
+                        variant="outline"
+                        action={quickStartMatchAction.bind(null, item.id)}
+                      >
+                        {td('onCourt')}
+                      </QuickButton>
                     )}
 
                     <form
@@ -317,5 +359,60 @@ export default async function DeskPage({ params, searchParams }: Props) {
         </div>
       )}
     </>
+  );
+}
+
+/** The "Check-in" tab (D74): the day's players, one tap each, payment at the desk. */
+async function CheckInView({
+  actor,
+  tournamentId,
+  locale,
+  day,
+}: {
+  actor: Actor;
+  tournamentId: string;
+  locale: AppLocale;
+  day?: string;
+}) {
+  const list = await checkInList(actor, tournamentId, day);
+  const td = await getTranslations('Admin.desk');
+  const dayLabel = (d: string) => formatDate(new Date(`${d}T12:00:00Z`), locale);
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-muted-foreground">{td('checkInIntro')}</p>
+      {list.days.length > 1 && (
+        <nav aria-label={td('checkInDay')} className="flex flex-wrap gap-2">
+          {list.days.map((d) => (
+            <Link
+              key={d}
+              href={`/admin/tournaments/${tournamentId}/matches?view=checkin&day=${d}`}
+              aria-current={d === list.day ? 'page' : undefined}
+              className={cn(
+                'rounded-full border px-3 py-1.5 text-sm font-medium',
+                d === list.day
+                  ? 'border-primary bg-primary text-primary-foreground'
+                  : 'hover:bg-accent',
+              )}
+            >
+              {dayLabel(d)}
+            </Link>
+          ))}
+        </nav>
+      )}
+      <CheckInList
+        tournamentId={tournamentId}
+        rows={list.players.map((p) => ({
+          playerId: p.playerId,
+          name: p.name,
+          memberNumber: p.memberNumber,
+          club: p.club,
+          when: p.firstMatch
+            ? `${td('firstMatch', { time: formatTime(p.firstMatch, locale) })} · ${td('matches', { count: p.matches })}`
+            : null,
+          present: p.present,
+          unpaid: p.unpaidCents > 0 ? formatEuro(p.unpaidCents, locale) : null,
+        }))}
+      />
+    </div>
   );
 }

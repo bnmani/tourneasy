@@ -531,7 +531,9 @@
       "logoReplace": "Save another logo",
       "logoRemove": "Remove logo",
       "logoNone": "No logo yet.",
-      "logoAlt": "Logo of {tournament}"
+      "logoAlt": "Logo of {tournament}",
+      "noShowMinutes": "No-show alert after (min)",
+      "noShowMinutesHint": "The match desk warns when a player isn’t checked in this many minutes after the start time. 0 = no alert."
     },
     "events": {
       "new": "New event",
@@ -909,7 +911,8 @@
         "now": "On court",
         "next": "Next",
         "open": "All open",
-        "done": "Played"
+        "done": "Played",
+        "checkin": "Check-in"
       },
       "empty": "No matches in this list.",
       "present": "present",
@@ -923,7 +926,21 @@
       "other": "Walkover or retirement",
       "walkoverWinner": "Walkover, winner:",
       "retiredHelp": "Retirement: enter the score so far and choose the winner.",
-      "retiredWinner": "Winner:"
+      "retiredWinner": "Winner:",
+      "presentCount": "{present} of {total} present",
+      "onlyAbsent": "Only not yet present",
+      "checkInSearch": "Search by name, member number or club",
+      "noPlayers": "No players found.",
+      "unpaid": "Still to pay: {amount}",
+      "payAtDesk": "Paid at the desk",
+      "payConfirm": "Has {name} paid {amount} at the desk?",
+      "firstMatch": "first match {time}",
+      "matches": "{count, plural, one {# match} other {# matches}}",
+      "noShow": "{names} not present yet ({minutes} min after the start time).",
+      "noShowWalkover": "Walkover for {name}",
+      "noShowConfirm": "Give the walkover to {name}? You can still correct the result afterwards.",
+      "checkInDay": "Day",
+      "checkInIntro": "One tap checks a player in for all their matches of this day."
     },
     "navEmail": "Email",
     "emailSettings": {

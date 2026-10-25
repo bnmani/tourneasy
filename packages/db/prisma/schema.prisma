@@ -652,6 +652,8 @@ model Tournament {
   matchMinutes         Int                @default(30)
   /// Slot length for a match of one game (best of 1); matchMinutes is for best of 3.
   singleGameMinutes    Int                @default(15)
+  /// Desk (D74): a match card warns when a player isn't checked in this many minutes after the start.
+  noShowMinutes        Int                @default(10)
   restMinutes          Int                @default(20)
   dayEndTime           String?
   schedulePublishedAt  DateTime?

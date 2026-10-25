@@ -21,6 +21,7 @@ import {
   swapMatches,
   unscheduleMatch,
 } from '../services/schedule-service';
+import { payAtDesk, setPlayerCheckIn } from '../services/checkin-service';
 
 async function actorOrThrow() {
   const actor = await getActor();
@@ -46,8 +47,10 @@ async function act(target: string, okStatus: string, work: () => Promise<unknown
   }
   revalidatePath('/', 'layout');
   const [path, hash] = target.split('#');
+  // A fresh "at" each time: a redirect to the address already open (same status and
+  // #anchor) would only scroll there, without reloading the data (D74).
   redirect(
-    `${path}${path!.includes('?') ? '&' : '?'}status=${status}${params}${hash ? `#${hash}` : ''}`,
+    `${path}${path!.includes('?') ? '&' : '?'}status=${status}${params}&at=${Date.now().toString(36)}${hash ? `#${hash}` : ''}`,
   );
 }
 
@@ -193,31 +196,6 @@ export async function retireAction(
   );
 }
 
-export async function startMatchAction(
-  locale: AppLocale,
-  tournamentId: string,
-  matchId: string,
-  view: string,
-) {
-  void view; // the match moves to "On court", so show that list
-  await act(`${deskPage(locale, tournamentId, 'now')}#m-${matchId}`, 'saved', async () =>
-    startMatch(await actorOrThrow(), matchId, await currentRequestMeta()),
-  );
-}
-
-export async function checkInAction(
-  locale: AppLocale,
-  tournamentId: string,
-  participantId: string,
-  present: boolean,
-  view: string,
-  anchor: string,
-) {
-  await act(`${deskPage(locale, tournamentId, view)}#${anchor}`, 'saved', async () =>
-    setCheckIn(await actorOrThrow(), participantId, present, await currentRequestMeta()),
-  );
-}
-
 export async function knockoutStageAction(
   locale: AppLocale,
   tournamentId: string,
@@ -231,5 +209,58 @@ export async function knockoutStageAction(
 export async function swissRoundAction(locale: AppLocale, tournamentId: string, eventId: string) {
   await act(deskPage(locale, tournamentId), 'stageCreated', async () =>
     nextSwissRound(await actorOrThrow(), eventId, await currentRequestMeta()),
+  );
+}
+
+// ── Instant desk buttons (D74): no redirect, the page refreshes its data itself ──────
+
+export type QuickResult = { ok: true } | { ok: false; error: string };
+
+async function quick(work: () => Promise<unknown>): Promise<QuickResult> {
+  try {
+    await work();
+  } catch (error) {
+    if (!isAppError(error)) console.error('[desk action] failed', error);
+    return { ok: false, error: isAppError(error) ? error.code : 'unexpected' };
+  }
+  revalidatePath('/', 'layout');
+  return { ok: true };
+}
+
+export async function quickCheckInAction(participantId: string, present: boolean) {
+  return quick(async () =>
+    setCheckIn(await actorOrThrow(), participantId, present, await currentRequestMeta()),
+  );
+}
+
+export async function quickStartMatchAction(matchId: string) {
+  return quick(async () => startMatch(await actorOrThrow(), matchId, await currentRequestMeta()));
+}
+
+export async function quickWalkoverAction(matchId: string, winner: 'A' | 'B') {
+  return quick(async () =>
+    recordWalkover(await actorOrThrow(), matchId, { winner }, await currentRequestMeta()),
+  );
+}
+
+export async function playerCheckInAction(
+  tournamentId: string,
+  playerId: string,
+  present: boolean,
+) {
+  return quick(async () =>
+    setPlayerCheckIn(
+      await actorOrThrow(),
+      tournamentId,
+      playerId,
+      present,
+      await currentRequestMeta(),
+    ),
+  );
+}
+
+export async function payAtDeskAction(tournamentId: string, playerId: string) {
+  return quick(async () =>
+    payAtDesk(await actorOrThrow(), tournamentId, playerId, await currentRequestMeta()),
   );
 }

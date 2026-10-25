@@ -325,6 +325,7 @@ export default async function AdminTournamentPage({
           dayEndTime: tournament.dayEndTime ?? '',
           matchMinutes: tournament.matchMinutes.toString(),
           singleGameMinutes: tournament.singleGameMinutes.toString(),
+          noShowMinutes: tournament.noShowMinutes.toString(),
           restMinutes: tournament.restMinutes.toString(),
           registrationOpensAt: utcToAmsterdamLocal(tournament.registrationOpensAt),
           registrationClosesAt: utcToAmsterdamLocal(tournament.registrationClosesAt),

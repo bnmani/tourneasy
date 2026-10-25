@@ -531,7 +531,9 @@
       "logoReplace": "Ander logo opslaan",
       "logoRemove": "Logo verwijderen",
       "logoNone": "Nog geen logo.",
-      "logoAlt": "Logo van {tournament}"
+      "logoAlt": "Logo van {tournament}",
+      "noShowMinutes": "Melding afwezig na (min)",
+      "noShowMinutesHint": "De wedstrijdtafel waarschuwt als een speler zoveel minuten na de begintijd nog niet is aangemeld. 0 = geen melding."
     },
     "events": {
       "new": "Nieuw onderdeel",
@@ -909,7 +911,8 @@
         "now": "Op de baan",
         "next": "Volgende",
         "open": "Alle open",
-        "done": "Gespeeld"
+        "done": "Gespeeld",
+        "checkin": "Aanmelden"
       },
       "empty": "Geen wedstrijden in deze lijst.",
       "present": "aanwezig",
@@ -923,7 +926,21 @@
       "other": "Walk-over of opgave",
       "walkoverWinner": "Walk-over, winnaar:",
       "retiredHelp": "Opgave: vul de stand tot dan in en kies de winnaar.",
-      "retiredWinner": "Winnaar:"
+      "retiredWinner": "Winnaar:",
+      "presentCount": "{present} van {total} aanwezig",
+      "onlyAbsent": "Alleen nog niet aanwezig",
+      "checkInSearch": "Zoek op naam, lidnummer of club",
+      "noPlayers": "Geen spelers gevonden.",
+      "unpaid": "Nog te betalen: {amount}",
+      "payAtDesk": "Betaald aan de balie",
+      "payConfirm": "{name} heeft {amount} aan de balie betaald?",
+      "firstMatch": "eerste wedstrijd {time}",
+      "matches": "{count, plural, one {# wedstrijd} other {# wedstrijden}}",
+      "noShow": "{names} nog niet aanwezig ({minutes} min na de begintijd).",
+      "noShowWalkover": "Walk-over voor {name}",
+      "noShowConfirm": "Walk-over geven aan {name}? De uitslag kun je daarna nog corrigeren.",
+      "checkInDay": "Dag",
+      "checkInIntro": "Eén tik meldt een speler aan voor al zijn of haar wedstrijden van deze dag."
     },
     "navEmail": "E-mail",
     "emailSettings": {
