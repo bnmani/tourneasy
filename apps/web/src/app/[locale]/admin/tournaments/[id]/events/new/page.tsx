@@ -4,8 +4,6 @@ import { getTranslations } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import { EventForm } from '@/components/admin/event-form';
 import { PageHeader } from '@/components/admin/ui';
-import { Button } from '@/components/ui/button';
-import { Link } from '@/i18n/navigation';
 import { pageLocale } from '@/lib/page';
 import { requirePortal } from '@/server/auth/web';
 import { eventOptions } from '@/server/services/event-service';
@@ -30,14 +28,7 @@ export default async function NewEventPage({ params }: Params) {
   const t = await getTranslations('Admin');
   return (
     <>
-      <PageHeader
-        title={`${t('events.new')} · ${tournament.name}`}
-        actions={
-          <Button asChild variant="outline">
-            <Link href={`/admin/tournaments/${id}#events`}>{t('back')}</Link>
-          </Button>
-        }
-      />
+      <PageHeader title={`${t('events.new')} · ${tournament.name}`} />
       <EventForm
         locale={locale}
         tournamentId={id}

@@ -10,6 +10,7 @@ export const EMAIL_TEMPLATE_KINDS = [
   'common',
   'verifyEmail',
   'resetPassword',
+  'accountInvite',
   'passwordChanged',
   'roleChanged',
   'entryConfirmed',
@@ -33,6 +34,13 @@ export const EMAIL_TEMPLATE_KEYS: Record<EmailTemplateKind, readonly string[]> =
   common: ['greeting', 'greetingAnon', 'footer', 'unsubscribe', 'preferences'],
   verifyEmail: ['verifySubject', 'verifyBody', 'verifyButton'],
   resetPassword: ['resetSubject', 'resetBody', 'ignore', 'resetButton'],
+  accountInvite: [
+    'accountInviteSubject',
+    'accountInviteBody',
+    'accountInviteIgnore',
+    'accountInviteButton',
+    'accountInviteFooter',
+  ],
   passwordChanged: ['passwordChangedSubject', 'passwordChangedBody'],
   roleChanged: ['roleChangedSubject', 'roleGranted', 'roleRevoked'],
   entryConfirmed: ['entrySubject', 'entryIntro', 'entryPayNow', 'entryPay', 'entryButton'],
@@ -99,6 +107,8 @@ export function sampleTemplate(kind: EmailTemplateKind, locale: AppLocale, url: 
       return { kind, name, memberNumber: 'TE100123', url };
     case 'resetPassword':
       return { kind, name, url };
+    case 'accountInvite':
+      return { kind, name, memberNumber: 'TE100123', url };
     case 'passwordChanged':
       return { kind, name };
     case 'roleChanged':

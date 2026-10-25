@@ -4,7 +4,6 @@ import { getFormatter, getTranslations } from 'next-intl/server';
 import { NewsForm } from '@/components/admin/news-form';
 import { PageHeader, StatusNotice } from '@/components/admin/ui';
 import { Button } from '@/components/ui/button';
-import { Link } from '@/i18n/navigation';
 import { firstParam, pageLocale, type SearchParams } from '@/lib/page';
 import {
   deleteNewsAction,
@@ -35,7 +34,6 @@ export default async function NewsPage({ params, searchParams }: Props) {
   });
   if (!tournament) notFound();
   const news = await listNews(actor, id);
-  const t = await getTranslations('Admin');
   const tn = await getTranslations('Admin.news');
   const format = await getFormatter();
   const when = (d: Date) => format.dateTime(d, { dateStyle: 'medium', timeStyle: 'short' });
@@ -46,15 +44,7 @@ export default async function NewsPage({ params, searchParams }: Props) {
 
   return (
     <>
-      <PageHeader
-        title={tn('heading', { tournament: tournament.name })}
-        intro={tn('intro')}
-        actions={
-          <Button asChild variant="outline">
-            <Link href={`/admin/tournaments/${id}`}>{t('back')}</Link>
-          </Button>
-        }
-      />
+      <PageHeader title={tn('heading', { tournament: tournament.name })} intro={tn('intro')} />
       <StatusNotice status={firstParam((await searchParams).status)} />
 
       <section className="space-y-4 rounded-lg border bg-card p-4 sm:p-6">

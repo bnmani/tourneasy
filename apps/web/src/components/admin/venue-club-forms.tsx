@@ -38,10 +38,13 @@ export function VenueForm({
   locale,
   venueId,
   values,
+  disabled = false,
 }: {
   locale: AppLocale;
   venueId: string | null;
   values: Partial<VenueFormValues>;
+  /** Shown read-only to organisers who may not change this venue (D77). */
+  disabled?: boolean;
 }) {
   const t = useTranslations('Admin.venues');
   const ta = useTranslations('Admin');
@@ -53,133 +56,135 @@ export function VenueForm({
   return (
     <form action={action} className="space-y-6" noValidate>
       <FormError state={state} />
-      <FormSection title={t('name')}>
-        <TextField
-          name="name"
-          label={t('name')}
-          state={state}
-          required
-          defaultValue={values.name}
-        />
-        <div className="grid gap-4 sm:grid-cols-[1fr_8rem]">
+      <fieldset disabled={disabled} className="space-y-6 disabled:opacity-80">
+        <FormSection title={t('name')}>
           <TextField
-            name="street"
-            label={t('street')}
+            name="name"
+            label={t('name')}
             state={state}
             required
-            defaultValue={values.street}
-            autoComplete="address-line1"
+            defaultValue={values.name}
           />
-          <TextField
-            name="houseNumber"
-            label={t('houseNumber')}
+          <div className="grid gap-4 sm:grid-cols-[1fr_8rem]">
+            <TextField
+              name="street"
+              label={t('street')}
+              state={state}
+              required
+              defaultValue={values.street}
+              autoComplete="address-line1"
+            />
+            <TextField
+              name="houseNumber"
+              label={t('houseNumber')}
+              state={state}
+              required
+              defaultValue={values.houseNumber}
+            />
+          </div>
+          <div className="grid gap-4 sm:grid-cols-[8rem_1fr]">
+            <TextField
+              name="postcode"
+              label={t('postcode')}
+              state={state}
+              required
+              defaultValue={values.postcode}
+              autoComplete="postal-code"
+            />
+            <TextField
+              name="city"
+              label={t('city')}
+              state={state}
+              required
+              defaultValue={values.city}
+              autoComplete="address-level2"
+            />
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <SelectField
+              name="province"
+              label={t('province')}
+              state={state}
+              required
+              defaultValue={values.province}
+              placeholder="—"
+              options={PROVINCES.map((p) => ({ value: p, label: tp(p) }))}
+            />
+            <TextField
+              name="country"
+              label={t('country')}
+              state={state}
+              required
+              defaultValue={values.country ?? 'NL'}
+              maxLength={2}
+            />
+          </div>
+          <div className="grid gap-4 sm:grid-cols-3">
+            <TextField
+              name="numberOfCourts"
+              type="number"
+              min={1}
+              max={60}
+              label={t('numberOfCourts')}
+              state={state}
+              required
+              defaultValue={values.numberOfCourts}
+            />
+            <TextField
+              name="latitude"
+              label={t('latitude')}
+              hint={t('coordinatesHint')}
+              state={state}
+              defaultValue={values.latitude}
+              inputMode="numeric"
+            />
+            <TextField
+              name="longitude"
+              label={t('longitude')}
+              state={state}
+              defaultValue={values.longitude}
+              inputMode="numeric"
+            />
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <TextField
+              name="phone"
+              type="tel"
+              label={t('phone')}
+              state={state}
+              defaultValue={values.phone}
+            />
+            <TextField
+              name="website"
+              label={t('website')}
+              state={state}
+              defaultValue={values.website}
+            />
+          </div>
+          <TextAreaField
+            name="facilities"
+            label={t('facilities')}
             state={state}
-            required
-            defaultValue={values.houseNumber}
+            defaultValue={values.facilities}
+            rows={2}
           />
-        </div>
-        <div className="grid gap-4 sm:grid-cols-[8rem_1fr]">
-          <TextField
-            name="postcode"
-            label={t('postcode')}
+          <TextAreaField
+            name="parkingInfo"
+            label={t('parkingInfo')}
             state={state}
-            required
-            defaultValue={values.postcode}
-            autoComplete="postal-code"
+            defaultValue={values.parkingInfo}
+            rows={2}
           />
-          <TextField
-            name="city"
-            label={t('city')}
+          <TextAreaField
+            name="publicTransportInfo"
+            label={t('publicTransportInfo')}
             state={state}
-            required
-            defaultValue={values.city}
-            autoComplete="address-level2"
+            defaultValue={values.publicTransportInfo}
+            rows={2}
           />
-        </div>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <SelectField
-            name="province"
-            label={t('province')}
-            state={state}
-            required
-            defaultValue={values.province}
-            placeholder="—"
-            options={PROVINCES.map((p) => ({ value: p, label: tp(p) }))}
-          />
-          <TextField
-            name="country"
-            label={t('country')}
-            state={state}
-            required
-            defaultValue={values.country ?? 'NL'}
-            maxLength={2}
-          />
-        </div>
-        <div className="grid gap-4 sm:grid-cols-3">
-          <TextField
-            name="numberOfCourts"
-            type="number"
-            min={1}
-            max={60}
-            label={t('numberOfCourts')}
-            state={state}
-            required
-            defaultValue={values.numberOfCourts}
-          />
-          <TextField
-            name="latitude"
-            label={t('latitude')}
-            hint={t('coordinatesHint')}
-            state={state}
-            defaultValue={values.latitude}
-            inputMode="numeric"
-          />
-          <TextField
-            name="longitude"
-            label={t('longitude')}
-            state={state}
-            defaultValue={values.longitude}
-            inputMode="numeric"
-          />
-        </div>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <TextField
-            name="phone"
-            type="tel"
-            label={t('phone')}
-            state={state}
-            defaultValue={values.phone}
-          />
-          <TextField
-            name="website"
-            label={t('website')}
-            state={state}
-            defaultValue={values.website}
-          />
-        </div>
-        <TextAreaField
-          name="facilities"
-          label={t('facilities')}
-          state={state}
-          defaultValue={values.facilities}
-          rows={2}
-        />
-        <TextAreaField
-          name="parkingInfo"
-          label={t('parkingInfo')}
-          state={state}
-          defaultValue={values.parkingInfo}
-          rows={2}
-        />
-        <TextAreaField
-          name="publicTransportInfo"
-          label={t('publicTransportInfo')}
-          state={state}
-          defaultValue={values.publicTransportInfo}
-          rows={2}
-        />
-      </FormSection>
-      <SubmitButton size="lg">{ta('save')}</SubmitButton>
+        </FormSection>
+        {!disabled && <SubmitButton size="lg">{ta('save')}</SubmitButton>}
+      </fieldset>
     </form>
   );
 }

@@ -62,9 +62,6 @@ export default async function EntriesPage({ params, searchParams }: Props) {
         actions={
           <>
             <Button asChild variant="outline">
-              <Link href={`/admin/tournaments/${id}`}>{t('back')}</Link>
-            </Button>
-            <Button asChild variant="outline">
               <Link href={`/admin/tournaments/${id}/entries/import`}>{t('entries.import')}</Link>
             </Button>
             <Button asChild>

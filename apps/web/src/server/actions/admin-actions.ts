@@ -33,6 +33,7 @@ import {
   setTournamentPublished,
   updateTournament,
 } from '../services/tournament-service';
+import { invitePlayers } from '../services/player-invite-service';
 import { setSiteTheme } from '../services/site-settings-service';
 import { createVenue, setVenueArchived, updateVenue } from '../services/venue-service';
 import { formToObject, toFormState } from './form-utils';
@@ -159,7 +160,9 @@ export async function saveTournamentAction(
     const t = tournamentId
       ? await updateTournament(actor, tournamentId, input, meta)
       : await createTournament(actor, input, meta);
-    return `/${locale}/admin/tournaments/${t.id}?status=saved`;
+    return tournamentId
+      ? `/${locale}/admin/tournaments/${t.id}/settings?status=saved`
+      : `/${locale}/admin/tournaments/${t.id}?status=saved`;
   });
 }
 
@@ -191,7 +194,7 @@ export async function addOrganiserAction(
 ) {
   return submit(formData, async (actor, meta) => {
     const { linked } = await addOrganiser(actor, tournamentId, formToObject(formData), meta);
-    return `/${locale}/admin/tournaments/${tournamentId}?status=${linked ? 'organiserAdded' : 'organiserInvited'}#organisers`;
+    return `/${locale}/admin/tournaments/${tournamentId}/settings?status=${linked ? 'organiserAdded' : 'organiserInvited'}#organisers`;
   });
 }
 
@@ -202,7 +205,7 @@ export async function removeOrganiserAction(
 ) {
   const userId = formData.get('userId');
   const inviteId = formData.get('inviteId');
-  await act(`/${locale}/admin/tournaments/${tournamentId}`, (actor, meta) =>
+  await act(`/${locale}/admin/tournaments/${tournamentId}/settings`, (actor, meta) =>
     removeOrganiser(
       actor,
       tournamentId,
@@ -336,7 +339,7 @@ export async function uploadTournamentLogoAction(
   formData: FormData,
 ) {
   await act(
-    `/${locale}/admin/tournaments/${tournamentId}`,
+    `/${locale}/admin/tournaments/${tournamentId}/settings`,
     async (actor, meta) => {
       const file = formData.get('logo');
       if (!(file instanceof File) || file.size === 0) throw new AppError('logoInvalid');
@@ -354,7 +357,7 @@ export async function uploadTournamentLogoAction(
 
 export async function removeTournamentLogoAction(locale: AppLocale, tournamentId: string) {
   await act(
-    `/${locale}/admin/tournaments/${tournamentId}`,
+    `/${locale}/admin/tournaments/${tournamentId}/settings`,
     (actor, meta) => removeTournamentLogo(actor, tournamentId, meta),
     'logoRemoved',
   );
@@ -376,6 +379,29 @@ export async function removePlayersAction(formData: FormData) {
   } catch (error) {
     status = error instanceof AppError ? error.code : 'unexpected';
     if (!(error instanceof AppError)) console.error('[admin action] remove players failed', error);
+  }
+  revalidatePath('/', 'layout');
+  back.searchParams.set('status', status);
+  redirect(`${back.pathname}${back.search}`);
+}
+
+/** Invites the selected players without an account (D76); back to the list with counts. */
+export async function invitePlayersAction(locale: AppLocale, formData: FormData) {
+  const back = new URL(safeRedirectPath(formData.get('returnTo'), '/'), 'http://local');
+  for (const k of ['status', 'count', 'sent', 'skipped']) back.searchParams.delete(k);
+  let status = 'invited';
+  try {
+    const { sent, skipped } = await invitePlayers(
+      await actorOrThrow(),
+      { ids: formData.getAll('ids') },
+      locale,
+      await currentRequestMeta(),
+    );
+    back.searchParams.set('sent', String(sent));
+    back.searchParams.set('skipped', String(skipped));
+  } catch (error) {
+    status = error instanceof AppError ? error.code : 'unexpected';
+    if (!(error instanceof AppError)) console.error('[admin action] invite players failed', error);
   }
   revalidatePath('/', 'layout');
   back.searchParams.set('status', status);

@@ -6,11 +6,10 @@ import { notFound } from 'next/navigation';
 import { Badge, PageHeader, StatusNotice } from '@/components/admin/ui';
 import { VenueForm } from '@/components/admin/venue-club-forms';
 import { Button } from '@/components/ui/button';
-import { Link } from '@/i18n/navigation';
 import { firstParam, pageLocale, type SearchParams } from '@/lib/page';
 import { archiveVenueAction } from '@/server/actions/admin-actions';
-import { requireRole } from '@/server/auth/web';
-import { getVenue } from '@/server/services/venue-service';
+import { requirePortal } from '@/server/auth/web';
+import { canEditVenue, getVenue } from '@/server/services/venue-service';
 
 export async function generateMetadata({
   params,
@@ -29,30 +28,37 @@ export default async function EditVenuePage({
 }: Params & { searchParams: SearchParams }) {
   const locale = await pageLocale(params);
   const { id } = await params;
-  const actor = await requireRole(locale, 'ADMIN');
+  const actor = await requirePortal(locale);
   const venue = await getVenue(actor, id).catch(() => null);
   if (!venue) notFound();
+  const editable = await canEditVenue(actor, venue.id);
   const t = await getTranslations('Admin');
   return (
     <>
       <PageHeader
+        crumbs={[{ label: t('navVenues'), href: '/admin/venues' }, { label: venue.name }]}
         title={venue.name}
         actions={
           <>
-            <form action={archiveVenueAction.bind(null, locale, venue.id, !venue.deletedAt)}>
-              <Button type="submit" variant="outline">
-                {venue.deletedAt ? t('restore') : t('archive')}
-              </Button>
-            </form>
-            <Button asChild variant="outline">
-              <Link href="/admin/venues">{t('back')}</Link>
-            </Button>
+            {actor.roles.includes('ADMIN') && (
+              <form action={archiveVenueAction.bind(null, locale, venue.id, !venue.deletedAt)}>
+                <Button type="submit" variant="outline">
+                  {venue.deletedAt ? t('restore') : t('archive')}
+                </Button>
+              </form>
+            )}
           </>
         }
       />
       {venue.deletedAt && <Badge tone="muted">{t('archived')}</Badge>}
       <StatusNotice status={firstParam((await searchParams).status)} />
+      {!editable && (
+        <p className="rounded-md border bg-secondary/40 px-4 py-3 text-sm">
+          {t('venues.readOnly')}
+        </p>
+      )}
       <VenueForm
+        disabled={!editable}
         locale={locale}
         venueId={venue.id}
         values={{

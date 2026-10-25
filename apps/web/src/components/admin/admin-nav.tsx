@@ -10,10 +10,10 @@ export function AdminNav({ isAdmin }: { isAdmin: boolean }) {
   const items = [
     { href: '/admin', label: t('navDashboard'), exact: true },
     { href: '/admin/tournaments', label: t('navTournaments') },
+    { href: '/admin/venues', label: t('navVenues') },
     ...(isAdmin
       ? [
           { href: '/admin/players', label: t('navPlayers') },
-          { href: '/admin/venues', label: t('navVenues') },
           { href: '/admin/clubs', label: t('navClubs') },
           { href: '/admin/payments', label: t('navPayments') },
           { href: '/admin/users', label: t('users') },

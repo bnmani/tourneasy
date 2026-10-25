@@ -1,4 +1,7 @@
-/** Venues (reusable across tournaments) and their courts. Admin only. */
+/**
+ * Venues (reusable across tournaments) and their courts. Admins manage all of them;
+ * organisers add venues and edit the ones only their own tournaments use (D77).
+ */
 import { Prisma, prisma, type Province } from '@tourneasy/db';
 import { venueSchema } from '@tourneasy/shared';
 import { writeAudit } from '../lib/audit';
@@ -6,7 +9,7 @@ import { AppError } from '../lib/errors';
 import type { RequestMeta } from '../lib/request-meta';
 import { localized, uniqueSlug } from '../lib/slug';
 import { pageCount, pageParams, parseInput } from '../lib/validation';
-import { assertAdmin, assertPortalAccess } from './permissions';
+import { assertAdmin, assertPortalAccess, isAdmin } from './permissions';
 import type { Actor } from './session-service';
 
 export async function listVenues(
@@ -63,6 +66,32 @@ export async function getVenue(actor: Actor, id: string) {
   return venue;
 }
 
+/**
+ * Admins: every venue. Organisers: a venue they added themselves, or one whose tournaments
+ * are all theirs, so a change never surprises another organiser.
+ */
+export async function canEditVenue(actor: Actor, venueId: string): Promise<boolean> {
+  if (isAdmin(actor)) return true;
+  if (!actor.roles.includes('ORGANISER')) return false;
+  const [mine, others, added] = await Promise.all([
+    prisma.tournament.count({
+      where: { venueId, deletedAt: null, organisers: { some: { userId: actor.userId } } },
+    }),
+    prisma.tournament.count({
+      where: { venueId, deletedAt: null, organisers: { none: { userId: actor.userId } } },
+    }),
+    prisma.auditLog.count({
+      where: {
+        entityType: 'Venue',
+        entityId: venueId,
+        action: 'venue.create',
+        actorId: actor.userId,
+      },
+    }),
+  ]);
+  return others === 0 && (mine > 0 || added > 0);
+}
+
 function toData(input: ReturnType<typeof venueSchema.parse>) {
   return {
     name: input.name,
@@ -98,7 +127,7 @@ async function syncCourts(tx: Prisma.TransactionClient, venueId: string, count: 
 }
 
 export async function createVenue(actor: Actor, input: unknown, meta: RequestMeta) {
-  assertAdmin(actor);
+  assertPortalAccess(actor);
   const data = toData(parseInput(venueSchema, input));
   const slug = await uniqueSlug(
     `${data.name} ${data.city}`,
@@ -120,7 +149,8 @@ export async function createVenue(actor: Actor, input: unknown, meta: RequestMet
 }
 
 export async function updateVenue(actor: Actor, id: string, input: unknown, meta: RequestMeta) {
-  assertAdmin(actor);
+  assertPortalAccess(actor);
+  if (!(await canEditVenue(actor, id))) throw new AppError('forbidden');
   const data = toData(parseInput(venueSchema, input));
   const existing = await prisma.venue.findUnique({ where: { id } });
   if (!existing) throw new AppError('notFound');

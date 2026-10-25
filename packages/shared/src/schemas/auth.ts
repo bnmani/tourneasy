@@ -157,6 +157,22 @@ export const resetPasswordSchema = z
   });
 export const verifyEmailSchema = z.object({ token: tokenSchema });
 
+/** Activating an account from an invite (D76). Minors also need consent; the service checks. */
+export const acceptPlayerInviteSchema = z
+  .object({
+    token: tokenSchema,
+    password: passwordSchema,
+    passwordRepeat: z.string().max(PASSWORD_MAX_LENGTH).optional(),
+    acceptTerms: z.literal(true, { error: 'mustAccept' }),
+    acceptPrivacy: z.literal(true, { error: 'mustAccept' }),
+    parentalConsent: z.boolean().optional(),
+    guardianName: optionalText(120),
+  })
+  .refine((v) => v.passwordRepeat === undefined || v.passwordRepeat === v.password, {
+    path: ['passwordRepeat'],
+    message: 'passwordMismatch',
+  });
+
 export const changePasswordSchema = z
   .object({
     currentPassword: z.string().min(1, 'required').max(PASSWORD_MAX_LENGTH),

@@ -66,7 +66,9 @@ export default async function DashboardPage({
       {firstParam(query.welcome) && (
         <FormSuccess>
           <strong className="block">{tr('title')}</strong>
-          {tr('text', { email: account.email })}{' '}
+          {firstParam(query.welcome) === 'activated'
+            ? tr('activated')
+            : tr('text', { email: account.email })}{' '}
           {profile && tr('memberNumber', { number: profile.memberNumber })}
         </FormSuccess>
       )}

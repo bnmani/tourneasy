@@ -66,7 +66,8 @@ export type PlayerFilters = {
   page?: number;
 };
 
-function whereFor(filters: PlayerFilters): Prisma.PlayerProfileWhereInput {
+/** The player list filter; also used by the portal search. */
+export function whereFor(filters: PlayerFilters): Prisma.PlayerProfileWhereInput {
   const q = filters.q?.trim();
   return {
     deletedAt: null,

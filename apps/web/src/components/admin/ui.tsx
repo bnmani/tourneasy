@@ -3,19 +3,25 @@ import { getTranslations } from 'next-intl/server';
 import { Button } from '@/components/ui/button';
 import { Link } from '@/i18n/navigation';
 import { cn } from '@/lib/utils';
+import { Breadcrumbs, type Crumb } from './breadcrumbs';
 
-export function PageHeader({
+export async function PageHeader({
   title,
   intro,
   actions,
+  crumbs,
 }: {
   title: string;
   intro?: string;
   actions?: ReactNode;
+  /** The way back up, ending with this page (D77). */
+  crumbs?: Crumb[];
 }) {
+  const t = crumbs ? await getTranslations('Admin') : null;
   return (
     <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-      <div>
+      <div className="min-w-0 space-y-2">
+        {crumbs && t && <Breadcrumbs items={crumbs} label={t('breadcrumbs')} />}
         <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{title}</h1>
         {intro && <p className="mt-1 text-muted-foreground">{intro}</p>}
       </div>
@@ -25,6 +31,7 @@ export function PageHeader({
 }
 
 const SUCCESS = new Set([
+  'invited',
   'saved',
   'logoSaved',
   'logoRemoved',

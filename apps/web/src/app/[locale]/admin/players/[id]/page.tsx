@@ -6,10 +6,11 @@ import { MergePlayerForm, PlayerForm } from '@/components/admin/player-forms';
 import { Badge, PageHeader, StatusNotice } from '@/components/admin/ui';
 import { FormSection } from '@/components/forms/fields';
 import { Button } from '@/components/ui/button';
-import { Link } from '@/i18n/navigation';
 import { personName } from '@/lib/labels';
 import { firstParam, pageLocale, type SearchParams } from '@/lib/page';
 import { requireRole } from '@/server/auth/web';
+import { invitePlayersAction } from '@/server/actions/admin-actions';
+import { lastInvites } from '@/server/services/player-invite-service';
 import { getPlayer } from '@/server/services/player-service';
 import { getProfileOptions } from '@/server/services/profile-service';
 
@@ -35,19 +36,20 @@ export default async function AdminPlayerPage({
   const t = await getTranslations('Admin');
   const tr = await getTranslations('Roles');
   const format = await getFormatter();
-  const status = firstParam((await searchParams).status);
+  const query = await searchParams;
+  const status = firstParam(query.status);
+  const lastInvite = player.user ? undefined : (await lastInvites([player.id])).get(player.id);
 
   return (
     <>
       <PageHeader
+        crumbs={[{ label: t('navPlayers'), href: '/admin/players' }, { label: personName(player) }]}
         title={personName(player)}
-        actions={
-          <Button asChild variant="outline">
-            <Link href="/admin/players">{t('back')}</Link>
-          </Button>
-        }
       />
-      <StatusNotice status={status} />
+      <StatusNotice
+        status={status}
+        params={{ sent: firstParam(query.sent) ?? '0', skipped: firstParam(query.skipped) ?? '0' }}
+      />
       <section className="flex flex-wrap items-center gap-2 rounded-lg border bg-card p-4 text-sm">
         <span>
           {t('players.memberNumber')}: <strong>{player.memberNumber}</strong>
@@ -76,6 +78,41 @@ export default async function AdminPlayerPage({
           </Badge>
         )}
       </section>
+      {!player.user && (
+        <section
+          aria-labelledby="invite-title"
+          className="space-y-2 rounded-lg border bg-card p-4 text-sm"
+        >
+          <h2 id="invite-title" className="font-semibold">
+            {t('players.invite.inviteTitle')}
+          </h2>
+          {player.contactEmail ? (
+            <form action={invitePlayersAction.bind(null, locale)} className="space-y-2">
+              <input type="hidden" name="ids" value={player.id} />
+              <input
+                type="hidden"
+                name="returnTo"
+                value={`/${locale}/admin/players/${player.id}`}
+              />
+              <p className="text-muted-foreground">
+                {t('players.invite.inviteText', { email: player.contactEmail })}
+              </p>
+              {lastInvite && (
+                <p className="text-muted-foreground">
+                  {t('players.invite.inviteLast', {
+                    date: format.dateTime(lastInvite, { dateStyle: 'medium', timeStyle: 'short' }),
+                  })}
+                </p>
+              )}
+              <Button type="submit" size="sm">
+                {lastInvite ? t('players.invite.inviteResend') : t('players.invite.inviteSend')}
+              </Button>
+            </form>
+          ) : (
+            <p className="text-muted-foreground">{t('players.invite.inviteNoEmail')}</p>
+          )}
+        </section>
+      )}
       {player.isMinor && (
         <p className="text-sm text-muted-foreground">{t('players.minorNotice')}</p>
       )}

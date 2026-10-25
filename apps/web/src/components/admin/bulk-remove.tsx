@@ -46,11 +46,14 @@ export function BulkRemove({
   formId,
   texts,
   action,
+  invite,
   returnTo,
 }: {
   formId: string;
   texts: Texts;
   action: (formData: FormData) => Promise<void>;
+  /** Players list: also send account invitations to the selection (D76). */
+  invite?: (formData: FormData) => Promise<void>;
   returnTo: string;
 }) {
   const t = useTranslations(texts);
@@ -88,6 +91,15 @@ export function BulkRemove({
           {t('selected', { count })}
         </span>
       </div>
+      {count > 0 && invite && (
+        <div className="flex flex-wrap items-center gap-3">
+          {/* No validation: the password below is only for removing. */}
+          <Button type="submit" formAction={invite} formNoValidate variant="outline" size="sm">
+            {t('invite', { count })}
+          </Button>
+          <span className="text-muted-foreground">{t('inviteHint')}</span>
+        </div>
+      )}
       {count > 0 && (
         <details className="space-y-2">
           <summary className="cursor-pointer font-medium text-destructive">

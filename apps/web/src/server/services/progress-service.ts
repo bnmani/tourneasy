@@ -87,7 +87,7 @@ export async function setupChecklist(actor: Actor, tournamentId: string) {
   const f = await facts(tournamentId);
   const base = `/admin/tournaments/${tournamentId}`;
   const steps: SetupStep[] = [
-    { key: 'venue', done: !!f.t.venueId, href: `${base}#edit` },
+    { key: 'venue', done: !!f.t.venueId, href: `${base}/settings#edit` },
     { key: 'events', done: f.events > 0, href: `${base}#events` },
     { key: 'published', done: f.t.isPublished, href: `${base}#status` },
     { key: 'open', done: f.t.status !== 'DRAFT', href: `${base}#status` },

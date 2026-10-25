@@ -4,11 +4,19 @@
  * means checked in on that day, so a two-day tournament starts each day fresh.
  */
 import { prisma } from '@tourneasy/db';
-import { amsterdamLocalToUtc, checkedInFor, utcToAmsterdamLocal } from '@tourneasy/shared';
+import {
+  amsterdamLocalToUtc,
+  checkedInFor,
+  formatEuro,
+  utcToAmsterdamLocal,
+} from '@tourneasy/shared';
+import type { AppLocale } from '@tourneasy/shared/i18n';
 import { writeAudit } from '../lib/audit';
 import { AppError } from '../lib/errors';
 import type { RequestMeta } from '../lib/request-meta';
 import { amountsDue } from '../payments/pricing';
+import { buildCheckInPdf } from '../pdf/checkin-pdf';
+import { tournamentLogoFile } from './logo-service';
 import { markShareAsPaid } from './payment-service';
 import { assertCanManageTournament } from './permissions';
 import { fullName } from './registration-service';
@@ -28,7 +36,7 @@ function tournamentDays(startsOn: Date, endsOn: Date) {
 
 export type CheckInPlayer = Awaited<ReturnType<typeof checkInList>>['players'][number];
 
-/** Everyone playing on the day (all entrants while nothing is scheduled), A–Z. */
+/** Everyone playing on the day (all entrants while nothing is scheduled), first match first. */
 export async function checkInList(
   actor: Actor,
   tournamentId: string,
@@ -123,7 +131,7 @@ export async function checkInList(
     const p = players.get(s.player.id) ?? {
       playerId: s.player.id,
       name: fullName(s.player),
-      sortName: `${s.player.lastName} ${s.player.firstName}`.toLowerCase(),
+      sortName: `${s.player.firstName} ${s.player.lastName}`.toLowerCase(),
       memberNumber: s.player.memberNumber,
       club: s.player.club?.name ?? null,
       firstMatch: null,
@@ -157,8 +165,46 @@ export async function checkInList(
       };
     }),
   );
-  list.sort((a, b) => a.sortName.localeCompare(b.sortName, 'nl'));
+  // Whoever plays first on top; same time by first name; no match that day last.
+  list.sort(
+    (a, b) =>
+      (a.firstMatch?.getTime() ?? Infinity) - (b.firstMatch?.getTime() ?? Infinity) ||
+      a.sortName.localeCompare(b.sortName, 'nl'),
+  );
   return { days, day, players: list };
+}
+
+/** The day's check-in list as a printable PDF (D77), in the same order as on screen. */
+export async function checkInPdf(
+  actor: Actor,
+  tournamentId: string,
+  requestedDay: string | undefined,
+  locale: AppLocale,
+) {
+  const list = await checkInList(actor, tournamentId, requestedDay);
+  const t = await prisma.tournament.findUniqueOrThrow({
+    where: { id: tournamentId },
+    select: { name: true, slug: true, venue: { select: { name: true, city: true } } },
+  });
+  const logo = await tournamentLogoFile(tournamentId);
+  const bytes = await buildCheckInPdf({
+    locale,
+    tournament: { name: t.name, venue: t.venue ? `${t.venue.name}, ${t.venue.city}` : null },
+    day: new Date(`${list.day}T12:00:00Z`),
+    logo: logo ? { bytes: new Uint8Array(logo.data), mimeType: logo.mimeType } : null,
+    rows: list.players.map((p) => ({
+      name: p.name,
+      memberNumber: p.memberNumber,
+      club: p.club,
+      firstMatch: p.firstMatch,
+      matches: p.matches,
+      present: p.present,
+      toPay: p.unpaidCents > 0 ? formatEuro(p.unpaidCents, locale) : null,
+    })),
+    generatedAt: new Date(),
+  });
+  const name = locale === 'nl' ? 'aanmeldlijst' : 'check-in';
+  return { bytes, filename: `${name}-${t.slug}-${list.day}.pdf` };
 }
 
 /** Checks a player in (or undoes it) for all their entries in the tournament. */

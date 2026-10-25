@@ -4,7 +4,6 @@ import { getFormatter, getTranslations } from 'next-intl/server';
 import { PaymentSettingsForm, UnlockSettingsForm } from '@/components/admin/payment-settings-forms';
 import { PageHeader, StatusNotice } from '@/components/admin/ui';
 import { Button } from '@/components/ui/button';
-import { Link } from '@/i18n/navigation';
 import { firstParam, pageLocale, type SearchParams } from '@/lib/page';
 import { clearPaymentSettingsAction, lockSettingsAction } from '@/server/actions/payment-actions';
 import { requireRole } from '@/server/auth/web';
@@ -35,13 +34,9 @@ export default async function PaymentSettingsPage({ params, searchParams }: Prop
   return (
     <>
       <PageHeader
+        crumbs={[{ label: t('navPayments'), href: '/admin/payments' }, { label: tp('title') }]}
         title={tp('title')}
         intro={tp('intro')}
-        actions={
-          <Button asChild variant="outline">
-            <Link href="/admin/payments">{t('back')}</Link>
-          </Button>
-        }
       />
       <StatusNotice status={firstParam(query.status)} />
 

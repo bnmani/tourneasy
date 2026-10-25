@@ -242,6 +242,7 @@
     "registered": {
       "title": "Welcome to Tourneasy!",
       "text": "We have sent a confirmation link to {email}. Click the link to confirm your email address.",
+      "activated": "Your account is active and your email address is confirmed.",
       "memberNumber": "Your member number is {number}. You can also use it to log in.",
       "toDashboard": "Go to my dashboard"
     },
@@ -268,6 +269,15 @@
       "submit": "Save password",
       "success": "Your password has been changed. You have been logged out on all devices; please log in again.",
       "missingToken": "This link is incomplete. Please request a new one."
+    },
+    "activate": {
+      "title": "Activate your account",
+      "intro": "Hi {name}, your member number is {number}. Choose a password to activate your account. You log in with {email} or your member number.",
+      "submit": "Activate account",
+      "invalid": "This invitation is invalid, already used or expired. Ask the organisers for a new one, or create an account yourself with the same email address.",
+      "register": "Create account",
+      "login": "Log in",
+      "emailTaken": "An account with this email address already exists. Log in, or request a new password."
     }
   },
   "Account": {
@@ -544,7 +554,11 @@
       "quickEntries": "Participants",
       "quickDesk": "Match desk",
       "quickPublic": "Public page",
-      "openNotPublished": "Entries open, but not published"
+      "openNotPublished": "Entries open, but not published",
+      "settingsLink": "Settings",
+      "settingsTitle": "Settings · {tournament}",
+      "settingsIntro": "The tournament's details, logo and organisers. Progress and categories are on the overview.",
+      "details": "Tournament details"
     },
     "events": {
       "new": "New event",
@@ -611,7 +625,8 @@
       "facilities": "Facilities",
       "parkingInfo": "Parking",
       "publicTransportInfo": "Public transport",
-      "courts": "{count} courts"
+      "courts": "{count} courts",
+      "readOnly": "This venue is also used by other people's tournaments. Only an admin can change it; ask an admin or add a new venue."
     },
     "clubs": {
       "title": "Clubs",
@@ -686,7 +701,17 @@
       },
       "saveAndAddAnother": "Save and add another",
       "playerAdded": "Player {name} added ({number}).",
-      "addAnother": "Add another player"
+      "addAnother": "Add another player",
+      "invitedBadge": "Invited {date}",
+      "invite": {
+        "inviteTitle": "Let them activate an account",
+        "inviteText": "Send {email} a link to choose a password. Entries and results stay with the member number.",
+        "inviteSend": "Send invitation",
+        "inviteResend": "Send again",
+        "inviteLast": "Last invited: {date}",
+        "inviteNoEmail": "Add an email address first to send an invitation.",
+        "inviteSent": "Invitation sent."
+      }
     },
     "audit": {
       "title": "Audit log",
@@ -697,7 +722,9 @@
       "entity": "Object",
       "system": "System",
       "actionFilter": "Action contains",
-      "empty": "No events found."
+      "empty": "No events found.",
+      "tournamentTitle": "Change log · {tournament}",
+      "tournamentIntro": "Who changed what and when in this tournament: settings, categories, entries, matches, news and payments."
     },
     "status": {
       "saved": "Saved.",
@@ -722,7 +749,8 @@
       "stageCreated": "Next round made.",
       "newsEmailed": "The message is being sent to the participants.",
       "logoSaved": "Logo saved.",
-      "logoRemoved": "Logo removed."
+      "logoRemoved": "Logo removed.",
+      "invited": "{sent, plural, =0 {No invitations sent} one {# invitation sent} other {# invitations sent}}{skipped, plural, =0 {.} other {; # skipped (already an account or no email address).}}"
     },
     "grantShort": "Grant",
     "revokeShort": "Remove",
@@ -959,7 +987,8 @@
       "done": "Present and paid ({count})",
       "allDone": "Everyone is present and has paid.",
       "presentOf": "{present}/{total} present",
-      "allPresent": "Everyone present"
+      "allPresent": "Everyone present",
+      "checkInPrint": "Print list (PDF)"
     },
     "navEmail": "Email",
     "emailSettings": {
@@ -1108,6 +1137,7 @@
         "common": "General (in all emails)",
         "verifyEmail": "Confirm email address",
         "resetPassword": "New password",
+        "accountInvite": "Invitation to activate an account",
         "passwordChanged": "Password changed",
         "roleChanged": "Role changed",
         "entryConfirmed": "Entry received",
@@ -1129,6 +1159,7 @@
         "common": "Greeting, footer and unsubscribe links.",
         "verifyEmail": "After creating an account.",
         "resetPassword": "When someone asks for a new password.",
+        "accountInvite": "When an admin invites a player without an account.",
         "passwordChanged": "After the password was changed.",
         "roleChanged": "When an admin grants or removes a role.",
         "entryConfirmed": "After entering a tournament.",
@@ -1159,6 +1190,11 @@
         "resetBody": "Text",
         "ignore": "Text: not requested",
         "resetButton": "Button",
+        "accountInviteSubject": "Subject",
+        "accountInviteBody": "Text",
+        "accountInviteIgnore": "Text: no account wanted",
+        "accountInviteButton": "Button",
+        "accountInviteFooter": "Footer",
         "passwordChangedSubject": "Subject",
         "passwordChangedBody": "Text",
         "roleChangedSubject": "Subject",
@@ -1240,7 +1276,10 @@
       "removeHint": "This can’t be undone. Name, contact details and (with an account) the login are erased; entries and results stay as \"Deleted player\". Admins and organisers can only be removed after their role is taken away.",
       "password": "Your own password to confirm",
       "confirm": "{count, plural, one {Yes, remove # player} other {Yes, remove # players}}",
-      "removed": "{count, plural, =0 {No players removed (already removed).} one {# player removed.} other {# players removed.}}"
+      "removed": "{count, plural, =0 {No players removed (already removed).} one {# player removed.} other {# players removed.}}",
+      "invite": "{count, plural, one {Send invitation} other {Send # invitations}}",
+      "inviteHint": "Only selected players without an account and with an email address get a link to activate their account.",
+      "invited": "{sent, plural, =0 {No invitations sent} one {# invitation sent} other {# invitations sent}}{skipped, plural, =0 {.} other {; # skipped (already an account or no email address).}}"
     },
     "usersJoined": "Member since",
     "tournamentBar": {
@@ -1252,7 +1291,10 @@
       "section_schedule": "Schedule",
       "section_matches": "Match desk",
       "section_news": "News",
-      "section_payments": "Payments"
+      "section_payments": "Payments",
+      "section_log": "Change log",
+      "section_settings": "Settings",
+      "breadcrumbs": "Breadcrumb"
     },
     "setup": {
       "title": "Set-up",
@@ -1278,7 +1320,12 @@
       "notPublished": "Entries are open, but the tournament isn’t published",
       "drawsMissing": "{count, plural, one {# category without a published draw} other {# categories without a published draw}} (entries closed)",
       "scheduleNotPublished": "The schedule is made but not published yet"
-    }
+    },
+    "breadcrumbs": "Breadcrumb",
+    "searchPortal": "Search the portal",
+    "searchPortalHint": "Search by tournament, player (name, member number, email), venue or club. At least 2 characters.",
+    "searchNoResults": "Nothing found for \"{q}\".",
+    "searchMore": "More results"
   },
   "Legal": {
     "draftNotice": "Draft — this text is still being reviewed legally.",
@@ -1297,6 +1344,11 @@
     "resetBody": "You asked for a new password. Choose a new password with the button below. The link is valid for 1 hour.",
     "resetButton": "Choose a new password",
     "ignore": "Didn't request this? Then you can ignore this email.",
+    "accountInviteSubject": "Your Tourneasy account is ready",
+    "accountInviteBody": "You are listed as a player in Tourneasy (member number {number}). Activate your account: choose a password with the button below. You will then see your entries, schedule and results, and can enter tournaments yourself. The link is valid for 14 days.",
+    "accountInviteIgnore": "Don't want an account? Then you don't need to do anything; the link expires by itself.",
+    "accountInviteButton": "Activate account",
+    "accountInviteFooter": "You receive this email because an organiser added you as a player in Tourneasy.",
     "passwordChangedSubject": "Your password has been changed",
     "passwordChangedBody": "The password of your Tourneasy account has just been changed. Wasn't this you? Request a new password straight away.",
     "roleChangedSubject": "Your Tourneasy permissions have changed",
@@ -1868,6 +1920,8 @@
     "venue_archive": "Venue archived",
     "venue_create": "Venue created",
     "venue_restore": "Venue restored",
-    "venue_update": "Venue updated"
+    "venue_update": "Venue updated",
+    "player_invite": "Player invited to an account",
+    "user_signup_invite": "Account activated from an invitation"
   }
 }

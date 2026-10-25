@@ -25,7 +25,7 @@ import {
 } from './schedule-service';
 import { PDFDocument } from 'pdf-lib';
 import { buildSchedulePdf, pdfSafe } from '../pdf/schedule-pdf';
-import { checkInList, payAtDesk, setPlayerCheckIn } from './checkin-service';
+import { checkInList, checkInPdf, payAtDesk, setPlayerCheckIn } from './checkin-service';
 import { schedulePdf } from './schedule-pdf-service';
 import { actorFromWebToken, createWebSession } from './session-service';
 
@@ -422,6 +422,17 @@ describe('desk check-in (D74)', () => {
       Array(4).fill([3, false, 1250]),
     );
     expect((await checkInList(actor, t.id, '2027-03-14')).players).toHaveLength(0);
+    // First match first; the same time by first name.
+    const order = day1.players.map((p) => [p.firstMatch!.getTime(), p.name]);
+    expect(order).toEqual(
+      [...order].sort(
+        (a, b) =>
+          (a[0] as number) - (b[0] as number) || String(a[1]).localeCompare(String(b[1]), 'nl'),
+      ),
+    );
+    const pdf = await checkInPdf(actor, t.id, '2027-03-13', 'nl');
+    expect(pdf.filename).toMatch(/^aanmeldlijst-.*-2027-03-13\.pdf$/);
+    expect((await PDFDocument.load(pdf.bytes)).getPageCount()).toBe(1);
 
     // On the day itself: one tap for all of the player's matches.
     vi.useFakeTimers({ toFake: ['Date'] });

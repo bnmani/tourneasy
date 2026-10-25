@@ -4,7 +4,6 @@ import { getTranslations } from 'next-intl/server';
 import { filterInputClass, PageHeader, StatusNotice } from '@/components/admin/ui';
 import { DrawView } from '@/components/draws/draw-view';
 import { Button } from '@/components/ui/button';
-import { Link } from '@/i18n/navigation';
 import { firstParam, pageLocale, type SearchParams } from '@/lib/page';
 import { cn } from '@/lib/utils';
 import {
@@ -41,7 +40,6 @@ export default async function EventDrawPage({ params, searchParams }: Props) {
   });
   if (!setup || setup.event.tournament.id !== id) notFound();
   const query = await searchParams;
-  const t = await getTranslations('Admin');
   const td = await getTranslations('Admin.draws');
   const tf = await getTranslations('DrawTypes');
   const draft = setup.status === 'DRAFT';
@@ -59,11 +57,6 @@ export default async function EventDrawPage({ params, searchParams }: Props) {
       <PageHeader
         title={setup.event.label}
         intro={`${setup.event.tournament.name} · ${tf(setup.event.drawType)}`}
-        actions={
-          <Button asChild variant="outline">
-            <Link href={`/admin/tournaments/${id}/draws`}>{t('back')}</Link>
-          </Button>
-        }
       />
       <StatusNotice status={firstParam(query.status)} params={{ min: '2' }} />
 

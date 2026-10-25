@@ -37,11 +37,6 @@ export default async function DrawsOverviewPage({ params }: Props) {
       <PageHeader
         title={t('draws.overviewTitle', { tournament: tournament.name })}
         intro={t('draws.intro')}
-        actions={
-          <Button asChild variant="outline">
-            <Link href={`/admin/tournaments/${id}`}>{t('back')}</Link>
-          </Button>
-        }
       />
       <ul className="divide-y rounded-lg border bg-card">
         {events.map((e) => (

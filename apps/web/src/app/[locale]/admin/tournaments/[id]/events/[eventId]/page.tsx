@@ -6,8 +6,6 @@ import { getTranslations } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import { EventForm } from '@/components/admin/event-form';
 import { PageHeader } from '@/components/admin/ui';
-import { Button } from '@/components/ui/button';
-import { Link } from '@/i18n/navigation';
 import { pageLocale } from '@/lib/page';
 import { requirePortal } from '@/server/auth/web';
 import { eventOptions, getEvent } from '@/server/services/event-service';
@@ -32,14 +30,7 @@ export default async function EditEventPage({ params }: Params) {
   const name = (event.name ?? null) as LocalizedText | null;
   return (
     <>
-      <PageHeader
-        title={t('events.edit')}
-        actions={
-          <Button asChild variant="outline">
-            <Link href={`/admin/tournaments/${id}#events`}>{t('back')}</Link>
-          </Button>
-        }
-      />
+      <PageHeader title={t('events.edit')} />
       <EventForm
         locale={locale}
         tournamentId={id}

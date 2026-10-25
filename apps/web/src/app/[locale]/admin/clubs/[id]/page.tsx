@@ -5,7 +5,6 @@ import { notFound } from 'next/navigation';
 import { Badge, PageHeader, StatusNotice } from '@/components/admin/ui';
 import { ClubForm } from '@/components/admin/venue-club-forms';
 import { Button } from '@/components/ui/button';
-import { Link } from '@/i18n/navigation';
 import { firstParam, pageLocale, type SearchParams } from '@/lib/page';
 import { archiveClubAction } from '@/server/actions/admin-actions';
 import { requireRole } from '@/server/auth/web';
@@ -35,6 +34,7 @@ export default async function EditClubPage({
   return (
     <>
       <PageHeader
+        crumbs={[{ label: t('navClubs'), href: '/admin/clubs' }, { label: club.name }]}
         title={club.name}
         actions={
           <>
@@ -43,9 +43,6 @@ export default async function EditClubPage({
                 {club.deletedAt ? t('restore') : t('archive')}
               </Button>
             </form>
-            <Button asChild variant="outline">
-              <Link href="/admin/clubs">{t('back')}</Link>
-            </Button>
           </>
         }
       />

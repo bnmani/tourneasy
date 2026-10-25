@@ -1,10 +1,7 @@
-import { utcToAmsterdamLocal } from '@tourneasy/shared/rules';
 import { STATUS_TRANSITIONS, type TournamentStatusCode } from '@tourneasy/shared/schemas';
-import { centsToEuroInput, formatEuro, type LocalizedText } from '@tourneasy/shared';
+import { formatEuro } from '@tourneasy/shared';
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
-import { OrganiserForm } from '@/components/admin/organiser-form';
-import { TournamentForm } from '@/components/admin/tournament-form';
 import { Badge, PageHeader, StatusNotice } from '@/components/admin/ui';
 import { FormSection } from '@/components/forms/fields';
 import { Button } from '@/components/ui/button';
@@ -14,19 +11,14 @@ import { firstParam, pageLocale, type SearchParams } from '@/lib/page';
 import {
   deleteEventAction,
   publishTournamentAction,
-  removeOrganiserAction,
-  removeTournamentLogoAction,
   tournamentStatusAction,
-  uploadTournamentLogoAction,
 } from '@/server/actions/admin-actions';
 import { getActor, isPortalUser, requirePortal } from '@/server/auth/web';
 import { isAppError } from '@/server/lib/errors';
-import { tournamentLogo } from '@/server/services/logo-service';
 import { setupChecklist } from '@/server/services/progress-service';
 import { SetupChecklist } from '@/components/admin/setup-checklist';
 import { entryCounts } from '@/server/services/registration-service';
 import { getTournament } from '@/server/services/tournament-service';
-import { venueOptions } from '@/server/services/venue-service';
 import { notFound } from 'next/navigation';
 
 type Params = { params: Promise<{ locale: string; id: string }> };
@@ -63,28 +55,18 @@ export default async function AdminTournamentPage({
   const ts = await getTranslations('TournamentStatuses');
   const tt = await getTranslations('TournamentTypes');
   const td = await getTranslations('DrawTypes');
-  const isAdmin = actor.roles.includes('ADMIN');
   const counts = await entryCounts(actor, tournament.id);
-  const logo = await tournamentLogo(tournament.id);
   const setup = await setupChecklist(actor, tournament.id);
   const countOf = (status: string) =>
     counts.filter((c) => c.status === status).reduce((n, c) => n + c._count._all, 0);
   const confirmedEntries = countOf('CONFIRMED') + countOf('PENDING');
   const waitlistedEntries = countOf('WAITLISTED');
   const liveEntries = confirmedEntries + waitlistedEntries;
-  const description = (tournament.description ?? null) as LocalizedText | null;
   const next = STATUS_TRANSITIONS[tournament.status as TournamentStatusCode];
 
   return (
     <>
-      <PageHeader
-        title={tournament.name}
-        actions={
-          <Button asChild variant="outline">
-            <Link href="/admin/tournaments">{t('back')}</Link>
-          </Button>
-        }
-      />
+      <PageHeader title={tournament.name} />
       <StatusNotice status={status} />
 
       <SetupChecklist steps={setup.steps} next={setup.next} />
@@ -124,58 +106,6 @@ export default async function AdminTournamentPage({
           </form>
         </div>
         <p className="text-sm text-muted-foreground">{t('tournaments.publishHint')}</p>
-      </section>
-
-      <section
-        id="logo"
-        aria-labelledby="logo-title"
-        className="space-y-3 rounded-lg border bg-card p-4 sm:p-6"
-      >
-        <h2 id="logo-title" className="text-lg font-semibold">
-          {t('tournaments.logoTitle')}
-        </h2>
-        <p className="text-sm text-muted-foreground">{t('tournaments.logoIntro')}</p>
-        {logo ? (
-          // eslint-disable-next-line @next/next/no-img-element -- served by our own endpoint
-          <img
-            src={logo.url}
-            alt={t('tournaments.logoAlt', { tournament: tournament.name })}
-            width={Math.round((logo.width / logo.height) * 64)}
-            height={64}
-            className="h-16 w-auto max-w-full rounded border bg-white object-contain p-1"
-          />
-        ) : (
-          <p className="text-sm">{t('tournaments.logoNone')}</p>
-        )}
-        <form
-          action={uploadTournamentLogoAction.bind(null, locale, tournament.id)}
-          className="flex flex-wrap items-end gap-3"
-        >
-          <label className="text-sm">
-            <span className="block font-medium">{t('tournaments.logoFile')}</span>
-            <input
-              type="file"
-              name="logo"
-              accept="image/png,image/jpeg"
-              required
-              aria-describedby="logo-hint"
-              className="mt-1 block text-sm file:mr-3 file:rounded-md file:border file:bg-secondary file:px-3 file:py-2 file:text-sm"
-            />
-          </label>
-          <Button type="submit" variant="outline">
-            {logo ? t('tournaments.logoReplace') : t('tournaments.logoUpload')}
-          </Button>
-        </form>
-        <p id="logo-hint" className="text-sm text-muted-foreground">
-          {t('tournaments.logoHint')}
-        </p>
-        {logo && (
-          <form action={removeTournamentLogoAction.bind(null, locale, tournament.id)}>
-            <Button type="submit" size="sm" variant="ghost" className="text-destructive">
-              {t('tournaments.logoRemove')}
-            </Button>
-          </form>
-        )}
       </section>
 
       <section id="events" className="space-y-4 rounded-lg border bg-card p-4 sm:p-6">
@@ -236,51 +166,6 @@ export default async function AdminTournamentPage({
         )}
       </section>
 
-      <section id="organisers" className="space-y-4 rounded-lg border bg-card p-4 sm:p-6">
-        <div>
-          <h2 className="text-lg font-semibold">{t('tournaments.organisers')}</h2>
-          <p className="text-sm text-muted-foreground">{t('tournaments.organisersIntro')}</p>
-        </div>
-        {tournament.organisers.length === 0 && tournament.organiserInvites.length === 0 ? (
-          <p className="text-sm text-muted-foreground">{t('tournaments.noOrganisers')}</p>
-        ) : (
-          <ul className="divide-y rounded-md border">
-            {tournament.organisers.map((o) => (
-              <li key={o.id} className="flex items-center justify-between gap-3 p-3">
-                <span>
-                  {o.user.name}{' '}
-                  <span className="text-sm text-muted-foreground">({o.user.email})</span>
-                </span>
-                {isAdmin && (
-                  <form action={removeOrganiserAction.bind(null, locale, tournament.id)}>
-                    <input type="hidden" name="userId" value={o.user.id} />
-                    <Button type="submit" size="sm" variant="ghost">
-                      {t('tournaments.removeOrganiser')}
-                    </Button>
-                  </form>
-                )}
-              </li>
-            ))}
-            {tournament.organiserInvites.map((i) => (
-              <li key={i.id} className="flex items-center justify-between gap-3 p-3">
-                <span>
-                  {i.email} <Badge tone="muted">{t('tournaments.pendingInvite')}</Badge>
-                </span>
-                {isAdmin && (
-                  <form action={removeOrganiserAction.bind(null, locale, tournament.id)}>
-                    <input type="hidden" name="inviteId" value={i.id} />
-                    <Button type="submit" size="sm" variant="ghost">
-                      {t('tournaments.removeOrganiser')}
-                    </Button>
-                  </form>
-                )}
-              </li>
-            ))}
-          </ul>
-        )}
-        {isAdmin && <OrganiserForm locale={locale} tournamentId={tournament.id} />}
-      </section>
-
       <FormSection title={t('tournaments.members')}>
         <p className="text-sm text-muted-foreground">
           {t('entries.summary', { count: liveEntries })}
@@ -298,62 +183,7 @@ export default async function AdminTournamentPage({
             </Link>
           </Button>
         </div>
-        <div>
-          <Button asChild variant="outline" size="sm">
-            <Link href={`/admin/tournaments/${tournament.id}/draws`}>{t('draws.manage')}</Link>
-          </Button>{' '}
-          <Button asChild variant="outline" size="sm">
-            <Link href={`/admin/tournaments/${tournament.id}/schedule`}>{t('schedule.title')}</Link>
-          </Button>{' '}
-          <Button asChild variant="outline" size="sm">
-            <Link href={`/admin/tournaments/${tournament.id}/matches`}>{t('desk.title')}</Link>
-          </Button>{' '}
-          <Button asChild variant="outline" size="sm">
-            <Link href={`/admin/tournaments/${tournament.id}/news`}>{t('news.title')}</Link>
-          </Button>
-        </div>
       </FormSection>
-
-      <h2 id="edit" className="pt-2 text-lg font-semibold">
-        {t('edit')}
-      </h2>
-      <TournamentForm
-        locale={locale}
-        tournamentId={tournament.id}
-        isAdmin={isAdmin}
-        venues={await venueOptions()}
-        values={{
-          name: tournament.name,
-          type: tournament.type,
-          venueId: tournament.venueId ?? '',
-          startsOn: tournament.startsOn.toISOString().slice(0, 10),
-          endsOn: tournament.endsOn.toISOString().slice(0, 10),
-          dayStartTime: tournament.dayStartTime ?? '',
-          dayEndTime: tournament.dayEndTime ?? '',
-          matchMinutes: tournament.matchMinutes.toString(),
-          singleGameMinutes: tournament.singleGameMinutes.toString(),
-          noShowMinutes: tournament.noShowMinutes.toString(),
-          restMinutes: tournament.restMinutes.toString(),
-          registrationOpensAt: utcToAmsterdamLocal(tournament.registrationOpensAt),
-          registrationClosesAt: utcToAmsterdamLocal(tournament.registrationClosesAt),
-          withdrawalDeadline: utcToAmsterdamLocal(tournament.withdrawalDeadline),
-          maxParticipants: tournament.maxParticipants?.toString() ?? '',
-          maxEventsPerPlayer: tournament.maxEventsPerPlayer.toString(),
-          courtsAvailable: tournament.courtsAvailable?.toString() ?? '',
-          contactName: tournament.contactName ?? '',
-          contactEmail: tournament.contactEmail ?? '',
-          contactPhone: tournament.contactPhone ?? '',
-          descriptionNl: description?.nl ?? '',
-          descriptionEn: description?.en ?? '',
-          partnerPaymentMode:
-            tournament.partnerPaymentMode === 'INITIATOR_PAYS_ALL'
-              ? 'INITIATOR_PAYS_ALL'
-              : 'EACH_PAYS_OWN_SHARE',
-          refundPolicy: tournament.refundPolicy,
-          refundPercent: tournament.refundPercent.toString(),
-          bundlePrices: tournament.bundlePricesCents.map(centsToEuroInput),
-        }}
-      />
     </>
   );
 }

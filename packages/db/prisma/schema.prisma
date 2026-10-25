@@ -291,6 +291,7 @@ model User {
   checkIns            RegistrationParticipant[] @relation("CheckedInBy")
   idempotencyKeys     IdempotencyKey[]
   following           PlayerFollow[]
+  playerInvitesSent   PlayerInvite[]
 
   @@index([deletedAt])
 }
@@ -481,11 +482,30 @@ model PlayerProfile {
   invitesReceived PartnerInvite[]           @relation("InviteTo")
   partnerRequests PartnerRequest[]
   followers       PlayerFollow[]            @relation("Followed")
+  accountInvites  PlayerInvite[]
 
   @@index([lastName, firstName])
   @@index([contactEmail])
   @@index([clubId])
   @@index([deletedAt])
+}
+
+/// An invitation to a player without an account to activate one (D76): the link confirms
+/// the email address, the player picks a password and lands signed in on the dashboard.
+model PlayerInvite {
+  id          String    @id @default(uuid()) @db.Uuid
+  playerId    String    @db.Uuid
+  email       String    @db.Citext
+  tokenHash   String    @unique
+  expiresAt   DateTime
+  usedAt      DateTime?
+  invitedById String?   @db.Uuid
+  createdAt   DateTime  @default(now())
+
+  player    PlayerProfile @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  invitedBy User?         @relation(fields: [invitedById], references: [id], onDelete: SetNull)
+
+  @@index([playerId])
 }
 
 /// "Follow a fellow participant": the follower (a User) gets notified about the

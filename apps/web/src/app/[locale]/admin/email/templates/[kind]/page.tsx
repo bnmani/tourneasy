@@ -44,17 +44,18 @@ export default async function EmailTemplatePage({ params, searchParams }: Props)
   ]);
   const t = await getTranslations('Admin.emailTemplates');
   const te = await getTranslations('Errors');
+  const ta = await getTranslations('Admin');
   const status = firstParam(query.status);
   return (
     <>
       <PageHeader
+        crumbs={[
+          { label: ta('navEmail'), href: '/admin/email' },
+          { label: t('title'), href: '/admin/email/templates' },
+          { label: t(`kinds.${kind}`) },
+        ]}
         title={t(`kinds.${kind}`)}
         intro={t(`when.${kind}`)}
-        actions={
-          <Button asChild variant="outline">
-            <Link href="/admin/email/templates">← {t('back')}</Link>
-          </Button>
-        }
       />
       {status === 'resetDone' && <FormSuccess>{t('resetDone')}</FormSuccess>}
       {status && status !== 'resetDone' && (

@@ -242,6 +242,7 @@
     "registered": {
       "title": "Welkom bij Tourneasy!",
       "text": "We hebben een bevestigingslink gestuurd naar {email}. Klik op de link om je e-mailadres te bevestigen.",
+      "activated": "Je account is actief en je e-mailadres is bevestigd.",
       "memberNumber": "Je lidnummer is {number}. Hiermee kun je ook inloggen.",
       "toDashboard": "Naar mijn dashboard"
     },
@@ -268,6 +269,15 @@
       "submit": "Wachtwoord opslaan",
       "success": "Je wachtwoord is gewijzigd. Je bent op alle apparaten uitgelogd; log opnieuw in.",
       "missingToken": "Deze link is onvolledig. Vraag een nieuwe link aan."
+    },
+    "activate": {
+      "title": "Account activeren",
+      "intro": "Hoi {name}, je lidnummer is {number}. Kies een wachtwoord om je account te activeren. Je logt in met {email} of je lidnummer.",
+      "submit": "Account activeren",
+      "invalid": "Deze uitnodiging is ongeldig, al gebruikt of verlopen. Vraag de organisatie om een nieuwe, of maak zelf een account aan met hetzelfde e-mailadres.",
+      "register": "Account aanmaken",
+      "login": "Inloggen",
+      "emailTaken": "Er is al een account met dit e-mailadres. Log in, of vraag een nieuw wachtwoord aan."
     }
   },
   "Account": {
@@ -544,7 +554,11 @@
       "quickEntries": "Deelnemers",
       "quickDesk": "Wedstrijdtafel",
       "quickPublic": "Publieke pagina",
-      "openNotPublished": "Inschrijving open, maar niet gepubliceerd"
+      "openNotPublished": "Inschrijving open, maar niet gepubliceerd",
+      "settingsLink": "Instellingen",
+      "settingsTitle": "Instellingen · {tournament}",
+      "settingsIntro": "Gegevens, logo en organisatoren van het toernooi. De voortgang en categorieën staan in het overzicht.",
+      "details": "Toernooigegevens"
     },
     "events": {
       "new": "Nieuw onderdeel",
@@ -611,7 +625,8 @@
       "facilities": "Faciliteiten",
       "parkingInfo": "Parkeren",
       "publicTransportInfo": "Openbaar vervoer",
-      "courts": "{count} banen"
+      "courts": "{count} banen",
+      "readOnly": "Deze locatie hoort ook bij toernooien van anderen. Alleen een beheerder kan hem wijzigen; vraag de beheerder of voeg een nieuwe locatie toe."
     },
     "clubs": {
       "title": "Clubs",
@@ -686,7 +701,17 @@
       },
       "saveAndAddAnother": "Opslaan en nog een toevoegen",
       "playerAdded": "Speler {name} toegevoegd ({number}).",
-      "addAnother": "Nog een speler toevoegen"
+      "addAnother": "Nog een speler toevoegen",
+      "invitedBadge": "Uitgenodigd {date}",
+      "invite": {
+        "inviteTitle": "Account laten activeren",
+        "inviteText": "Stuur {email} een link om een wachtwoord te kiezen. Inschrijvingen en uitslagen blijven bij het lidnummer.",
+        "inviteSend": "Uitnodiging sturen",
+        "inviteResend": "Opnieuw sturen",
+        "inviteLast": "Laatst uitgenodigd: {date}",
+        "inviteNoEmail": "Voeg eerst een e-mailadres toe om een uitnodiging te sturen.",
+        "inviteSent": "Uitnodiging verstuurd."
+      }
     },
     "audit": {
       "title": "Auditlog",
@@ -697,7 +722,9 @@
       "entity": "Object",
       "system": "Systeem",
       "actionFilter": "Actie bevat",
-      "empty": "Geen gebeurtenissen gevonden."
+      "empty": "Geen gebeurtenissen gevonden.",
+      "tournamentTitle": "Logboek · {tournament}",
+      "tournamentIntro": "Wie wat wanneer heeft gewijzigd aan dit toernooi: instellingen, categorieën, inschrijvingen, wedstrijden, nieuws en betalingen."
     },
     "status": {
       "saved": "Opgeslagen.",
@@ -722,7 +749,8 @@
       "stageCreated": "Volgende ronde gemaakt.",
       "newsEmailed": "Bericht wordt verstuurd naar de deelnemers.",
       "logoSaved": "Logo opgeslagen.",
-      "logoRemoved": "Logo verwijderd."
+      "logoRemoved": "Logo verwijderd.",
+      "invited": "{sent, plural, =0 {Geen uitnodigingen verstuurd} one {# uitnodiging verstuurd} other {# uitnodigingen verstuurd}}{skipped, plural, =0 {.} other {; # overgeslagen (al een account of geen e-mailadres).}}"
     },
     "grantShort": "Toekennen",
     "revokeShort": "Intrekken",
@@ -959,7 +987,8 @@
       "done": "Aanwezig en betaald ({count})",
       "allDone": "Iedereen is aanwezig en heeft betaald.",
       "presentOf": "{present}/{total} aanwezig",
-      "allPresent": "Iedereen aanwezig"
+      "allPresent": "Iedereen aanwezig",
+      "checkInPrint": "Lijst afdrukken (pdf)"
     },
     "navEmail": "E-mail",
     "emailSettings": {
@@ -1108,6 +1137,7 @@
         "common": "Algemeen (in alle e-mails)",
         "verifyEmail": "E-mailadres bevestigen",
         "resetPassword": "Nieuw wachtwoord",
+        "accountInvite": "Uitnodiging account activeren",
         "passwordChanged": "Wachtwoord gewijzigd",
         "roleChanged": "Rol gewijzigd",
         "entryConfirmed": "Inschrijving ontvangen",
@@ -1129,6 +1159,7 @@
         "common": "Aanhef, voettekst en afmeldlinks.",
         "verifyEmail": "Na het aanmaken van een account.",
         "resetPassword": "Als iemand een nieuw wachtwoord aanvraagt.",
+        "accountInvite": "Als een beheerder een speler zonder account uitnodigt.",
         "passwordChanged": "Na het wijzigen van het wachtwoord.",
         "roleChanged": "Als een beheerder een rol geeft of intrekt.",
         "entryConfirmed": "Na het inschrijven voor een toernooi.",
@@ -1159,6 +1190,11 @@
         "resetBody": "Tekst",
         "ignore": "Tekst: niet aangevraagd",
         "resetButton": "Knop",
+        "accountInviteSubject": "Onderwerp",
+        "accountInviteBody": "Tekst",
+        "accountInviteIgnore": "Tekst: geen account willen",
+        "accountInviteButton": "Knop",
+        "accountInviteFooter": "Voettekst",
         "passwordChangedSubject": "Onderwerp",
         "passwordChangedBody": "Tekst",
         "roleChangedSubject": "Onderwerp",
@@ -1240,7 +1276,10 @@
       "removeHint": "Verwijderen kan niet ongedaan worden gemaakt. Naam, contactgegevens en (bij een account) de inloggegevens worden gewist; inschrijvingen en uitslagen blijven staan als \"Deleted player\". Beheerders en organisatoren kun je pas verwijderen nadat hun rol is ingetrokken.",
       "password": "Je eigen wachtwoord ter bevestiging",
       "confirm": "{count, plural, one {Ja, # speler verwijderen} other {Ja, # spelers verwijderen}}",
-      "removed": "{count, plural, =0 {Geen spelers verwijderd (al verwijderd).} one {# speler verwijderd.} other {# spelers verwijderd.}}"
+      "removed": "{count, plural, =0 {Geen spelers verwijderd (al verwijderd).} one {# speler verwijderd.} other {# spelers verwijderd.}}",
+      "invite": "{count, plural, one {Uitnodiging sturen} other {# uitnodigingen sturen}}",
+      "inviteHint": "Alleen geselecteerde spelers zonder account en met een e-mailadres krijgen een link om hun account te activeren.",
+      "invited": "{sent, plural, =0 {Geen uitnodigingen verstuurd} one {# uitnodiging verstuurd} other {# uitnodigingen verstuurd}}{skipped, plural, =0 {.} other {; # overgeslagen (al een account of geen e-mailadres).}}"
     },
     "usersJoined": "Lid sinds",
     "tournamentBar": {
@@ -1252,7 +1291,10 @@
       "section_schedule": "Planning",
       "section_matches": "Wedstrijdtafel",
       "section_news": "Nieuws",
-      "section_payments": "Betalingen"
+      "section_payments": "Betalingen",
+      "section_log": "Logboek",
+      "section_settings": "Instellingen",
+      "breadcrumbs": "Kruimelpad"
     },
     "setup": {
       "title": "Klaarzetten",
@@ -1278,7 +1320,12 @@
       "notPublished": "Inschrijving staat open, maar het toernooi is niet gepubliceerd",
       "drawsMissing": "{count, plural, one {# onderdeel zonder gepubliceerd schema} other {# onderdelen zonder gepubliceerd schema}} (inschrijving gesloten)",
       "scheduleNotPublished": "Planning is gemaakt maar nog niet gepubliceerd"
-    }
+    },
+    "breadcrumbs": "Kruimelpad",
+    "searchPortal": "Zoeken in beheer",
+    "searchPortalHint": "Zoek op toernooi, speler (naam, lidnummer, e-mail), locatie of club. Minstens 2 tekens.",
+    "searchNoResults": "Niets gevonden voor \"{q}\".",
+    "searchMore": "Meer resultaten"
   },
   "Legal": {
     "draftNotice": "Concept — deze tekst wordt nog juridisch gecontroleerd.",
@@ -1297,6 +1344,11 @@
     "resetBody": "Je hebt gevraagd om een nieuw wachtwoord. Kies een nieuw wachtwoord met de knop hieronder. De link is 1 uur geldig.",
     "resetButton": "Nieuw wachtwoord kiezen",
     "ignore": "Heb jij dit niet aangevraagd? Dan kun je deze e-mail negeren.",
+    "accountInviteSubject": "Je account bij Tourneasy staat klaar",
+    "accountInviteBody": "Je staat als speler in Tourneasy (lidnummer {number}). Activeer je account: kies met de knop hieronder een wachtwoord. Daarna zie je je inschrijvingen, je planning en je uitslagen, en kun je jezelf inschrijven voor toernooien. De link is 14 dagen geldig.",
+    "accountInviteIgnore": "Wil je geen account? Dan hoef je niets te doen; de link verloopt vanzelf.",
+    "accountInviteButton": "Account activeren",
+    "accountInviteFooter": "Je ontvangt deze e-mail omdat een organisator je als speler aan Tourneasy heeft toegevoegd.",
     "passwordChangedSubject": "Je wachtwoord is gewijzigd",
     "passwordChangedBody": "Het wachtwoord van je Tourneasy-account is zojuist gewijzigd. Was jij dit niet? Vraag dan direct een nieuw wachtwoord aan.",
     "roleChangedSubject": "Je rechten bij Tourneasy zijn gewijzigd",
@@ -1868,6 +1920,8 @@
     "venue_archive": "Locatie gearchiveerd",
     "venue_create": "Locatie aangemaakt",
     "venue_restore": "Locatie teruggezet",
-    "venue_update": "Locatie gewijzigd"
+    "venue_update": "Locatie gewijzigd",
+    "player_invite": "Speler uitgenodigd voor een account",
+    "user_signup_invite": "Account geactiveerd via uitnodiging"
   }
 }

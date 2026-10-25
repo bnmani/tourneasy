@@ -67,7 +67,6 @@ export default async function DeskPage({ params, searchParams }: Props) {
       .filter((e) => e.status === 'PUBLISHED')
       .map(async (e) => ({ ...e, ...(await stageStatus(e.id)) })),
   );
-  const t = await getTranslations('Admin');
   const td = await getTranslations('Admin.desk');
   // After a refused score, refill what was typed for that match.
   const [enteredId, enteredGames] = (firstParam(query.entered) ?? '').split('~');
@@ -114,9 +113,6 @@ export default async function DeskPage({ params, searchParams }: Props) {
           <>
             <Button asChild variant="outline">
               <Link href={`/admin/tournaments/${id}/schedule`}>{td('schedule')}</Link>
-            </Button>
-            <Button asChild variant="outline">
-              <Link href={`/admin/tournaments/${id}`}>{t('back')}</Link>
             </Button>
           </>
         }
@@ -393,7 +389,17 @@ async function CheckInView({
   const dayLabel = (d: string) => formatDate(new Date(`${d}T12:00:00Z`), locale);
   return (
     <div className="space-y-4">
-      <p className="text-sm text-muted-foreground">{td('checkInIntro')}</p>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-sm text-muted-foreground">{td('checkInIntro')}</p>
+        <Button asChild variant="outline" size="sm">
+          <a
+            href={`/api/v1/admin/tournaments/${tournamentId}/checkin.pdf?day=${list.day}&lang=${locale}`}
+            download
+          >
+            {td('checkInPrint')}
+          </a>
+        </Button>
+      </div>
       {list.days.length > 1 && (
         <nav aria-label={td('checkInDay')} className="flex flex-wrap gap-2">
           {list.days.map((d) => (

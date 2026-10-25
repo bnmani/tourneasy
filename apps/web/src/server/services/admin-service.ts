@@ -1,7 +1,7 @@
 /** Admin dashboard figures and the audit log viewer. */
 import { prisma, type Prisma } from '@tourneasy/db';
 import { pageCount, pageParams } from '../lib/validation';
-import { assertAdmin, assertPortalAccess, isAdmin } from './permissions';
+import { assertAdmin, assertCanManageTournament, assertPortalAccess, isAdmin } from './permissions';
 import type { Actor } from './session-service';
 
 export async function getDashboard(actor: Actor) {
@@ -71,6 +71,74 @@ export async function listAuditLog(actor: Actor, params: { action?: string; page
   const where: Prisma.AuditLogWhereInput = action
     ? { action: { contains: action, mode: 'insensitive' } }
     : {};
+  const [total, entries] = await Promise.all([
+    prisma.auditLog.count({ where }),
+    prisma.auditLog.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take,
+      select: {
+        id: true,
+        action: true,
+        entityType: true,
+        entityId: true,
+        before: true,
+        after: true,
+        createdAt: true,
+        actor: { select: { name: true, email: true } },
+      },
+    }),
+  ]);
+  return { entries, total, page, pages: pageCount(total) };
+}
+
+/** Every logged entity that belongs to one tournament: itself, its events, entries, matches… */
+async function tournamentAuditScope(tournamentId: string): Promise<Prisma.AuditLogWhereInput> {
+  const ids = async (rows: Promise<{ id: string }[]>) => (await rows).map((r) => r.id);
+  const event = { tournamentId };
+  const [events, registrations, participants, matches, news, orders, refunds] = await Promise.all([
+    ids(prisma.tournamentEvent.findMany({ where: event, select: { id: true } })),
+    ids(prisma.registration.findMany({ where: { event }, select: { id: true } })),
+    ids(
+      prisma.registrationParticipant.findMany({
+        where: { registration: { event } },
+        select: { id: true },
+      }),
+    ),
+    ids(prisma.match.findMany({ where: { draw: { event } }, select: { id: true } })),
+    ids(prisma.announcement.findMany({ where: { tournamentId }, select: { id: true } })),
+    ids(prisma.order.findMany({ where: { tournamentId }, select: { id: true } })),
+    ids(
+      prisma.refund.findMany({
+        where: { payment: { order: { tournamentId } } },
+        select: { id: true },
+      }),
+    ),
+  ]);
+  const scoped = Object.entries({
+    TournamentEvent: events,
+    Registration: registrations,
+    RegistrationParticipant: participants,
+    Match: matches,
+    Announcement: news,
+    Order: orders,
+    Refund: refunds,
+  })
+    .filter(([, list]) => list.length > 0)
+    .map(([entityType, list]) => ({ entityType, entityId: { in: list } }));
+  return { OR: [{ entityType: 'Tournament', entityId: tournamentId }, ...scoped] };
+}
+
+/** Change log of one tournament, for its admins and organisers. */
+export async function listTournamentAudit(
+  actor: Actor,
+  tournamentId: string,
+  params: { page?: number } = {},
+) {
+  await assertCanManageTournament(actor, tournamentId);
+  const { page, skip, take } = pageParams(params.page);
+  const where = await tournamentAuditScope(tournamentId);
   const [total, entries] = await Promise.all([
     prisma.auditLog.count({ where }),
     prisma.auditLog.findMany({

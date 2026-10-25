@@ -5,7 +5,7 @@ import { Badge, FilterBar, filterInputClass, PageHeader, Pagination } from '@/co
 import { Button } from '@/components/ui/button';
 import { Link } from '@/i18n/navigation';
 import { firstParam, pageLocale, type LocaleParams, type SearchParams } from '@/lib/page';
-import { requireRole } from '@/server/auth/web';
+import { requirePortal } from '@/server/auth/web';
 import { listVenues } from '@/server/services/venue-service';
 
 export async function generateMetadata({
@@ -21,7 +21,7 @@ export default async function AdminVenuesPage({
   searchParams,
 }: LocaleParams & { searchParams: SearchParams }) {
   const locale = await pageLocale(params);
-  const actor = await requireRole(locale, 'ADMIN');
+  const actor = await requirePortal(locale);
   const query = await searchParams;
   const q = firstParam(query.q) ?? '';
   const archived = firstParam(query.archived) === '1';

@@ -39,7 +39,6 @@ export default async function SchedulePage({ params, searchParams }: Props) {
   });
   if (!schedule) notFound();
   const query = await searchParams;
-  const t = await getTranslations('Admin');
   const ts = await getTranslations('Admin.schedule');
   const { tournament, courts, days, scheduled, unscheduled, conflictIds } = schedule;
   const published = !!tournament.schedulePublishedAt;
@@ -67,9 +66,6 @@ export default async function SchedulePage({ params, searchParams }: Props) {
             </Button>
             <Button asChild variant="outline">
               <Link href={`/admin/tournaments/${id}/matches`}>{ts('desk')}</Link>
-            </Button>
-            <Button asChild variant="outline">
-              <Link href={`/admin/tournaments/${id}`}>{t('back')}</Link>
             </Button>
           </>
         }

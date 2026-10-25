@@ -23,6 +23,7 @@ import {
   resetPassword,
   signUp,
 } from '../services/auth-service';
+import { acceptPlayerInvite } from '../services/player-invite-service';
 import { actorFromWebToken, createWebSession } from '../services/session-service';
 import { formToObject, toFormState } from './form-utils';
 
@@ -95,6 +96,26 @@ export async function resetPasswordAction(
   }
   await clearSessionCookie();
   redirect(`/${locale}/login?reset=1`);
+}
+
+/** Activating an invited player's account (D76): signed in and on to the dashboard. */
+export async function activateAccountAction(
+  locale: AppLocale,
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const meta = await currentRequestMeta();
+  try {
+    const input = formToObject(formData, {
+      booleans: ['acceptTerms', 'acceptPrivacy', 'parentalConsent'],
+    });
+    const { userId } = await acceptPlayerInvite(input, locale, meta);
+    const session = await createWebSession(userId, meta, true);
+    await setSessionCookie(session.token, session.expiresAt, session.persistent);
+  } catch (error) {
+    return toFormState(error, formData);
+  }
+  redirect(`/${locale}/account?welcome=activated`);
 }
 
 /** Whether the signed-in account's email is confirmed now (polled by the "confirm" notice). */

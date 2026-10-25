@@ -10,7 +10,8 @@ import { Button } from '@/components/ui/button';
 import { ScrollRegion } from '@/components/ui/scroll-region';
 import { BulkRemove, SelectRow } from '@/components/admin/bulk-remove';
 import { FormError, FormSuccess } from '@/components/forms/fields';
-import { removePlayersAction } from '@/server/actions/admin-actions';
+import { invitePlayersAction, removePlayersAction } from '@/server/actions/admin-actions';
+import { lastInvites } from '@/server/services/player-invite-service';
 import { Link } from '@/i18n/navigation';
 import { personName } from '@/lib/labels';
 import { firstParam, pageLocale, type LocaleParams, type SearchParams } from '@/lib/page';
@@ -56,6 +57,7 @@ export default async function AdminPlayersPage({
     listPlayers(actor, { ...filters, page: Number(firstParam(query.page) ?? 1) }),
     getProfileOptions(),
   ]);
+  const invited = await lastInvites(result.players.filter((p) => !p.user).map((p) => p.id));
   const t = await getTranslations('Admin');
   const td = await getTranslations('Disciplines');
   const tg = await getTranslations('Genders');
@@ -203,7 +205,17 @@ export default async function AdminPlayersPage({
           {tb('removed', { count: Number(firstParam(query.count) ?? '0') })}
         </FormSuccess>
       )}
-      {status && status !== 'removed' && <FormError state={{ error: status }} />}
+      {status === 'invited' && (
+        <FormSuccess>
+          {tb('invited', {
+            sent: Number(firstParam(query.sent) ?? '0'),
+            skipped: Number(firstParam(query.skipped) ?? '0'),
+          })}
+        </FormSuccess>
+      )}
+      {status && status !== 'removed' && status !== 'invited' && (
+        <FormError state={{ error: status }} />
+      )}
 
       <p className="text-sm text-muted-foreground">{t('total', { count: result.total })}</p>
       {result.players.length > 0 && (
@@ -211,6 +223,7 @@ export default async function AdminPlayersPage({
           formId="bulk-remove-players"
           texts="Admin.playersBulk"
           action={removePlayersAction}
+          invite={invitePlayersAction.bind(null, locale)}
           returnTo={`/${locale}/admin/players?${filterQuery}`}
         />
       )}
@@ -262,6 +275,13 @@ export default async function AdminPlayersPage({
                     <div className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
                       {p.memberNumber}
                       {!p.user && <Badge tone="muted">{t('players.withoutAccount')}</Badge>}
+                      {invited.has(p.id) && (
+                        <Badge tone="muted">
+                          {t('players.invitedBadge', {
+                            date: format.dateTime(invited.get(p.id)!, { dateStyle: 'short' }),
+                          })}
+                        </Badge>
+                      )}
                       {p.isMinor && <Badge tone="muted">{t('players.minor')}</Badge>}
                     </div>
                   </td>

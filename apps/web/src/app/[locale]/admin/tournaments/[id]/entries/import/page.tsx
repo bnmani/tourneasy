@@ -5,7 +5,6 @@ import { getTranslations } from 'next-intl/server';
 import { ImportEntriesForm } from '@/components/admin/import-entries-form';
 import { PageHeader } from '@/components/admin/ui';
 import { Button } from '@/components/ui/button';
-import { Link } from '@/i18n/navigation';
 import { pageLocale } from '@/lib/page';
 import { requirePortal } from '@/server/auth/web';
 import { isAppError } from '@/server/lib/errors';
@@ -43,9 +42,6 @@ export default async function ImportEntriesPage({ params }: Props) {
               <a href={`/api/v1/admin/tournaments/${id}/entries/template`} download>
                 {t('players.template')}
               </a>
-            </Button>
-            <Button asChild variant="outline">
-              <Link href={`/admin/tournaments/${id}/entries`}>{t('back')}</Link>
             </Button>
           </>
         }

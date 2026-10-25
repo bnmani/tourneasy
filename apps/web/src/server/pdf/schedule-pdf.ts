@@ -39,15 +39,15 @@ export type SchedulePdfInput = {
   generatedAt: Date;
 };
 
-const PRIMARY = rgb(0x2e / 255, 0x4a / 255, 0x67 / 255);
-const ACCENT = rgb(0xb8 / 255, 0x94 / 255, 0x5b / 255);
-const INK = rgb(0x0f / 255, 0x1e / 255, 0x33 / 255);
-const MUTED = rgb(0.38, 0.42, 0.48);
-const ZEBRA = rgb(0xf6 / 255, 0xf3 / 255, 0xec / 255);
-const LINE = rgb(0.85, 0.85, 0.85);
+export const PRIMARY = rgb(0x2e / 255, 0x4a / 255, 0x67 / 255);
+export const ACCENT = rgb(0xb8 / 255, 0x94 / 255, 0x5b / 255);
+export const INK = rgb(0x0f / 255, 0x1e / 255, 0x33 / 255);
+export const MUTED = rgb(0.38, 0.42, 0.48);
+export const ZEBRA = rgb(0xf6 / 255, 0xf3 / 255, 0xec / 255);
+export const LINE = rgb(0.85, 0.85, 0.85);
 
 const PAGE: [number, number] = [841.89, 595.28]; // A4 landscape, points
-const MARGIN = 36;
+export const MARGIN = 36;
 
 const TEXTS = {
   nl: {
@@ -109,7 +109,7 @@ export function pdfSafe(text: string): string {
 }
 
 /** Splits text into lines that fit the width. */
-function wrap(text: string, font: PDFFont, size: number, width: number): string[] {
+export function wrap(text: string, font: PDFFont, size: number, width: number): string[] {
   const words = pdfSafe(text).split(/\s+/).filter(Boolean);
   const lines: string[] = [];
   let line = '';
@@ -125,6 +125,22 @@ function wrap(text: string, font: PDFFont, size: number, width: number): string[
   return lines.length ? lines : [''];
 }
 
+/** The tournament's logo, or the Tourneasy mark when it has none (or it can't be read). */
+export async function embedLogo(
+  doc: PDFDocument,
+  file: { bytes: Uint8Array; mimeType: string } | null,
+): Promise<PDFImage> {
+  try {
+    if (file)
+      return file.mimeType === 'image/png'
+        ? await doc.embedPng(file.bytes)
+        : await doc.embedJpg(file.bytes);
+  } catch {
+    // Falls back to the mark below.
+  }
+  return doc.embedPng(Buffer.from(TOURNEASY_MARK_PNG_BASE64, 'base64'));
+}
+
 export async function buildSchedulePdf(input: SchedulePdfInput): Promise<Uint8Array> {
   const t = TEXTS[input.locale];
   const doc = await PDFDocument.create();
@@ -134,16 +150,7 @@ export async function buildSchedulePdf(input: SchedulePdfInput): Promise<Uint8Ar
   const regular = await doc.embedFont(StandardFonts.Helvetica);
   const bold = await doc.embedFont(StandardFonts.HelveticaBold);
 
-  let logo: PDFImage;
-  try {
-    logo = input.logo
-      ? input.logo.mimeType === 'image/png'
-        ? await doc.embedPng(input.logo.bytes)
-        : await doc.embedJpg(input.logo.bytes)
-      : await doc.embedPng(Buffer.from(TOURNEASY_MARK_PNG_BASE64, 'base64'));
-  } catch {
-    logo = await doc.embedPng(Buffer.from(TOURNEASY_MARK_PNG_BASE64, 'base64'));
-  }
+  const logo = await embedLogo(doc, input.logo);
 
   // Columns: x offset and width.
   const width = PAGE[0] - 2 * MARGIN;
