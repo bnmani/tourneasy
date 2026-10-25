@@ -64,6 +64,28 @@ export async function listTournaments(
   return { tournaments, total, page, pages: pageCount(total) };
 }
 
+/**
+ * Tournaments the actor may manage (admins: all; organisers: theirs), current and upcoming
+ * first, for the tournament switcher and the organiser's dashboard. Empty for others.
+ */
+export async function managedTournaments(actor: Actor, take = 100) {
+  if (!actor.roles.includes('ADMIN') && !actor.roles.includes('ORGANISER')) return [];
+  const rows = await prisma.tournament.findMany({
+    where: {
+      deletedAt: null,
+      status: { not: 'ARCHIVED' },
+      ...(isAdmin(actor) ? {} : { organisers: { some: { userId: actor.userId } } }),
+    },
+    orderBy: [{ startsOn: 'asc' }, { name: 'asc' }],
+    take,
+    select: { id: true, name: true, startsOn: true, endsOn: true, status: true },
+  });
+  const today = new Date(new Date().toISOString().slice(0, 10));
+  const current = rows.filter((r) => r.endsOn >= today);
+  const past = rows.filter((r) => r.endsOn < today).reverse();
+  return [...current, ...past];
+}
+
 export async function getTournament(actor: Actor, id: string) {
   await assertCanManageTournament(actor, id);
   const tournament = await prisma.tournament.findFirst({

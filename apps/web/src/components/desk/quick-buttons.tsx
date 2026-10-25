@@ -1,5 +1,6 @@
 'use client';
 
+import { CheckCircle2, Circle } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useOptimistic, useState, useTransition } from 'react';
 import { Button, type ButtonProps } from '@/components/ui/button';
@@ -65,13 +66,24 @@ export function CheckInToggle({
         aria-pressed={shown}
         aria-label={name ? undefined : label}
         className={cn(
-          'flex min-h-8 w-full items-center gap-2 rounded-md border px-2 text-left text-xs transition-colors',
-          shown ? 'border-primary bg-secondary' : 'border-dashed',
+          'flex min-h-9 w-full items-center gap-2 rounded-md border px-2 text-left text-xs transition-colors',
+          shown
+            ? 'border-emerald-600 bg-emerald-50 text-emerald-900'
+            : 'border-dashed hover:bg-accent',
         )}
       >
-        <span aria-hidden="true">{shown ? '✓' : '○'}</span>
+        {shown ? (
+          <CheckCircle2 aria-hidden="true" className="size-4 shrink-0 text-emerald-600" />
+        ) : (
+          <Circle aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />
+        )}
         {name && <span className="truncate">{name}</span>}
-        <span className={cn(name ? 'ml-auto text-muted-foreground' : 'font-medium')}>
+        <span
+          className={cn(
+            name ? 'ml-auto' : 'font-medium',
+            shown ? 'font-semibold' : 'text-muted-foreground',
+          )}
+        >
           {shown ? labels.present : labels.checkIn}
         </span>
       </button>

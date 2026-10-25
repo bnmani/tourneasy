@@ -319,7 +319,11 @@
     "accept": "Accepteren",
     "decline": "Weigeren",
     "viewTournament": "Bekijk toernooi",
-    "inviteOther": "Andere partner uitnodigen (lidnummer of e-mail)"
+    "inviteOther": "Andere partner uitnodigen (lidnummer of e-mail)",
+    "managedTitle": "Toernooien die je beheert",
+    "managedAll": "Alle toernooien",
+    "manage": "Beheren",
+    "desk": "Wedstrijdtafel"
   },
   "Profile": {
     "title": "Mijn profiel",
@@ -940,7 +944,12 @@
       "noShowWalkover": "Walk-over voor {name}",
       "noShowConfirm": "Walk-over geven aan {name}? De uitslag kun je daarna nog corrigeren.",
       "checkInDay": "Dag",
-      "checkInIntro": "Eén tik meldt een speler aan voor al zijn of haar wedstrijden van deze dag."
+      "checkInIntro": "Eén tik meldt een speler aan voor al zijn of haar wedstrijden van deze dag.",
+      "todo": "Nog te doen ({count})",
+      "done": "Aanwezig en betaald ({count})",
+      "allDone": "Iedereen is aanwezig en heeft betaald.",
+      "presentOf": "{present}/{total} aanwezig",
+      "allPresent": "Iedereen aanwezig"
     },
     "navEmail": "E-mail",
     "emailSettings": {
@@ -1223,7 +1232,17 @@
       "confirm": "{count, plural, one {Ja, # speler verwijderen} other {Ja, # spelers verwijderen}}",
       "removed": "{count, plural, =0 {Geen spelers verwijderd (al verwijderd).} one {# speler verwijderd.} other {# spelers verwijderd.}}"
     },
-    "usersJoined": "Lid sinds"
+    "usersJoined": "Lid sinds",
+    "tournamentBar": {
+      "switch": "Toernooi",
+      "sections": "Onderdelen van het toernooi",
+      "section_overview": "Overzicht",
+      "section_entries": "Deelnemers",
+      "section_draws": "Schema's",
+      "section_schedule": "Planning",
+      "section_matches": "Wedstrijdtafel",
+      "section_news": "Nieuws"
+    }
   },
   "Legal": {
     "draftNotice": "Concept — deze tekst wordt nog juridisch gecontroleerd.",

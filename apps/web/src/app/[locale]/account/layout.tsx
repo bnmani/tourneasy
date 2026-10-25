@@ -27,7 +27,7 @@ export default async function AccountLayout({
         </div>
       )}
       <div className="grid gap-8 lg:grid-cols-[14rem_1fr]">
-        <AccountNav isAdmin={actor.roles.includes('ADMIN')} />
+        <AccountNav isAdmin={actor.roles.includes('ADMIN') || actor.roles.includes('ORGANISER')} />
         <div className="min-w-0">{children}</div>
       </div>
     </div>

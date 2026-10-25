@@ -239,6 +239,15 @@ export async function sendVerificationEmail(userId: string): Promise<void> {
   );
 }
 
+/** Whether the account's email address is confirmed (for the page waiting on it). */
+export async function isEmailVerified(userId: string): Promise<boolean> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { emailVerifiedAt: true },
+  });
+  return !!user?.emailVerifiedAt;
+}
+
 export async function resendVerificationEmail(actor: Actor): Promise<void> {
   await enforce(`verify-resend:${actor.userId}`, LIMITS.verifyResendPerUser);
   await sendVerificationEmail(actor.userId);

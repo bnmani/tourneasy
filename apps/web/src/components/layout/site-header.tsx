@@ -43,7 +43,7 @@ export async function SiteHeader() {
               {t('login')}
             </Link>
           )}
-          {actor?.roles.includes('ADMIN') && (
+          {(actor?.roles.includes('ADMIN') || actor?.roles.includes('ORGANISER')) && (
             <Link href="/admin" className={mobileLink}>
               {t('admin')}
             </Link>
@@ -80,7 +80,7 @@ export async function SiteHeader() {
       <nav aria-label={t('accountMenu')} className="ml-auto flex items-center gap-1 sm:gap-2">
         {actor ? (
           <>
-            {actor.roles.includes('ADMIN') && (
+            {(actor.roles.includes('ADMIN') || actor.roles.includes('ORGANISER')) && (
               <Button asChild variant="ghost" size="sm" className="hidden lg:inline-flex">
                 <Link href="/admin" title={t('admin')}>
                   <Shield aria-hidden="true" />

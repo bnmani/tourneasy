@@ -164,7 +164,7 @@ export function EmailTemplateEditor({
         })}
         <p className="text-sm text-muted-foreground">{t('emptyHint')}</p>
         {dirty && (
-          <p role="status" className="text-sm font-medium text-amber-700 dark:text-amber-400">
+          <p role="status" className="text-sm font-medium text-amber-700">
             {t('unsaved')}
           </p>
         )}

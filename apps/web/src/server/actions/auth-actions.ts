@@ -17,6 +17,7 @@ import {
 import { safeRedirectPath } from '../lib/urls';
 import {
   authenticate,
+  isEmailVerified,
   requestPasswordReset,
   resendVerificationEmail,
   resetPassword,
@@ -94,6 +95,12 @@ export async function resetPasswordAction(
   }
   await clearSessionCookie();
   redirect(`/${locale}/login?reset=1`);
+}
+
+/** Whether the signed-in account's email is confirmed now (polled by the "confirm" notice). */
+export async function emailVerifiedNowAction(): Promise<boolean> {
+  const actor = await getActor();
+  return actor ? isEmailVerified(actor.userId) : false;
 }
 
 export async function resendVerificationAction(

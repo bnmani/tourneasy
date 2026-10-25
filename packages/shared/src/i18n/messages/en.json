@@ -319,7 +319,11 @@
     "accept": "Accept",
     "decline": "Decline",
     "viewTournament": "View tournament",
-    "inviteOther": "Invite another partner (member number or email)"
+    "inviteOther": "Invite another partner (member number or email)",
+    "managedTitle": "Tournaments you manage",
+    "managedAll": "All tournaments",
+    "manage": "Manage",
+    "desk": "Match desk"
   },
   "Profile": {
     "title": "My profile",
@@ -940,7 +944,12 @@
       "noShowWalkover": "Walkover for {name}",
       "noShowConfirm": "Give the walkover to {name}? You can still correct the result afterwards.",
       "checkInDay": "Day",
-      "checkInIntro": "One tap checks a player in for all their matches of this day."
+      "checkInIntro": "One tap checks a player in for all their matches of this day.",
+      "todo": "Still to do ({count})",
+      "done": "Present and paid ({count})",
+      "allDone": "Everyone is present and has paid.",
+      "presentOf": "{present}/{total} present",
+      "allPresent": "Everyone present"
     },
     "navEmail": "Email",
     "emailSettings": {
@@ -1223,7 +1232,17 @@
       "confirm": "{count, plural, one {Yes, remove # player} other {Yes, remove # players}}",
       "removed": "{count, plural, =0 {No players removed (already removed).} one {# player removed.} other {# players removed.}}"
     },
-    "usersJoined": "Member since"
+    "usersJoined": "Member since",
+    "tournamentBar": {
+      "switch": "Tournament",
+      "sections": "Tournament sections",
+      "section_overview": "Overview",
+      "section_entries": "Participants",
+      "section_draws": "Draws",
+      "section_schedule": "Schedule",
+      "section_matches": "Match desk",
+      "section_news": "News"
+    }
   },
   "Legal": {
     "draftNotice": "Draft — this text is still being reviewed legally.",

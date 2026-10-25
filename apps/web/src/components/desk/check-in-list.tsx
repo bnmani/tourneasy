@@ -3,6 +3,7 @@
 import { Search } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useMemo, useState } from 'react';
+import { cn } from '@/lib/utils';
 import { payAtDeskAction, playerCheckInAction } from '@/server/actions/match-actions';
 import { CheckInToggle, QuickButton } from './quick-buttons';
 
@@ -35,6 +36,9 @@ export function CheckInList({ tournamentId, rows }: { tournamentId: string; rows
     );
   }, [rows, query, onlyAbsent]);
   const present = rows.filter((r) => r.present).length;
+  // Still something to do (not here yet or not paid) on top; present and paid below.
+  const todo = shown.filter((r) => !r.present || r.unpaid);
+  const done = shown.filter((r) => r.present && !r.unpaid);
 
   return (
     <section aria-labelledby="checkin-title" className="space-y-3">
@@ -70,8 +74,42 @@ export function CheckInList({ tournamentId, rows }: { tournamentId: string; rows
       {shown.length === 0 ? (
         <p className="text-sm text-muted-foreground">{t('noPlayers')}</p>
       ) : (
-        <ul className="divide-y rounded-lg border bg-card">
-          {shown.map((r) => (
+        <>
+          <Rows title={t('todo', { count: todo.length })} rows={todo} tournamentId={tournamentId} />
+          {done.length > 0 && (
+            <Rows
+              title={t('done', { count: done.length })}
+              rows={done}
+              tournamentId={tournamentId}
+              muted
+            />
+          )}
+        </>
+      )}
+    </section>
+  );
+}
+
+function Rows({
+  title,
+  rows,
+  tournamentId,
+  muted = false,
+}: {
+  title: string;
+  rows: CheckInRow[];
+  tournamentId: string;
+  muted?: boolean;
+}) {
+  const t = useTranslations('Admin.desk');
+  return (
+    <div className="space-y-2">
+      <h3 className="text-sm font-semibold text-muted-foreground">{title}</h3>
+      {rows.length === 0 ? (
+        <p className="text-sm text-muted-foreground">{t('allDone')}</p>
+      ) : (
+        <ul className={cn('divide-y rounded-lg border bg-card', muted && 'opacity-80')}>
+          {rows.map((r) => (
             <li
               key={r.playerId}
               className="grid gap-2 px-3 py-2.5 sm:grid-cols-[1fr_auto] sm:items-center"
@@ -111,6 +149,6 @@ export function CheckInList({ tournamentId, rows }: { tournamentId: string; rows
           ))}
         </ul>
       )}
-    </section>
+    </div>
   );
 }

@@ -1,3 +1,4 @@
+import { CheckCircle2 } from 'lucide-react';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
@@ -206,6 +207,17 @@ export default async function DeskPage({ params, searchParams }: Props) {
                         )}
                       </div>
                     )}
+                    <PresenceSummary
+                      present={item.checkIn.flat().filter((p) => p.checkedIn).length}
+                      total={item.checkIn.flat().length}
+                      labels={{
+                        all: td('allPresent'),
+                        some: td('presentOf', {
+                          present: item.checkIn.flat().filter((p) => p.checkedIn).length,
+                          total: item.checkIn.flat().length,
+                        }),
+                      }}
+                    />
                     <div className="grid gap-2 sm:grid-cols-2">
                       {item.checkIn.map((side, s) => (
                         <div key={s} className="space-y-1">
@@ -416,5 +428,28 @@ async function CheckInView({
         }))}
       />
     </div>
+  );
+}
+
+function PresenceSummary({
+  present,
+  total,
+  labels,
+}: {
+  present: number;
+  total: number;
+  labels: { all: string; some: string };
+}) {
+  const all = total > 0 && present === total;
+  return (
+    <p
+      className={cn(
+        'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold',
+        all ? 'bg-emerald-100 text-emerald-800' : 'bg-muted text-muted-foreground',
+      )}
+    >
+      {all ? <CheckCircle2 aria-hidden="true" className="size-3.5" /> : null}
+      {all ? labels.all : labels.some}
+    </p>
   );
 }

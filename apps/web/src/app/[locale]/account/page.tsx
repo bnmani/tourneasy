@@ -1,3 +1,5 @@
+import { managedTournaments } from '@/server/services/tournament-service';
+import { formatDayRange } from '@tourneasy/shared';
 import type { AppLocale } from '@tourneasy/shared/i18n';
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
@@ -34,6 +36,7 @@ export default async function DashboardPage({
   const query = await searchParams;
   const actor = await requireActor(locale);
   const account = await getMyAccount(actor);
+  const managed = (await managedTournaments(actor)).slice(0, 6);
   const t = await getTranslations('Dashboard');
   const tr = await getTranslations('Auth.registered');
   const td = await getTranslations('Disciplines');
@@ -81,6 +84,54 @@ export default async function DashboardPage({
           </p>
         )}
       </header>
+
+      {managed.length > 0 && (
+        <section
+          aria-labelledby="managed-title"
+          className="space-y-3 rounded-lg border border-primary/30 bg-secondary/40 p-4 sm:p-5"
+        >
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 id="managed-title" className="text-lg font-semibold">
+              {t('managedTitle')}
+            </h2>
+            <Link
+              href="/admin/tournaments"
+              className="text-sm font-medium underline-offset-4 hover:underline"
+            >
+              {t('managedAll')}
+            </Link>
+          </div>
+          <ul className="grid gap-2 sm:grid-cols-2">
+            {managed.map((m) => (
+              <li
+                key={m.id}
+                className="flex flex-wrap items-center justify-between gap-2 rounded-md border bg-card p-3"
+              >
+                <div className="min-w-0">
+                  <p className="truncate font-medium">{m.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {formatDayRange(
+                      m.startsOn.toISOString().slice(0, 10),
+                      m.endsOn.toISOString().slice(0, 10),
+                      locale,
+                    )}
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <Button asChild size="sm">
+                    <Link href={`/admin/tournaments/${m.id}`}>{t('manage')}</Link>
+                  </Button>
+                  <Button asChild size="sm" variant="outline">
+                    <Link href={`/admin/tournaments/${m.id}/matches?view=checkin`}>
+                      {t('desk')}
+                    </Link>
+                  </Button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {/* Tabs as links: work without JavaScript and are shareable (?tab=…). */}
       <nav aria-label={t('tabsLabel')} className="border-b">
