@@ -38,16 +38,17 @@ beforeEach(async () => {
 });
 afterEach(() => setSmtpVerifierForTests(undefined));
 
-async function admin() {
+async function admin(role: Role = Role.ADMIN) {
   const p = await createPlayer();
-  await prisma.userRole.create({ data: { userId: p.userId, role: Role.ADMIN } });
+  await prisma.userRole.create({ data: { userId: p.userId, role } });
   const actor = (await actorFromWebToken((await createWebSession(p.userId, meta, true)).token))!;
   return { ...p, actor };
 }
 
 describe('email settings in the portal', () => {
   it('are locked, checked with the mail server, stored encrypted and logged', async () => {
-    const a = await admin();
+    // The mail server settings are for owners (D78).
+    const a = await admin(Role.OWNER);
     await expect(saveEmailSettings(a.actor, SETTINGS, meta)).rejects.toMatchObject({
       code: 'settingsLocked',
     });

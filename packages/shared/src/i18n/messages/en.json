@@ -98,7 +98,8 @@
   "Roles": {
     "PLAYER": "Player",
     "ORGANISER": "Organiser",
-    "ADMIN": "Administrator"
+    "ADMIN": "Administrator",
+    "OWNER": "Owner"
   },
   "Errors": {
     "required": "This field is required.",
@@ -194,7 +195,10 @@
     "templateSyntax": "Check the braces: every field sits between an opening and a closing brace.",
     "templateOneLine": "A subject fits on one line.",
     "removeSelf": "You can’t remove your own account here.",
-    "removeStaff": "The selection includes an admin or organiser. Take their role away first."
+    "removeStaff": "The selection includes an admin or organiser. Take their role away first.",
+    "lastOwner": "There must always be at least one owner.",
+    "mfaRequired": "Enter the code from your authenticator app.",
+    "mfaInvalid": "That code is wrong or was already used. Try the next code."
   },
   "Auth": {
     "login": {
@@ -278,6 +282,14 @@
       "register": "Create account",
       "login": "Log in",
       "emailTaken": "An account with this email address already exists. Log in, or request a new password."
+    },
+    "mfa": {
+      "title": "Enter your code",
+      "intro": "Enter the 6-digit code from your authenticator app. Lost your phone? Use one of your recovery codes.",
+      "code": "Code",
+      "codeHint": "6 digits from the app, or a recovery code (for example abcd-efgh-jk).",
+      "submit": "Log in",
+      "cancel": "Cancel and log out"
     }
   },
   "Account": {
@@ -286,7 +298,9 @@
     "profile": "Profile",
     "security": "Security",
     "privacy": "Privacy",
-    "notifications": "Email preferences"
+    "notifications": "Email preferences",
+    "mfaBanner": "You are an admin. Set up two-step login first to use the portal.",
+    "mfaBannerLink": "Set up now"
   },
   "Dashboard": {
     "title": "My dashboard",
@@ -378,7 +392,36 @@
     "revoke": "Log out",
     "revokeOthers": "Log out all other devices",
     "revoked": "The device has been logged out.",
-    "none": "No other active sessions."
+    "none": "No other active sessions.",
+    "mfa": {
+      "title": "Two-step login",
+      "intro": "After your password, Tourneasy asks for a code from an authenticator app such as Google Authenticator, Microsoft Authenticator or 1Password. Nobody can log in with just your password.",
+      "required": "As an admin, two-step login is required. Set it up now; then you can use the portal again.",
+      "on": "On since {date}.",
+      "off": "Off.",
+      "codesLeft": "{count, plural, =0 {No recovery codes left: make new ones.} one {# recovery code left.} other {# recovery codes left.}}",
+      "start": "Set up",
+      "step1": "1. Scan this QR code with your authenticator app.",
+      "manual": "Can't scan? Enter this key in the app:",
+      "step2": "2. Enter the 6-digit code the app shows now.",
+      "confirm": "Turn on",
+      "qrAlt": "QR code to add Tourneasy to your authenticator app",
+      "recoveryTitle": "Your recovery codes",
+      "recoveryIntro": "Keep these codes somewhere safe, for example in your password manager or printed. Lost your phone? Log in with one of these codes; each works once. You only see them now.",
+      "recoveryCopy": "Copy",
+      "recoveryCopied": "Copied",
+      "recoveryDone": "I've saved them",
+      "newCodes": "Make new recovery codes",
+      "newCodesHint": "The old codes stop working.",
+      "code": "Code from the app",
+      "password": "Your password",
+      "disable": "Turn off",
+      "disableHintStaff": "Note: as an admin you can only use the portal again after setting it up again, for example on a new phone.",
+      "disableHintPlayer": "After that only your password is needed to log in.",
+      "enabled": "Two-step login is on. Your other devices were logged out; log in there again with a code.",
+      "disabled": "Two-step login is off.",
+      "recoveryUsed": "You logged in with a recovery code. Make new recovery codes, or set up the app again if you lost your phone."
+    }
   },
   "Privacy": {
     "title": "Privacy and data",
@@ -1054,7 +1097,8 @@
       "allowSaved": "Test addresses saved.",
       "allowInvalid": "One of the test addresses is not a valid email address.",
       "pausedBanner": "Test mode: email to players is off.",
-      "pausedBannerLink": "Email settings"
+      "pausedBannerLink": "Email settings",
+      "statusActive": "Sending email is set up."
     },
     "news": {
       "title": "News",
@@ -1325,7 +1369,13 @@
     "searchPortal": "Search the portal",
     "searchPortalHint": "Search by tournament, player (name, member number, email), venue or club. At least 2 characters.",
     "searchNoResults": "Nothing found for \"{q}\".",
-    "searchMore": "More results"
+    "searchMore": "More results",
+    "mfaColumn": "2FA",
+    "mfaOn": "On",
+    "mfaOff": "Off",
+    "mfaReset": "Reset",
+    "mfaResetConfirm": "Reset {name}'s two-step login? All devices are logged out and they set it up again at the next login.",
+    "mfaResetDone": "Two-step login reset. The user sets it up again at the next login."
   },
   "Legal": {
     "draftNotice": "Draft — this text is still being reviewed legally.",
@@ -1922,6 +1972,11 @@
     "venue_restore": "Venue restored",
     "venue_update": "Venue updated",
     "player_invite": "Player invited to an account",
-    "user_signup_invite": "Account activated from an invitation"
+    "user_signup_invite": "Account activated from an invitation",
+    "auth_mfa_enable": "Two-step login turned on",
+    "auth_mfa_disable": "Two-step login turned off",
+    "auth_mfa_reset": "Two-step login reset by an admin",
+    "auth_mfa_recoveryUsed": "Logged in with a recovery code",
+    "auth_mfa_recoveryCodes": "New recovery codes made"
   }
 }

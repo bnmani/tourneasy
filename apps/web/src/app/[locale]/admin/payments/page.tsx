@@ -56,9 +56,11 @@ export default async function PaymentsPage({ params, searchParams }: Props) {
         intro={tp('intro')}
         actions={
           <>
-            <Button asChild variant="outline">
-              <Link href="/admin/payments/settings">{tp('settings')}</Link>
-            </Button>
+            {actor.roles.includes('OWNER') && (
+              <Button asChild variant="outline">
+                <Link href="/admin/payments/settings">{tp('settings')}</Link>
+              </Button>
+            )}
             <Button asChild>
               <a href={`/api/v1/admin/payments/export?${exportQuery}`} download>
                 {tp('export')}

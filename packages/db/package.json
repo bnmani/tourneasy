@@ -13,6 +13,7 @@
     "db:seed": "dotenv -e ../../.env -- prisma db seed",
     "db:reset": "dotenv -e ../../.env -- prisma migrate reset",
     "db:studio": "dotenv -e ../../.env -- prisma studio",
+    "owner:grant": "dotenv -e ../../.env -- tsx prisma/grant-owner.ts",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit"
   },

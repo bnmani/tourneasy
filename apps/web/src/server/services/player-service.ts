@@ -21,7 +21,7 @@ import type { RequestMeta } from '../lib/request-meta';
 import { pageCount, pageParams, parseInput } from '../lib/validation';
 import { verifyPassword } from '../lib/password';
 import { anonymiseProfile, anonymiseUser } from './gdpr-service';
-import { assertAdmin } from './permissions';
+import { assertAdmin, assertNotHiddenOwner } from './permissions';
 import { type Actor, revokeAllSessions } from './session-service';
 
 /** Columns the admin player list can be sorted by. */
@@ -308,6 +308,9 @@ export async function mergePlayers(actor: Actor, input: unknown, meta: RequestMe
   if (!source || source.deletedAt || !target || target.deletedAt) throw new AppError('notFound');
   if (source.id === target.id) throw new AppError('mergeSelf');
   if (source.userId && target.userId) throw new AppError('mergeTwoAccounts');
+  // An owner's profile stays as it is for admins (D78).
+  for (const userId of [source.userId, target.userId])
+    if (userId) await assertNotHiddenOwner(actor, userId);
 
   await prisma.$transaction(async (tx) => {
     // Rows that would collide with the target's existing rows are left behind (archived with the source).

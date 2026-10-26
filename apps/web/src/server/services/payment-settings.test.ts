@@ -31,9 +31,10 @@ async function user(role?: Role) {
 
 describe('Stripe settings in the portal', () => {
   it('stays locked until the admin re-enters their password, and logs every attempt', async () => {
-    const admin = await user(Role.ADMIN);
+    const admin = await user(Role.OWNER);
     const player = await user();
-    await expect(getPaymentSettings(player.actor)).rejects.toMatchObject({ code: 'forbidden' });
+    // Owner-only (D78): to others the page doesn't exist.
+    await expect(getPaymentSettings(player.actor)).rejects.toMatchObject({ code: 'notFound' });
     await expect(
       savePaymentSettings(admin.actor, { secretKey: SK, publishableKey: PK }, meta),
     ).rejects.toMatchObject({ code: 'settingsLocked' });
@@ -58,7 +59,7 @@ describe('Stripe settings in the portal', () => {
   });
 
   it('limits password attempts', async () => {
-    const admin = await user(Role.ADMIN);
+    const admin = await user(Role.OWNER);
     for (let i = 0; i < 5; i++) {
       await expect(unlockSettings(admin.actor, { password: 'wrong' }, meta)).rejects.toMatchObject({
         code: 'wrongPassword',
@@ -70,7 +71,7 @@ describe('Stripe settings in the portal', () => {
   });
 
   it('stores the keys encrypted, shows only the last four, and switches payments on', async () => {
-    const admin = await user(Role.ADMIN);
+    const admin = await user(Role.OWNER);
     await unlockSettings(admin.actor, { password: admin.password }, meta);
     expect(await getGateway()).toBeNull();
 

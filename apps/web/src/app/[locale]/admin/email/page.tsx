@@ -33,7 +33,8 @@ export default async function EmailSettingsPage({ params, searchParams }: Props)
   const locale = await pageLocale(params);
   const actor = await requireRole(locale, 'ADMIN');
   const query = await searchParams;
-  const [settings, log] = await Promise.all([getEmailSettings(actor), emailSettingsLog(actor)]);
+  const settings = await getEmailSettings(actor);
+  const log = await emailSettingsLog(actor);
   const t = await getTranslations('Admin.emailSettings');
   const tt = await getTranslations('Admin.emailTemplates');
   const te = await getTranslations('Errors');
@@ -157,11 +158,13 @@ export default async function EmailSettingsPage({ params, searchParams }: Props)
 
       <section className="space-y-3 rounded-lg border bg-card p-4 text-sm sm:p-6">
         <p className="font-semibold">
-          {settings.source === 'portal'
-            ? t('statusPortal', { host: s?.host ?? '' })
-            : settings.source === 'environment'
-              ? t('statusEnvironment')
-              : t('statusOff')}
+          {settings.source === 'portal' && s
+            ? t('statusPortal', { host: s.host })
+            : settings.source === 'portal'
+              ? t('statusActive')
+              : settings.source === 'environment'
+                ? t('statusEnvironment')
+                : t('statusOff')}
         </p>
         {settings.unreadable && <p className="text-destructive">{t('unreadable')}</p>}
         {s && (
@@ -191,65 +194,68 @@ export default async function EmailSettingsPage({ params, searchParams }: Props)
         {settings.active && <p className="text-muted-foreground">{t('testHint')}</p>}
       </section>
 
-      <section className="space-y-4 rounded-lg border bg-card p-4 sm:p-6">
-        {!settings.canEncrypt ? (
-          <p role="alert" className="text-sm text-destructive">
-            {t('noEncryptionKey')}
-          </p>
-        ) : settings.unlockedUntil ? (
-          <>
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <p className="flex items-center gap-2 text-sm font-medium">
-                <LockOpen aria-hidden="true" className="size-4" />
-                {t('unlockedUntil', {
-                  time: format.dateTime(settings.unlockedUntil, { timeStyle: 'short' }),
-                })}
+      {settings.owner && (
+        <>
+          <section className="space-y-4 rounded-lg border bg-card p-4 sm:p-6">
+            {!settings.canEncrypt ? (
+              <p role="alert" className="text-sm text-destructive">
+                {t('noEncryptionKey')}
               </p>
-              <form action={lockEmailSettingsAction.bind(null, locale)}>
-                <Button type="submit" variant="outline" size="sm">
-                  {t('lock')}
-                </Button>
-              </form>
-            </div>
-            <EmailSettingsForm
-              locale={locale}
-              values={{
-                host: s?.host ?? '',
-                port: String(s?.port ?? 587),
-                security: s?.security ?? 'starttls',
-                user: s?.user ?? '',
-                from: s?.from ?? 'Tourneasy <no-reply@tourneasy.app>',
-                passwordSet: !!s?.passwordSet,
-              }}
-            />
-            {s && (
-              <details className="text-sm">
-                <summary className="cursor-pointer font-medium text-destructive">
-                  {t('remove')}
-                </summary>
-                <form
-                  action={clearEmailSettingsAction.bind(null, locale)}
-                  className="mt-2 space-y-2"
-                >
-                  <p className="text-muted-foreground">{t('removeHint')}</p>
-                  <Button type="submit" size="sm" variant="destructive">
-                    {t('removeConfirm')}
-                  </Button>
-                </form>
-              </details>
+            ) : settings.unlockedUntil ? (
+              <>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <p className="flex items-center gap-2 text-sm font-medium">
+                    <LockOpen aria-hidden="true" className="size-4" />
+                    {t('unlockedUntil', {
+                      time: format.dateTime(settings.unlockedUntil, { timeStyle: 'short' }),
+                    })}
+                  </p>
+                  <form action={lockEmailSettingsAction.bind(null, locale)}>
+                    <Button type="submit" variant="outline" size="sm">
+                      {t('lock')}
+                    </Button>
+                  </form>
+                </div>
+                <EmailSettingsForm
+                  locale={locale}
+                  values={{
+                    host: s?.host ?? '',
+                    port: String(s?.port ?? 587),
+                    security: s?.security ?? 'starttls',
+                    user: s?.user ?? '',
+                    from: s?.from ?? 'Tourneasy <no-reply@tourneasy.app>',
+                    passwordSet: !!s?.passwordSet,
+                  }}
+                />
+                {s && (
+                  <details className="text-sm">
+                    <summary className="cursor-pointer font-medium text-destructive">
+                      {t('remove')}
+                    </summary>
+                    <form
+                      action={clearEmailSettingsAction.bind(null, locale)}
+                      className="mt-2 space-y-2"
+                    >
+                      <p className="text-muted-foreground">{t('removeHint')}</p>
+                      <Button type="submit" size="sm" variant="destructive">
+                        {t('removeConfirm')}
+                      </Button>
+                    </form>
+                  </details>
+                )}
+              </>
+            ) : (
+              <>
+                <p className="flex items-center gap-2 text-sm font-medium">
+                  <Lock aria-hidden="true" className="size-4" />
+                  {t('locked')}
+                </p>
+                <UnlockSettingsForm locale={locale} page="email" />
+              </>
             )}
-          </>
-        ) : (
-          <>
-            <p className="flex items-center gap-2 text-sm font-medium">
-              <Lock aria-hidden="true" className="size-4" />
-              {t('locked')}
-            </p>
-            <UnlockSettingsForm locale={locale} page="email" />
-          </>
-        )}
-      </section>
-
+          </section>
+        </>
+      )}
       <section aria-labelledby="log-title" className="space-y-2">
         <h2 id="log-title" className="text-lg font-semibold">
           {t('log')}

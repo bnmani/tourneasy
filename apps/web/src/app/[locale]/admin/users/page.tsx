@@ -4,6 +4,7 @@ import { getFormatter, getTranslations } from 'next-intl/server';
 import { FormError, FormSuccess } from '@/components/forms/fields';
 import { Badge, FilterBar, filterInputClass, Pagination } from '@/components/admin/ui';
 import { BulkRemove, SelectRow } from '@/components/admin/bulk-remove';
+import { ResetMfaButton } from '@/components/admin/reset-mfa-button';
 import { SortHeader } from '@/components/admin/sort-header';
 import { Button } from '@/components/ui/button';
 import { ScrollRegion } from '@/components/ui/scroll-region';
@@ -40,6 +41,9 @@ export default async function AdminUsersPage({
 
   const t = await getTranslations('Admin');
   const tr = await getTranslations('Roles');
+  // Only owners see (and grant) the owner role (D78).
+  const isOwnerViewer = actor.roles.includes('OWNER');
+  const roles = ASSIGNABLE_ROLES.filter((r) => r !== 'OWNER' || isOwnerViewer);
   const tb = await getTranslations('Admin.usersBulk');
   // Search, sort and page survive role changes, removals and paging.
   const listQuery = new URLSearchParams({ ...(q ? { q } : {}), sort, dir });
@@ -61,13 +65,14 @@ export default async function AdminUsersPage({
       </header>
 
       {status === 'granted' && <FormSuccess>{t('granted')}</FormSuccess>}
+      {status === 'mfaReset' && <FormSuccess>{t('mfaResetDone')}</FormSuccess>}
       {status === 'revoked' && <FormSuccess>{t('revokedRole')}</FormSuccess>}
       {status === 'removed' && (
         <FormSuccess>
           {tb('removed', { count: Number(firstParam(query.count) ?? '0') })}
         </FormSuccess>
       )}
-      {status && !['granted', 'revoked', 'removed'].includes(status) && (
+      {status && !['granted', 'revoked', 'removed', 'mfaReset'].includes(status) && (
         <FormError state={{ error: status }} />
       )}
 
@@ -115,7 +120,10 @@ export default async function AdminUsersPage({
                 <SortHeader column="email" label={t('email')} {...sortProps} />
                 <SortHeader column="roles" label={t('roles')} {...sortProps} />
                 <SortHeader column="created" label={t('usersJoined')} {...sortProps} />
-                {ASSIGNABLE_ROLES.map((role) => (
+                <th scope="col" className="px-3 py-2">
+                  {t('mfaColumn')}
+                </th>
+                {roles.map((role) => (
                   <th key={role} scope="col" className="px-3 py-2">
                     {t('grant', { role: tr(role).toLowerCase() })}
                   </th>
@@ -131,7 +139,9 @@ export default async function AdminUsersPage({
                       texts="Admin.usersBulk"
                       id={u.id}
                       name={u.name}
-                      disabled={u.id === actor.userId || u.roles.some((r) => r !== 'PLAYER')}
+                      disabled={
+                        u.id === actor.userId || u.protected || u.roles.some((r) => r !== 'PLAYER')
+                      }
                     />
                   </td>
                   <td className="px-3 py-2">
@@ -154,8 +164,28 @@ export default async function AdminUsersPage({
                   <td className="px-3 py-2 text-xs whitespace-nowrap text-muted-foreground">
                     {format.dateTime(u.createdAt, { dateStyle: 'short' })}
                   </td>
-                  {ASSIGNABLE_ROLES.map((role) => {
+                  <td className="px-3 py-2 whitespace-nowrap">
+                    {u.mfaEnabled ? (
+                      <span className="flex items-center gap-2">
+                        <Badge tone="primary">{t('mfaOn')}</Badge>
+                        {u.id !== actor.userId &&
+                          !u.protected &&
+                          (isOwnerViewer || !u.roles.some((r) => r === 'ADMIN')) && (
+                            <ResetMfaButton
+                              userId={u.id}
+                              returnTo={returnTo}
+                              label={t('mfaReset')}
+                              confirm={t('mfaResetConfirm', { name: u.name })}
+                            />
+                          )}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground">{t('mfaOff')}</span>
+                    )}
+                  </td>
+                  {roles.map((role) => {
                     const has = u.roles.includes(role);
+                    if (u.protected) return <td key={role} className="px-3 py-2" />;
                     const label = has
                       ? t('revoke', { role: tr(role).toLowerCase() })
                       : t('grant', { role: tr(role).toLowerCase() });

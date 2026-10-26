@@ -22,7 +22,7 @@ export const dynamic = 'force-dynamic';
 /** Admin: Stripe keys, locked behind the admin's password (D54). */
 export default async function PaymentSettingsPage({ params, searchParams }: Props) {
   const locale = await pageLocale(params);
-  const actor = await requireRole(locale, 'ADMIN');
+  const actor = await requireRole(locale, 'OWNER');
   const query = await searchParams;
   const [settings, log] = await Promise.all([getPaymentSettings(actor), paymentSettingsLog(actor)]);
   const t = await getTranslations('Admin');

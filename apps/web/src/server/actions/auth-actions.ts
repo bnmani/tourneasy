@@ -12,6 +12,7 @@ import {
   currentRequestMeta,
   getActor,
   homeFor,
+  readSessionToken,
   setSessionCookie,
 } from '../auth/web';
 import { safeRedirectPath } from '../lib/urls';
@@ -23,8 +24,14 @@ import {
   resetPassword,
   signUp,
 } from '../services/auth-service';
+import { checkMfaCode, hasMfa } from '../services/mfa-service';
 import { acceptPlayerInvite } from '../services/player-invite-service';
-import { actorFromWebToken, createWebSession } from '../services/session-service';
+import {
+  actorFromWebToken,
+  completeMfaSession,
+  createWebSession,
+  pendingMfaSession,
+} from '../services/session-service';
 import { formToObject, toFormState } from './form-utils';
 
 export async function registerAction(
@@ -59,13 +66,57 @@ export async function loginAction(
   try {
     const input = formToObject(formData, { booleans: ['rememberMe'] });
     const { userId, rememberMe } = await authenticate(input, meta);
-    const session = await createWebSession(userId, meta, rememberMe);
-    await setSessionCookie(session.token, session.expiresAt, session.persistent);
-    const actor = await actorFromWebToken(session.token);
-    target = safeRedirectPath(
-      formData.get('next'),
-      actor ? homeFor(actor, locale) : `/${locale}/account`,
+    // Two-step login (D78): the password alone signs nobody in; the code page finishes it.
+    if (await hasMfa(userId)) {
+      const pending = await createWebSession(userId, meta, false, { mfaPending: true });
+      await setSessionCookie(pending.token, pending.expiresAt, false);
+      const query = new URLSearchParams({
+        ...(rememberMe ? { remember: '1' } : {}),
+        next: safeRedirectPath(formData.get('next'), ''),
+      });
+      target = `/${locale}/login/verify?${query}`;
+    } else {
+      const session = await createWebSession(userId, meta, rememberMe);
+      await setSessionCookie(session.token, session.expiresAt, session.persistent);
+      const actor = await actorFromWebToken(session.token);
+      target = safeRedirectPath(
+        formData.get('next'),
+        actor ? homeFor(actor, locale) : `/${locale}/account`,
+      );
+    }
+  } catch (error) {
+    return toFormState(error, formData);
+  }
+  redirect(target);
+}
+
+/** The two-step code after the password: finishes the login, or says the code is wrong. */
+export async function verifyLoginAction(
+  locale: AppLocale,
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const meta = await currentRequestMeta();
+  const token = await readSessionToken();
+  const pending = token ? await pendingMfaSession(token) : null;
+  if (!token || !pending) redirect(`/${locale}/login`);
+  let target: string;
+  try {
+    const remember = formData.get('remember') === '1';
+    const { recoveryUsed } = await checkMfaCode(
+      pending.userId,
+      String(formData.get('code') ?? ''),
+      meta,
     );
+    const { expiresAt } = await completeMfaSession(pending.sessionId, remember);
+    await setSessionCookie(token, expiresAt, remember);
+    const actor = await actorFromWebToken(token);
+    target = recoveryUsed
+      ? `/${locale}/account/security?status=recoveryUsed`
+      : safeRedirectPath(
+          formData.get('next'),
+          actor ? homeFor(actor, locale) : `/${locale}/account`,
+        );
   } catch (error) {
     return toFormState(error, formData);
   }

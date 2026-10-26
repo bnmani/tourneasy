@@ -1,7 +1,7 @@
 import { hasLocale } from 'next-intl';
 import { routing } from '@/i18n/routing';
-import { clearSessionCookie, getActor, isSameOrigin } from '@/server/auth/web';
-import { revokeSessionById } from '@/server/services/session-service';
+import { clearSessionCookie, getActor, isSameOrigin, readSessionToken } from '@/server/auth/web';
+import { pendingMfaSession, revokeSessionById } from '@/server/services/session-service';
 
 type Context = { params: Promise<{ locale: string }> };
 
@@ -17,6 +17,10 @@ export async function POST(request: Request, { params }: Context) {
   if (!isSameOrigin(request)) return new Response(null, { status: 403 });
   const actor = await getActor();
   if (actor) await revokeSessionById(actor.sessionId);
+  // A login that stopped at the two-step code.
+  const token = await readSessionToken();
+  const pending = token ? await pendingMfaSession(token) : null;
+  if (pending) await revokeSessionById(pending.sessionId);
   await clearSessionCookie();
   return new Response(null, { status: 303, headers: { Location: `/${target}` } });
 }

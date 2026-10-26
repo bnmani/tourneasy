@@ -1,6 +1,8 @@
 /**
  * Role management: administrators grant or revoke ADMIN and ORGANISER (incl. adding new
- * admins). Every change is audited and the user is notified. The last admin can't be removed.
+ * admins); only owners grant or revoke OWNER, and owners are hidden from admins and can't be
+ * changed by them (D78). Every change is audited and the user is notified. The last admin and
+ * the last owner can't be removed.
  */
 import { Prisma, prisma, Role } from '@tourneasy/db';
 import { fieldErrors, roleChangeSchema } from '@tourneasy/shared';
@@ -14,7 +16,14 @@ import { verifyPassword } from '../lib/password';
 import type { RequestMeta } from '../lib/request-meta';
 import { parseInput } from '../lib/validation';
 import { anonymiseUser } from './gdpr-service';
-import { assertAdmin } from './permissions';
+import {
+  assertAdmin,
+  assertNotHiddenOwner,
+  assertOwner,
+  isOwner,
+  ownerIds,
+  visibleRoles,
+} from './permissions';
 import { type Actor, revokeAllSessions } from './session-service';
 
 export function hasRole(actor: Actor | null, role: Role): boolean {
@@ -74,11 +83,13 @@ export async function listUsers(
         name: true,
         email: true,
         createdAt: true,
+        totpEnabledAt: true,
         roles: { select: { role: true } },
         playerProfile: { select: { memberNumber: true } },
       },
     }),
   ]);
+  const owners = new Set(isOwner(actor) ? [] : await ownerIds());
   return {
     page,
     pages: Math.max(1, Math.ceil(total / PAGE_SIZE)),
@@ -88,7 +99,13 @@ export async function listUsers(
       name: u.name,
       email: u.email,
       memberNumber: u.playerProfile?.memberNumber ?? null,
-      roles: u.roles.map((r) => r.role),
+      roles: visibleRoles(
+        actor,
+        u.roles.map((r) => r.role),
+      ),
+      /** An owner, seen by an admin: shown as a plain player that can't be changed. */
+      protected: owners.has(u.id),
+      mfaEnabled: u.totpEnabledAt !== null,
       createdAt: u.createdAt,
     })),
   };
@@ -117,6 +134,8 @@ function parseRoleChange(input: unknown) {
 export async function grantRole(actor: Actor, input: unknown, meta: RequestMeta): Promise<void> {
   assertAdmin(actor);
   const { userId, role } = parseRoleChange(input);
+  if (role === Role.OWNER) assertOwner(actor);
+  await assertNotHiddenOwner(actor, userId);
   const target = await prisma.user.findFirst({
     where: { id: userId, anonymisedAt: null, deletedAt: null },
   });
@@ -142,6 +161,8 @@ export async function grantRole(actor: Actor, input: unknown, meta: RequestMeta)
 export async function revokeRole(actor: Actor, input: unknown, meta: RequestMeta): Promise<void> {
   assertAdmin(actor);
   const { userId, role } = parseRoleChange(input);
+  if (role === Role.OWNER) assertOwner(actor);
+  await assertNotHiddenOwner(actor, userId);
 
   const removed = await prisma.$transaction(
     async (tx) => {
@@ -156,6 +177,16 @@ export async function revokeRole(actor: Actor, input: unknown, meta: RequestMeta
         });
         const targetIsAdmin = await tx.userRole.count({ where: { userId, role: Role.ADMIN } });
         if (targetIsAdmin && admins <= 1) throw new AppError('lastAdmin');
+      }
+      if (role === Role.OWNER) {
+        const owners = await tx.userRole.count({
+          where: {
+            role: Role.OWNER,
+            user: { isActive: true, anonymisedAt: null, deletedAt: null },
+          },
+        });
+        const targetIsOwner = await tx.userRole.count({ where: { userId, role: Role.OWNER } });
+        if (targetIsOwner && owners <= 1) throw new AppError('lastOwner');
       }
       const deleted = await tx.userRole.deleteMany({ where: { userId, role } });
       if (deleted.count > 0) {

@@ -56,6 +56,7 @@ export async function requireRole(
   returnTo?: string,
 ): Promise<Actor> {
   const actor = await requireActor(locale, returnTo);
+  if (actor.mfaSetupRequired) redirect(mfaSetupPath(locale));
   if (!actor.roles.includes(role)) notFound();
   return actor;
 }
@@ -67,6 +68,8 @@ export function isPortalUser(actor: Pick<Actor, 'roles'> | null): boolean {
 /** Admin portal: administrators and delegated organisers (others get a 404). */
 export async function requirePortal(locale: AppLocale, returnTo?: string): Promise<Actor> {
   const actor = await requireActor(locale, returnTo);
+  // An admin without two-step login: set it up first (D78).
+  if (actor.mfaSetupRequired) redirect(mfaSetupPath(locale));
   if (!isPortalUser(actor)) notFound();
   return actor;
 }
@@ -75,8 +78,17 @@ export async function currentRequestMeta(): Promise<RequestMeta> {
   return requestMetaFromHeaders(await headers());
 }
 
-/** Where to land after login: admins/organisers in the portal, players on their dashboard. */
-export function homeFor(actor: Pick<Actor, 'roles'>, locale: AppLocale): string {
+export const mfaSetupPath = (locale: AppLocale) => `/${locale}/account/security#two-step`;
+
+/**
+ * Where to land after login: admins/organisers in the portal, players on their dashboard,
+ * admins without two-step login on its setup.
+ */
+export function homeFor(
+  actor: Pick<Actor, 'roles' | 'mfaSetupRequired'>,
+  locale: AppLocale,
+): string {
+  if (actor.mfaSetupRequired) return mfaSetupPath(locale);
   return isPortalUser(actor) ? `/${locale}/admin` : `/${locale}/account`;
 }
 

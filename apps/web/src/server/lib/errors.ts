@@ -50,7 +50,10 @@ export type ErrorCode =
   | 'logoTooLarge'
   | 'logoInvalid'
   | 'removeSelf'
-  | 'removeStaff';
+  | 'removeStaff'
+  | 'lastOwner'
+  | 'mfaRequired'
+  | 'mfaInvalid';
 
 const HTTP_STATUS: Record<ErrorCode, number> = {
   validation: 422,
@@ -101,6 +104,9 @@ const HTTP_STATUS: Record<ErrorCode, number> = {
   logoInvalid: 422,
   removeSelf: 409,
   removeStaff: 409,
+  lastOwner: 409,
+  mfaRequired: 401,
+  mfaInvalid: 401,
 };
 
 export class AppError extends Error {

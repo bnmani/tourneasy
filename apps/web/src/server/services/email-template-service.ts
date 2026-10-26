@@ -24,6 +24,7 @@ import { enforce } from '../lib/rate-limit';
 import type { RequestMeta } from '../lib/request-meta';
 import { appUrl } from '../lib/urls';
 import { emailLogo } from './logo-service';
+import { maskOwners, ownerPrivacy } from './admin-service';
 import { assertAdmin } from './permissions';
 import type { Actor } from './session-service';
 
@@ -315,7 +316,8 @@ export async function sendEmailTemplateTest(
 /** Last changes for the overview page. */
 export async function emailTemplateLog(actor: Actor) {
   assertAdmin(actor);
-  return prisma.auditLog.findMany({
+  const privacy = await ownerPrivacy(actor);
+  const entries = await prisma.auditLog.findMany({
     where: { entityType: 'EmailTemplate' },
     orderBy: { createdAt: 'desc' },
     take: 15,
@@ -324,7 +326,9 @@ export async function emailTemplateLog(actor: Actor) {
       action: true,
       entityId: true,
       createdAt: true,
+      actorId: true,
       actor: { select: { name: true } },
     },
   });
+  return maskOwners(entries, privacy.owners);
 }

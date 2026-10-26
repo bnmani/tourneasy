@@ -20,7 +20,7 @@ import {
   verifyStripeSecretKey,
   type StoredStripeSettings,
 } from '../payments/gateway';
-import { assertAdmin } from './permissions';
+import { assertOwner } from './permissions';
 import type { Actor } from './session-service';
 
 export const UNLOCK_MINUTES = 10;
@@ -43,7 +43,7 @@ const modeOf = (key: string) => (/_live_/.test(key) ? 'live' : 'test');
 
 /** What the settings page shows: status and masked values only, never a secret. */
 export async function getPaymentSettings(actor: Actor, now = new Date()) {
-  assertAdmin(actor);
+  assertOwner(actor);
   const [settings, config, until, lastEvent, lastOnlinePayment] = await Promise.all([
     stored(),
     loadStripeConfig(),
@@ -89,7 +89,7 @@ export async function unlockSettings(
   /** Which settings page asked (for the log); the unlock covers all locked settings. */
   scope: string = STRIPE_SETTINGS_KEY,
 ) {
-  assertAdmin(actor);
+  assertOwner(actor);
   const { password } = parseInput(unlockSchema, input);
   await enforce(`unlock:user:${actor.userId}`, LIMITS.unlockPerUser);
   const user = await prisma.user.findUniqueOrThrow({
@@ -114,7 +114,7 @@ export async function unlockSettings(
 }
 
 export async function lockSettings(actor: Actor) {
-  assertAdmin(actor);
+  assertOwner(actor);
   await prisma.userSession.update({
     where: { id: actor.sessionId },
     data: { elevatedUntil: null },
@@ -122,7 +122,7 @@ export async function lockSettings(actor: Actor) {
 }
 
 export async function assertUnlocked(actor: Actor, now: Date) {
-  assertAdmin(actor);
+  assertOwner(actor);
   if (!(await elevatedUntil(actor, now))) throw new AppError('settingsLocked');
 }
 
@@ -206,7 +206,7 @@ export async function clearPaymentSettings(actor: Actor, meta: RequestMeta, now 
 
 /** Last changes for the settings page (who and when). */
 export async function paymentSettingsLog(actor: Actor) {
-  assertAdmin(actor);
+  assertOwner(actor);
   return prisma.auditLog.findMany({
     where: { entityType: 'SiteSetting', entityId: STRIPE_SETTINGS_KEY },
     orderBy: { createdAt: 'desc' },

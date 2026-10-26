@@ -12,6 +12,7 @@ export const LIMITS = {
   verifyResendPerUser: { limit: 5, windowSeconds: 60 * 60 },
   refreshPerSession: { limit: 60, windowSeconds: 15 * 60 },
   unlockPerUser: { limit: 5, windowSeconds: 15 * 60 },
+  mfaPerUser: { limit: 10, windowSeconds: 15 * 60 },
 } satisfies Record<string, RateLimit>;
 
 /**

@@ -11,6 +11,7 @@ import { firstParam, pageLocale, type SearchParams } from '@/lib/page';
 import { requireRole } from '@/server/auth/web';
 import { invitePlayersAction } from '@/server/actions/admin-actions';
 import { lastInvites } from '@/server/services/player-invite-service';
+import { visibleRoles } from '@/server/services/permissions';
 import { getPlayer } from '@/server/services/player-service';
 import { getProfileOptions } from '@/server/services/profile-service';
 
@@ -60,11 +61,14 @@ export default async function AdminPlayerPage({
         {player.user ? (
           <>
             <Badge>{t('players.withAccount')}</Badge>
-            {player.user.roles
-              .filter((r) => r.role !== 'PLAYER')
+            {visibleRoles(
+              actor,
+              player.user.roles.map((r) => r.role),
+            )
+              .filter((r) => r !== 'PLAYER')
               .map((r) => (
-                <Badge key={r.role} tone="primary">
-                  {tr(r.role)}
+                <Badge key={r} tone="primary">
+                  {tr(r)}
                 </Badge>
               ))}
           </>

@@ -61,21 +61,21 @@ with a `Retry-After` header.
 All bodies are JSON. Validation errors return `422 VALIDATION` with `details.fields`
 (`{ field: errorKey }`, keys under `Errors.*` in the shared translations).
 
-| Method   | Path                           | Auth          | Purpose                                                                   |
-| -------- | ------------------------------ | ------------- | ------------------------------------------------------------------------- |
-| `POST`   | `/api/v1/auth/register`        | —             | Create account → `201 { userId, memberNumber }`; sends verification email |
-| `POST`   | `/api/v1/auth/token`           | —             | Log in (`identifier` = email or member number) → token pair               |
-| `POST`   | `/api/v1/auth/refresh`         | —             | `{ refreshToken }` → new token pair (old refresh token is invalidated)    |
-| `POST`   | `/api/v1/auth/logout`          | Bearer/cookie | End the current session → `204`                                           |
-| `POST`   | `/api/v1/auth/verify-email`    | —             | `{ token }` from the email → `204`                                        |
-| `POST`   | `/api/v1/auth/forgot-password` | —             | `{ email }` → always `202`                                                |
-| `POST`   | `/api/v1/auth/reset-password`  | —             | `{ token, password }` → `204`; logs out all devices                       |
-| `GET`    | `/api/v1/me`                   | Bearer/cookie | My account and player profile                                             |
-| `PATCH`  | `/api/v1/me`                   | Bearer/cookie | Update my profile (same fields as the web form)                           |
-| `DELETE` | `/api/v1/me`                   | Bearer/cookie | `{ password, confirm: true }` → anonymise account (GDPR) → `204`          |
-| `GET`    | `/api/v1/me/sessions`          | Bearer/cookie | My logged-in devices (`current` marks this one)                           |
-| `DELETE` | `/api/v1/me/sessions/{id}`     | Bearer/cookie | Log out one device → `204`                                                |
-| `GET`    | `/api/v1/me/export`            | Bearer/cookie | All my data as a JSON download (GDPR art. 15/20)                          |
+| Method   | Path                           | Auth          | Purpose                                                                                                            |
+| -------- | ------------------------------ | ------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `POST`   | `/api/v1/auth/register`        | —             | Create account → `201 { userId, memberNumber }`; sends verification email                                          |
+| `POST`   | `/api/v1/auth/token`           | —             | Log in (`identifier` = email or member number; `code` when two-step login is on, else `MFA_REQUIRED`) → token pair |
+| `POST`   | `/api/v1/auth/refresh`         | —             | `{ refreshToken }` → new token pair (old refresh token is invalidated)                                             |
+| `POST`   | `/api/v1/auth/logout`          | Bearer/cookie | End the current session → `204`                                                                                    |
+| `POST`   | `/api/v1/auth/verify-email`    | —             | `{ token }` from the email → `204`                                                                                 |
+| `POST`   | `/api/v1/auth/forgot-password` | —             | `{ email }` → always `202`                                                                                         |
+| `POST`   | `/api/v1/auth/reset-password`  | —             | `{ token, password }` → `204`; logs out all devices                                                                |
+| `GET`    | `/api/v1/me`                   | Bearer/cookie | My account and player profile                                                                                      |
+| `PATCH`  | `/api/v1/me`                   | Bearer/cookie | Update my profile (same fields as the web form)                                                                    |
+| `DELETE` | `/api/v1/me`                   | Bearer/cookie | `{ password, confirm: true }` → anonymise account (GDPR) → `204`                                                   |
+| `GET`    | `/api/v1/me/sessions`          | Bearer/cookie | My logged-in devices (`current` marks this one)                                                                    |
+| `DELETE` | `/api/v1/me/sessions/{id}`     | Bearer/cookie | Log out one device → `204`                                                                                         |
+| `GET`    | `/api/v1/me/export`            | Bearer/cookie | All my data as a JSON download (GDPR art. 15/20)                                                                   |
 
 Token pair: `{ "tokenType": "Bearer", "accessToken": "…", "expiresIn": 900, "refreshToken": "…" }`.
 Access tokens live 15 minutes; refresh tokens rotate on every use and reusing an old one

@@ -98,7 +98,8 @@
   "Roles": {
     "PLAYER": "Speler",
     "ORGANISER": "Organisator",
-    "ADMIN": "Beheerder"
+    "ADMIN": "Beheerder",
+    "OWNER": "Eigenaar"
   },
   "Errors": {
     "required": "Dit veld is verplicht.",
@@ -194,7 +195,10 @@
     "templateSyntax": "Controleer de accolades: elk veld staat tussen een openende en een sluitende accolade.",
     "templateOneLine": "Een onderwerp past op één regel.",
     "removeSelf": "Je kunt je eigen account hier niet verwijderen.",
-    "removeStaff": "De selectie bevat een beheerder of organisator. Trek eerst hun rol in."
+    "removeStaff": "De selectie bevat een beheerder of organisator. Trek eerst hun rol in.",
+    "lastOwner": "Er moet altijd minstens één eigenaar zijn.",
+    "mfaRequired": "Vul de code uit je authenticator-app in.",
+    "mfaInvalid": "Die code klopt niet of is al gebruikt. Probeer de volgende code."
   },
   "Auth": {
     "login": {
@@ -278,6 +282,14 @@
       "register": "Account aanmaken",
       "login": "Inloggen",
       "emailTaken": "Er is al een account met dit e-mailadres. Log in, of vraag een nieuw wachtwoord aan."
+    },
+    "mfa": {
+      "title": "Code invoeren",
+      "intro": "Vul de 6-cijferige code uit je authenticator-app in. Telefoon kwijt? Gebruik dan een van je herstelcodes.",
+      "code": "Code",
+      "codeHint": "6 cijfers uit de app, of een herstelcode (bijvoorbeeld abcd-efgh-jk).",
+      "submit": "Inloggen",
+      "cancel": "Annuleren en uitloggen"
     }
   },
   "Account": {
@@ -286,7 +298,9 @@
     "profile": "Profiel",
     "security": "Beveiliging",
     "privacy": "Privacy",
-    "notifications": "E-mailvoorkeuren"
+    "notifications": "E-mailvoorkeuren",
+    "mfaBanner": "Je bent beheerder. Stel eerst tweestapsverificatie in om het beheer te gebruiken.",
+    "mfaBannerLink": "Nu instellen"
   },
   "Dashboard": {
     "title": "Mijn dashboard",
@@ -378,7 +392,36 @@
     "revoke": "Uitloggen",
     "revokeOthers": "Alle andere apparaten uitloggen",
     "revoked": "Het apparaat is uitgelogd.",
-    "none": "Geen andere actieve sessies."
+    "none": "Geen andere actieve sessies.",
+    "mfa": {
+      "title": "Tweestapsverificatie",
+      "intro": "Na je wachtwoord vraagt Tourneasy om een code uit een authenticator-app, zoals Google Authenticator, Microsoft Authenticator of 1Password. Zo kan niemand inloggen met alleen je wachtwoord.",
+      "required": "Als beheerder is tweestapsverificatie verplicht. Stel het nu in; daarna kun je het beheer weer gebruiken.",
+      "on": "Aan sinds {date}.",
+      "off": "Staat uit.",
+      "codesLeft": "{count, plural, =0 {Geen herstelcodes meer over: maak nieuwe aan.} one {Nog # herstelcode over.} other {Nog # herstelcodes over.}}",
+      "start": "Instellen",
+      "step1": "1. Scan deze QR-code met je authenticator-app.",
+      "manual": "Lukt scannen niet? Vul deze sleutel in de app in:",
+      "step2": "2. Vul de 6-cijferige code in die de app nu laat zien.",
+      "confirm": "Inschakelen",
+      "qrAlt": "QR-code om Tourneasy toe te voegen aan je authenticator-app",
+      "recoveryTitle": "Je herstelcodes",
+      "recoveryIntro": "Bewaar deze codes op een veilige plek, bijvoorbeeld in je wachtwoordmanager of geprint. Telefoon kwijt? Dan log je in met een van deze codes; elke code werkt één keer. Je ziet ze alleen nu.",
+      "recoveryCopy": "Kopiëren",
+      "recoveryCopied": "Gekopieerd",
+      "recoveryDone": "Ik heb ze bewaard",
+      "newCodes": "Nieuwe herstelcodes maken",
+      "newCodesHint": "De oude codes werken daarna niet meer.",
+      "code": "Code uit de app",
+      "password": "Je wachtwoord",
+      "disable": "Uitschakelen",
+      "disableHintStaff": "Let op: als beheerder kun je het beheer pas weer gebruiken nadat je het opnieuw hebt ingesteld, bijvoorbeeld op een nieuwe telefoon.",
+      "disableHintPlayer": "Daarna is alleen je wachtwoord nodig om in te loggen.",
+      "enabled": "Tweestapsverificatie staat aan. Je andere apparaten zijn uitgelogd; daar log je opnieuw in met een code.",
+      "disabled": "Tweestapsverificatie staat uit.",
+      "recoveryUsed": "Je bent ingelogd met een herstelcode. Maak nieuwe herstelcodes aan, of stel de app opnieuw in als je je telefoon kwijt bent."
+    }
   },
   "Privacy": {
     "title": "Privacy en gegevens",
@@ -1054,7 +1097,8 @@
       "allowSaved": "Testadressen opgeslagen.",
       "allowInvalid": "Een van de testadressen is geen geldig e-mailadres.",
       "pausedBanner": "Testmodus: e-mails naar spelers staan uit.",
-      "pausedBannerLink": "E-mailinstellingen"
+      "pausedBannerLink": "E-mailinstellingen",
+      "statusActive": "E-mail versturen is ingesteld."
     },
     "news": {
       "title": "Nieuws",
@@ -1325,7 +1369,13 @@
     "searchPortal": "Zoeken in beheer",
     "searchPortalHint": "Zoek op toernooi, speler (naam, lidnummer, e-mail), locatie of club. Minstens 2 tekens.",
     "searchNoResults": "Niets gevonden voor \"{q}\".",
-    "searchMore": "Meer resultaten"
+    "searchMore": "Meer resultaten",
+    "mfaColumn": "2FA",
+    "mfaOn": "Aan",
+    "mfaOff": "Uit",
+    "mfaReset": "Resetten",
+    "mfaResetConfirm": "Tweestapsverificatie van {name} resetten? Alle apparaten worden uitgelogd en bij de volgende login stelt die persoon het opnieuw in.",
+    "mfaResetDone": "Tweestapsverificatie gereset. Bij de volgende login stelt de gebruiker het opnieuw in."
   },
   "Legal": {
     "draftNotice": "Concept — deze tekst wordt nog juridisch gecontroleerd.",
@@ -1922,6 +1972,11 @@
     "venue_restore": "Locatie teruggezet",
     "venue_update": "Locatie gewijzigd",
     "player_invite": "Speler uitgenodigd voor een account",
-    "user_signup_invite": "Account geactiveerd via uitnodiging"
+    "user_signup_invite": "Account geactiveerd via uitnodiging",
+    "auth_mfa_enable": "Tweestapsverificatie aangezet",
+    "auth_mfa_disable": "Tweestapsverificatie uitgezet",
+    "auth_mfa_reset": "Tweestapsverificatie gereset door beheer",
+    "auth_mfa_recoveryUsed": "Ingelogd met een herstelcode",
+    "auth_mfa_recoveryCodes": "Nieuwe herstelcodes gemaakt"
   }
 }

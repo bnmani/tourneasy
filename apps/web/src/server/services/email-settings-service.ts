@@ -27,7 +27,8 @@ import type { RequestMeta } from '../lib/request-meta';
 import { canEncrypt, decryptSecret, encryptSecret } from '../lib/secret-box';
 import { parseInput } from '../lib/validation';
 import { assertUnlocked, elevatedUntil } from './payment-settings-service';
-import { assertAdmin } from './permissions';
+import { maskOwners, ownerPrivacy } from './admin-service';
+import { assertAdmin, isOwner } from './permissions';
 import type { Actor } from './session-service';
 
 async function stored(): Promise<StoredEmailSettings | null> {
@@ -44,23 +45,29 @@ export async function getEmailSettings(actor: Actor, now = new Date()) {
     elevatedUntil(actor, now),
     loadSendingSettings(),
   ]);
+  // The mail server and its login are for owners only (D78); admins see whether mail works.
+  const owner = isOwner(actor);
   return {
+    owner,
     sending: sending && { ...sending, updatedAt: new Date(sending.updatedAt) },
-    unlockedUntil: until,
+    unlockedUntil: owner ? until : null,
     canEncrypt: canEncrypt(),
     active: config !== null,
     source: config?.source ?? null,
     unreadable: !!settings?.passwordBox && decryptSecret(settings.passwordBox) === null,
-    stored: settings && {
-      host: settings.host,
-      port: settings.port,
-      security: settings.security,
-      user: settings.user,
-      passwordSet: !!settings.passwordBox,
-      from: settings.from,
-      updatedAt: new Date(settings.updatedAt),
-      updatedByName: settings.updatedByName,
-    },
+    stored:
+      !owner || !settings
+        ? null
+        : {
+            host: settings.host,
+            port: settings.port,
+            security: settings.security,
+            user: settings.user,
+            passwordSet: !!settings.passwordBox,
+            from: settings.from,
+            updatedAt: new Date(settings.updatedAt),
+            updatedByName: settings.updatedByName,
+          },
   };
 }
 
@@ -260,17 +267,31 @@ export async function setEmailSending(
 }
 
 /** Last unlocks and changes for the page (who and when). */
+/** Recent changes: admins see pausing and the allow list, owners also the mail server (D78). */
 export async function emailSettingsLog(actor: Actor) {
   assertAdmin(actor);
-  return prisma.auditLog.findMany({
-    where: { entityType: 'SiteSetting', entityId: EMAIL_SETTINGS_KEY },
+  const privacy = await ownerPrivacy(actor);
+  const entries = await prisma.auditLog.findMany({
+    where: {
+      entityType: 'SiteSetting',
+      entityId: EMAIL_SETTINGS_KEY,
+      ...(isOwner(actor)
+        ? {}
+        : {
+            action: {
+              in: ['settings.email.paused', 'settings.email.resumed', 'settings.email.allowList'],
+            },
+          }),
+    },
     orderBy: { createdAt: 'desc' },
     take: 10,
     select: {
       id: true,
       action: true,
       createdAt: true,
+      actorId: true,
       actor: { select: { name: true } },
     },
   });
+  return maskOwners(entries, privacy.owners);
 }

@@ -1,7 +1,14 @@
 /** Admin dashboard figures and the audit log viewer. */
 import { prisma, type Prisma } from '@tourneasy/db';
 import { pageCount, pageParams } from '../lib/validation';
-import { assertAdmin, assertCanManageTournament, assertPortalAccess, isAdmin } from './permissions';
+import {
+  assertAdmin,
+  assertCanManageTournament,
+  assertPortalAccess,
+  isAdmin,
+  isOwner,
+  ownerIds,
+} from './permissions';
 import type { Actor } from './session-service';
 
 export async function getDashboard(actor: Actor) {
@@ -12,6 +19,7 @@ export async function getDashboard(actor: Actor) {
     ? {}
     : { organisers: { some: { userId: actor.userId } } };
 
+  const privacy = await ownerPrivacy(actor);
   const [players, accounts, venues, clubs, byStatus, upcoming, recent] = await Promise.all([
     isAdmin(actor)
       ? prisma.playerProfile.count({ where: { deletedAt: null, mergedIntoId: null } })
@@ -39,6 +47,7 @@ export async function getDashboard(actor: Actor) {
     }),
     isAdmin(actor)
       ? prisma.auditLog.findMany({
+          where: privacy.where,
           orderBy: { createdAt: 'desc' },
           take: 8,
           select: {
@@ -46,6 +55,7 @@ export async function getDashboard(actor: Actor) {
             action: true,
             entityType: true,
             createdAt: true,
+            actorId: true,
             actor: { select: { name: true } },
           },
         })
@@ -60,17 +70,54 @@ export async function getDashboard(actor: Actor) {
       byStatus.map((s) => [s.status, s._count._all]),
     ) as Record<string, number>,
     upcoming,
-    recent,
+    recent: maskOwners(recent, privacy.owners),
   };
+}
+
+/**
+ * What admins may see of the log (D78): nothing about owners' accounts or the owner-only
+ * settings, and owners' own actions under the name "Tourneasy".
+ */
+export async function ownerPrivacy(actor: Actor) {
+  if (isOwner(actor)) return { where: {}, owners: new Set<string>() };
+  const owners = await ownerIds();
+  const where: Prisma.AuditLogWhereInput = {
+    NOT: [
+      { entityType: 'User', entityId: { in: owners } },
+      { action: { startsWith: 'settings.payments' } },
+      { action: { startsWith: 'settings.email.update' } },
+      { action: { startsWith: 'settings.email.clear' } },
+      { action: { startsWith: 'settings.unlock' } },
+      { action: { startsWith: 'settings.lock' } },
+      // Paired with the action, so rows without these JSON fields aren't dropped (SQL NULL).
+      { action: 'user.role.grant', after: { path: ['role'], equals: 'OWNER' } },
+      { action: 'user.role.revoke', before: { path: ['role'], equals: 'OWNER' } },
+    ],
+  };
+  return { where, owners: new Set(owners) };
+}
+
+export function maskOwners<
+  T extends { actorId: string | null; actor: { name: string; email?: string } | null },
+>(entries: T[], owners: Set<string>): T[] {
+  return entries.map((e) =>
+    e.actorId && owners.has(e.actorId)
+      ? {
+          ...e,
+          actor: { name: 'Tourneasy', ...(e.actor && 'email' in e.actor ? { email: '' } : {}) },
+        }
+      : e,
+  );
 }
 
 export async function listAuditLog(actor: Actor, params: { action?: string; page?: number } = {}) {
   assertAdmin(actor);
   const { page, skip, take } = pageParams(params.page);
   const action = params.action?.trim();
-  const where: Prisma.AuditLogWhereInput = action
-    ? { action: { contains: action, mode: 'insensitive' } }
-    : {};
+  const privacy = await ownerPrivacy(actor);
+  const where: Prisma.AuditLogWhereInput = {
+    AND: [action ? { action: { contains: action, mode: 'insensitive' } } : {}, privacy.where],
+  };
   const [total, entries] = await Promise.all([
     prisma.auditLog.count({ where }),
     prisma.auditLog.findMany({
@@ -86,11 +133,12 @@ export async function listAuditLog(actor: Actor, params: { action?: string; page
         before: true,
         after: true,
         createdAt: true,
+        actorId: true,
         actor: { select: { name: true, email: true } },
       },
     }),
   ]);
-  return { entries, total, page, pages: pageCount(total) };
+  return { entries: maskOwners(entries, privacy.owners), total, page, pages: pageCount(total) };
 }
 
 /** Every logged entity that belongs to one tournament: itself, its events, entries, matches… */
@@ -138,7 +186,8 @@ export async function listTournamentAudit(
 ) {
   await assertCanManageTournament(actor, tournamentId);
   const { page, skip, take } = pageParams(params.page);
-  const where = await tournamentAuditScope(tournamentId);
+  const privacy = await ownerPrivacy(actor);
+  const where = { AND: [await tournamentAuditScope(tournamentId), privacy.where] };
   const [total, entries] = await Promise.all([
     prisma.auditLog.count({ where }),
     prisma.auditLog.findMany({
@@ -154,9 +203,10 @@ export async function listTournamentAudit(
         before: true,
         after: true,
         createdAt: true,
+        actorId: true,
         actor: { select: { name: true, email: true } },
       },
     }),
   ]);
-  return { entries, total, page, pages: pageCount(total) };
+  return { entries: maskOwners(entries, privacy.owners), total, page, pages: pageCount(total) };
 }

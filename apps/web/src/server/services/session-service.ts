@@ -13,6 +13,10 @@ import { describeUserAgent, type RequestMeta } from '../lib/request-meta';
 const DAY = 24 * 60 * 60 * 1000;
 export const WEB_SESSION_TTL_MS = 30 * DAY; // "remember me"
 export const WEB_SHORT_SESSION_TTL_MS = 12 * 60 * 60 * 1000; // browser-session cookie
+/** Admins and owners are signed out after at most 12 hours, "remember me" or not (D78). */
+export const STAFF_SESSION_TTL_MS = 12 * 60 * 60 * 1000;
+/** Time to enter the two-step code after the password. */
+const MFA_PENDING_TTL_MS = 10 * 60 * 1000;
 export const MOBILE_SESSION_TTL_MS = 90 * DAY;
 export const ACCESS_TOKEN_TTL_SECONDS = 15 * 60;
 const TOUCH_INTERVAL_MS = 5 * 60 * 1000;
@@ -21,11 +25,29 @@ const TOUCH_INTERVAL_MS = 5 * 60 * 1000;
 export type Actor = {
   userId: string;
   sessionId: string;
+  /** Effective roles: owners also act as admins; staff without two-step login act as players. */
   roles: Role[];
   name: string;
   locale: 'nl' | 'en';
   emailVerified: boolean;
+  /** Admin or owner who must set up two-step login before using those roles (D78). */
+  mfaSetupRequired: boolean;
+  mfaEnabled: boolean;
 };
+
+const STAFF: Role[] = ['ADMIN', 'OWNER'];
+
+/** Two-step login is mandatory for admins and owners. Tests opt in with TEST_ENFORCE_MFA. */
+export function staffMfaEnforced(): boolean {
+  return process.env.NODE_ENV !== 'test' || process.env.TEST_ENFORCE_MFA === '1';
+}
+
+export function effectiveRoles(dbRoles: Role[], mfaEnabled: boolean): Role[] {
+  const staff = dbRoles.some((r) => STAFF.includes(r));
+  if (staff && !mfaEnabled && staffMfaEnforced()) return dbRoles.filter((r) => !STAFF.includes(r));
+  if (dbRoles.includes('OWNER') && !dbRoles.includes('ADMIN')) return [...dbRoles, 'ADMIN'];
+  return dbRoles;
+}
 
 function toActor(
   sessionId: string,
@@ -34,16 +56,21 @@ function toActor(
     name: string;
     locale: 'nl' | 'en';
     emailVerifiedAt: Date | null;
+    totpEnabledAt: Date | null;
     roles: { role: Role }[];
   },
 ): Actor {
+  const dbRoles = user.roles.map((r) => r.role);
+  const mfaEnabled = user.totpEnabledAt !== null;
   return {
     userId: user.id,
     sessionId,
-    roles: user.roles.map((r) => r.role),
+    roles: effectiveRoles(dbRoles, mfaEnabled),
     name: user.name,
     locale: user.locale,
     emailVerified: user.emailVerifiedAt !== null,
+    mfaSetupRequired: !mfaEnabled && dbRoles.some((r) => STAFF.includes(r)) && staffMfaEnforced(),
+    mfaEnabled,
   };
 }
 
@@ -51,15 +78,29 @@ const activeUserFilter = { isActive: true, deletedAt: null, anonymisedAt: null }
 
 // ── Web ────────────────────────────────────────────────────────────────────────────
 
+async function isStaff(userId: string): Promise<boolean> {
+  return (await prisma.userRole.count({ where: { userId, role: { in: STAFF } } })) > 0;
+}
+
+/**
+ * A web login. With two-step login on, the session starts "pending": it signs nobody in until
+ * the code is entered (completeMfa). Staff sessions last at most 12 hours.
+ */
 export async function createWebSession(
   userId: string,
   meta: RequestMeta,
   rememberMe: boolean,
+  options: { mfaPending?: boolean } = {},
 ): Promise<{ token: string; expiresAt: Date; persistent: boolean }> {
   const token = randomToken();
-  const expiresAt = new Date(
-    Date.now() + (rememberMe ? WEB_SESSION_TTL_MS : WEB_SHORT_SESSION_TTL_MS),
-  );
+  const ttl = options.mfaPending
+    ? MFA_PENDING_TTL_MS
+    : (await isStaff(userId))
+      ? Math.min(STAFF_SESSION_TTL_MS, rememberMe ? WEB_SESSION_TTL_MS : WEB_SHORT_SESSION_TTL_MS)
+      : rememberMe
+        ? WEB_SESSION_TTL_MS
+        : WEB_SHORT_SESSION_TTL_MS;
+  const expiresAt = new Date(Date.now() + ttl);
   await prisma.userSession.create({
     data: {
       userId,
@@ -69,9 +110,40 @@ export async function createWebSession(
       userAgent: meta.userAgent,
       ipAddress: meta.ip,
       expiresAt,
+      mfaPending: !!options.mfaPending,
     },
   });
-  return { token, expiresAt, persistent: rememberMe };
+  return { token, expiresAt, persistent: rememberMe && !options.mfaPending };
+}
+
+/** A session waiting for its two-step code: its id and user, or null. */
+export async function pendingMfaSession(token: string) {
+  const session = await prisma.userSession.findUnique({
+    where: { tokenHash: hashToken(token) },
+    select: { id: true, userId: true, mfaPending: true, revokedAt: true, expiresAt: true },
+  });
+  if (!session || !session.mfaPending || session.revokedAt || session.expiresAt <= new Date())
+    return null;
+  return { sessionId: session.id, userId: session.userId };
+}
+
+/** The code was right: the pending session becomes a normal one with its full lifetime. */
+export async function completeMfaSession(sessionId: string, rememberMe: boolean) {
+  const session = await prisma.userSession.findUniqueOrThrow({
+    where: { id: sessionId },
+    select: { userId: true },
+  });
+  const ttl = (await isStaff(session.userId))
+    ? STAFF_SESSION_TTL_MS
+    : rememberMe
+      ? WEB_SESSION_TTL_MS
+      : WEB_SHORT_SESSION_TTL_MS;
+  const expiresAt = new Date(Date.now() + ttl);
+  await prisma.userSession.update({
+    where: { id: sessionId },
+    data: { mfaPending: false, expiresAt },
+  });
+  return { expiresAt };
 }
 
 /** Resolves a session cookie to an Actor, or null if unknown, revoked or expired. */
@@ -84,6 +156,7 @@ export async function actorFromWebToken(token: string): Promise<Actor | null> {
   if (
     !session ||
     session.kind !== SessionKind.WEB ||
+    session.mfaPending ||
     session.revokedAt ||
     session.expiresAt.getTime() <= now ||
     !session.user.isActive ||

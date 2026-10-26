@@ -14,7 +14,7 @@ export type DisciplineCode = (typeof DISCIPLINES)[number];
 // Badminton events are men's, women's or mixed: players register as male or female (D11).
 export const GENDERS = ['MALE', 'FEMALE'] as const;
 export type GenderCode = (typeof GENDERS)[number];
-export const ASSIGNABLE_ROLES = ['ORGANISER', 'ADMIN'] as const;
+export const ASSIGNABLE_ROLES = ['ORGANISER', 'ADMIN', 'OWNER'] as const;
 
 const text = (max: number) =>
   z.string({ error: 'required' }).trim().min(1, 'required').max(max, 'tooLong');

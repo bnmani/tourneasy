@@ -28,6 +28,9 @@ enum Role {
   PLAYER
   ORGANISER
   ADMIN
+  /// Everything an admin can do, plus payment and email server settings and granting OWNER.
+  /// Hidden from admins and organisers (D78).
+  OWNER
 }
 
 enum Locale {
@@ -268,6 +271,12 @@ model User {
   lastLoginAt      DateTime?
   failedLoginCount Int       @default(0)
   lockedUntil      DateTime?
+  /// Two-step login (D78): the authenticator secret, encrypted. Set while setting up;
+  /// switched on once totpEnabledAt is set. Mandatory for admins and owners.
+  totpSecretEnc    String?
+  totpEnabledAt    DateTime?
+  /// Last 30-second step a code was accepted for, so a code can't be used twice.
+  totpLastStep     Int?
   anonymisedAt     DateTime? // GDPR erasure: PII scrubbed, row kept for referential integrity
   deletedAt        DateTime?
   createdAt        DateTime  @default(now())
@@ -292,6 +301,7 @@ model User {
   idempotencyKeys     IdempotencyKey[]
   following           PlayerFollow[]
   playerInvitesSent   PlayerInvite[]
+  recoveryCodes       MfaRecoveryCode[]
 
   @@index([deletedAt])
 }
@@ -348,6 +358,8 @@ model UserSession {
   lastSeenAt    DateTime    @default(now())
   /// Unlocked for sensitive settings after re-entering the password (D54), until this moment.
   elevatedUntil DateTime?
+  /// Password accepted but the two-step code not yet (D78): not signed in until it is.
+  mfaPending    Boolean     @default(false)
   expiresAt     DateTime
   revokedAt     DateTime?
   createdAt     DateTime    @default(now())
@@ -388,6 +400,19 @@ model PasswordResetToken {
   userId    String    @db.Uuid
   tokenHash String    @unique
   expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+/// One-time recovery codes for two-step login (D78), stored hashed.
+model MfaRecoveryCode {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @db.Uuid
+  codeHash  String
   usedAt    DateTime?
   createdAt DateTime  @default(now())
 
