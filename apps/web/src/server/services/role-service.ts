@@ -1,7 +1,6 @@
 /**
- * Role management: administrators grant or revoke ADMIN and ORGANISER (incl. adding new
- * admins); only owners grant or revoke OWNER, and owners are hidden from admins and can't be
- * changed by them (D78). Every change is audited and the user is notified. The last admin and
+ * Role management: admins grant or revoke ORGANISER; only owners grant or revoke ADMIN and
+ * OWNER (D80), and owners are hidden from admins and can't be changed by them (D78). Every change is audited and the user is notified. The last admin and
  * the last owner can't be removed.
  */
 import { Prisma, prisma, Role } from '@tourneasy/db';
@@ -134,7 +133,8 @@ function parseRoleChange(input: unknown) {
 export async function grantRole(actor: Actor, input: unknown, meta: RequestMeta): Promise<void> {
   assertAdmin(actor);
   const { userId, role } = parseRoleChange(input);
-  if (role === Role.OWNER) assertOwner(actor);
+  // Owners decide who is an admin or owner; admins hand out the organiser role (D80).
+  if (role === Role.OWNER || role === Role.ADMIN) assertOwner(actor);
   await assertNotHiddenOwner(actor, userId);
   const target = await prisma.user.findFirst({
     where: { id: userId, anonymisedAt: null, deletedAt: null },
@@ -161,7 +161,8 @@ export async function grantRole(actor: Actor, input: unknown, meta: RequestMeta)
 export async function revokeRole(actor: Actor, input: unknown, meta: RequestMeta): Promise<void> {
   assertAdmin(actor);
   const { userId, role } = parseRoleChange(input);
-  if (role === Role.OWNER) assertOwner(actor);
+  // Owners decide who is an admin or owner; admins hand out the organiser role (D80).
+  if (role === Role.OWNER || role === Role.ADMIN) assertOwner(actor);
   await assertNotHiddenOwner(actor, userId);
 
   const removed = await prisma.$transaction(
@@ -217,7 +218,7 @@ const removeUsersSchema = z.object({
  * the admin themselves, and never admins or organisers (take the role away first). Logged.
  */
 export async function removeUsers(actor: Actor, input: unknown, meta: RequestMeta) {
-  assertAdmin(actor);
+  assertOwner(actor);
   const { userIds, password } = parseInput(removeUsersSchema, input);
   const ids = [...new Set(userIds)];
   if (ids.includes(actor.userId)) throw new AppError('removeSelf');

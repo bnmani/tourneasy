@@ -3,7 +3,7 @@
  * owners (until it's on they act as players), optional for everyone else. Ten one-time recovery
  * codes cover a lost phone; an owner (or, for players and organisers, an admin) can reset it.
  */
-import { prisma, Role } from '@tourneasy/db';
+import { prisma } from '@tourneasy/db';
 import { randomBytes } from 'node:crypto';
 import QRCode from 'qrcode';
 import { writeAudit } from '../lib/audit';
@@ -14,7 +14,7 @@ import { enforce, LIMITS } from '../lib/rate-limit';
 import type { RequestMeta } from '../lib/request-meta';
 import { canEncrypt, decryptSecret, encryptSecret } from '../lib/secret-box';
 import { base32Encode, newTotpSecret, otpauthUrl, verifyTotp } from '../lib/totp';
-import { assertAdmin, assertNotHiddenOwner, isOwner } from './permissions';
+import { assertOwner } from './permissions';
 import { type Actor, revokeAllSessions } from './session-service';
 
 const RECOVERY_CODES = 10;
@@ -214,18 +214,12 @@ export async function disableMfa(
 
 /**
  * Someone lost their phone and recovery codes: the next login asks them to set it up again.
- * Owners reset anyone; admins only players and organisers. All their devices are signed out.
+ * All their devices are signed out.
  */
 export async function resetUserMfa(actor: Actor, userId: string, meta: RequestMeta) {
-  assertAdmin(actor);
+  // Owners only (D80): "I lost my phone" is a classic trick on helpful admins.
+  assertOwner(actor);
   if (userId === actor.userId) throw new AppError('forbidden');
-  await assertNotHiddenOwner(actor, userId);
-  if (!isOwner(actor)) {
-    const staff = await prisma.userRole.count({
-      where: { userId, role: { in: [Role.ADMIN, Role.OWNER] } },
-    });
-    if (staff) throw new AppError('forbidden');
-  }
   await clearMfa(userId);
   await revokeAllSessions(userId);
   await writeAudit(prisma, {

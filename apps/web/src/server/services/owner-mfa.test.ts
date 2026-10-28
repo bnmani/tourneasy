@@ -5,7 +5,9 @@ import { currentStep, totpCode } from '../lib/totp';
 import { listAuditLog } from './admin-service';
 import { getEmailSettings } from './email-settings-service';
 import { checkMfaCode, confirmMfaSetup, disableMfa, mfaSetup, resetUserMfa } from './mfa-service';
+import { exportPayments } from './payment-service';
 import { getPaymentSettings } from './payment-settings-service';
+import { exportPlayersXlsx } from './player-service';
 import { grantRole, listUsers, revokeRole } from './role-service';
 import {
   actorFromWebToken,
@@ -150,7 +152,7 @@ describe('two-step login (D78)', () => {
     expect((await actorFromWebToken(admin.token))?.roles).not.toContain('ADMIN');
   });
 
-  it('can be reset by an owner for anyone, by an admin only for non-admins', async () => {
+  it('can be reset by an owner only (D80)', async () => {
     const owner = await person(Role.OWNER);
     const admin = await person(Role.ADMIN);
     const admin2 = await person(Role.ADMIN);
@@ -159,14 +161,16 @@ describe('two-step login (D78)', () => {
       const secret = await secretOf(p.actor);
       await confirmMfaSetup(p.actor, { code: totpCode(secret, currentStep()) }, meta);
     }
-    await expect(resetUserMfa(admin.actor, admin2.userId, meta)).rejects.toMatchObject({
-      code: 'forbidden',
-    });
-    await expect(resetUserMfa(admin.actor, owner.userId, meta)).rejects.toMatchObject({
-      code: 'notFound',
-    });
-    await resetUserMfa(admin.actor, player.userId, meta);
+    for (const target of [admin2, player, owner])
+      await expect(resetUserMfa(admin.actor, target.userId, meta)).rejects.toMatchObject({
+        code: 'notFound',
+      });
+    await resetUserMfa(owner.actor, player.userId, meta);
     await resetUserMfa(owner.actor, admin2.userId, meta);
+    // Admins also can't take the full players or payments exports, merge or remove.
+    await expect(exportPlayersXlsx(admin.actor)).rejects.toMatchObject({ code: 'notFound' });
+    await expect(exportPayments(admin.actor, {})).rejects.toMatchObject({ code: 'notFound' });
+    await expect(exportPlayersXlsx(owner.actor)).resolves.toBeTruthy();
     const users = await prisma.user.findMany({
       where: { id: { in: [admin2.userId, player.userId] } },
       select: { totpEnabledAt: true },

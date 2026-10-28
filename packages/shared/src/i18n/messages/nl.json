@@ -1313,7 +1313,8 @@
       "removeHint": "Verwijderen kan niet ongedaan worden gemaakt. Naam, e-mail, telefoon en inloggegevens worden gewist; uitslagen blijven staan als \"Deleted player\". Beheerders en organisatoren kun je pas verwijderen nadat hun rol is ingetrokken.",
       "password": "Je eigen wachtwoord ter bevestiging",
       "confirm": "{count, plural, one {Ja, # account verwijderen} other {Ja, # accounts verwijderen}}",
-      "removed": "{count, plural, =0 {Geen accounts verwijderd (al verwijderd).} one {# account verwijderd.} other {# accounts verwijderd.}}"
+      "removed": "{count, plural, =0 {Geen accounts verwijderd (al verwijderd).} one {# account verwijderd.} other {# accounts verwijderd.}}",
+      "dialogTitle": "{count, plural, one {# account verwijderen?} other {# accounts verwijderen?}}"
     },
     "playersBulk": {
       "select": "{name} selecteren",
@@ -1327,7 +1328,8 @@
       "removed": "{count, plural, =0 {Geen spelers verwijderd (al verwijderd).} one {# speler verwijderd.} other {# spelers verwijderd.}}",
       "invite": "{count, plural, one {Uitnodiging sturen} other {# uitnodigingen sturen}}",
       "inviteHint": "Alleen geselecteerde spelers zonder account en met een e-mailadres krijgen een link om hun account te activeren.",
-      "invited": "{sent, plural, =0 {Geen uitnodigingen verstuurd} one {# uitnodiging verstuurd} other {# uitnodigingen verstuurd}}{skipped, plural, =0 {.} other {; # overgeslagen (al een account of geen e-mailadres).}}"
+      "invited": "{sent, plural, =0 {Geen uitnodigingen verstuurd} one {# uitnodiging verstuurd} other {# uitnodigingen verstuurd}}{skipped, plural, =0 {.} other {; # overgeslagen (al een account of geen e-mailadres).}}",
+      "dialogTitle": "{count, plural, one {# speler verwijderen?} other {# spelers verwijderen?}}"
     },
     "usersJoined": "Lid sinds",
     "tournamentBar": {

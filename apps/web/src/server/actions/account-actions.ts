@@ -105,10 +105,13 @@ export async function changeRoleAction(formData: FormData): Promise<void> {
 }
 
 /** Admin: remove the selected accounts (D72); outcome as ?status=removed&count=… */
-export async function removeUsersAction(formData: FormData): Promise<void> {
+/**
+ * Owners: removes the selected accounts (D72, D80). A wrong password or other refusal comes
+ * back to the popup, so the selection stays; success goes back to the list with the count.
+ */
+export async function removeUsersAction(_prev: FormState, formData: FormData): Promise<FormState> {
   const back = new URL(safeRedirectPath(formData.get('returnTo'), '/'), 'http://local');
   back.searchParams.delete('count');
-  let status = 'removed';
   try {
     const count = await removeUsers(
       await actorOrThrow(),
@@ -117,11 +120,10 @@ export async function removeUsersAction(formData: FormData): Promise<void> {
     );
     back.searchParams.set('count', String(count));
   } catch (error) {
-    status = error instanceof AppError ? error.code : 'unexpected';
-    if (!(error instanceof AppError)) console.error('[action] remove users failed', error);
+    return toFormState(error, formData);
   }
   revalidatePath('/', 'layout');
-  back.searchParams.set('status', status);
+  back.searchParams.set('status', 'removed');
   redirect(`${back.pathname}${back.search}`);
 }
 

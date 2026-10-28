@@ -21,7 +21,7 @@ import type { RequestMeta } from '../lib/request-meta';
 import { pageCount, pageParams, parseInput } from '../lib/validation';
 import { verifyPassword } from '../lib/password';
 import { anonymiseProfile, anonymiseUser } from './gdpr-service';
-import { assertAdmin, assertNotHiddenOwner } from './permissions';
+import { assertAdmin, assertNotHiddenOwner, assertOwner } from './permissions';
 import { type Actor, revokeAllSessions } from './session-service';
 
 /** Columns the admin player list can be sorted by. */
@@ -299,7 +299,7 @@ export async function updatePlayer(actor: Actor, id: string, input: unknown, met
  * of the two may have an account (that account ends up on the target).
  */
 export async function mergePlayers(actor: Actor, input: unknown, meta: RequestMeta) {
-  assertAdmin(actor);
+  assertOwner(actor);
   const { sourceId, targetMemberNumber } = parseInput(mergePlayersSchema, input);
   const [source, target] = await Promise.all([
     prisma.playerProfile.findUnique({ where: { id: sourceId } }),
@@ -404,7 +404,8 @@ async function exportPlayerTable(
   actor: Actor,
   filters: PlayerFilters,
 ): Promise<{ header: string[]; rows: (string | number)[][] }> {
-  assertAdmin(actor);
+  // Every player's personal data in one file: owners only (D80).
+  assertOwner(actor);
   const players = await prisma.playerProfile.findMany({
     where: whereFor({ ...filters, page: undefined }),
     orderBy: orderFor(filters.sort, filters.dir),
@@ -687,10 +688,10 @@ const removePlayersSchema = z.object({
 /**
  * Admin: removes players in bulk (D72), with or without an account. Same erasure as an
  * account deletion: personal data anonymised, entries and results kept as "Deleted player".
- * Needs the admin's password; never the admin's own player or admins/organisers. Logged.
+ * Owners only (D80), with their password; never their own player or admins/organisers. Logged.
  */
 export async function removePlayers(actor: Actor, input: unknown, meta: RequestMeta) {
-  assertAdmin(actor);
+  assertOwner(actor);
   const { ids, password } = parseInput(removePlayersSchema, input);
   const me = await prisma.user.findUniqueOrThrow({
     where: { id: actor.userId },

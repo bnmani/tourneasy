@@ -43,7 +43,8 @@ export default async function AdminUsersPage({
   const tr = await getTranslations('Roles');
   // Only owners see (and grant) the owner role (D78).
   const isOwnerViewer = actor.roles.includes('OWNER');
-  const roles = ASSIGNABLE_ROLES.filter((r) => r !== 'OWNER' || isOwnerViewer);
+  // Admins hand out the organiser role; owners also admin and owner (D80).
+  const roles = ASSIGNABLE_ROLES.filter((r) => r === 'ORGANISER' || isOwnerViewer);
   const tb = await getTranslations('Admin.usersBulk');
   // Search, sort and page survive role changes, removals and paging.
   const listQuery = new URLSearchParams({ ...(q ? { q } : {}), sort, dir });
@@ -97,11 +98,12 @@ export default async function AdminUsersPage({
       </FilterBar>
 
       <p className="text-sm text-muted-foreground">{t('total', { count: result.total })}</p>
-      {result.users.length > 0 && (
+      {/* Removing accounts is for owners (D80). */}
+      {isOwnerViewer && result.users.length > 0 && (
         <BulkRemove
           formId="bulk-remove-users"
           texts="Admin.usersBulk"
-          action={removeUsersAction}
+          remove={removeUsersAction}
           returnTo={returnTo}
         />
       )}
@@ -112,9 +114,11 @@ export default async function AdminUsersPage({
           <table className="w-full min-w-[60rem] text-left text-sm">
             <thead className="border-b bg-muted/50 text-xs text-muted-foreground uppercase">
               <tr>
-                <th scope="col" className="w-10 px-3 py-2">
-                  <span className="sr-only">{tb('selectPage')}</span>
-                </th>
+                {isOwnerViewer && (
+                  <th scope="col" className="w-10 px-3 py-2">
+                    <span className="sr-only">{tb('selectPage')}</span>
+                  </th>
+                )}
                 <SortHeader column="name" label={t('name')} {...sortProps} />
                 <SortHeader column="member" label={t('memberNumber')} {...sortProps} />
                 <SortHeader column="email" label={t('email')} {...sortProps} />
@@ -133,17 +137,17 @@ export default async function AdminUsersPage({
             <tbody className="divide-y">
               {result.users.map((u) => (
                 <tr key={u.id} className="align-middle">
-                  <td className="px-3 py-2">
-                    <SelectRow
-                      formId="bulk-remove-users"
-                      texts="Admin.usersBulk"
-                      id={u.id}
-                      name={u.name}
-                      disabled={
-                        u.id === actor.userId || u.protected || u.roles.some((r) => r !== 'PLAYER')
-                      }
-                    />
-                  </td>
+                  {isOwnerViewer && (
+                    <td className="px-3 py-2">
+                      <SelectRow
+                        formId="bulk-remove-users"
+                        texts="Admin.usersBulk"
+                        id={u.id}
+                        name={u.name}
+                        disabled={u.id === actor.userId || u.roles.some((r) => r !== 'PLAYER')}
+                      />
+                    </td>
+                  )}
                   <td className="px-3 py-2">
                     <span className="font-medium">{u.name}</span>
                     {u.id === actor.userId && (
@@ -168,16 +172,14 @@ export default async function AdminUsersPage({
                     {u.mfaEnabled ? (
                       <span className="flex items-center gap-2">
                         <Badge tone="primary">{t('mfaOn')}</Badge>
-                        {u.id !== actor.userId &&
-                          !u.protected &&
-                          (isOwnerViewer || !u.roles.some((r) => r === 'ADMIN')) && (
-                            <ResetMfaButton
-                              userId={u.id}
-                              returnTo={returnTo}
-                              label={t('mfaReset')}
-                              confirm={t('mfaResetConfirm', { name: u.name })}
-                            />
-                          )}
+                        {u.id !== actor.userId && isOwnerViewer && (
+                          <ResetMfaButton
+                            userId={u.id}
+                            returnTo={returnTo}
+                            label={t('mfaReset')}
+                            confirm={t('mfaResetConfirm', { name: u.name })}
+                          />
+                        )}
                       </span>
                     ) : (
                       <span className="text-muted-foreground">{t('mfaOff')}</span>

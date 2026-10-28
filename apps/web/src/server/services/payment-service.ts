@@ -21,7 +21,7 @@ import {
   type PaymentGateway,
 } from '../payments/gateway';
 import { amountsDue, HOLD_MINUTES } from '../payments/pricing';
-import { assertAdmin, assertCanManageTournament } from './permissions';
+import { assertAdmin, assertCanManageTournament, assertOwner } from './permissions';
 import { refundsForCancelledRegistration, applyRefundUpdate } from './refund-service';
 import { eventText, fullName } from './registration-service';
 import type { Actor } from './session-service';
@@ -623,7 +623,8 @@ export async function paymentsOverview(actor: Actor, filters: PaymentFilters = {
 /** Paid and refunded orders as a table for the Excel export. */
 export async function exportPayments(actor: Actor, filters: PaymentFilters) {
   if (filters.tournamentId) await assertCanManageTournament(actor, filters.tournamentId);
-  else assertAdmin(actor);
+  // All tournaments' money in one file: owners only (D80).
+  else assertOwner(actor);
   const orders = await prisma.order.findMany({
     where: {
       ...(filters.tournamentId ? { tournamentId: filters.tournamentId } : {}),

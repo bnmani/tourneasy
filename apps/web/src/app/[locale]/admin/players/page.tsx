@@ -57,6 +57,7 @@ export default async function AdminPlayersPage({
     listPlayers(actor, { ...filters, page: Number(firstParam(query.page) ?? 1) }),
     getProfileOptions(),
   ]);
+  const isOwner = actor.roles.includes('OWNER');
   const invited = await lastInvites(result.players.filter((p) => !p.user).map((p) => p.id));
   const t = await getTranslations('Admin');
   const td = await getTranslations('Disciplines');
@@ -96,11 +97,13 @@ export default async function AdminPlayersPage({
             <Button asChild variant="outline">
               <Link href="/admin/players/import">{t('players.import')}</Link>
             </Button>
-            <Button asChild variant="outline">
-              <a href={`/api/v1/admin/players/export?${filterQuery}`} download>
-                {t('players.export')}
-              </a>
-            </Button>
+            {isOwner && (
+              <Button asChild variant="outline">
+                <a href={`/api/v1/admin/players/export?${filterQuery}`} download>
+                  {t('players.export')}
+                </a>
+              </Button>
+            )}
           </>
         }
       />
@@ -222,7 +225,7 @@ export default async function AdminPlayersPage({
         <BulkRemove
           formId="bulk-remove-players"
           texts="Admin.playersBulk"
-          action={removePlayersAction}
+          remove={isOwner ? removePlayersAction : undefined}
           invite={invitePlayersAction.bind(null, locale)}
           returnTo={`/${locale}/admin/players?${filterQuery}`}
         />

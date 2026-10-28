@@ -364,11 +364,14 @@ export async function removeTournamentLogoAction(locale: AppLocale, tournamentId
 }
 
 /** Admin: remove the selected players (D72); outcome as ?status=removed&count=… */
-export async function removePlayersAction(formData: FormData) {
+/** Owners: removes the selected players (D72, D80); refusals come back to the popup. */
+export async function removePlayersAction(
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
   const back = new URL(safeRedirectPath(formData.get('returnTo'), '/'), 'http://local');
   back.searchParams.delete('count');
   back.searchParams.delete('page');
-  let status = 'removed';
   try {
     const count = await removePlayers(
       await actorOrThrow(),
@@ -377,11 +380,10 @@ export async function removePlayersAction(formData: FormData) {
     );
     back.searchParams.set('count', String(count));
   } catch (error) {
-    status = error instanceof AppError ? error.code : 'unexpected';
-    if (!(error instanceof AppError)) console.error('[admin action] remove players failed', error);
+    return toFormState(error, formData);
   }
   revalidatePath('/', 'layout');
-  back.searchParams.set('status', status);
+  back.searchParams.set('status', 'removed');
   redirect(`${back.pathname}${back.search}`);
 }
 

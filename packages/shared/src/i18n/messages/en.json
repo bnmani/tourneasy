@@ -1313,7 +1313,8 @@
       "removeHint": "This can’t be undone. Name, email, phone and login are erased; results stay as \"Deleted player\". Admins and organisers can only be removed after their role is taken away.",
       "password": "Your own password to confirm",
       "confirm": "{count, plural, one {Yes, remove # account} other {Yes, remove # accounts}}",
-      "removed": "{count, plural, =0 {No accounts removed (already removed).} one {# account removed.} other {# accounts removed.}}"
+      "removed": "{count, plural, =0 {No accounts removed (already removed).} one {# account removed.} other {# accounts removed.}}",
+      "dialogTitle": "{count, plural, one {Remove # account?} other {Remove # accounts?}}"
     },
     "playersBulk": {
       "select": "Select {name}",
@@ -1327,7 +1328,8 @@
       "removed": "{count, plural, =0 {No players removed (already removed).} one {# player removed.} other {# players removed.}}",
       "invite": "{count, plural, one {Send invitation} other {Send # invitations}}",
       "inviteHint": "Only selected players without an account and with an email address get a link to activate their account.",
-      "invited": "{sent, plural, =0 {No invitations sent} one {# invitation sent} other {# invitations sent}}{skipped, plural, =0 {.} other {; # skipped (already an account or no email address).}}"
+      "invited": "{sent, plural, =0 {No invitations sent} one {# invitation sent} other {# invitations sent}}{skipped, plural, =0 {.} other {; # skipped (already an account or no email address).}}",
+      "dialogTitle": "{count, plural, one {Remove # player?} other {Remove # players?}}"
     },
     "usersJoined": "Member since",
     "tournamentBar": {

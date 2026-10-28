@@ -32,9 +32,9 @@ async function actorFor(userId: string): Promise<Actor> {
   return (await actorFromWebToken(token))!;
 }
 
-async function newAdmin() {
+async function newAdmin(role: Role = Role.ADMIN) {
   const { userId } = await createPlayer();
-  await prisma.userRole.create({ data: { userId, role: Role.ADMIN } });
+  await prisma.userRole.create({ data: { userId, role } });
   return actorFor(userId);
 }
 
@@ -294,7 +294,7 @@ describe('players', () => {
   });
 
   it('merges a duplicate into the player that stays', async () => {
-    const admin = await newAdmin();
+    const admin = await newAdmin(Role.OWNER); // merge and export: owners (D80)
     const withAccount = await createPlayer({ firstName: 'Tim' });
     const duplicate = await adminCreatePlayer(
       admin,
@@ -335,7 +335,7 @@ describe('players', () => {
   });
 
   it('imports CSV (create, update, line errors) and exports for Excel', async () => {
-    const admin = await newAdmin();
+    const admin = await newAdmin(Role.OWNER); // merge and export: owners (D80)
     await prisma.club.create({ data: { name: 'BC Utrecht Smash', slug: 'bc-utrecht-smash' } });
     const csv = [
       'firstName;lastNamePrefix;lastName;email;phone;dateOfBirth;gender;club;federationId;preferredEvents',
@@ -365,7 +365,7 @@ describe('players', () => {
   });
 
   it('exports Excel and imports Excel files (template, date serials, lost leading zeros)', async () => {
-    const admin = await newAdmin();
+    const admin = await newAdmin(Role.OWNER); // merge and export: owners (D80)
     const template = await importPlayersFile(admin, playerXlsxTemplate(), meta);
     expect(template).toMatchObject({ created: 1, skipped: 0 });
 

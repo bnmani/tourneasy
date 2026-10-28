@@ -148,7 +148,7 @@ export default async function AdminPlayerPage({
         <p className="text-sm text-muted-foreground">{t('players.historySoon')}</p>
       </FormSection>
 
-      {!player.deletedAt && (
+      {!player.deletedAt && actor.roles.includes('OWNER') && (
         <FormSection title={t('players.merge')}>
           <MergePlayerForm locale={locale} sourceId={player.id} />
         </FormSection>

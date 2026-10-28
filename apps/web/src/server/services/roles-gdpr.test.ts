@@ -15,21 +15,28 @@ async function actorFor(userId: string): Promise<Actor> {
   return (await actorFromWebToken(token))!;
 }
 
-async function makeAdmin(userId: string) {
-  await prisma.userRole.create({ data: { userId, role: Role.ADMIN } });
+async function makeAdmin(userId: string, role: Role = Role.ADMIN) {
+  await prisma.userRole.create({ data: { userId, role } });
   return actorFor(userId);
 }
 
 describe('roles', () => {
-  it('lets an admin add another admin, audited and emailed', async () => {
-    const admin = await makeAdmin((await createPlayer()).userId);
+  it('lets an owner add an admin, audited and emailed; admins add only organisers', async () => {
+    const admin = await makeAdmin((await createPlayer()).userId, Role.OWNER);
     const target = await createPlayer();
+    // Since D80 only owners make admins.
+    const plain = await makeAdmin((await createPlayer()).userId);
+    await expect(
+      grantRole(plain, { userId: target.userId, role: 'ADMIN' }, meta),
+    ).rejects.toMatchObject({ code: 'notFound' });
+    await grantRole(plain, { userId: target.userId, role: 'ORGANISER' }, meta);
+    await revokeRole(plain, { userId: target.userId, role: 'ORGANISER' }, meta);
 
     await grantRole(admin, { userId: target.userId, role: 'ADMIN' }, meta);
     const roles = await prisma.userRole.findMany({ where: { userId: target.userId } });
     expect(roles.map((r) => r.role).sort()).toEqual(['ADMIN', 'PLAYER']);
     expect(roles.find((r) => r.role === 'ADMIN')?.grantedById).toBe(admin.userId);
-    expect(await prisma.auditLog.count({ where: { action: 'user.role.grant' } })).toBe(1);
+    expect(await prisma.auditLog.count({ where: { action: 'user.role.grant' } })).toBe(2);
     expect(lastMailTo(target.email).mail?.text).toContain('Beheerder');
   });
 
@@ -45,16 +52,17 @@ describe('roles', () => {
   });
 
   it('never removes the last admin', async () => {
+    const owner = await makeAdmin((await createPlayer()).userId, Role.OWNER);
     const admin = await makeAdmin((await createPlayer()).userId);
     await expect(
-      revokeRole(admin, { userId: admin.userId, role: 'ADMIN' }, meta),
+      revokeRole(owner, { userId: admin.userId, role: 'ADMIN' }, meta),
     ).rejects.toMatchObject({
       code: 'lastAdmin',
     });
 
     const second = await createPlayer();
-    await grantRole(admin, { userId: second.userId, role: 'ADMIN' }, meta);
-    await revokeRole(admin, { userId: admin.userId, role: 'ADMIN' }, meta);
+    await grantRole(owner, { userId: second.userId, role: 'ADMIN' }, meta);
+    await revokeRole(owner, { userId: admin.userId, role: 'ADMIN' }, meta);
     expect(await prisma.userRole.count({ where: { role: 'ADMIN' } })).toBe(1);
   });
 
@@ -180,16 +188,17 @@ describe('GDPR', () => {
 describe('admin removes accounts (D72)', () => {
   it('removes selected players in one go, with the admin password, and keeps staff safe', async () => {
     const adminPlayer = await createPlayer();
-    const admin = await makeAdmin(adminPlayer.userId);
+    // Bulk removal is for owners (D80).
+    const admin = await makeAdmin(adminPlayer.userId, Role.OWNER);
     const [a, b] = [await createPlayer(), await createPlayer()];
     const organiser = await createPlayer();
     await prisma.userRole.create({ data: { userId: organiser.userId, role: Role.ORGANISER } });
     const aSession = await actorFor(a.userId);
 
-    // Only admins, with their own password; never themselves or staff.
+    // Only owners, with their own password; never themselves or staff.
     await expect(
       removeUsers(aSession, { userIds: [b.userId], password: a.password }, meta),
-    ).rejects.toMatchObject({ code: 'forbidden' });
+    ).rejects.toMatchObject({ code: 'notFound' });
     await expect(
       removeUsers(admin, { userIds: [a.userId], password: 'wrong-password' }, meta),
     ).rejects.toMatchObject({ code: 'wrongPassword' });
@@ -243,7 +252,8 @@ describe('admin removes accounts (D72)', () => {
 describe('admin removes players (D72)', () => {
   it('removes players with and without an account, keeping staff and self safe', async () => {
     const adminPlayer = await createPlayer();
-    const admin = await makeAdmin(adminPlayer.userId);
+    // Bulk removal is for owners (D80).
+    const admin = await makeAdmin(adminPlayer.userId, Role.OWNER);
     const withAccount = await createPlayer();
     const profile = (userId: string) =>
       prisma.playerProfile.findUniqueOrThrow({ where: { userId } });
