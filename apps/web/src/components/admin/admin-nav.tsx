@@ -4,7 +4,7 @@ import { useTranslations } from 'next-intl';
 import { Link, usePathname } from '@/i18n/navigation';
 import { cn } from '@/lib/utils';
 
-export function AdminNav({ isAdmin }: { isAdmin: boolean }) {
+export function AdminNav({ isAdmin, isOwner }: { isAdmin: boolean; isOwner: boolean }) {
   const t = useTranslations('Admin');
   const pathname = usePathname();
   const items = [
@@ -17,6 +17,11 @@ export function AdminNav({ isAdmin }: { isAdmin: boolean }) {
           { href: '/admin/clubs', label: t('navClubs') },
           { href: '/admin/payments', label: t('navPayments') },
           { href: '/admin/users', label: t('users') },
+        ]
+      : []),
+    // Site-wide settings and the full log are for owners (D79).
+    ...(isOwner
+      ? [
           { href: '/admin/appearance', label: t('navAppearance') },
           { href: '/admin/email', label: t('navEmail') },
           { href: '/admin/audit', label: t('navAudit') },

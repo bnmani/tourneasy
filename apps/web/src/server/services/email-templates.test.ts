@@ -25,14 +25,15 @@ async function actorFor(userId: string) {
 describe('email template editor (D69)', () => {
   it('changes the texts of real emails per language, checked, logged and resettable', async () => {
     const admin = await createPlayer();
-    await prisma.userRole.create({ data: { userId: admin.userId, role: Role.ADMIN } });
+    // Email is for owners (D79).
+    await prisma.userRole.create({ data: { userId: admin.userId, role: Role.OWNER } });
     const actor = await actorFor(admin.userId);
     const player = await createPlayer({ email: 'anna@example.test' });
 
     // Players can't open the editor.
     await expect(
       getEmailTemplate(await actorFor(player.userId), 'resetPassword', 'nl'),
-    ).rejects.toMatchObject({ code: 'forbidden' });
+    ).rejects.toMatchObject({ code: 'notFound' });
 
     // Unknown placeholders, broken braces and multi-line subjects are refused.
     await expect(

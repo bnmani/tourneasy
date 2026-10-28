@@ -980,7 +980,11 @@
       "remove": "Take off the schedule",
       "place": "Schedule",
       "empty": "Nothing to schedule yet. Publish the draws per category first.",
-      "downloadPdf": "Schedule as PDF"
+      "downloadPdf": "Schedule as PDF",
+      "export": "Export",
+      "exportPdf": "Schedule (PDF)",
+      "exportXlsx": "Schedule (Excel)",
+      "exportCourts": "Per court (PDF)"
     },
     "desk": {
       "title": "Match desk",
@@ -1850,7 +1854,10 @@
     "myMatches": "My matches",
     "history": "Matches played",
     "new": "New",
-    "downloadPdf": "Schedule as PDF"
+    "downloadPdf": "Schedule as PDF",
+    "export": "Export",
+    "exportPdf": "Schedule (PDF)",
+    "exportXlsx": "Schedule (Excel)"
   },
   "Notifications": {
     "title": "Email preferences",

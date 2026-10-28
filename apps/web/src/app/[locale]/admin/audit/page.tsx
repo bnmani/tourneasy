@@ -21,7 +21,7 @@ export default async function AuditLogPage({
   searchParams,
 }: LocaleParams & { searchParams: SearchParams }) {
   const locale = await pageLocale(params);
-  const actor = await requireRole(locale, 'ADMIN');
+  const actor = await requireRole(locale, 'OWNER');
   const query = await searchParams;
   const action = firstParam(query.action) ?? '';
   const result = await listAuditLog(actor, { action, page: Number(firstParam(query.page) ?? 1) });

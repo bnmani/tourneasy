@@ -1,11 +1,11 @@
-import { FileDown } from 'lucide-react';
 import { formatDate, formatTime, utcToAmsterdamLocal } from '@tourneasy/shared';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { filterInputClass, PageHeader, StatusNotice } from '@/components/admin/ui';
 import { MatchLine } from '@/components/matches/match-line';
-import { Button } from '@/components/ui/button';
+import { ExportMenu } from '@/components/export-menu';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Link } from '@/i18n/navigation';
 import { firstParam, pageLocale, type SearchParams } from '@/lib/page';
 import { cn } from '@/lib/utils';
@@ -55,15 +55,27 @@ export default async function SchedulePage({ params, searchParams }: Props) {
         intro={ts('intro')}
         actions={
           <>
-            <Button asChild>
-              <a
-                href={`/api/v1/tournaments/${tournament.slug}/schedule.pdf?lang=${locale}`}
-                download
-              >
-                <FileDown aria-hidden="true" />
-                {ts('downloadPdf')}
-              </a>
-            </Button>
+            <ExportMenu
+              label={ts('export')}
+              className={buttonVariants()}
+              items={[
+                {
+                  kind: 'pdf',
+                  label: ts('exportPdf'),
+                  href: `/api/v1/tournaments/${tournament.slug}/schedule.pdf?lang=${locale}`,
+                },
+                {
+                  kind: 'xlsx',
+                  label: ts('exportXlsx'),
+                  href: `/api/v1/tournaments/${tournament.slug}/schedule.xlsx?lang=${locale}`,
+                },
+                {
+                  kind: 'courts',
+                  label: ts('exportCourts'),
+                  href: `/api/v1/tournaments/${tournament.slug}/courts.pdf?lang=${locale}`,
+                },
+              ]}
+            />
             <Button asChild variant="outline">
               <Link href={`/admin/tournaments/${id}/matches`}>{ts('desk')}</Link>
             </Button>

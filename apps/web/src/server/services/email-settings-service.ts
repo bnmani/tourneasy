@@ -28,7 +28,7 @@ import { canEncrypt, decryptSecret, encryptSecret } from '../lib/secret-box';
 import { parseInput } from '../lib/validation';
 import { assertUnlocked, elevatedUntil } from './payment-settings-service';
 import { maskOwners, ownerPrivacy } from './admin-service';
-import { assertAdmin, isOwner } from './permissions';
+import { assertOwner, isOwner } from './permissions';
 import type { Actor } from './session-service';
 
 async function stored(): Promise<StoredEmailSettings | null> {
@@ -38,7 +38,7 @@ async function stored(): Promise<StoredEmailSettings | null> {
 
 /** What the page shows: status and settings without the password. */
 export async function getEmailSettings(actor: Actor, now = new Date()) {
-  assertAdmin(actor);
+  assertOwner(actor);
   const [settings, config, until, sending] = await Promise.all([
     stored(),
     loadSmtpConfig(),
@@ -168,7 +168,7 @@ const testEmailSchema = z.object({
  * spam checker such as mail-tester.com).
  */
 export async function sendTestEmail(actor: Actor, input: unknown, meta: RequestMeta) {
-  assertAdmin(actor);
+  assertOwner(actor);
   const { to } = parseInput(testEmailSchema, input ?? {});
   await enforce(`testmail:user:${actor.userId}`, { limit: 10, windowSeconds: 15 * 60 });
   const user = await prisma.user.findUniqueOrThrow({
@@ -230,7 +230,7 @@ export async function setEmailSending(
   meta: RequestMeta,
   now = new Date(),
 ) {
-  assertAdmin(actor);
+  assertOwner(actor);
   const data = parseInput(sendingSchema, input);
   const user = await prisma.user.findUniqueOrThrow({
     where: { id: actor.userId },
@@ -269,7 +269,7 @@ export async function setEmailSending(
 /** Last unlocks and changes for the page (who and when). */
 /** Recent changes: admins see pausing and the allow list, owners also the mail server (D78). */
 export async function emailSettingsLog(actor: Actor) {
-  assertAdmin(actor);
+  assertOwner(actor);
   const privacy = await ownerPrivacy(actor);
   const entries = await prisma.auditLog.findMany({
     where: {

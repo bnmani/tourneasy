@@ -18,10 +18,10 @@ async function actorFor(userId: string): Promise<Actor> {
 }
 
 describe('site theme', () => {
-  it('defaults to Midnight Cobalt and lets an admin switch, audited', async () => {
+  it('defaults to Midnight Cobalt and lets an owner switch (D79), audited', async () => {
     expect(await getSiteTheme()).toBe('midnight');
     const { userId } = await createPlayer();
-    await prisma.userRole.create({ data: { userId, role: Role.ADMIN } });
+    await prisma.userRole.create({ data: { userId, role: Role.OWNER } });
     const admin = await actorFor(userId);
 
     await setSiteTheme(admin, { theme: 'night' }, meta);
@@ -37,10 +37,16 @@ describe('site theme', () => {
   it('refuses non-admins and unknown themes', async () => {
     const player = await actorFor((await createPlayer()).userId);
     await expect(setSiteTheme(player, { theme: 'teal' }, meta)).rejects.toMatchObject({
-      code: 'forbidden',
+      code: 'notFound',
     });
+    // Admins too: Display is for owners (D79).
+    const plainAdmin = await createPlayer();
+    await prisma.userRole.create({ data: { userId: plainAdmin.userId, role: Role.ADMIN } });
+    await expect(
+      setSiteTheme(await actorFor(plainAdmin.userId), { theme: 'teal' }, meta),
+    ).rejects.toMatchObject({ code: 'notFound' });
     const { userId } = await createPlayer();
-    await prisma.userRole.create({ data: { userId, role: Role.ADMIN } });
+    await prisma.userRole.create({ data: { userId, role: Role.OWNER } });
     const admin = await actorFor(userId);
     await expect(setSiteTheme(admin, { theme: 'pink' }, meta)).rejects.toMatchObject({
       code: 'validation',

@@ -144,7 +144,7 @@ export default async function AdminDashboardPage({ params }: LocaleParams) {
           )}
         </section>
 
-        {isAdmin && (
+        {actor.roles.includes('OWNER') && (
           <section className="rounded-lg border bg-card p-4 sm:p-5">
             <div className="flex items-center justify-between">
               <h2 className="font-semibold">{t('dashboard.recent')}</h2>

@@ -26,7 +26,8 @@ import {
 import { PDFDocument } from 'pdf-lib';
 import { buildSchedulePdf, pdfSafe } from '../pdf/schedule-pdf';
 import { checkInList, checkInPdf, payAtDesk, setPlayerCheckIn } from './checkin-service';
-import { schedulePdf } from './schedule-pdf-service';
+import { courtsPdf, schedulePdf, scheduleXlsx } from './schedule-pdf-service';
+import { readXlsx } from '../lib/xlsx';
 import { actorFromWebToken, createWebSession } from './session-service';
 
 beforeEach(resetDatabase);
@@ -401,6 +402,46 @@ describe('schedule PDF (D73)', () => {
       })),
     });
     expect((await PDFDocument.load(bytes)).getPageCount()).toBeGreaterThan(3);
+  });
+});
+
+describe('schedule Excel and per court (D79)', () => {
+  it('exports an Excel sheet per day plus all, and a court PDF for managers', async () => {
+    const actor = await admin();
+    const { t, event } = await setup('ROUND_ROBIN', 4);
+    await generateDraw(actor, event.id, meta, seededRng(1));
+    await publishDraws(actor, event.id, true, meta);
+    await proposeTournamentSchedule(actor, t.id, {}, meta);
+    await expect(scheduleXlsx(null, t.slug, 'nl')).rejects.toMatchObject({ code: 'notFound' });
+    await publishSchedule(actor, t.id, true, meta);
+
+    const xlsx = await scheduleXlsx(null, t.slug, 'nl');
+    expect(xlsx.filename).toBe('speelschema-utrecht-open.xlsx');
+    const rows = readXlsx(xlsx.bytes)!; // the first sheet: everything
+    expect(rows[0]).toEqual([
+      'Datum',
+      'Tijd',
+      'Baan',
+      'Nr.',
+      'Onderdeel',
+      'Ronde',
+      'Speler(s) A',
+      'Club A',
+      'Speler(s) B',
+      'Club B',
+      'Uitslag',
+      'Status',
+    ]);
+    expect(rows.length - 1).toBe(6); // 4 players round robin
+    const times = rows.slice(1).map((r) => `${r[0]} ${r[1]}`);
+    expect(times).toEqual([...times].sort());
+    expect(rows[1]![11]).toBe('Gepland');
+
+    // Per court: managers only, even once published.
+    await expect(courtsPdf(null, t.slug, 'nl')).rejects.toMatchObject({ code: 'notFound' });
+    const courts = await courtsPdf(actor, t.slug, 'en');
+    expect(courts.filename).toBe('courts-utrecht-open.pdf');
+    expect((await PDFDocument.load(courts.bytes)).getPageCount()).toBeGreaterThanOrEqual(1);
   });
 });
 

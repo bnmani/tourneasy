@@ -9,7 +9,7 @@ import {
 import { writeAudit } from '../lib/audit';
 import type { RequestMeta } from '../lib/request-meta';
 import { parseInput } from '../lib/validation';
-import { assertAdmin } from './permissions';
+import { assertOwner } from './permissions';
 import type { Actor } from './session-service';
 
 const THEME_KEY = 'theme';
@@ -39,7 +39,7 @@ export async function getSiteTheme(): Promise<SiteTheme> {
 }
 
 export async function setSiteTheme(actor: Actor, input: unknown, meta: RequestMeta) {
-  assertAdmin(actor);
+  assertOwner(actor);
   const { theme } = parseInput(siteThemeSchema, input);
   const before = await getSiteTheme();
   await prisma.$transaction(async (tx) => {

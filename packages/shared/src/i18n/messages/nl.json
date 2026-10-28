@@ -980,7 +980,11 @@
       "remove": "Uit de planning halen",
       "place": "Inplannen",
       "empty": "Nog niets te plannen. Publiceer eerst de schema's per onderdeel.",
-      "downloadPdf": "Speelschema als PDF"
+      "downloadPdf": "Speelschema als PDF",
+      "export": "Exporteren",
+      "exportPdf": "Speelschema (PDF)",
+      "exportXlsx": "Speelschema (Excel)",
+      "exportCourts": "Per baan (PDF)"
     },
     "desk": {
       "title": "Wedstrijdtafel",
@@ -1850,7 +1854,10 @@
     "myMatches": "Mijn wedstrijden",
     "history": "Gespeelde wedstrijden",
     "new": "Nieuw",
-    "downloadPdf": "Speelschema als PDF"
+    "downloadPdf": "Speelschema als PDF",
+    "export": "Exporteren",
+    "exportPdf": "Speelschema (PDF)",
+    "exportXlsx": "Speelschema (Excel)"
   },
   "Notifications": {
     "title": "E-mailvoorkeuren",

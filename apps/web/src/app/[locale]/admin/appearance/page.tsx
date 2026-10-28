@@ -24,7 +24,7 @@ export default async function AppearancePage({
   searchParams,
 }: LocaleParams & { searchParams: SearchParams }) {
   const locale = await pageLocale(params);
-  await requireRole(locale, 'ADMIN');
+  await requireRole(locale, 'OWNER');
   const status = firstParam((await searchParams).status);
   const current = await getSiteTheme();
   const t = await getTranslations('Admin.appearance');

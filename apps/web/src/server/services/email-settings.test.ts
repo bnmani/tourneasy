@@ -38,7 +38,7 @@ beforeEach(async () => {
 });
 afterEach(() => setSmtpVerifierForTests(undefined));
 
-async function admin(role: Role = Role.ADMIN) {
+async function admin(role: Role = Role.OWNER) {
   const p = await createPlayer();
   await prisma.userRole.create({ data: { userId: p.userId, role } });
   const actor = (await actorFromWebToken((await createWebSession(p.userId, meta, true)).token))!;

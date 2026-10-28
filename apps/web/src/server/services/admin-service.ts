@@ -2,8 +2,8 @@
 import { prisma, type Prisma } from '@tourneasy/db';
 import { pageCount, pageParams } from '../lib/validation';
 import {
-  assertAdmin,
   assertCanManageTournament,
+  assertOwner,
   assertPortalAccess,
   isAdmin,
   isOwner,
@@ -45,7 +45,8 @@ export async function getDashboard(actor: Actor) {
         venue: { select: { city: true } },
       },
     }),
-    isAdmin(actor)
+    // Recent activity is a preview of the site-wide log: owners only (D79).
+    isOwner(actor)
       ? prisma.auditLog.findMany({
           where: privacy.where,
           orderBy: { createdAt: 'desc' },
@@ -111,7 +112,7 @@ export function maskOwners<
 }
 
 export async function listAuditLog(actor: Actor, params: { action?: string; page?: number } = {}) {
-  assertAdmin(actor);
+  assertOwner(actor);
   const { page, skip, take } = pageParams(params.page);
   const action = params.action?.trim();
   const privacy = await ownerPrivacy(actor);

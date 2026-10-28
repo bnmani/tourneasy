@@ -18,7 +18,7 @@ export const dynamic = 'force-dynamic';
 /** Admin: every email with its edited texts (D69). */
 export default async function EmailTemplatesPage({ params }: LocaleParams) {
   const locale = await pageLocale(params);
-  const actor = await requireRole(locale, 'ADMIN');
+  const actor = await requireRole(locale, 'OWNER');
   const [templates, log] = await Promise.all([listEmailTemplates(actor), emailTemplateLog(actor)]);
   const t = await getTranslations('Admin.emailTemplates');
   const format = await getFormatter();

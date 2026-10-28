@@ -33,7 +33,7 @@ export const dynamic = 'force-dynamic';
 /** Admin: the texts of one email in one language (D69). */
 export default async function EmailTemplatePage({ params, searchParams }: Props) {
   const locale = await pageLocale(params);
-  const actor = await requireRole(locale, 'ADMIN');
+  const actor = await requireRole(locale, 'OWNER');
   const { kind } = await params;
   const query = await searchParams;
   const lang = firstParam(query.lang) === 'en' ? 'en' : 'nl';

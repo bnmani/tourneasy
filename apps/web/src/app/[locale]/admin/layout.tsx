@@ -25,7 +25,7 @@ export default async function AdminLayout({
       {sending?.paused && (
         <p className="mb-6 rounded-md border border-amber-500/60 bg-amber-500/10 px-4 py-2.5 text-sm font-medium">
           {t('pausedBanner')}{' '}
-          {actor.roles.includes('ADMIN') && (
+          {actor.roles.includes('OWNER') && (
             <Link href="/admin/email" className="underline underline-offset-2">
               {t('pausedBannerLink')}
             </Link>
@@ -46,7 +46,10 @@ export default async function AdminLayout({
               className="h-10 w-full min-w-0 rounded-md border border-input bg-background px-3 text-base sm:text-sm"
             />
           </form>
-          <AdminNav isAdmin={actor.roles.includes('ADMIN')} />
+          <AdminNav
+            isAdmin={actor.roles.includes('ADMIN')}
+            isOwner={actor.roles.includes('OWNER')}
+          />
         </div>
         <div className="min-w-0 space-y-6">{children}</div>
       </div>

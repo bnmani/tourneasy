@@ -31,7 +31,7 @@ export const dynamic = 'force-dynamic';
 /** Admin: SMTP settings for all emails, locked behind the admin's password (D58). */
 export default async function EmailSettingsPage({ params, searchParams }: Props) {
   const locale = await pageLocale(params);
-  const actor = await requireRole(locale, 'ADMIN');
+  const actor = await requireRole(locale, 'OWNER');
   const query = await searchParams;
   const settings = await getEmailSettings(actor);
   const log = await emailSettingsLog(actor);

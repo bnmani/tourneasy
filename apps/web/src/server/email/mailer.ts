@@ -161,7 +161,7 @@ async function allowedWhilePaused(to: string, sending: SendingSettings) {
     where: {
       email: address,
       deletedAt: null,
-      roles: { some: { role: { in: ['ADMIN', 'ORGANISER'] } } },
+      roles: { some: { role: { in: ['OWNER', 'ADMIN', 'ORGANISER'] } } },
     },
   });
   return staff > 0;

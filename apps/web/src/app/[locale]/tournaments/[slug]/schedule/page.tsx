@@ -1,6 +1,6 @@
-import { FileDown } from 'lucide-react';
 import { formatDate, formatTime, utcToAmsterdamLocal } from '@tourneasy/shared';
 import type { Metadata } from 'next';
+import { ExportMenu } from '@/components/export-menu';
 import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { AutoRefresh } from '@/components/matches/auto-refresh';
@@ -54,14 +54,22 @@ export default async function TournamentSchedulePage({ params }: Props) {
             ← {t('backToTournament')}
           </Link>
           {schedule.published && (
-            <a
-              href={`/api/v1/tournaments/${slug}/schedule.pdf?lang=${locale}`}
-              download
+            <ExportMenu
+              label={t('export')}
               className="inline-flex items-center gap-2 rounded-md bg-brand px-3 py-2 text-sm font-semibold text-brand-foreground hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-            >
-              <FileDown aria-hidden="true" className="size-4" />
-              {t('downloadPdf')}
-            </a>
+              items={[
+                {
+                  kind: 'pdf',
+                  label: t('exportPdf'),
+                  href: `/api/v1/tournaments/${slug}/schedule.pdf?lang=${locale}`,
+                },
+                {
+                  kind: 'xlsx',
+                  label: t('exportXlsx'),
+                  href: `/api/v1/tournaments/${slug}/schedule.xlsx?lang=${locale}`,
+                },
+              ]}
+            />
           )}
         </div>
       </PageHero>

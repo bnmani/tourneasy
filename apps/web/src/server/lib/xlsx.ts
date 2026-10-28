@@ -64,7 +64,9 @@ function cellXml(value: unknown, ref: string, bold: boolean): string {
 }
 
 /** Builds a single-sheet workbook with a bold, frozen header row and auto-filter. */
-export function toXlsx(sheetName: string, header: string[], rows: unknown[][]): Uint8Array {
+export type XlsxSheet = { name: string; header: string[]; rows: unknown[][] };
+
+function sheetXml({ header, rows }: XlsxSheet): string {
   const all = [header, ...rows];
   const lastCol = columnName(Math.max(header.length, 1) - 1);
   const widths = header.map((_, c) =>
@@ -76,15 +78,37 @@ export function toXlsx(sheetName: string, header: string[], rows: unknown[][]): 
         `<row r="${i + 1}">${r.map((v, c) => cellXml(v, `${columnName(c)}${i + 1}`, i === 0)).join('')}</row>`,
     )
     .join('');
-  const sheet =
+  return (
     '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
     '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
     '<sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>' +
     `<cols>${widths.map((w, i) => `<col min="${i + 1}" max="${i + 1}" width="${w}" customWidth="1"/>`).join('')}</cols>` +
     `<sheetData>${sheetRows}</sheetData>` +
     `<autoFilter ref="A1:${lastCol}${all.length}"/>` +
-    '</worksheet>';
-  const name = escapeXml(sheetName.slice(0, 31));
+    '</worksheet>'
+  );
+}
+
+/** Sheet names: at most 31 characters, none of []:*?/\ and unique (Excel refuses otherwise). */
+function sheetNames(names: string[]): string[] {
+  const used = new Set<string>();
+  return names.map((raw) => {
+    const base =
+      raw
+        .replace(/[[\]:*?/\\]/g, ' ')
+        .trim()
+        .slice(0, 31) || 'Sheet';
+    let name = base;
+    for (let i = 2; used.has(name.toLowerCase()); i++) name = `${base.slice(0, 27)} (${i})`;
+    used.add(name.toLowerCase());
+    return name;
+  });
+}
+
+/** A workbook with one or more sheets, each with a bold frozen header row and filters. */
+export function toXlsxBook(sheets: XlsxSheet[]): Uint8Array {
+  const names = sheetNames(sheets.map((s) => s.name));
+  const n = sheets.length;
   const files: Record<string, Uint8Array> = {
     '[Content_Types].xml': strToU8(
       '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
@@ -92,7 +116,12 @@ export function toXlsx(sheetName: string, header: string[], rows: unknown[][]): 
         '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
         '<Default Extension="xml" ContentType="application/xml"/>' +
         '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>' +
-        '<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>' +
+        sheets
+          .map(
+            (_, i) =>
+              `<Override PartName="/xl/worksheets/sheet${i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`,
+          )
+          .join('') +
         '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>' +
         '</Types>',
     ),
@@ -105,15 +134,26 @@ export function toXlsx(sheetName: string, header: string[], rows: unknown[][]): 
     'xl/workbook.xml': strToU8(
       '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
         '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">' +
-        `<sheets><sheet name="${name}" sheetId="1" r:id="rId1"/></sheets>` +
-        `<definedNames><definedName name="_xlnm._FilterDatabase" localSheetId="0" hidden="1">'${name.replace(/'/g, "''")}'!$A$1:$${lastCol}$${all.length}</definedName></definedNames>` +
+        `<sheets>${names.map((name, i) => `<sheet name="${escapeXml(name)}" sheetId="${i + 1}" r:id="rId${i + 1}"/>`).join('')}</sheets>` +
+        `<definedNames>${sheets
+          .map((sheet, i) => {
+            const lastCol = columnName(Math.max(sheet.header.length, 1) - 1);
+            const quoted = escapeXml(names[i]!).replace(/'/g, "''");
+            return `<definedName name="_xlnm._FilterDatabase" localSheetId="${i}" hidden="1">'${quoted}'!$A$1:$${lastCol}$${sheet.rows.length + 1}</definedName>`;
+          })
+          .join('')}</definedNames>` +
         '</workbook>',
     ),
     'xl/_rels/workbook.xml.rels': strToU8(
       '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
         '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
-        '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>' +
-        '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>' +
+        sheets
+          .map(
+            (_, i) =>
+              `<Relationship Id="rId${i + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i + 1}.xml"/>`,
+          )
+          .join('') +
+        `<Relationship Id="rId${n + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>` +
         '</Relationships>',
     ),
     'xl/styles.xml': strToU8(
@@ -126,9 +166,15 @@ export function toXlsx(sheetName: string, header: string[], rows: unknown[][]): 
         '<cellXfs count="2"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/></cellXfs>' +
         '</styleSheet>',
     ),
-    'xl/worksheets/sheet1.xml': strToU8(sheet),
   };
+  sheets.forEach((sheet, i) => {
+    files[`xl/worksheets/sheet${i + 1}.xml`] = strToU8(sheetXml(sheet));
+  });
   return zipSync(files, { level: 6 });
+}
+
+export function toXlsx(sheetName: string, header: string[], rows: unknown[][]): Uint8Array {
+  return toXlsxBook([{ name: sheetName, header, rows }]);
 }
 
 /** Zip files start with "PK\x03\x04". */

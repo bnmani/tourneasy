@@ -126,6 +126,15 @@ export const sideName = (entry: MatchRow['entryA']) =>
   entry?.registration
     ? entry.registration.participants.map((p) => fullName(p.player)).join(' / ')
     : null;
+/** The side's club(s), once each: "BC Utrecht" or "BC Utrecht / Amstel" (exports, D79). */
+export const sideClub = (entry: MatchRow['entryA']) => {
+  const clubs = [
+    ...new Set(
+      entry?.registration?.participants.map((p) => p.player.club?.name).filter(Boolean) ?? [],
+    ),
+  ];
+  return clubs.length ? clubs.join(' / ') : null;
+};
 export const sidePlayers = (entry: MatchRow['entryA']) =>
   entry?.registration?.participants.map((p) => p.player.id) ?? [];
 
@@ -636,6 +645,8 @@ function toItem(
     round: roundLabel(m, locale),
     a: sideName(m.entryA) ?? placeholder('A'),
     b: sideName(m.entryB) ?? placeholder('B'),
+    aClub: sideClub(m.entryA),
+    bClub: sideClub(m.entryB),
     aEntryId: m.entryA?.id ?? null,
     bEntryId: m.entryB?.id ?? null,
     winnerEntryId: m.winnerEntryId,

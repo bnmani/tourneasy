@@ -38,7 +38,8 @@ describe('owner role (D78)', () => {
 
     await expect(getPaymentSettings(admin.actor)).rejects.toMatchObject({ code: 'notFound' });
     await expect(getPaymentSettings(owner.actor)).resolves.toBeTruthy();
-    expect((await getEmailSettings(admin.actor)).owner).toBe(false);
+    // Since D79 the whole E-mail section is for owners.
+    await expect(getEmailSettings(admin.actor)).rejects.toMatchObject({ code: 'notFound' });
     expect((await getEmailSettings(owner.actor)).owner).toBe(true);
   });
 
@@ -73,10 +74,11 @@ describe('owner role (D78)', () => {
     await grantRole(owner.actor, change(player.userId, 'OWNER'), meta);
     await revokeRole(owner.actor, change(owner.userId, 'OWNER'), meta);
 
-    // The log shows admins neither the grant nor who the owner is.
-    const log = await listAuditLog(admin.actor, {});
-    expect(log.entries.some((e) => JSON.stringify(e.after ?? '').includes('OWNER'))).toBe(false);
-    expect((await listAuditLog(owner.actor, {})).total).toBeGreaterThan(log.total);
+    // The site-wide log is for owners only (D79); it records the owner change.
+    await expect(listAuditLog(admin.actor, {})).rejects.toMatchObject({ code: 'notFound' });
+    const newOwner = (await actorFromWebToken(player.token))!;
+    const log = await listAuditLog(newOwner, {});
+    expect(log.entries.some((e) => JSON.stringify(e.after ?? '').includes('OWNER'))).toBe(true);
   });
 });
 

@@ -25,7 +25,7 @@ import type { RequestMeta } from '../lib/request-meta';
 import { appUrl } from '../lib/urls';
 import { emailLogo } from './logo-service';
 import { maskOwners, ownerPrivacy } from './admin-service';
-import { assertAdmin } from './permissions';
+import { assertOwner } from './permissions';
 import type { Actor } from './session-service';
 
 const MAX_TEXT = 2000;
@@ -44,7 +44,7 @@ function parseTarget(kind: string, locale: string): [EmailTemplateKind, AppLocal
 
 /** All emails with how many of their texts were changed, per language. */
 export async function listEmailTemplates(actor: Actor) {
-  assertAdmin(actor);
+  assertOwner(actor);
   const overrides = await prisma.emailTextOverride.findMany({
     select: { locale: true, key: true, updatedAt: true },
   });
@@ -63,7 +63,7 @@ export async function listEmailTemplates(actor: Actor) {
 
 /** One email in one language: each text with its default, current value and placeholders. */
 export async function getEmailTemplate(actor: Actor, kind: string, locale: string) {
-  assertAdmin(actor);
+  assertOwner(actor);
   const [k, l] = parseTarget(kind, locale);
   const overrides = (await emailTextOverrides())[l];
   return EMAIL_TEMPLATE_KEYS[k].map((key) => ({
@@ -134,7 +134,7 @@ export async function saveEmailTemplate(
   input: Record<string, unknown>,
   meta: RequestMeta,
 ) {
-  assertAdmin(actor);
+  assertOwner(actor);
   const [k, l] = parseTarget(kind, locale);
   const { changed, unchanged } = checkDraft(k, l, input);
   const before = (await emailTextOverrides())[l];
@@ -171,7 +171,7 @@ export async function resetEmailTemplate(
   locale: string,
   meta: RequestMeta,
 ) {
-  assertAdmin(actor);
+  assertOwner(actor);
   const [k, l] = parseTarget(kind, locale);
   await prisma.$transaction(async (tx) => {
     const removed = await tx.emailTextOverride.findMany({
@@ -201,7 +201,7 @@ export async function previewEmailTemplate(
   to = 'voorbeeld@example.test',
   tournamentId?: string | null,
 ) {
-  assertAdmin(actor);
+  assertOwner(actor);
   const [k, l] = parseTarget(kind, locale);
   const { changed, unchanged } = checkDraft(k, l, draft);
   const sample = await withTournament(sampleTemplate(k, l, appUrl(l, '/')), l, tournamentId);
@@ -225,7 +225,7 @@ export async function previewEmailTemplate(
 
 /** Tournaments to preview with (newest first). */
 export async function previewTournaments(actor: Actor) {
-  assertAdmin(actor);
+  assertOwner(actor);
   return prisma.tournament.findMany({
     where: { deletedAt: null },
     orderBy: { startsOn: 'desc' },
@@ -279,7 +279,7 @@ export async function sendEmailTemplateTest(
   meta: RequestMeta,
   tournamentId?: string | null,
 ) {
-  assertAdmin(actor);
+  assertOwner(actor);
   await enforce(`templatetest:user:${actor.userId}`, { limit: 10, windowSeconds: 15 * 60 });
   const user = await prisma.user.findUniqueOrThrow({
     where: { id: actor.userId },
@@ -315,7 +315,7 @@ export async function sendEmailTemplateTest(
 
 /** Last changes for the overview page. */
 export async function emailTemplateLog(actor: Actor) {
-  assertAdmin(actor);
+  assertOwner(actor);
   const privacy = await ownerPrivacy(actor);
   const entries = await prisma.auditLog.findMany({
     where: { entityType: 'EmailTemplate' },
