@@ -137,6 +137,7 @@ const drawInclude = {
                   firstName: true,
                   lastNamePrefix: true,
                   lastName: true,
+                  dateOfBirth: true,
                   club: { select: { name: true, shortName: true } },
                 },
               },

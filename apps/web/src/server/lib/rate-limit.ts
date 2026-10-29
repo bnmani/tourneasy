@@ -13,6 +13,11 @@ export const LIMITS = {
   refreshPerSession: { limit: 60, windowSeconds: 15 * 60 },
   unlockPerUser: { limit: 5, windowSeconds: 15 * 60 },
   mfaPerUser: { limit: 10, windowSeconds: 15 * 60 },
+  // Partner invites send email to any address: keep that from being used for spam.
+  partnerInvitePerUser: { limit: 20, windowSeconds: 24 * 60 * 60 },
+  partnerInvitePerAddress: { limit: 3, windowSeconds: 24 * 60 * 60 },
+  // Organisers find players to enter; enough for a busy day, too few to list everyone.
+  entrySearchPerUser: { limit: 300, windowSeconds: 15 * 60 },
 } satisfies Record<string, RateLimit>;
 
 /**

@@ -3,6 +3,40 @@ import { ScrollRegion } from '@/components/ui/scroll-region';
 import { cn } from '@/lib/utils';
 import type { EventDraw } from '@/server/services/draw-service';
 import { drawStandings } from '@/server/services/results-service';
+import { fullName, publicName } from '@/server/services/registration-service';
+
+/**
+ * Public draws (D83): under-16s by first name and initial. Their surname is replaced by the
+ * initial before rendering, so every part of the view shows the short name.
+ */
+function withPublicNames(draws: EventDraw[]): EventDraw[] {
+  return draws.map((d) => ({
+    ...d,
+    entries: d.entries.map((e) =>
+      e.registration
+        ? {
+            ...e,
+            registration: {
+              ...e.registration,
+              participants: e.registration.participants.map((p) => {
+                const short = publicName(p.player);
+                return short === fullName(p.player)
+                  ? p
+                  : {
+                      ...p,
+                      player: {
+                        ...p.player,
+                        lastNamePrefix: null,
+                        lastName: short.slice(p.player.firstName.length + 1),
+                      },
+                    };
+              }),
+            },
+          }
+        : e,
+    ),
+  }));
+}
 import { knockoutRoundName } from '@/server/services/schedule-service';
 
 type Entry = EventDraw['entries'][number];
@@ -15,9 +49,7 @@ function entryLabel(entry: Entry | undefined) {
   const players = entry.registration.participants.map((p) => p.player);
   return {
     bye: false as const,
-    names: players.map((p) =>
-      [p.firstName, p.lastNamePrefix, p.lastName].filter(Boolean).join(' '),
-    ),
+    names: players.map((p) => fullName(p)),
     clubs: [
       ...new Set(players.map((p) => p.club?.shortName ?? p.club?.name).filter(Boolean)),
     ] as string[],
@@ -175,7 +207,14 @@ async function RoundList({ draw, entries }: { draw: EventDraw; entries: Map<stri
 }
 
 /** Renders the draws of one event: brackets, groups with their matches, or rounds of pairings. */
-export async function DrawView({ draws }: { draws: EventDraw[] }) {
+export async function DrawView({
+  draws: given,
+  publicView = false,
+}: {
+  draws: EventDraw[];
+  publicView?: boolean;
+}) {
+  const draws = publicView ? withPublicNames(given) : given;
   const t = await getTranslations('Draws');
   if (draws.length === 0) return null;
   const type = draws[0]!.type;

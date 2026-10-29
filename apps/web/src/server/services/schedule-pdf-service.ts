@@ -53,7 +53,7 @@ async function loadSchedule(
   if ((!published || options.managersOnly) && !manager) throw new AppError('notFound');
 
   // All matches, also those played or waiting without a time and court (they come last).
-  const items = await scheduleExportItems(t.id, locale, t.schedulePublishedAt);
+  const items = await scheduleExportItems(t.id, locale, t.schedulePublishedAt, !manager);
   const matches: ExportMatch[] = items
     .map((i) => ({
       number: i.number,

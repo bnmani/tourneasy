@@ -506,6 +506,35 @@ describe('my schedule and players I follow (D81)', () => {
   });
 });
 
+describe('under-16s on public pages (D83)', () => {
+  it('shows first name and initial publicly, the full name in the portal', async () => {
+    const actor = await admin();
+    const { t, event, players } = await setup('ROUND_ROBIN', 4);
+    const kid = players[0]!.profile;
+    await prisma.playerProfile.update({
+      where: { id: kid.id },
+      data: { dateOfBirth: new Date(Date.now() - 12 * 365 * 86_400_000) },
+    });
+    await generateDraw(actor, event.id, meta, seededRng(1));
+    await publishDraws(actor, event.id, true, meta);
+    await proposeTournamentSchedule(actor, t.id, {}, meta);
+    await publishSchedule(actor, t.id, true, meta);
+
+    const full = `${kid.firstName} ${kid.lastName}`;
+    const short = `${kid.firstName} ${kid.lastName.charAt(0).toUpperCase()}.`;
+    const names = (items: { a: string | null; b: string | null }[]) =>
+      items.flatMap((i) => [i.a, i.b]);
+    const pub = names((await publicSchedule(t.slug, 'nl')).items);
+    expect(pub).toContain(short);
+    expect(pub).not.toContain(full);
+    expect(names((await getSchedule(actor, t.id, 'nl')).scheduled)).toContain(full);
+    // Exports: short for the public, full for the organisers.
+    const anon = readXlsx((await scheduleXlsx(null, t.slug, 'nl')).bytes)!.flat();
+    expect(anon).toContain(short);
+    expect(readXlsx((await scheduleXlsx(actor, t.slug, 'nl')).bytes)!.flat()).toContain(full);
+  });
+});
+
 describe('desk check-in (D74)', () => {
   afterEach(() => vi.useRealTimers());
 

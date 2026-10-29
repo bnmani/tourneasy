@@ -13,6 +13,7 @@ import { z } from 'zod';
 import { writeAudit } from '../lib/audit';
 import { randomToken } from '../lib/crypto';
 import { AppError, validationError } from '../lib/errors';
+import { enforce, LIMITS } from '../lib/rate-limit';
 import type { RequestMeta } from '../lib/request-meta';
 import { parseInput } from '../lib/validation';
 import { looksLikeXlsx, readXlsx, toXlsx } from '../lib/xlsx';
@@ -518,7 +519,10 @@ export async function searchPlayersForEntry(
 ) {
   await assertCanManageTournament(actor, tournamentId);
   const q = query.trim().replace(/\s+/g, ' ').slice(0, 60);
-  if (q.length < 2) return [];
+  // At least 3 characters and a cap per person: searching is for finding a player, not for
+  // going through the whole player list (personal data, also of minors).
+  if (q.length < 3) return [];
+  await enforce(`entrysearch:${actor.userId}`, LIMITS.entrySearchPerUser);
   const t = await loadTournament(tournamentId);
   const event = t.events.find((e) => e.id === eventId);
   if (!event) return [];

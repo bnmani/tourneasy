@@ -27,7 +27,7 @@ import { parseInput } from '../lib/validation';
 import { appUrl } from '../lib/urls';
 import { enqueueEmails } from './notification-service';
 import { assertCanManageTournament } from './permissions';
-import { eventText, fullName } from './registration-service';
+import { eventText, fullName, publicName } from './registration-service';
 import type { Actor } from './session-service';
 import { emailLogo } from './logo-service';
 
@@ -53,6 +53,7 @@ const entrySelect = {
               firstName: true,
               lastNamePrefix: true,
               lastName: true,
+              dateOfBirth: true,
               club: { select: { name: true, shortName: true } },
             },
           },
@@ -122,9 +123,12 @@ export const matchSelect = {
 } satisfies Prisma.MatchSelect;
 export type MatchRow = Prisma.MatchGetPayload<{ select: typeof matchSelect }>;
 
-export const sideName = (entry: MatchRow['entryA']) =>
+/** "Anna de Vries / Bram Jansen"; on public pages under-16s are shortened (D83). */
+export const sideName = (entry: MatchRow['entryA'], publicView = false) =>
   entry?.registration
-    ? entry.registration.participants.map((p) => fullName(p.player)).join(' / ')
+    ? entry.registration.participants
+        .map((p) => (publicView ? publicName(p.player) : fullName(p.player)))
+        .join(' / ')
     : null;
 /** The side's club(s), once each: "BC Utrecht" or "BC Utrecht / Amstel" (exports, D79). */
 export const sideClub = (entry: MatchRow['entryA']) => {
@@ -628,6 +632,8 @@ function toItem(
   nums: Numbering,
   /** The tournament's first day (YYYY-MM-DD): check-ins count per day from there (D74). */
   firstDay?: string,
+  /** For public pages and dashboards: under-16s by first name and initial (D83). */
+  publicView = false,
 ) {
   const placeholder = (slot: 'A' | 'B') => {
     const feeder = nums.feeders.get(`${m.id}${slot}`);
@@ -643,8 +649,8 @@ function toItem(
     event: eventText(m.draw.event, locale),
     eventId: m.draw.event.id,
     round: roundLabel(m, locale),
-    a: sideName(m.entryA) ?? placeholder('A'),
-    b: sideName(m.entryB) ?? placeholder('B'),
+    a: sideName(m.entryA, publicView) ?? placeholder('A'),
+    b: sideName(m.entryB, publicView) ?? placeholder('B'),
     aClub: sideClub(m.entryA),
     bClub: sideClub(m.entryB),
     aEntryId: m.entryA?.id ?? null,
@@ -788,7 +794,7 @@ export async function publicSchedule(slug: string, locale: 'nl' | 'en') {
   if (!t) throw new AppError('notFound');
   if (!t.schedulePublishedAt) return { published: false as const, items: [], unplanned: [] };
   const [matches, feeders] = await Promise.all([tournamentMatches(t.id), numbering(t.id)]);
-  const item = (m: MatchRow) => toItem(m, locale, t.schedulePublishedAt, feeders);
+  const item = (m: MatchRow) => toItem(m, locale, t.schedulePublishedAt, feeders, undefined, true);
   return {
     published: true as const,
     items: matches.filter((m) => m.slot).map(item),
@@ -809,12 +815,14 @@ export async function scheduleExportItems(
   tournamentId: string,
   locale: 'nl' | 'en',
   publishedAt: Date | null,
+  /** Downloaded by someone who doesn't manage the tournament: public names (D83). */
+  publicView = false,
 ) {
   const [matches, feeders] = await Promise.all([
     tournamentMatches(tournamentId),
     numbering(tournamentId),
   ]);
-  return matches.map((m) => toItem(m, locale, publishedAt, feeders));
+  return matches.map((m) => toItem(m, locale, publishedAt, feeders, undefined, publicView));
 }
 
 const PLAYED = ['COMPLETED', 'WALKOVER', 'RETIRED'];
@@ -861,10 +869,14 @@ export async function matchesOfPlayers(
     },
   });
   const items = matches.map((m) => ({
-    ...toItem(m as unknown as MatchRow, locale, m.draw.event.tournament.schedulePublishedAt, {
-      numberOf: new Map(),
-      feeders: new Map(),
-    }),
+    ...toItem(
+      m as unknown as MatchRow,
+      locale,
+      m.draw.event.tournament.schedulePublishedAt,
+      { numberOf: new Map(), feeders: new Map() },
+      undefined,
+      true,
+    ),
     tournament: m.draw.event.tournament,
   }));
   // Postgres puts matches without a slot first in ascending order; they belong last.
@@ -933,7 +945,9 @@ export async function liveMatches(locale: 'nl' | 'en', slug?: string, now = new 
   const out = [];
   for (const t of tournaments) {
     const [matches, feeders] = await Promise.all([tournamentMatches(t.id), numbering(t.id)]);
-    const items = matches.map((m) => toItem(m, locale, t.schedulePublishedAt, feeders));
+    const items = matches.map((m) =>
+      toItem(m, locale, t.schedulePublishedAt, feeders, undefined, true),
+    );
     const onCourt = items.filter((i) => i.status === 'IN_PROGRESS' || i.status === 'CALLED');
     const next = items
       .filter((i) => i.status === 'SCHEDULED' && i.startsAt && i.endsAt! > now)

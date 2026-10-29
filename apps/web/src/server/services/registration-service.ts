@@ -10,6 +10,7 @@ import {
   ENTRY_TERMS_VERSION,
   entrySchema,
   isDoubles,
+  isMinor,
   pairEligibility,
   playerEligibility,
   tournamentPhase,
@@ -25,7 +26,7 @@ import { hashToken, randomToken } from '../lib/crypto';
 import { AppError, validationError } from '../lib/errors';
 import type { RequestMeta } from '../lib/request-meta';
 import { appUrl } from '../lib/urls';
-import { enforce } from '../lib/rate-limit';
+import { enforce, LIMITS } from '../lib/rate-limit';
 import { parseInput } from '../lib/validation';
 import { amountsDue, HOLD_MINUTES, paymentsEnabled, PROMOTION_HOURS } from '../payments/pricing';
 import { refundsForCancelledRegistration } from './refund-service';
@@ -62,6 +63,20 @@ export const fullName = (p: {
   lastNamePrefix: string | null;
   lastName: string;
 }) => [p.firstName, p.lastNamePrefix, p.lastName].filter(Boolean).join(' ');
+
+/**
+ * The name on public pages (D83): under-16s show as first name and initial ("Anna V."), so
+ * draws, schedules and results don't publish a child's full name. Portal pages use fullName.
+ */
+export const publicName = (p: {
+  firstName: string;
+  lastNamePrefix: string | null;
+  lastName: string;
+  dateOfBirth?: Date | null;
+}) =>
+  p.dateOfBirth && isMinor(p.dateOfBirth)
+    ? `${p.firstName} ${p.lastName.charAt(0).toUpperCase()}.`
+    : fullName(p);
 
 function asEligible(p: PlayerRow): EligiblePlayer {
   return {
@@ -347,6 +362,7 @@ export async function enterTournament(
 
   if (entered.size + planned.length > t.maxEventsPerPlayer) errors.events = 'maxEvents';
   if (Object.keys(errors).length > 0) throw validationError(errors);
+  for (const p of planned) if (p.partnerEmail) await limitInviteEmail(actor.userId, p.partnerEmail);
 
   if (data.phone && data.phone !== player.phone) {
     await prisma.playerProfile.update({ where: { id: player.id }, data: { phone: data.phone } });
@@ -682,6 +698,15 @@ export async function listMyRegistrations(actor: Actor, now = new Date()) {
 }
 
 /** Invite a (new) partner for one of my doubles entries that has none. */
+/**
+ * Each partner invite emails an address the player typed: at most 20 a day per player and
+ * 3 a day to the same address, so invites can't be used to spam people.
+ */
+async function limitInviteEmail(userId: string, email: string | null | undefined) {
+  await enforce(`invite:user:${userId}`, LIMITS.partnerInvitePerUser);
+  if (email) await enforce(`invite:to:${email.toLowerCase()}`, LIMITS.partnerInvitePerAddress);
+}
+
 export async function invitePartner(
   actor: Actor,
   registrationId: string,
@@ -735,6 +760,7 @@ export async function invitePartner(
     if ((await playerEntries(resolved.player.id, t.id)).has(r.event.id))
       throw validationError({ partner: 'partnerAlreadyEntered' });
   }
+  await limitInviteEmail(actor.userId, resolved.email);
   const token = randomToken();
   await prisma.$transaction(async (tx) => {
     await tx.partnerInvite.updateMany({

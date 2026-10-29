@@ -1153,7 +1153,7 @@
       "addedWaitlist": "Put on the waiting list (category full): {name} – {event}.",
       "change": "Change",
       "searchPlaceholder": "Search by name or member number",
-      "searchHint": "Type at least 2 letters.",
+      "searchHint": "Type at least 3 letters, or a member number.",
       "searching": "Searching…",
       "noResults": "No player found who may play in this category.",
       "newPlayer": "New player",

@@ -94,7 +94,7 @@ export default async function TournamentDrawsPage({ params, searchParams }: Prop
                 )}
               </h2>
             )}
-            {current && <DrawView draws={current.draws} />}
+            {current && <DrawView draws={current.draws} publicView />}
             <AutoRefresh seconds={60} />
           </>
         )}

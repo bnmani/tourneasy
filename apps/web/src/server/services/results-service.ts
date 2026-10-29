@@ -27,7 +27,7 @@ import type { RequestMeta } from '../lib/request-meta';
 import { parseInput } from '../lib/validation';
 import { advance, resolveByes } from './draw-service';
 import { assertCanManageTournament } from './permissions';
-import { fullName } from './registration-service';
+import { fullName, publicName } from './registration-service';
 import type { Actor } from './session-service';
 
 type Tx = Prisma.TransactionClient;
@@ -564,7 +564,11 @@ const podiumEntry = {
         participants: {
           where: { active: true },
           orderBy: { role: 'asc' },
-          select: { player: { select: { firstName: true, lastNamePrefix: true, lastName: true } } },
+          select: {
+            player: {
+              select: { firstName: true, lastNamePrefix: true, lastName: true, dateOfBirth: true },
+            },
+          },
         },
       },
     },
@@ -605,7 +609,10 @@ export async function eventPodium(eventId: string) {
       | null
       | undefined,
   ) =>
-    e?.registration ? e.registration.participants.map((p) => fullName(p.player)).join(' / ') : null;
+    // The podium is public: under-16s by first name and initial (D83).
+    e?.registration
+      ? e.registration.participants.map((p) => publicName(p.player)).join(' / ')
+      : null;
   const ko = draws.find((d) => d.type === 'KNOCKOUT' || d.type === 'DOUBLE_KNOCKOUT');
   if (ko) {
     const final =
@@ -675,7 +682,14 @@ export async function playerHistory(playerId: string, take = 30) {
                 where: { active: true },
                 select: {
                   playerId: true,
-                  player: { select: { firstName: true, lastNamePrefix: true, lastName: true } },
+                  player: {
+                    select: {
+                      firstName: true,
+                      lastNamePrefix: true,
+                      lastName: true,
+                      dateOfBirth: true,
+                    },
+                  },
                 },
               },
             },
@@ -722,7 +736,7 @@ export async function playerHistory(playerId: string, take = 30) {
       date: m.completedAt,
       event: m.draw.event,
       tournament: m.draw.event.tournament,
-      opponent: opp?.registration?.participants.map((p) => fullName(p.player)).join(' / ') ?? '—',
+      opponent: opp?.registration?.participants.map((p) => publicName(p.player)).join(' / ') ?? '—',
       won,
       walkover: m.status === 'WALKOVER',
       retired: m.status === 'RETIRED',

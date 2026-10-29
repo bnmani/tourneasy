@@ -233,7 +233,7 @@ function PlayerChooser({
     setQuery(value);
     setActive(-1);
     clearTimeout(timer.current);
-    if (value.trim().length < 2) {
+    if (value.trim().length < 3) {
       setResults([]);
       setOpen(false);
       return;
