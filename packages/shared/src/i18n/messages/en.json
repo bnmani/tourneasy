@@ -347,7 +347,12 @@
     "managedTitle": "Tournaments you manage",
     "managedAll": "All tournaments",
     "manage": "Manage",
-    "desk": "Match desk"
+    "desk": "Match desk",
+    "scheduleOut": "The schedule is online. Your matches with time and court are above under \"My matches\".",
+    "scheduleSoon": "The draws are online; the schedule with times follows. You will get an email when it is ready.",
+    "scheduleLater": "Draws and schedule follow after entries close. You will get an email when the schedule is ready.",
+    "viewDraws": "View draws",
+    "viewSchedule": "View schedule"
   },
   "Profile": {
     "title": "My profile",

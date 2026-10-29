@@ -347,7 +347,12 @@
     "managedTitle": "Toernooien die je beheert",
     "managedAll": "Alle toernooien",
     "manage": "Beheren",
-    "desk": "Wedstrijdtafel"
+    "desk": "Wedstrijdtafel",
+    "scheduleOut": "De planning staat online. Je wedstrijden met tijd en baan zie je hierboven onder \"Mijn wedstrijden\".",
+    "scheduleSoon": "De schema's staan online; de planning met tijden volgt. Je krijgt een e-mail zodra die klaar is.",
+    "scheduleLater": "Schema's en planning volgen na het sluiten van de inschrijving. Je krijgt een e-mail zodra de planning klaar is.",
+    "viewDraws": "Schema's bekijken",
+    "viewSchedule": "Planning bekijken"
   },
   "Profile": {
     "title": "Mijn profiel",

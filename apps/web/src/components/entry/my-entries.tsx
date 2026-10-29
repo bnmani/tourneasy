@@ -105,6 +105,7 @@ export async function MyEntries({
                 {formatDayRange(day(tournament.startsOn), day(tournament.endsOn), locale)}
               </span>
             </header>
+            <ScheduleBar group={group} upcoming={showActions} />
             {showActions && (
               <PaymentBar group={group} locale={locale} autoOpen={payFor === tournament.slug} />
             )}
@@ -210,6 +211,39 @@ export async function MyEntries({
           </section>
         );
       })}
+    </div>
+  );
+}
+
+/**
+ * Where the schedule is: a line on what's out (draws, schedule) and links to the tournament's
+ * draws and schedule pages, so players always find their matches from the dashboard.
+ */
+async function ScheduleBar({ group, upcoming }: { group: Entry[]; upcoming: boolean }) {
+  const t = await getTranslations('Dashboard');
+  const tournament = group[0]!.tournament;
+  const drawsOut = group.some((e) => e.drawPublished);
+  const status = tournament.schedulePublished
+    ? t('scheduleOut')
+    : drawsOut
+      ? t('scheduleSoon')
+      : t('scheduleLater');
+  const link = 'font-medium text-primary underline-offset-4 hover:underline';
+  return (
+    <div className="flex flex-col gap-2 border-b px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between">
+      {upcoming && <p className="text-muted-foreground">{status}</p>}
+      <p className="flex flex-wrap gap-x-4 gap-y-1 sm:ml-auto">
+        {drawsOut && (
+          <Link href={`/tournaments/${tournament.slug}/draws`} className={link}>
+            {t('viewDraws')}
+          </Link>
+        )}
+        {tournament.schedulePublished && (
+          <Link href={`/tournaments/${tournament.slug}/schedule`} className={link}>
+            {t('viewSchedule')}
+          </Link>
+        )}
+      </p>
     </div>
   );
 }
