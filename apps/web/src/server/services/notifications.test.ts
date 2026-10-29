@@ -116,8 +116,12 @@ describe('notifications (D62)', () => {
     await deliverQueued();
     const first = sentTo('p0@example.test');
     expect(first).toHaveLength(1);
-    expect(first[0]!.subject).toBe('Je wedstrijden voor Utrecht Open');
+    expect(first[0]!.subject).toBe('Je planning voor Utrecht Open: 3 wedstrijden');
+    // All three matches, both sides in full, the first one and when to report (D85).
     expect(first[0]!.text.match(/tegen /g)).toHaveLength(3);
+    expect(first[0]!.text).toContain('Je eerste wedstrijd: Zaterdag 13 maart');
+    expect(first[0]!.text).toMatch(/Meld je uiterlijk \d{2}:\d{2} bij de wedstrijdtafel/);
+    expect(first[0]!.html).toContain('Je eerste wedstrijd');
     expect(first[0]!.headers).toBeUndefined(); // essential: no unsubscribe
 
     await deliverQueued(); // nothing new
@@ -128,9 +132,30 @@ describe('notifications (D62)', () => {
     await moveMatch(actor, m.id, { courtId: m.court!.id, startsAt: '2027-03-13T17:00' }, meta);
     await deliverQueued();
     const changed = sentTo('p0@example.test').at(-1)!;
-    expect(changed.subject).toBe('Gewijzigd: je wedstrijden voor Utrecht Open');
+    expect(changed.subject).toBe('Gewijzigd: je planning voor Utrecht Open');
+    expect(changed.text).toContain('[Gewijzigd]');
     // Only the two players of that match get the change.
     expect(outbox.filter((x) => x.subject.startsWith('Gewijzigd'))).toHaveLength(2);
+  });
+
+  it('emails an update when matches are planned after publishing (D85)', async () => {
+    const actor = await admin();
+    const { t, event } = await setup({
+      startsOn: new Date('2027-03-13'),
+      endsOn: new Date('2027-03-13'),
+    });
+    await generateDraw(actor, event.id, meta, seededRng(1));
+    await publishDraws(actor, event.id, true, meta);
+    await publishSchedule(actor, t.id, true, meta); // published while nothing is planned yet
+    await deliverQueued();
+    expect(outbox).toHaveLength(0);
+
+    await proposeTournamentSchedule(actor, t.id, {}, meta);
+    await deliverQueued();
+    const update = sentTo('p0@example.test');
+    expect(update).toHaveLength(1);
+    expect(update[0]!.subject).toBe('Gewijzigd: je planning voor Utrecht Open');
+    expect(update[0]!.text.match(/\[Nieuw\]/g)).toHaveLength(3);
   });
 
   it('sends a reminder two days before, once, with an unsubscribe link that works', async () => {

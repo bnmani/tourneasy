@@ -24,7 +24,8 @@ import { writeAudit } from '../lib/audit';
 import { AppError } from '../lib/errors';
 import type { RequestMeta } from '../lib/request-meta';
 import { parseInput } from '../lib/validation';
-import { appUrl } from '../lib/urls';
+import { appUrl, siteUrl } from '../lib/urls';
+import type { ScheduleDay } from '../email/templates';
 import { enqueueEmails } from './notification-service';
 import { assertCanManageTournament } from './permissions';
 import { eventText, fullName, publicName } from './registration-service';
@@ -303,6 +304,15 @@ export async function proposeTournamentSchedule(
     days,
     fixed,
   });
+  // Where these matches were before, to tell players what's new or moved (D85).
+  const before = new Map(
+    (
+      await prisma.courtSlot.findMany({
+        where: { tournamentId, matchId: { in: plan.map((p) => p.id) } },
+        select: { matchId: true, courtId: true, startsAt: true },
+      })
+    ).map((x) => [x.matchId!, x]),
+  );
   await prisma.$transaction(
     async (tx) => {
       await tx.courtSlot.deleteMany({
@@ -329,6 +339,17 @@ export async function proposeTournamentSchedule(
     },
     { timeout: 60_000 },
   );
+  // Planned after publishing: the players of new or moved matches get an update.
+  if (t.schedulePublishedAt) {
+    const marks = new Map<string, 'new' | 'changed'>();
+    for (const slot of result.slots) {
+      const old = before.get(slot.matchId);
+      if (!old) marks.set(slot.matchId, 'new');
+      else if (old.courtId !== slot.court || old.startsAt.getTime() !== slot.start.getTime())
+        marks.set(slot.matchId, 'changed');
+    }
+    await notifySchedule(tournamentId, { changed: true, key: `plan:${Date.now()}`, marks });
+  }
   return { scheduled: result.slots.length, unscheduled: result.unscheduled.length };
 }
 
@@ -395,7 +416,7 @@ export async function moveMatch(actor: Actor, matchId: string, input: unknown, m
   await notifySchedule(m.tournamentId, {
     changed: true,
     key: `move:${matchId}:${start.toISOString()}`,
-    matchIds: [matchId],
+    marks: new Map([[matchId, 'changed']]),
   });
 }
 
@@ -448,7 +469,10 @@ export async function swapMatches(actor: Actor, input: unknown, meta: RequestMet
   await notifySchedule(ma.tournamentId, {
     changed: true,
     key: `swap:${a}:${b}:${Date.now()}`,
-    matchIds: [a, b],
+    marks: new Map([
+      [a, 'changed'],
+      [b, 'changed'],
+    ]),
   });
 }
 
@@ -503,23 +527,38 @@ export async function publishSchedule(
 }
 
 /**
- * Emails players their matches (D62): everyone when the schedule is published, or only the
- * players of the given matches when one is moved after publishing.
+ * Emails players their matches (D62, D85): everyone when the schedule is published, or, after
+ * that, only the players of the matches in `marks` (moved, swapped, or planned later), with
+ * those matches marked as new or changed. Each email lists all of the player's planned
+ * matches per day, both sides in full, with the first match, the venue and when to report.
  */
 async function notifySchedule(
   tournamentId: string,
-  opts: { changed: boolean; key: string; matchIds?: string[] },
+  opts: { changed: boolean; key: string; marks?: Map<string, 'new' | 'changed'> },
 ) {
   const t = await prisma.tournament.findUniqueOrThrow({
     where: { id: tournamentId },
-    select: { id: true, name: true, slug: true, schedulePublishedAt: true },
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      schedulePublishedAt: true,
+      venue: { select: { name: true, street: true, houseNumber: true, city: true } },
+    },
   });
   if (!t.schedulePublishedAt) return;
+  if (opts.marks && opts.marks.size === 0) return;
   const [matches, nums] = await Promise.all([
     tournamentMatches(tournamentId),
     numbering(tournamentId),
   ]);
-  const slotted = matches.filter((m) => m.slot);
+  const slotted = matches
+    .filter((m) => m.slot)
+    .sort(
+      (p, q) =>
+        p.slot!.startsAt.getTime() - q.slot!.startsAt.getTime() ||
+        p.slot!.court.number - q.slot!.court.number,
+    );
   // Player → their account (players without an account get no email).
   const accountOf = new Map<string, { userId: string; firstName: string }>();
   for (const m of slotted) {
@@ -530,30 +569,61 @@ async function notifySchedule(
       }
     }
   }
+  const marks = opts.marks;
   const targets = new Set(
-    (opts.matchIds ? slotted.filter((m) => opts.matchIds!.includes(m.id)) : slotted).flatMap(
-      (m) => [...sidePlayers(m.entryA), ...sidePlayers(m.entryB)],
-    ),
+    (marks ? slotted.filter((m) => marks.has(m.id)) : slotted).flatMap((m) => [
+      ...sidePlayers(m.entryA),
+      ...sidePlayers(m.entryB),
+    ]),
   );
-  const items = {
-    nl: slotted.map((m) => toItem(m, 'nl', null, nums)),
-    en: slotted.map((m) => toItem(m, 'en', null, nums)),
-  };
-  const lines = (playerId: string, locale: 'nl' | 'en') =>
-    items[locale]
-      .filter((i) => i.players.includes(playerId))
-      .map((i) => {
-        const mineA = slotted
-          .find((m) => m.id === i.id)!
-          .entryA?.registration?.participants.some((p) => p.player.id === playerId);
-        const opponent = (mineA ? i.b : i.a) ?? '—';
-        return [
-          `${formatDate(i.startsAt!, locale)} ${formatTime(i.startsAt!, locale)}`,
-          locale === 'nl' ? `baan ${i.court!.number}` : `court ${i.court!.number}`,
-          `${i.event} · ${i.round}`,
-          `${locale === 'nl' ? 'tegen' : 'vs'} ${opponent}`,
-        ].join(' · ');
+  const venue = t.venue
+    ? `${t.venue.name}, ${t.venue.street} ${t.venue.houseNumber}, ${t.venue.city}`
+    : null;
+
+  const plan = (playerId: string, locale: 'nl' | 'en') => {
+    const court = (c: { number: number; name: string | null }) =>
+      c.name ?? messages[locale].Email.scheduleCourt.replace('{number}', String(c.number));
+    const dayLabel = (d: Date) => {
+      const text = formatDate(d, locale);
+      return text.charAt(0).toUpperCase() + text.slice(1);
+    };
+    const mine = slotted.filter(
+      (m) => sidePlayers(m.entryA).includes(playerId) || sidePlayers(m.entryB).includes(playerId),
+    );
+    const days: ScheduleDay[] = [];
+    for (const m of mine) {
+      const i = toItem(m, locale, null, nums);
+      const onA = sidePlayers(m.entryA).includes(playerId);
+      const label = dayLabel(m.slot!.startsAt);
+      let day = days.at(-1);
+      if (day?.label !== label) days.push((day = { label, matches: [] }));
+      day.matches.push({
+        time: formatTime(m.slot!.startsAt, locale),
+        court: court(m.slot!.court),
+        event: i.event,
+        round: i.round,
+        number: i.number,
+        mine: (onA ? i.a : i.b) ?? '—',
+        other: (onA ? i.b : i.a) ?? '—',
+        ...(marks?.has(m.id) ? { mark: marks.get(m.id) } : {}),
       });
+    }
+    const firstMatch = mine[0];
+    return {
+      days,
+      count: mine.length,
+      first: firstMatch
+        ? {
+            when: `${dayLabel(firstMatch.slot!.startsAt)} · ${formatTime(firstMatch.slot!.startsAt, locale)}`,
+            court: court(firstMatch.slot!.court),
+          }
+        : null,
+      // Report to the desk half an hour before the first match.
+      checkInBy: firstMatch
+        ? formatTime(new Date(firstMatch.slot!.startsAt.getTime() - 30 * 60_000), locale)
+        : null,
+    };
+  };
   const logo = await emailLogo(t.id, t.name);
   await enqueueEmails(
     [...targets]
@@ -571,8 +641,11 @@ async function notifySchedule(
             name: account.firstName,
             tournament: t.name,
             changed: opts.changed,
-            matches: lines(playerId, locale),
-            url: appUrl(locale, `/tournaments/${t.slug}/schedule`),
+            ...plan(playerId, locale),
+            venue,
+            url: appUrl(locale, '/account?tab=schedule'),
+            scheduleUrl: appUrl(locale, `/tournaments/${t.slug}/schedule`),
+            pdfUrl: siteUrl(`/api/v1/tournaments/${t.slug}/schedule.pdf?lang=${locale}`),
           }),
         };
       }),

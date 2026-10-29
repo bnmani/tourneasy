@@ -63,8 +63,15 @@ export const EMAIL_TEMPLATE_KEYS: Record<EmailTemplateKind, readonly string[]> =
     'scheduleBody',
     'scheduleChangedSubject',
     'scheduleChangedBody',
+    'scheduleFirst',
+    'scheduleCheckIn',
+    'scheduleVs',
+    'scheduleNew',
+    'scheduleChangedMark',
     'scheduleNote',
     'scheduleButton',
+    'scheduleAll',
+    'schedulePdf',
   ],
   tournamentReminder: [
     'reminderSubject',
@@ -152,17 +159,42 @@ export function sampleTemplate(kind: EmailTemplateKind, locale: AppLocale, url: 
         orderNumber: 'TO-2026-0042',
         url,
       };
-    case 'schedule':
+    case 'schedule': {
+      const day = nl ? 'Zaterdag 13 maart 2027' : 'Saturday 13 March 2027';
+      const court = (n: number) => (nl ? `Baan ${n}` : `Court ${n}`);
+      const pair = nl ? 'Poule A · ronde' : 'Group A · round';
       return {
         kind,
         name,
         tournament,
         changed: false,
-        matches: [
-          `${nl ? 'za 13 mrt' : 'Sat 13 Mar'} 10:30 · ${nl ? 'baan' : 'court'} 3 · ${event} · ${nl ? 'Poule A · ronde 1' : 'Group A · round 1'} · ${nl ? 'tegen' : 'vs'} Bos / Visser`,
+        count: 3,
+        first: { when: `${day} · 10:30`, court: court(3) },
+        checkInBy: '10:00',
+        venue: 'Sporthal De Shuttle, Sportlaan 1, Utrecht',
+        days: [
+          {
+            label: day,
+            matches: [
+              ['10:30', 3, 1, 'Bos / Visser'],
+              ['12:00', 1, 2, 'De Jong / Smit'],
+              ['14:15', 4, 3, 'Mulder / Peters'],
+            ].map(([time, c, round, other]) => ({
+              time: time as string,
+              court: court(c as number),
+              event,
+              round: `${pair} ${round}`,
+              number: (round as number) * 4,
+              mine: 'Sanne de Vries / Emma Mulder',
+              other: other as string,
+            })),
+          },
         ],
         url,
+        scheduleUrl: url,
+        pdfUrl: url,
       };
+    }
     case 'tournamentReminder':
       return {
         kind,
