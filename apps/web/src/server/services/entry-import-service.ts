@@ -17,7 +17,7 @@ import type { RequestMeta } from '../lib/request-meta';
 import { parseInput } from '../lib/validation';
 import { looksLikeXlsx, readXlsx, toXlsx } from '../lib/xlsx';
 import { assertCanManageTournament } from './permissions';
-import { resolvePlayer, type PlayerSpec } from './player-resolve';
+import { namesakes, resolvePlayer, type PlayerSpec } from './player-resolve';
 import {
   ACTIVE,
   activeCounts,
@@ -444,6 +444,8 @@ const addEntrySchema = z.object({
   eventId: z.string().uuid(),
   player: pickSchema,
   partner: pickSchema.optional(),
+  /** The organiser saw the possible duplicates and still wants new players (D82). */
+  allowNew: z.boolean().default(false),
 });
 
 /** Adds one entry (player or pair) by hand; new players are created on the fly. */
@@ -462,6 +464,15 @@ export async function addEntryAsOrganiser(
     throw validationError({ partner: 'partnerRequired' });
   const spec = (p: z.infer<typeof pickSchema>): PlayerSpec =>
     'memberNumber' in p ? { memberNumber: p.memberNumber } : { ...p.new };
+  // A new player with the name of an existing one: ask first (D82).
+  if (!data.allowNew) {
+    const duplicates = {
+      player: 'new' in data.player ? await namesakes(spec(data.player)) : [],
+      partner: data.partner && 'new' in data.partner ? await namesakes(spec(data.partner)) : [],
+    };
+    if (duplicates.player.length || duplicates.partner.length)
+      throw new AppError('possibleDuplicate', { duplicates });
+  }
   const p1 = await resolvePlayer(spec(data.player), { create: true });
   if (!p1.ok) throw validationError({ [`player.${p1.field}`]: p1.error });
   const p2 = data.partner ? await resolvePlayer(spec(data.partner), { create: true }) : null;

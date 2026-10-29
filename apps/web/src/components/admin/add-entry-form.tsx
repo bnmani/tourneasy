@@ -41,6 +41,11 @@ export function AddEntryForm({
   );
   const [eventId, setEventId] = useState(events[0]?.id ?? '');
   const [player, setPlayer] = useState<EntryPlayerOption | null>(null);
+  // An existing player picked from the duplicate warning (D82), per side.
+  const [presets, setPresets] = useState<{
+    player?: EntryPlayerOption;
+    partner?: EntryPlayerOption;
+  }>({});
   const event = events.find((e) => e.id === eventId);
   // A fresh pair of fields after each saved entry.
   const round = state.added?.count ?? 0;
@@ -48,7 +53,21 @@ export function AddEntryForm({
   if (round !== seenRound) {
     setSeenRound(round);
     setPlayer(null);
+    setPresets({});
   }
+  // React resets the form after every answer; a new version redraws the fields with what was
+  // typed (or chosen), so an error or a duplicate warning doesn't wipe them.
+  const [seenState, setSeenState] = useState(state);
+  const [version, setVersion] = useState(0);
+  if (state !== seenState) {
+    setSeenState(state);
+    setVersion((v) => v + 1);
+  }
+  const pickExisting = (side: 'player' | 'partner', option: EntryPlayerOption) => {
+    setPresets((p) => ({ ...p, [side]: option }));
+    if (side === 'player') setPlayer(option);
+  };
+  const duplicates = state.duplicates;
   const fieldError = (key: string) => {
     const code = Object.entries(state.fields ?? {}).find(
       ([k]) => k === key || k.startsWith(`${key}.`),
@@ -73,7 +92,7 @@ export function AddEntryForm({
           // React resets the form after each save, which puts the select back on its first
           // option while the state still holds the chosen one; a new element per round keeps
           // the screen and the form in step.
-          key={`event-${round}`}
+          key={`event-${version}`}
           name="eventId"
           value={eventId}
           onChange={(e) => {
@@ -91,8 +110,11 @@ export function AddEntryForm({
       </label>
       <div className={cn('grid gap-4', event?.doubles && 'lg:grid-cols-2')}>
         <PlayerChooser
-          key={`p-${eventId}-${round}`}
+          key={`p-${eventId}-${round}-${presets.player?.memberNumber ?? ''}`}
           prefix="player"
+          preset={presets.player}
+          values={state.values}
+          version={version}
           label={event?.doubles ? t('player1') : t('player')}
           tournamentId={tournamentId}
           eventId={eventId}
@@ -101,8 +123,11 @@ export function AddEntryForm({
         />
         {event?.doubles && (
           <PlayerChooser
-            key={`q-${eventId}-${round}-${player?.memberNumber ?? ''}`}
+            key={`q-${eventId}-${round}-${player?.memberNumber ?? ''}-${presets.partner?.memberNumber ?? ''}`}
             prefix="partner"
+            preset={presets.partner}
+            values={state.values}
+            version={version}
             label={t('player2')}
             tournamentId={tournamentId}
             eventId={eventId}
@@ -111,6 +136,44 @@ export function AddEntryForm({
           />
         )}
       </div>
+      {duplicates && (duplicates.player.length > 0 || duplicates.partner.length > 0) && (
+        <div
+          role="alert"
+          className="space-y-3 rounded-md border border-amber-500/60 bg-amber-500/10 p-4 text-sm"
+        >
+          <p className="font-semibold">{t('duplicateTitle')}</p>
+          {(['player', 'partner'] as const).map((side) =>
+            duplicates[side].length === 0 || presets[side] ? null : (
+              <ul key={side} className="space-y-2">
+                {duplicates[side].map((d) => (
+                  <li key={d.memberNumber} className="flex flex-wrap items-center gap-3">
+                    <span>
+                      <span className="font-medium">{d.name}</span>{' '}
+                      <span className="text-muted-foreground">
+                        {[d.club, d.memberNumber, t('bornIn', { year: d.born })]
+                          .filter(Boolean)
+                          .join(' · ')}
+                      </span>
+                    </span>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => pickExisting(side, d)}
+                    >
+                      {t('useExisting')}
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            ),
+          )}
+          <p className="text-muted-foreground">{t('duplicateHint')}</p>
+          <Button type="submit" name="allowNew" value="1" size="sm" variant="secondary">
+            {t('addAnyway')}
+          </Button>
+        </div>
+      )}
       <SubmitButton>{t('submit')}</SubmitButton>
     </form>
   );
@@ -124,7 +187,14 @@ function PlayerChooser({
   partnerOf,
   onChoose,
   error,
+  preset,
+  values,
+  version,
 }: {
+  preset?: EntryPlayerOption;
+  /** What was submitted last, to fill the new-player fields again after a reset. */
+  values?: Record<string, string | string[]>;
+  version: number;
   prefix: 'player' | 'partner';
   label: string;
   tournamentId: string;
@@ -136,12 +206,18 @@ function PlayerChooser({
   const t = useTranslations('Admin.addEntry');
   const tg = useTranslations('Genders');
   const id = useId();
-  const [mode, setMode] = useState<'search' | 'new'>('search');
+  const [mode, setMode] = useState<'search' | 'new'>(
+    !preset && values?.[`${prefix}.mode`] === 'new' ? 'new' : 'search',
+  );
+  const typed = (k: string) => {
+    const v = values?.[`${prefix}.new.${k}`];
+    return typeof v === 'string' ? v : undefined;
+  };
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<EntryPlayerOption[]>([]);
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(-1);
-  const [chosen, setChosen] = useState<EntryPlayerOption | null>(null);
+  const [chosen, setChosen] = useState<EntryPlayerOption | null>(preset ?? null);
   const [pending, startTransition] = useTransition();
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
   useEffect(() => () => clearTimeout(timer.current), []);
@@ -189,10 +265,11 @@ function PlayerChooser({
           </Button>
         </div>
       ) : mode === 'new' ? (
-        <div className="space-y-2">
+        <div key={`new-${version}`} className="space-y-2">
           <div className="grid gap-2 sm:grid-cols-[1fr_5rem_1fr]">
             <input
               name={`${prefix}.new.firstName`}
+              defaultValue={typed('firstName')}
               placeholder={t('firstName')}
               aria-label={t('firstName')}
               className={inputClass}
@@ -200,12 +277,14 @@ function PlayerChooser({
             />
             <input
               name={`${prefix}.new.lastNamePrefix`}
+              defaultValue={typed('lastNamePrefix')}
               placeholder={t('prefix')}
               aria-label={t('prefix')}
               className={inputClass}
             />
             <input
               name={`${prefix}.new.lastName`}
+              defaultValue={typed('lastName')}
               placeholder={t('lastName')}
               aria-label={t('lastName')}
               className={inputClass}
@@ -216,7 +295,7 @@ function PlayerChooser({
             <select
               name={`${prefix}.new.gender`}
               aria-label={t('gender')}
-              defaultValue=""
+              defaultValue={typed('gender') ?? ''}
               className={inputClass}
               required
             >
@@ -229,6 +308,7 @@ function PlayerChooser({
             <input
               type="date"
               name={`${prefix}.new.dateOfBirth`}
+              defaultValue={typed('dateOfBirth')}
               aria-label={t('dateOfBirth')}
               className={inputClass}
               required
@@ -236,6 +316,7 @@ function PlayerChooser({
             <input
               type="email"
               name={`${prefix}.new.email`}
+              defaultValue={typed('email')}
               placeholder={t('emailOptional')}
               aria-label={t('emailOptional')}
               className={inputClass}

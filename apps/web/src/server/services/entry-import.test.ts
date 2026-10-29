@@ -266,4 +266,45 @@ describe('one-step import and add-entry screen (D63)', () => {
       ),
     ).rejects.toMatchObject({ details: { fields: { partner: 'partnerRequired' } } });
   });
+
+  it('warns before adding a new player with the name of an existing one (D82)', async () => {
+    const actor = await admin();
+    const { t, gd } = await setup();
+    const bram = await player({ firstName: 'Bram', lastName: 'Jansen', gender: 'MALE' });
+    // An existing Noor Peters, born 1999-02-02.
+    await player({
+      firstName: 'Noor',
+      lastName: 'Peters',
+      gender: 'FEMALE',
+      dateOfBirth: '1999-02-02',
+    });
+    const add = (dateOfBirth: string, allowNew = false) =>
+      addEntryAsOrganiser(
+        actor,
+        t.id,
+        {
+          eventId: gd.id,
+          player: { memberNumber: bram.profile.memberNumber },
+          partner: {
+            new: { firstName: 'noor', lastName: 'PETERS', gender: 'FEMALE', dateOfBirth },
+          },
+          allowNew,
+        },
+        meta,
+      );
+    const count = () =>
+      prisma.playerProfile.count({
+        where: { lastName: { equals: 'peters', mode: 'insensitive' } },
+      });
+
+    // Another date of birth: maybe a typo, maybe a namesake. Ask first.
+    await expect(add('1999-03-03')).rejects.toMatchObject({
+      code: 'possibleDuplicate',
+      details: { duplicates: { player: [], partner: [{ name: 'Noor Peters', born: 1999 }] } },
+    });
+    expect(await count()).toBe(1);
+    // "Add anyway" creates the namesake.
+    await add('1999-03-03', true);
+    expect(await count()).toBe(2);
+  });
 });

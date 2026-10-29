@@ -53,7 +53,8 @@ export type ErrorCode =
   | 'removeStaff'
   | 'lastOwner'
   | 'mfaRequired'
-  | 'mfaInvalid';
+  | 'mfaInvalid'
+  | 'possibleDuplicate';
 
 const HTTP_STATUS: Record<ErrorCode, number> = {
   validation: 422,
@@ -107,6 +108,7 @@ const HTTP_STATUS: Record<ErrorCode, number> = {
   lastOwner: 409,
   mfaRequired: 401,
   mfaInvalid: 401,
+  possibleDuplicate: 409,
 };
 
 export class AppError extends Error {

@@ -198,7 +198,8 @@
     "removeStaff": "The selection includes an admin or organiser. Take their role away first.",
     "lastOwner": "There must always be at least one owner.",
     "mfaRequired": "Enter the code from your authenticator app.",
-    "mfaInvalid": "That code is wrong or was already used. Try the next code."
+    "mfaInvalid": "That code is wrong or was already used. Try the next code.",
+    "possibleDuplicate": "A player with this name already exists. Pick the existing player or add a new one anyway."
   },
   "Auth": {
     "login": {
@@ -1160,7 +1161,12 @@
       "lastName": "Last name",
       "gender": "Gender",
       "dateOfBirth": "Date of birth",
-      "emailOptional": "Email (optional)"
+      "emailOptional": "Email (optional)",
+      "duplicateTitle": "A player with this name already exists. Do you mean one of these players?",
+      "bornIn": "born {year}",
+      "useExisting": "Use this player",
+      "duplicateHint": "Really someone else with the same name? Then add a new player anyway.",
+      "addAnyway": "Add as new player anyway"
     },
     "emailTemplates": {
       "title": "Email texts",

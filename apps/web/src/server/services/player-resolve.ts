@@ -50,6 +50,41 @@ const find = (where: object) =>
     select: playerSelect,
   });
 
+/**
+ * Existing players with the same name as a player about to be created (D82), to warn about a
+ * duplicate. None when one also has the same date of birth: resolvePlayer reuses that one.
+ */
+export async function namesakes(spec: PlayerSpec) {
+  const wanted = nameKey(spec.firstName, spec.lastNamePrefix, spec.lastName);
+  const lastName = spec.lastName?.trim();
+  if (!wanted || !lastName) return [];
+  const rows = await prisma.playerProfile.findMany({
+    where: {
+      deletedAt: null,
+      mergedIntoId: null,
+      lastName: { equals: lastName, mode: 'insensitive' },
+    },
+    select: {
+      memberNumber: true,
+      firstName: true,
+      lastNamePrefix: true,
+      lastName: true,
+      dateOfBirth: true,
+      club: { select: { name: true } },
+    },
+    take: 50,
+  });
+  const same = rows.filter((p) => nameKey(p.firstName, p.lastNamePrefix, p.lastName) === wanted);
+  const born = normaliseDate(spec.dateOfBirth);
+  if (born && same.some((p) => p.dateOfBirth.toISOString().slice(0, 10) === born)) return [];
+  return same.slice(0, 5).map((p) => ({
+    memberNumber: p.memberNumber,
+    name: [p.firstName, p.lastNamePrefix, p.lastName].filter(Boolean).join(' '),
+    club: p.club?.name ?? null,
+    born: p.dateOfBirth.getUTCFullYear(),
+  }));
+}
+
 /** Finds the player, or creates them when `create` is set and the details are complete. */
 export async function resolvePlayer(
   spec: PlayerSpec,

@@ -34,6 +34,8 @@ export async function searchPlayersForEntryAction(
 
 export type AddEntryState = FormState & {
   added?: { name: string; event: string; status: string; count: number };
+  /** Existing players with the name of a new one (D82): pick one, or add anyway. */
+  duplicates?: { player: EntryPlayerOption[]; partner: EntryPlayerOption[] };
 };
 
 /** One player picked from the list (member number) or new (details), as form fields. */
@@ -71,12 +73,21 @@ export async function addEntryAction(
     const result = await addEntryAsOrganiser(
       actor,
       tournamentId,
-      { eventId: formData.get('eventId'), player, partner: pick(formData, 'partner') },
+      {
+        eventId: formData.get('eventId'),
+        player,
+        partner: pick(formData, 'partner'),
+        allowNew: formData.get('allowNew') === '1',
+      },
       await currentRequestMeta(),
     );
     revalidatePath(`/${locale}/admin/tournaments/${tournamentId}/entries`);
     return { ok: true, added: { ...result, count: (prev.added?.count ?? 0) + 1 } };
   } catch (error) {
-    return { ...toFormState(error, formData), added: prev.added };
+    const duplicates =
+      isAppError(error) && error.code === 'possibleDuplicate'
+        ? (error.details.duplicates as AddEntryState['duplicates'])
+        : undefined;
+    return { ...toFormState(error, formData), added: prev.added, duplicates };
   }
 }

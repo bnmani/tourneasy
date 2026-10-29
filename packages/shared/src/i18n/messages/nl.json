@@ -198,7 +198,8 @@
     "removeStaff": "De selectie bevat een beheerder of organisator. Trek eerst hun rol in.",
     "lastOwner": "Er moet altijd minstens één eigenaar zijn.",
     "mfaRequired": "Vul de code uit je authenticator-app in.",
-    "mfaInvalid": "Die code klopt niet of is al gebruikt. Probeer de volgende code."
+    "mfaInvalid": "Die code klopt niet of is al gebruikt. Probeer de volgende code.",
+    "possibleDuplicate": "Er bestaat al een speler met deze naam. Kies de bestaande speler of voeg toch een nieuwe toe."
   },
   "Auth": {
     "login": {
@@ -1160,7 +1161,12 @@
       "lastName": "Achternaam",
       "gender": "Geslacht",
       "dateOfBirth": "Geboortedatum",
-      "emailOptional": "E-mail (optioneel)"
+      "emailOptional": "E-mail (optioneel)",
+      "duplicateTitle": "Er bestaat al een speler met deze naam. Bedoel je een van deze spelers?",
+      "bornIn": "geboren {year}",
+      "useExisting": "Deze speler gebruiken",
+      "duplicateHint": "Is het echt iemand anders (een naamgenoot)? Voeg dan toch een nieuwe speler toe.",
+      "addAnyway": "Toch als nieuwe speler toevoegen"
     },
     "emailTemplates": {
       "title": "E-mailteksten",
