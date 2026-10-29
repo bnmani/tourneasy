@@ -92,6 +92,7 @@ async function loadTournament(tournamentId: string) {
       name: true,
       startsOn: true,
       maxParticipants: true,
+      maxEventsPerPlayer: true,
       partnerPaymentMode: true,
       events: { where: { deletedAt: null }, select: eventSelect, orderBy: { sortOrder: 'asc' } },
     },
@@ -138,10 +139,14 @@ async function entryProblem(
     ].length > 0
   )
     return { field: 'partner', error: 'partnerIneligible' };
-  if ((await playerEntries(player.id, t.id)).has(event.id))
-    return { field: 'player', error: 'alreadyEntered' };
-  if (partner && (await playerEntries(partner.id, t.id)).has(event.id))
-    return { field: 'partner', error: 'partnerAlreadyEntered' };
+  const mine = await playerEntries(player.id, t.id);
+  if (mine.has(event.id)) return { field: 'player', error: 'alreadyEntered' };
+  const theirs = partner ? await playerEntries(partner.id, t.id) : null;
+  if (theirs?.has(event.id)) return { field: 'partner', error: 'partnerAlreadyEntered' };
+  // The tournament's "maximum categories per player" holds for entries by organisers too.
+  if (mine.size >= t.maxEventsPerPlayer) return { field: 'player', error: 'playerMaxEvents' };
+  if (theirs && theirs.size >= t.maxEventsPerPlayer)
+    return { field: 'partner', error: 'partnerMaxEvents' };
   return null;
 }
 

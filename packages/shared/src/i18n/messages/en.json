@@ -199,7 +199,9 @@
     "lastOwner": "There must always be at least one owner.",
     "mfaRequired": "Enter the code from your authenticator app.",
     "mfaInvalid": "That code is wrong or was already used. Try the next code.",
-    "possibleDuplicate": "A player with this name already exists. Pick the existing player or add a new one anyway."
+    "possibleDuplicate": "A player with this name already exists. Pick the existing player or add a new one anyway.",
+    "playerMaxEvents": "This player is already in the maximum number of categories for this tournament (see Settings → Capacity).",
+    "partnerMaxEvents": "The partner is already in the maximum number of categories for this tournament (see Settings → Capacity)."
   },
   "Auth": {
     "login": {

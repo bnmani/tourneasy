@@ -63,6 +63,8 @@ describe('importing participants', () => {
 
   it('enters players and pairs, waitlists when full and reports bad rows', async () => {
     const { t, de, gd } = await setup();
+    // Two categories per player here; the limit itself has its own test.
+    await prisma.tournament.update({ where: { id: t.id }, data: { maxEventsPerPlayer: 2 } });
     const admin = await player({}, Role.ADMIN);
     const [a, b, c] = [await player(), await player(), await player()];
     const bram = await player({ gender: 'MALE' });
@@ -265,6 +267,44 @@ describe('one-step import and add-entry screen (D63)', () => {
         meta,
       ),
     ).rejects.toMatchObject({ details: { fields: { partner: 'partnerRequired' } } });
+  });
+
+  it("keeps to the tournament's maximum categories per player", async () => {
+    const actor = await admin();
+    const { t, de, gd } = await setup(); // at most 1 category per player
+    const anna = await player();
+    const bram = await player({ gender: 'MALE' });
+    await addEntryAsOrganiser(
+      actor,
+      t.id,
+      { eventId: de.id, player: { memberNumber: anna.profile.memberNumber } },
+      meta,
+    );
+    await expect(
+      addEntryAsOrganiser(
+        actor,
+        t.id,
+        {
+          eventId: gd.id,
+          player: { memberNumber: anna.profile.memberNumber },
+          partner: { memberNumber: bram.profile.memberNumber },
+        },
+        meta,
+      ),
+    ).rejects.toMatchObject({ details: { fields: { player: 'playerMaxEvents' } } });
+    // The same goes for the partner.
+    await expect(
+      addEntryAsOrganiser(
+        actor,
+        t.id,
+        {
+          eventId: gd.id,
+          player: { memberNumber: bram.profile.memberNumber },
+          partner: { memberNumber: anna.profile.memberNumber },
+        },
+        meta,
+      ),
+    ).rejects.toMatchObject({ details: { fields: { partner: 'partnerMaxEvents' } } });
   });
 
   it('warns before adding a new player with the name of an existing one (D82)', async () => {

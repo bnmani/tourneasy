@@ -199,7 +199,9 @@
     "lastOwner": "Er moet altijd minstens één eigenaar zijn.",
     "mfaRequired": "Vul de code uit je authenticator-app in.",
     "mfaInvalid": "Die code klopt niet of is al gebruikt. Probeer de volgende code.",
-    "possibleDuplicate": "Er bestaat al een speler met deze naam. Kies de bestaande speler of voeg toch een nieuwe toe."
+    "possibleDuplicate": "Er bestaat al een speler met deze naam. Kies de bestaande speler of voeg toch een nieuwe toe.",
+    "playerMaxEvents": "Deze speler doet al mee aan het maximum aantal onderdelen van dit toernooi (zie Instellingen → Capaciteit).",
+    "partnerMaxEvents": "De partner doet al mee aan het maximum aantal onderdelen van dit toernooi (zie Instellingen → Capaciteit)."
   },
   "Auth": {
     "login": {
