@@ -2,6 +2,7 @@ import { managedTournaments } from '@/server/services/tournament-service';
 import { formatDayRange } from '@tourneasy/shared';
 import type { AppLocale } from '@tourneasy/shared/i18n';
 import type { Metadata } from 'next';
+import { ChevronDown } from 'lucide-react';
 import { getTranslations } from 'next-intl/server';
 import { MyEntries, MyInvites } from '@/components/entry/my-entries';
 import { FormError, FormSuccess } from '@/components/forms/fields';
@@ -89,51 +90,56 @@ export default async function DashboardPage({
       </header>
 
       {managed.length > 0 && (
-        <section
-          aria-labelledby="managed-title"
-          className="space-y-3 rounded-lg border border-primary/30 bg-secondary/40 p-4 sm:p-5"
-        >
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <h2 id="managed-title" className="text-lg font-semibold">
-              {t('managedTitle')}
+        // Closed by default, so on a phone the dashboard itself comes first.
+        <details className="group rounded-lg border border-primary/30 bg-secondary/40">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-2 p-4 sm:p-5 [&::-webkit-details-marker]:hidden">
+            <h2 className="text-lg font-semibold">
+              {t('managedTitle')}{' '}
+              <span className="font-normal text-muted-foreground">({managed.length})</span>
             </h2>
+            <ChevronDown
+              aria-hidden="true"
+              className="size-5 shrink-0 transition-transform group-open:rotate-180"
+            />
+          </summary>
+          <div className="space-y-3 px-4 pb-4 sm:px-5 sm:pb-5">
             <Link
               href="/admin/tournaments"
-              className="text-sm font-medium underline-offset-4 hover:underline"
+              className="inline-block text-sm font-medium underline-offset-4 hover:underline"
             >
               {t('managedAll')}
             </Link>
+            <ul className="grid gap-2 sm:grid-cols-2">
+              {managed.map((m) => (
+                <li
+                  key={m.id}
+                  className="flex flex-wrap items-center justify-between gap-2 rounded-md border bg-card p-3"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate font-medium">{m.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {formatDayRange(
+                        m.startsOn.toISOString().slice(0, 10),
+                        m.endsOn.toISOString().slice(0, 10),
+                        locale,
+                      )}
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button asChild size="sm">
+                      <Link href={`/admin/tournaments/${m.id}`}>{t('manage')}</Link>
+                    </Button>
+                    <Button asChild size="sm" variant="outline">
+                      <Link href={`/admin/tournaments/${m.id}/matches?view=checkin`}>
+                        {t('desk')}
+                      </Link>
+                    </Button>
+                  </div>
+                </li>
+              ))}
+            </ul>
           </div>
-          <ul className="grid gap-2 sm:grid-cols-2">
-            {managed.map((m) => (
-              <li
-                key={m.id}
-                className="flex flex-wrap items-center justify-between gap-2 rounded-md border bg-card p-3"
-              >
-                <div className="min-w-0">
-                  <p className="truncate font-medium">{m.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {formatDayRange(
-                      m.startsOn.toISOString().slice(0, 10),
-                      m.endsOn.toISOString().slice(0, 10),
-                      locale,
-                    )}
-                  </p>
-                </div>
-                <div className="flex gap-2">
-                  <Button asChild size="sm">
-                    <Link href={`/admin/tournaments/${m.id}`}>{t('manage')}</Link>
-                  </Button>
-                  <Button asChild size="sm" variant="outline">
-                    <Link href={`/admin/tournaments/${m.id}/matches?view=checkin`}>
-                      {t('desk')}
-                    </Link>
-                  </Button>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </section>
+        </details>
       )}
 
       {/* Tabs as links: work without JavaScript and are shareable (?tab=…). */}
