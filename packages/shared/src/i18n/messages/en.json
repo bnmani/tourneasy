@@ -984,7 +984,9 @@
       "export": "Export",
       "exportPdf": "Schedule (PDF)",
       "exportXlsx": "Schedule (Excel)",
-      "exportCourts": "Per court (PDF)"
+      "exportCourts": "Per court (PDF)",
+      "playedUnplanned": "{count, plural, one {# match played without time or court} other {# matches played without time or court}}",
+      "playedUnplannedHint": "Played or in progress without a place in the planning. They are also in the exports and on the public schedule, under \"Without time or court\"."
     },
     "desk": {
       "title": "Match desk",
@@ -1859,7 +1861,9 @@
     "downloadPdf": "Schedule as PDF",
     "export": "Export",
     "exportPdf": "Schedule (PDF)",
-    "exportXlsx": "Schedule (Excel)"
+    "exportXlsx": "Schedule (Excel)",
+    "unplannedTitle": "Without time or court",
+    "unplannedIntro": "These matches don't have a fixed time and court (yet). Follow the match desk calls."
   },
   "Notifications": {
     "title": "Email preferences",

@@ -984,7 +984,9 @@
       "export": "Exporteren",
       "exportPdf": "Speelschema (PDF)",
       "exportXlsx": "Speelschema (Excel)",
-      "exportCourts": "Per baan (PDF)"
+      "exportCourts": "Per baan (PDF)",
+      "playedUnplanned": "{count, plural, one {# wedstrijd gespeeld zonder tijd en baan} other {# wedstrijden gespeeld zonder tijd en baan}}",
+      "playedUnplannedHint": "Gespeeld of bezig zonder plek in de planning. Ze staan ook in de exports en op de publieke planning, onder \"Zonder tijd en baan\"."
     },
     "desk": {
       "title": "Wedstrijdtafel",
@@ -1859,7 +1861,9 @@
     "downloadPdf": "Speelschema als PDF",
     "export": "Exporteren",
     "exportPdf": "Speelschema (PDF)",
-    "exportXlsx": "Speelschema (Excel)"
+    "exportXlsx": "Speelschema (Excel)",
+    "unplannedTitle": "Zonder tijd en baan",
+    "unplannedIntro": "Deze wedstrijden hebben (nog) geen vaste tijd en baan. Volg de oproep van de wedstrijdtafel."
   },
   "Notifications": {
     "title": "E-mailvoorkeuren",

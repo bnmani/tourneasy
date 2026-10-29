@@ -771,6 +771,10 @@ export async function getSchedule(actor: Actor, tournamentId: string, locale = a
     unscheduled: items.filter(
       (i) => !i.startsAt && (i.status === 'SCHEDULED' || i.status === 'CALLED'),
     ),
+    /** Played (or being played) without a time and court: shown, nothing left to plan. */
+    playedUnplanned: items.filter(
+      (i) => !i.startsAt && i.status !== 'SCHEDULED' && i.status !== 'CALLED',
+    ),
     conflictIds: new Set(conflicts.map((c) => c.matchId)),
   };
 }
@@ -782,13 +786,17 @@ export async function publicSchedule(slug: string, locale: 'nl' | 'en') {
     select: { id: true, schedulePublishedAt: true },
   });
   if (!t) throw new AppError('notFound');
-  if (!t.schedulePublishedAt) return { published: false as const, items: [] };
+  if (!t.schedulePublishedAt) return { published: false as const, items: [], unplanned: [] };
   const [matches, feeders] = await Promise.all([tournamentMatches(t.id), numbering(t.id)]);
+  const item = (m: MatchRow) => toItem(m, locale, t.schedulePublishedAt, feeders);
   return {
     published: true as const,
-    items: matches
-      .filter((m) => m.slot)
-      .map((m) => toItem(m, locale, t.schedulePublishedAt, feeders)),
+    items: matches.filter((m) => m.slot).map(item),
+    /** Without a time and court yet (or played without one), by match number. */
+    unplanned: matches
+      .filter((m) => !m.slot)
+      .map(item)
+      .sort((a, b) => a.number - b.number),
   };
 }
 

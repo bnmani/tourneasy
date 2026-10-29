@@ -40,13 +40,14 @@ export default async function SchedulePage({ params, searchParams }: Props) {
   if (!schedule) notFound();
   const query = await searchParams;
   const ts = await getTranslations('Admin.schedule');
-  const { tournament, courts, days, scheduled, unscheduled, conflictIds } = schedule;
+  const { tournament, courts, days, scheduled, unscheduled, playedUnplanned, conflictIds } =
+    schedule;
   const published = !!tournament.schedulePublishedAt;
   const byDay = days.map((d) => ({
     ...d,
     items: scheduled.filter((s) => utcToAmsterdamLocal(s.startsAt!).slice(0, 10) === d.date),
   }));
-  const allItems = [...scheduled, ...unscheduled];
+  const allItems = [...scheduled, ...unscheduled, ...playedUnplanned];
 
   return (
     <>
@@ -272,6 +273,19 @@ export default async function SchedulePage({ params, searchParams }: Props) {
             ))}
           </section>
         ),
+      )}
+      {playedUnplanned.length > 0 && (
+        <section className="space-y-2">
+          <h2 className="text-lg font-semibold">
+            {ts('playedUnplanned', { count: playedUnplanned.length })}
+          </h2>
+          <p className="text-sm text-muted-foreground">{ts('playedUnplannedHint')}</p>
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {playedUnplanned.map((item) => (
+              <MatchLine key={item.id} item={item} locale={locale} />
+            ))}
+          </div>
+        </section>
       )}
       {allItems.length === 0 && <p className="text-muted-foreground">{ts('empty')}</p>}
     </>

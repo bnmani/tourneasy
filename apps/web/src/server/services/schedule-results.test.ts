@@ -443,6 +443,10 @@ describe('schedule Excel and per court (D79)', () => {
     // one) is still exported: last in "Alles" and on a sheet of its own.
     const out = await prisma.match.findFirstOrThrow({ where: { slot: { isNot: null } } });
     await unscheduleMatch(actor, out.id, meta);
+    // The public schedule lists it too, under "without time or court".
+    const pub = await publicSchedule(t.slug, 'nl');
+    expect(pub.items).toHaveLength(5);
+    expect(pub.unplanned.map((i) => i.id)).toEqual([out.id]);
     const again = await scheduleXlsx(null, t.slug, 'nl');
     const all = readXlsx(again.bytes)!;
     expect(all.length - 1).toBe(6);

@@ -106,6 +106,17 @@ export default async function TournamentSchedulePage({ params }: Props) {
             );
           })
         )}
+        {schedule.published && schedule.unplanned.length > 0 && (
+          <section className="space-y-3">
+            <h2 className="font-heading text-xl font-semibold">{t('unplannedTitle')}</h2>
+            <p className="text-sm text-muted-foreground">{t('unplannedIntro')}</p>
+            <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+              {schedule.unplanned.map((item) => (
+                <MatchLine key={item.id} item={item} locale={locale} showTime={false} />
+              ))}
+            </div>
+          </section>
+        )}
       </div>
     </>
   );
