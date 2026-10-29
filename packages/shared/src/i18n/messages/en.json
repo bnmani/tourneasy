@@ -302,7 +302,7 @@
     "security": "Security",
     "privacy": "Privacy",
     "notifications": "Email preferences",
-    "mfaBanner": "You are an admin. Set up two-step login first to use the portal.",
+    "mfaBanner": "You manage tournaments on Tourneasy. Set up two-step login first to use the portal.",
     "mfaBannerLink": "Set up now"
   },
   "Dashboard": {
@@ -409,7 +409,7 @@
     "mfa": {
       "title": "Two-step login",
       "intro": "After your password, Tourneasy asks for a code from an authenticator app such as Google Authenticator, Microsoft Authenticator or 1Password. Nobody can log in with just your password.",
-      "required": "As an admin, two-step login is required. Set it up now; then you can use the portal again.",
+      "required": "Two-step login is required for organisers and admins. Set it up now; then you can use the portal again.",
       "on": "On since {date}.",
       "off": "Off.",
       "codesLeft": "{count, plural, =0 {No recovery codes left: make new ones.} one {# recovery code left.} other {# recovery codes left.}}",
@@ -429,7 +429,7 @@
       "code": "Code from the app",
       "password": "Your password",
       "disable": "Turn off",
-      "disableHintStaff": "Note: as an admin you can only use the portal again after setting it up again, for example on a new phone.",
+      "disableHintStaff": "Note: as an organiser or admin you can only use the portal again after setting it up again, for example on a new phone.",
       "disableHintPlayer": "After that only your password is needed to log in.",
       "enabled": "Two-step login is on. Your other devices were logged out; log in there again with a code.",
       "disabled": "Two-step login is off.",

@@ -302,7 +302,7 @@
     "security": "Beveiliging",
     "privacy": "Privacy",
     "notifications": "E-mailvoorkeuren",
-    "mfaBanner": "Je bent beheerder. Stel eerst tweestapsverificatie in om het beheer te gebruiken.",
+    "mfaBanner": "Je beheert toernooien op Tourneasy. Stel eerst tweestapsverificatie in om het beheer te gebruiken.",
     "mfaBannerLink": "Nu instellen"
   },
   "Dashboard": {
@@ -409,7 +409,7 @@
     "mfa": {
       "title": "Tweestapsverificatie",
       "intro": "Na je wachtwoord vraagt Tourneasy om een code uit een authenticator-app, zoals Google Authenticator, Microsoft Authenticator of 1Password. Zo kan niemand inloggen met alleen je wachtwoord.",
-      "required": "Als beheerder is tweestapsverificatie verplicht. Stel het nu in; daarna kun je het beheer weer gebruiken.",
+      "required": "Voor organisatoren en beheerders is tweestapsverificatie verplicht. Stel het nu in; daarna kun je het beheer weer gebruiken.",
       "on": "Aan sinds {date}.",
       "off": "Staat uit.",
       "codesLeft": "{count, plural, =0 {Geen herstelcodes meer over: maak nieuwe aan.} one {Nog # herstelcode over.} other {Nog # herstelcodes over.}}",
@@ -429,7 +429,7 @@
       "code": "Code uit de app",
       "password": "Je wachtwoord",
       "disable": "Uitschakelen",
-      "disableHintStaff": "Let op: als beheerder kun je het beheer pas weer gebruiken nadat je het opnieuw hebt ingesteld, bijvoorbeeld op een nieuwe telefoon.",
+      "disableHintStaff": "Let op: als organisator of beheerder kun je het beheer pas weer gebruiken nadat je het opnieuw hebt ingesteld, bijvoorbeeld op een nieuwe telefoon.",
       "disableHintPlayer": "Daarna is alleen je wachtwoord nodig om in te loggen.",
       "enabled": "Tweestapsverificatie staat aan. Je andere apparaten zijn uitgelogd; daar log je opnieuw in met een code.",
       "disabled": "Tweestapsverificatie staat uit.",

@@ -341,7 +341,7 @@ export async function applyIntent(intent: GatewayIntent, now = new Date()) {
 }
 
 /** Asks the gateway for the current state of an order's payment and applies it. */
-export async function reconcileOrder(orderId: string, actor: Actor | null) {
+export async function reconcileOrder(orderId: string, actor: Actor) {
   const order = await prisma.order.findUnique({
     where: { id: orderId },
     select: {
@@ -358,7 +358,8 @@ export async function reconcileOrder(orderId: string, actor: Actor | null) {
       },
     },
   });
-  if (!order || (actor && order.userId !== actor.userId)) throw new AppError('notFound');
+  // Only the buyer sees their order (and can make us ask Stripe about it).
+  if (!order || order.userId !== actor.userId) throw new AppError('notFound');
   const gateway = await getGateway();
   const intentId = order.payments[0]?.stripePaymentIntentId;
   if (gateway && intentId && order.status === 'PENDING') {

@@ -12,6 +12,7 @@ import { grantRole, listUsers, revokeRole } from './role-service';
 import {
   actorFromWebToken,
   completeMfaSession,
+  createMobileSession,
   createWebSession,
   STAFF_SESSION_TTL_MS,
 } from './session-service';
@@ -150,6 +151,18 @@ describe('two-step login (D78)', () => {
       meta,
     );
     expect((await actorFromWebToken(admin.token))?.roles).not.toContain('ADMIN');
+  });
+
+  it('is required for organisers too; staff app sessions last 12 hours (D84)', async () => {
+    process.env.TEST_ENFORCE_MFA = '1';
+    const organiser = await person(Role.ORGANISER);
+    expect(organiser.actor.roles).not.toContain('ORGANISER');
+    expect(organiser.actor.mfaSetupRequired).toBe(true);
+    await createMobileSession(organiser.userId, meta);
+    const session = await prisma.userSession.findFirstOrThrow({
+      where: { userId: organiser.userId, kind: 'MOBILE' },
+    });
+    expect(session.expiresAt.getTime() - Date.now()).toBeLessThanOrEqual(STAFF_SESSION_TTL_MS);
   });
 
   it('can be reset by an owner only (D80)', async () => {

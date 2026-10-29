@@ -5,7 +5,6 @@ import { AppError } from '../lib/errors';
 import {
   authenticate,
   changePassword,
-  MAX_FAILED_LOGINS,
   requestPasswordReset,
   resetPassword,
   signUp,
@@ -100,24 +99,26 @@ describe('authenticate', () => {
     );
   });
 
-  it(`locks the account after ${MAX_FAILED_LOGINS} failed attempts`, async () => {
+  it('limits wrong passwords per address, without locking the owner out elsewhere (D84)', async () => {
     const { email, password } = await createPlayer();
-    for (let i = 1; i < MAX_FAILED_LOGINS; i++) {
-      await expectAppError(
-        authenticate({ identifier: email, password: 'wrong-password' }, meta),
-        'invalidCredentials',
+    const from = (ip: string) => ({ ...meta, ip });
+    const codes = [];
+    for (let i = 0; i < 9; i++)
+      codes.push(
+        await authenticate({ identifier: email, password: 'wrong-password' }, from('203.0.113.9'))
+          .then(() => 'ok')
+          .catch((e: AppError) => e.code),
       );
-    }
-    await expectAppError(
-      authenticate({ identifier: email, password: 'wrong-password' }, meta),
-      'accountLocked',
-    );
-    // Even the right password is refused while locked.
-    await expectAppError(authenticate({ identifier: email, password }, meta), 'accountLocked');
+    expect(codes.slice(0, 8)).toEqual(Array(8).fill('invalidCredentials'));
+    expect(codes[8]).toBe('rateLimited');
+    // The owner, elsewhere, still gets in.
+    await expect(
+      authenticate({ identifier: email, password }, from('198.51.100.7')),
+    ).resolves.toMatchObject({ rememberMe: true });
   });
 
   it('rate-limits repeated attempts for one identifier', async () => {
-    const attempts = Array.from({ length: 11 }, () =>
+    const attempts = Array.from({ length: 9 }, () =>
       authenticate({ identifier: 'TE999999', password: 'x' }, meta).catch((e: AppError) => e.code),
     );
     const codes = [];

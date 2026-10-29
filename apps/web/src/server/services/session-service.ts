@@ -13,7 +13,7 @@ import { describeUserAgent, type RequestMeta } from '../lib/request-meta';
 const DAY = 24 * 60 * 60 * 1000;
 export const WEB_SESSION_TTL_MS = 30 * DAY; // "remember me"
 export const WEB_SHORT_SESSION_TTL_MS = 12 * 60 * 60 * 1000; // browser-session cookie
-/** Admins and owners are signed out after at most 12 hours, "remember me" or not (D78). */
+/** Staff are signed out after at most 12 hours, "remember me" or not, also in the app (D84). */
 export const STAFF_SESSION_TTL_MS = 12 * 60 * 60 * 1000;
 /** Time to enter the two-step code after the password. */
 const MFA_PENDING_TTL_MS = 10 * 60 * 1000;
@@ -30,14 +30,15 @@ export type Actor = {
   name: string;
   locale: 'nl' | 'en';
   emailVerified: boolean;
-  /** Admin or owner who must set up two-step login before using those roles (D78). */
+  /** Organiser, admin or owner who must set up two-step login before using that role. */
   mfaSetupRequired: boolean;
   mfaEnabled: boolean;
 };
 
-const STAFF: Role[] = ['ADMIN', 'OWNER'];
+/** Roles with access to players' personal data: two-step login and short sessions (D78, D84). */
+const STAFF: Role[] = ['ORGANISER', 'ADMIN', 'OWNER'];
 
-/** Two-step login is mandatory for admins and owners. Tests opt in with TEST_ENFORCE_MFA. */
+/** Two-step login is mandatory for staff. Tests opt in with TEST_ENFORCE_MFA. */
 export function staffMfaEnforced(): boolean {
   return process.env.NODE_ENV !== 'test' || process.env.TEST_ENFORCE_MFA === '1';
 }
@@ -212,6 +213,7 @@ export async function createMobileSession(
 ): Promise<TokenPair> {
   const refreshToken = randomToken();
   const now = Date.now();
+  const ttl = (await isStaff(userId)) ? STAFF_SESSION_TTL_MS : MOBILE_SESSION_TTL_MS;
   const session = await prisma.userSession.create({
     data: {
       userId,
@@ -219,12 +221,9 @@ export async function createMobileSession(
       deviceName: deviceName?.slice(0, 80) || describeUserAgent(meta.userAgent),
       userAgent: meta.userAgent,
       ipAddress: meta.ip,
-      expiresAt: new Date(now + MOBILE_SESSION_TTL_MS),
+      expiresAt: new Date(now + ttl),
       refreshTokens: {
-        create: {
-          tokenHash: hashToken(refreshToken),
-          expiresAt: new Date(now + MOBILE_SESSION_TTL_MS),
-        },
+        create: { tokenHash: hashToken(refreshToken), expiresAt: new Date(now + ttl) },
       },
     },
   });

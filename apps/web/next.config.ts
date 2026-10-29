@@ -1,33 +1,18 @@
 import path from 'node:path';
 import type { NextConfig } from 'next';
 import createNextIntlPlugin from 'next-intl/plugin';
+import { contentSecurityPolicy } from './src/lib/csp';
 
 const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 
 const isDev = process.env.NODE_ENV === 'development';
 
-// Baseline Content-Security-Policy: only our own origin may serve scripts, styles, images,
-// fonts and API calls; no plugins, framing or foreign form targets. Next.js App Router emits
-// inline bootstrap scripts, so 'unsafe-inline' is needed until a nonce-based policy replaces it
-// in Phase 8 (together with the Sentry, R2 and map origins). Dev adds eval + HMR socket.
-// Stripe (Phase 5): Stripe.js and its Payment Element frames, and its API for the form.
-const contentSecurityPolicy = [
-  "default-src 'self'",
-  `script-src 'self' 'unsafe-inline' https://js.stripe.com${isDev ? " 'unsafe-eval'" : ''}`,
-  "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob: https://*.stripe.com",
-  'frame-src https://js.stripe.com https://hooks.stripe.com',
-  "font-src 'self' data:",
-  `connect-src 'self' https://api.stripe.com${isDev ? ' ws: wss:' : ''}`,
-  "object-src 'none'",
-  "base-uri 'self'",
-  "form-action 'self'",
-  "frame-ancestors 'none'",
-  ...(isDev ? [] : ['upgrade-insecure-requests']),
-].join('; ');
+// Responses other than pages (files, API); pages get the same policy with a nonce from
+// src/proxy.ts (D84).
+const csp = contentSecurityPolicy({ dev: isDev });
 
 const securityHeaders = [
-  { key: 'Content-Security-Policy', value: contentSecurityPolicy },
+  { key: 'Content-Security-Policy', value: csp },
   { key: 'X-Content-Type-Options', value: 'nosniff' },
   { key: 'X-Frame-Options', value: 'DENY' },
   { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },

@@ -5,7 +5,10 @@ export type RateLimit = { limit: number; windowSeconds: number };
 
 export const LIMITS = {
   loginPerIp: { limit: 30, windowSeconds: 15 * 60 },
-  loginPerIdentifier: { limit: 10, windowSeconds: 15 * 60 },
+  // Per account and address: someone elsewhere can't lock you out (D84).
+  loginPerIdentifierIp: { limit: 8, windowSeconds: 15 * 60 },
+  // Per account from all addresses: only against attacks spread over many addresses.
+  loginPerIdentifier: { limit: 100, windowSeconds: 60 * 60 },
   signUpPerIp: { limit: 10, windowSeconds: 60 * 60 },
   passwordResetPerIp: { limit: 10, windowSeconds: 60 * 60 },
   passwordResetPerEmail: { limit: 3, windowSeconds: 60 * 60 },

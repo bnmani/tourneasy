@@ -33,7 +33,9 @@ export default async function SecurityPage({
       ? await mfaSetup(actor)
       : null;
   const tm = await getTranslations('Security.mfa');
-  const staff = actor.mfaSetupRequired || actor.roles.some((r) => r === 'ADMIN' || r === 'OWNER');
+  const staff =
+    actor.mfaSetupRequired ||
+    actor.roles.some((r) => r === 'ORGANISER' || r === 'ADMIN' || r === 'OWNER');
   const t = await getTranslations('Security');
   const format = await getFormatter();
   const others = sessions.filter((s) => !s.current);

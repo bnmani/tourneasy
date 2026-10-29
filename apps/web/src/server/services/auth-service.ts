@@ -31,8 +31,6 @@ import { acceptOrganiserInvites } from './tournament-service';
 
 /** Version stamped on consent records; bump when the terms/privacy texts change. */
 export const POLICY_VERSION = '2026-10';
-export const MAX_FAILED_LOGINS = 5;
-export const LOCKOUT_MINUTES = 15;
 const VERIFY_TTL_MS = 48 * 60 * 60 * 1000;
 const RESET_TTL_MS = 60 * 60 * 1000;
 
@@ -148,7 +146,13 @@ export async function authenticate(input: unknown, meta: RequestMeta) {
   const data = parse(loginSchema, input);
   const identifier = parseLoginIdentifier(data.identifier);
 
+  // Limits instead of an account lock (D84): the same for known and unknown accounts, and
+  // tries from one address can't lock the owner out on another.
   await enforce(`login:ip:${meta.ip ?? 'unknown'}`, LIMITS.loginPerIp);
+  await enforce(
+    `login:idip:${identifier.value}:${meta.ip ?? 'unknown'}`,
+    LIMITS.loginPerIdentifierIp,
+  );
   await enforce(`login:id:${identifier.value}`, LIMITS.loginPerIdentifier);
 
   const user =
@@ -166,31 +170,12 @@ export async function authenticate(input: unknown, meta: RequestMeta) {
     throw new AppError('invalidCredentials');
   }
 
-  if (user.lockedUntil && user.lockedUntil > new Date()) {
-    const minutes = Math.ceil((user.lockedUntil.getTime() - Date.now()) / 60_000);
-    throw new AppError('accountLocked', { minutes });
-  }
-
   if (!(await verifyPassword(user.passwordHash, data.password))) {
-    const failed = user.failedLoginCount + 1;
-    const lock = failed >= MAX_FAILED_LOGINS;
+    // Kept as a count for the security log; no longer locks the account (D84).
     await prisma.user.update({
       where: { id: user.id },
-      data: {
-        failedLoginCount: lock ? 0 : failed,
-        lockedUntil: lock ? new Date(Date.now() + LOCKOUT_MINUTES * 60_000) : undefined,
-      },
+      data: { failedLoginCount: { increment: 1 } },
     });
-    if (lock) {
-      await writeAudit(prisma, {
-        actorId: null,
-        action: 'auth.locked',
-        entityType: 'User',
-        entityId: user.id,
-        meta,
-      });
-      throw new AppError('accountLocked', { minutes: LOCKOUT_MINUTES });
-    }
     throw new AppError('invalidCredentials');
   }
 
