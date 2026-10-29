@@ -12,9 +12,10 @@ import { pageMetadata } from '@/lib/seo';
 import { setFollowAction } from '@/server/actions/public-actions';
 import { getActor } from '@/server/auth/web';
 import { isAppError } from '@/server/lib/errors';
-import { getPublicPlayer } from '@/server/services/public-service';
+import { getPublicPlayer, upcomingMatchesOf } from '@/server/services/public-service';
 import { historyByMemberNumber } from '@/server/services/results-service';
 import { HistoryList } from '@/components/matches/history-list';
+import { MatchesByDay } from '@/components/matches/matches-by-day';
 
 type Props = {
   params: Promise<{ locale: string; memberNumber: string }>;
@@ -52,6 +53,8 @@ export default async function PlayerPage({ params, searchParams }: Props) {
   const signedIn = !!(await getActor());
   const status = firstParam((await searchParams).status);
   const t = await getTranslations('Players');
+  // Coming matches in published schedules (D81), so followers see when they play.
+  const upcoming = await upcomingMatchesOf(p.memberNumber, locale);
   const td = await getTranslations('Disciplines');
 
   return (
@@ -120,6 +123,12 @@ export default async function PlayerPage({ params, searchParams }: Props) {
           <section className="rounded-lg border bg-card p-5">
             <h2 className="font-heading text-lg font-semibold">{t('preferred')}</h2>
             <p className="mt-2">{p.preferredDisciplines.map((d) => td(d)).join(', ')}</p>
+          </section>
+        )}
+        {upcoming.length > 0 && (
+          <section className="rounded-lg border bg-card p-5">
+            <h2 className="mb-3 font-heading text-lg font-semibold">{t('upcomingMatches')}</h2>
+            <MatchesByDay items={upcoming} locale={locale} />
           </section>
         )}
         <section className="rounded-lg border bg-card p-5">

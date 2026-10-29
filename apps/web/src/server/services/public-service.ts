@@ -23,6 +23,7 @@ import { AppError } from '../lib/errors';
 import { parseInput } from '../lib/validation';
 import type { Actor } from './session-service';
 import { logoUrlFor } from './logo-service';
+import { matchesOfPlayers } from './schedule-service';
 
 // ── Paging ─────────────────────────────────────────────────────────────────────────
 
@@ -482,6 +483,33 @@ export async function listFollowing(actor: Actor) {
     select: { followed: { select: playerSelect } },
   });
   return rows.map((r) => toPlayer(r.followed));
+}
+
+/** A public player's coming matches in published schedules, for their player page (D81). */
+export async function upcomingMatchesOf(memberNumber: string, locale: 'nl' | 'en') {
+  const p = await prisma.playerProfile.findFirst({
+    where: { ...publicPlayerWhere(), memberNumber: memberNumber.toUpperCase() },
+    select: { id: true },
+  });
+  return p ? matchesOfPlayers([p.id], locale, { upcoming: true }) : [];
+}
+
+/** Coming matches of the players I follow (still public), per player, for my dashboard (D81). */
+export async function followedMatches(actor: Actor) {
+  const rows = await prisma.playerFollow.findMany({
+    where: { followerUserId: actor.userId, followed: publicPlayerWhere() },
+    take: 200,
+    select: { followed: { select: playerSelect } },
+  });
+  const players = rows.map((r) => r.followed);
+  const matches = await matchesOfPlayers(
+    players.map((p) => p.id),
+    actor.locale,
+    { upcoming: true },
+  );
+  return players
+    .map((p) => ({ ...toPlayer(p), matches: matches.filter((m) => m.players.includes(p.id)) }))
+    .filter((p) => p.matches.length > 0);
 }
 
 // ── Clubs ──────────────────────────────────────────────────────────────────────────

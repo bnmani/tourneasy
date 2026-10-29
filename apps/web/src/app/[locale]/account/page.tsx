@@ -11,10 +11,10 @@ import { firstParam, pageLocale, type LocaleParams, type SearchParams } from '@/
 import { cn } from '@/lib/utils';
 import { requireActor } from '@/server/auth/web';
 import { getMyAccount } from '@/server/services/profile-service';
-import { listFollowing } from '@/server/services/public-service';
+import { followedMatches, listFollowing } from '@/server/services/public-service';
 import { listMyInvites, listMyRegistrations } from '@/server/services/registration-service';
 import { HistoryList } from '@/components/matches/history-list';
-import { MatchLine } from '@/components/matches/match-line';
+import { MatchesByDay } from '@/components/matches/matches-by-day';
 import { myHistory } from '@/server/services/results-service';
 import { myMatches } from '@/server/services/schedule-service';
 import { PlayerList } from '@/components/public/player-list';
@@ -25,7 +25,7 @@ export async function generateMetadata({ params }: LocaleParams): Promise<Metada
   return { title: t('title'), robots: { index: false } };
 }
 
-const TABS = ['upcoming', 'past', 'following', 'profile'] as const;
+const TABS = ['upcoming', 'schedule', 'past', 'following', 'profile'] as const;
 type Tab = (typeof TABS)[number];
 
 export default async function DashboardPage({
@@ -47,6 +47,7 @@ export default async function DashboardPage({
     : 'upcoming';
   const tabLabel: Record<Tab, string> = {
     upcoming: t('tabUpcoming'),
+    schedule: t('tabSchedule'),
     past: t('tabPast'),
     following: t('tabFollowing'),
     profile: t('tabProfile'),
@@ -161,7 +162,6 @@ export default async function DashboardPage({
         {tab === 'upcoming' && (
           <div className="space-y-6">
             <MyInvites invites={invites} locale={locale} />
-            <MyUpcomingMatches actor={actor} locale={locale} />
             {upcoming.length > 0 ? (
               <MyEntries
                 entries={upcoming}
@@ -177,6 +177,7 @@ export default async function DashboardPage({
             </Button>
           </div>
         )}
+        {tab === 'schedule' && <MySchedule actor={actor} locale={locale} />}
         {tab === 'past' && <MyHistory actor={actor} locale={locale} />}
         {tab === 'past' &&
           (past.length > 0 ? (
@@ -193,7 +194,15 @@ export default async function DashboardPage({
               </Button>
             </div>
           ) : (
-            <PlayerList players={followed} locale={locale} />
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                {t('followingScheduleHint')}{' '}
+                <Link href="/account?tab=schedule" className="font-medium text-primary underline">
+                  {t('tabSchedule')}
+                </Link>
+              </p>
+              <PlayerList players={followed} locale={locale} />
+            </div>
           ))}
         {tab === 'profile' && profile && (
           <dl className="grid gap-4 sm:grid-cols-2">
@@ -229,32 +238,54 @@ export default async function DashboardPage({
   );
 }
 
-/** My scheduled matches (published schedules) with time and court. */
-async function MyUpcomingMatches({
+/**
+ * My schedule (D81): my coming matches per day, and those of the players I follow. Only
+ * published schedules; played matches are under "Past tournaments".
+ */
+async function MySchedule({
   actor,
   locale,
 }: {
   actor: Parameters<typeof myMatches>[0];
   locale: AppLocale;
 }) {
-  const matches = (await myMatches(actor)).filter(
-    (m) => !['COMPLETED', 'WALKOVER', 'RETIRED'].includes(m.status),
-  );
-  if (matches.length === 0) return null;
-  const t = await getTranslations('Matches');
+  const [mine, followed] = await Promise.all([
+    myMatches(actor).then((all) =>
+      all.filter((m) => !['COMPLETED', 'WALKOVER', 'RETIRED'].includes(m.status)),
+    ),
+    followedMatches(actor),
+  ]);
+  const t = await getTranslations('Dashboard');
   return (
-    <section aria-labelledby="my-matches" className="space-y-2">
-      <h2 id="my-matches" className="font-heading text-lg font-semibold">
-        {t('myMatches')}
-      </h2>
-      <div className="grid gap-2 sm:grid-cols-2">
-        {matches.map((m) => (
-          <MatchLine key={m.id} item={m} locale={locale}>
-            <p className="text-xs text-muted-foreground">{m.tournament.name}</p>
-          </MatchLine>
-        ))}
-      </div>
-    </section>
+    <div className="space-y-8">
+      <section aria-labelledby="my-matches" className="space-y-3">
+        <h2 id="my-matches" className="font-heading text-lg font-semibold">
+          {t('scheduleMine')}
+        </h2>
+        {mine.length > 0 ? (
+          <MatchesByDay items={mine} locale={locale} />
+        ) : (
+          <p className="text-muted-foreground">{t('scheduleMineEmpty')}</p>
+        )}
+      </section>
+      {followed.length > 0 && (
+        <section aria-labelledby="followed-matches" className="space-y-4">
+          <h2 id="followed-matches" className="font-heading text-lg font-semibold">
+            {t('scheduleFollowed')}
+          </h2>
+          {followed.map((p) => (
+            <div key={p.memberNumber} className="space-y-2 rounded-lg border p-4">
+              <h3 className="font-semibold">
+                <Link href={`/players/${p.memberNumber}`} className="hover:underline">
+                  {p.name}
+                </Link>
+              </h3>
+              <MatchesByDay items={p.matches} locale={locale} />
+            </div>
+          ))}
+        </section>
+      )}
+    </div>
   );
 }
 

@@ -817,22 +817,32 @@ export async function scheduleExportItems(
   return matches.map((m) => toItem(m, locale, publishedAt, feeders));
 }
 
-/** My matches (published schedules only), upcoming first, then played ones. */
-export async function myMatches(actor: Actor) {
-  const player = await prisma.playerProfile.findFirst({
-    where: { userId: actor.userId, deletedAt: null },
-    select: { id: true },
-  });
-  if (!player) return [];
-  const mine = { registration: { participants: { some: { playerId: player.id, active: true } } } };
+const PLAYED = ['COMPLETED', 'WALKOVER', 'RETIRED'];
+
+/**
+ * Matches of these players in published schedules of published tournaments: planned ones by
+ * time, then those without a time and court. `upcoming` leaves out played matches.
+ */
+export async function matchesOfPlayers(
+  playerIds: string[],
+  locale: 'nl' | 'en',
+  options: { upcoming?: boolean } = {},
+) {
+  if (playerIds.length === 0) return [];
+  const theirs = {
+    registration: { participants: { some: { playerId: { in: playerIds }, active: true } } },
+  };
   const matches = await prisma.match.findMany({
     where: {
       draw: {
         status: { not: 'DRAFT' },
-        event: { tournament: { schedulePublishedAt: { not: null } } },
+        event: {
+          deletedAt: null,
+          tournament: { isPublished: true, deletedAt: null, schedulePublishedAt: { not: null } },
+        },
       },
-      status: { notIn: ['BYE', 'CANCELLED'] },
-      OR: [{ entryA: mine }, { entryB: mine }],
+      status: { notIn: ['BYE', 'CANCELLED', ...(options.upcoming ? PLAYED : [])] as never },
+      OR: [{ entryA: theirs }, { entryB: theirs }],
     },
     orderBy: [{ slot: { startsAt: 'asc' } }],
     select: {
@@ -850,13 +860,24 @@ export async function myMatches(actor: Actor) {
       },
     },
   });
-  return matches.map((m) => ({
-    ...toItem(m as unknown as MatchRow, actor.locale, m.draw.event.tournament.schedulePublishedAt, {
+  const items = matches.map((m) => ({
+    ...toItem(m as unknown as MatchRow, locale, m.draw.event.tournament.schedulePublishedAt, {
       numberOf: new Map(),
       feeders: new Map(),
     }),
     tournament: m.draw.event.tournament,
   }));
+  // Postgres puts matches without a slot first in ascending order; they belong last.
+  return [...items.filter((i) => i.startsAt), ...items.filter((i) => !i.startsAt)];
+}
+
+/** My matches (published schedules only), upcoming first, then played ones. */
+export async function myMatches(actor: Actor) {
+  const player = await prisma.playerProfile.findFirst({
+    where: { userId: actor.userId, deletedAt: null },
+    select: { id: true },
+  });
+  return player ? matchesOfPlayers([player.id], actor.locale) : [];
 }
 
 /** Desk view: every match of the published draws with what the desk needs, per filter. */

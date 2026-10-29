@@ -24,6 +24,7 @@ import {
   roundLabel,
   unscheduleMatch,
 } from './schedule-service';
+import { followedMatches, upcomingMatchesOf } from './public-service';
 import { PDFDocument } from 'pdf-lib';
 import { buildSchedulePdf, pdfSafe } from '../pdf/schedule-pdf';
 import { checkInList, checkInPdf, payAtDesk, setPlayerCheckIn } from './checkin-service';
@@ -462,6 +463,46 @@ describe('schedule Excel and per court (D79)', () => {
     const courts = await courtsPdf(actor, t.slug, 'en');
     expect(courts.filename).toBe('courts-utrecht-open.pdf');
     expect((await PDFDocument.load(courts.bytes)).getPageCount()).toBeGreaterThanOrEqual(1);
+  });
+});
+
+describe('my schedule and players I follow (D81)', () => {
+  it('shows coming matches of published schedules to me and my followers', async () => {
+    const actor = await admin();
+    const { t, event, players } = await setup('ROUND_ROBIN', 4);
+    await generateDraw(actor, event.id, meta, seededRng(1));
+    await publishDraws(actor, event.id, true, meta);
+    await proposeTournamentSchedule(actor, t.id, {}, meta);
+    const anna = players[0]!;
+    await prisma.playerProfile.update({
+      where: { id: anna.profile.id },
+      data: { publicProfile: true },
+    });
+    const fan = await createPlayer();
+    const fanActor = (await actorFromWebToken(
+      (await createWebSession(fan.userId, meta, true)).token,
+    ))!;
+    await prisma.playerFollow.create({
+      data: { followerUserId: fan.userId, followedPlayerId: anna.profile.id },
+    });
+    // Not published yet: nothing for anyone.
+    expect(await followedMatches(fanActor)).toEqual([]);
+    expect(await upcomingMatchesOf(anna.profile.memberNumber, 'nl')).toEqual([]);
+
+    await publishSchedule(actor, t.id, true, meta);
+    const followed = await followedMatches(fanActor);
+    expect(followed.map((p) => [p.memberNumber, p.matches.length])).toEqual([
+      [anna.profile.memberNumber, 3],
+    ]);
+    expect(await upcomingMatchesOf(anna.profile.memberNumber, 'nl')).toHaveLength(3);
+    const annaActor = (await actorFromWebToken(
+      (await createWebSession(anna.userId, meta, true)).token,
+    ))!;
+    const mine = await myMatches(annaActor);
+    expect(mine).toHaveLength(3);
+    expect(mine.map((m) => m.startsAt!.getTime())).toEqual(
+      [...mine.map((m) => m.startsAt!.getTime())].sort((a, b) => a - b),
+    );
   });
 });
 

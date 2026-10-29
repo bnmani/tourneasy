@@ -348,11 +348,16 @@
     "managedAll": "All tournaments",
     "manage": "Manage",
     "desk": "Match desk",
-    "scheduleOut": "The schedule is online. Your matches with time and court are above under \"My matches\".",
+    "scheduleOut": "The schedule is online. Your matches with time and court are on the \"My schedule\" tab.",
     "scheduleSoon": "The draws are online; the schedule with times follows. You will get an email when it is ready.",
     "scheduleLater": "Draws and schedule follow after entries close. You will get an email when the schedule is ready.",
     "viewDraws": "View draws",
-    "viewSchedule": "View schedule"
+    "viewSchedule": "View schedule",
+    "tabSchedule": "My schedule",
+    "scheduleMine": "My matches",
+    "scheduleMineEmpty": "No matches in a published schedule yet. You will get an email when your tournament's schedule is ready.",
+    "scheduleFollowed": "Players you follow",
+    "followingScheduleHint": "When they play is shown under"
   },
   "Profile": {
     "title": "My profile",
@@ -1665,7 +1670,8 @@
     "history": "Tournaments and results",
     "historyNote": "Tournaments and results will appear here once matches have been played.",
     "followed": "You now follow {name}. You will be notified when they play.",
-    "unfollowed": "You no longer follow {name}."
+    "unfollowed": "You no longer follow {name}.",
+    "upcomingMatches": "Coming matches"
   },
   "MetadataPages": {
     "tournaments": "Badminton tournaments in the Netherlands: search by town, province and event and see when entries open.",

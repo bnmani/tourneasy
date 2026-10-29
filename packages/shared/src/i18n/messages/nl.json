@@ -348,11 +348,16 @@
     "managedAll": "Alle toernooien",
     "manage": "Beheren",
     "desk": "Wedstrijdtafel",
-    "scheduleOut": "De planning staat online. Je wedstrijden met tijd en baan zie je hierboven onder \"Mijn wedstrijden\".",
+    "scheduleOut": "De planning staat online. Je wedstrijden met tijd en baan staan onder het tabblad \"Mijn planning\".",
     "scheduleSoon": "De schema's staan online; de planning met tijden volgt. Je krijgt een e-mail zodra die klaar is.",
     "scheduleLater": "Schema's en planning volgen na het sluiten van de inschrijving. Je krijgt een e-mail zodra de planning klaar is.",
     "viewDraws": "Schema's bekijken",
-    "viewSchedule": "Planning bekijken"
+    "viewSchedule": "Planning bekijken",
+    "tabSchedule": "Mijn planning",
+    "scheduleMine": "Mijn wedstrijden",
+    "scheduleMineEmpty": "Nog geen wedstrijden met een gepubliceerde planning. Je krijgt een e-mail zodra de planning van je toernooi klaar is.",
+    "scheduleFollowed": "Spelers die je volgt",
+    "followingScheduleHint": "Wanneer zij spelen, zie je onder"
   },
   "Profile": {
     "title": "Mijn profiel",
@@ -1665,7 +1670,8 @@
     "history": "Toernooien en uitslagen",
     "historyNote": "Toernooien en uitslagen verschijnen hier zodra er gespeeld is.",
     "followed": "Je volgt nu {name}. Je krijgt straks een melding als deze speler speelt.",
-    "unfollowed": "Je volgt {name} niet meer."
+    "unfollowed": "Je volgt {name} niet meer.",
+    "upcomingMatches": "Komende wedstrijden"
   },
   "MetadataPages": {
     "tournaments": "Badmintontoernooien in Nederland: zoek op plaats, provincie en onderdeel en zie wanneer de inschrijving opent.",
