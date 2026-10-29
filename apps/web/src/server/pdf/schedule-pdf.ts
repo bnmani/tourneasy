@@ -67,6 +67,7 @@ const TEXTS = {
     note: 'Tijden zijn een verwachting: wees op tijd en meld je bij de wedstrijdtafel. De actuele planning staat online.',
     page: (n: number, total: number) => `Pagina ${n} van ${total}`,
     none: 'Er staan nog geen wedstrijden in de planning.',
+    unplanned: 'Zonder tijd en baan',
   },
   en: {
     title: 'Match schedule',
@@ -85,6 +86,7 @@ const TEXTS = {
     note: 'Times are estimates: be on time and report to the match desk. The current schedule is online.',
     page: (n: number, total: number) => `Page ${n} of ${total}`,
     none: 'No matches are scheduled yet.',
+    unplanned: 'Without time or court',
   },
 } as const;
 
@@ -253,18 +255,22 @@ export async function buildSchedulePdf(input: SchedulePdfInput): Promise<Uint8Ar
   };
 
   header(true);
-  const matches = input.matches
-    .filter((m) => m.startsAt && m.court)
+  const isPlanned = (m: PdfMatch) => !!(m.startsAt && m.court);
+  const planned = input.matches
+    .filter(isPlanned)
     .sort(
       (p, q) => p.startsAt!.getTime() - q.startsAt!.getTime() || p.court!.number - q.court!.number,
     );
+  // Played or waiting without a time and court (a knockout final, say): listed at the end.
+  const unplanned = input.matches.filter((m) => !isPlanned(m)).sort((p, q) => p.number - q.number);
+  const matches = [...planned, ...unplanned];
   if (matches.length === 0) text(t.none, 0, y, { size: 11, color: MUTED });
 
   let day = '';
   let lastTime = '';
   let row = 0;
   for (const m of matches) {
-    const thisDay = formatDate(m.startsAt!, input.locale);
+    const thisDay = isPlanned(m) ? formatDate(m.startsAt!, input.locale) : t.unplanned;
     const label = thisDay.charAt(0).toUpperCase() + thisDay.slice(1);
     if (thisDay !== day) {
       if (day) y -= 8;
@@ -292,14 +298,14 @@ export async function buildSchedulePdf(input: SchedulePdfInput): Promise<Uint8Ar
     const lines = Math.max(...Object.values(cells).map((c) => c.length));
     const height = lines * LEADING + 6;
     ensure(height, label);
-    const time = formatTime(m.startsAt!, input.locale);
+    const time = isPlanned(m) ? formatTime(m.startsAt!, input.locale) : '–';
     const newSlot = time !== lastTime;
     if (newSlot && row > 0)
       page.drawRectangle({ x: MARGIN, y: y + LEADING - 1, width, height: 0.6, color: LINE });
     if (row % 2 === 1)
       page.drawRectangle({ x: MARGIN, y: y - height + LEADING, width, height, color: ZEBRA });
     if (newSlot) text(time, cols.time.x + 4, y, { font: bold });
-    text(m.court!.name ?? String(m.court!.number), cols.court.x + 4, y);
+    text(m.court ? (m.court.name ?? String(m.court.number)) : '–', cols.court.x + 4, y);
     text(`#${m.number}`, cols.number.x + 4, y, { color: MUTED });
     for (const key of ['event', 'round', 'match', 'result'] as const)
       cells[key].forEach((line, i) =>

@@ -22,11 +22,13 @@ import {
   publicSchedule,
   publishSchedule,
   roundLabel,
+  unscheduleMatch,
 } from './schedule-service';
 import { PDFDocument } from 'pdf-lib';
 import { buildSchedulePdf, pdfSafe } from '../pdf/schedule-pdf';
 import { checkInList, checkInPdf, payAtDesk, setPlayerCheckIn } from './checkin-service';
 import { courtsPdf, schedulePdf, scheduleXlsx } from './schedule-pdf-service';
+import { strFromU8, unzipSync } from 'fflate';
 import { readXlsx } from '../lib/xlsx';
 import { actorFromWebToken, createWebSession } from './session-service';
 
@@ -436,6 +438,20 @@ describe('schedule Excel and per court (D79)', () => {
     const times = rows.slice(1).map((r) => `${r[0]} ${r[1]}`);
     expect(times).toEqual([...times].sort());
     expect(rows[1]![11]).toBe('Gepland');
+
+    // A match without a time and court (taken out of the planning, or played without
+    // one) is still exported: last in "Alles" and on a sheet of its own.
+    const out = await prisma.match.findFirstOrThrow({ where: { slot: { isNot: null } } });
+    await unscheduleMatch(actor, out.id, meta);
+    const again = await scheduleXlsx(null, t.slug, 'nl');
+    const all = readXlsx(again.bytes)!;
+    expect(all.length - 1).toBe(6);
+    expect(all.at(-1)!.slice(0, 3)).toEqual(['', '', '']);
+    expect(strFromU8(unzipSync(again.bytes)['xl/workbook.xml']!)).toContain(
+      'name="Zonder tijd en baan"',
+    );
+    const pdf = await schedulePdf(null, t.slug, 'nl');
+    expect(Buffer.from(pdf.bytes).length).toBeGreaterThan(1000);
 
     // Per court: managers only, even once published.
     await expect(courtsPdf(null, t.slug, 'nl')).rejects.toMatchObject({ code: 'notFound' });

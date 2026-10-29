@@ -792,6 +792,23 @@ export async function publicSchedule(slug: string, locale: 'nl' | 'en') {
   };
 }
 
+/**
+ * Every match of the tournament for the exports (D79), with or without a time and court: a
+ * match can be played and scored without being in the planning (a knockout final, say).
+ * Access is checked by the caller.
+ */
+export async function scheduleExportItems(
+  tournamentId: string,
+  locale: 'nl' | 'en',
+  publishedAt: Date | null,
+) {
+  const [matches, feeders] = await Promise.all([
+    tournamentMatches(tournamentId),
+    numbering(tournamentId),
+  ]);
+  return matches.map((m) => toItem(m, locale, publishedAt, feeders));
+}
+
 /** My matches (published schedules only), upcoming first, then played ones. */
 export async function myMatches(actor: Actor) {
   const player = await prisma.playerProfile.findFirst({

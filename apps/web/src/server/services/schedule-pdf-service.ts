@@ -13,12 +13,20 @@ import { buildCourtsPdf } from '../pdf/courts-pdf';
 import { buildSchedulePdf, type PdfMatch } from '../pdf/schedule-pdf';
 import { tournamentLogoFile } from './logo-service';
 import { canManageTournament } from './permissions';
-import { getSchedule, publicSchedule } from './schedule-service';
+import { scheduleExportItems } from './schedule-service';
 import type { Actor } from './session-service';
 
 const day = (d: Date) => d.toISOString().slice(0, 10);
 
 type ExportMatch = PdfMatch & { aClub: string | null; bClub: string | null };
+
+/** Planned matches by time and court; the ones without a slot after them, by number. */
+function byTimeAndCourt(p: ExportMatch, q: ExportMatch): number {
+  const planned = (m: ExportMatch) => !!(m.startsAt && m.court);
+  if (planned(p) !== planned(q)) return planned(p) ? -1 : 1;
+  if (!planned(p)) return p.number - q.number;
+  return p.startsAt!.getTime() - q.startsAt!.getTime() || p.court!.number - q.court!.number;
+}
 
 async function loadSchedule(
   actor: Actor | null,
@@ -44,11 +52,9 @@ async function loadSchedule(
   const published = t.isPublished && !!t.schedulePublishedAt;
   if ((!published || options.managersOnly) && !manager) throw new AppError('notFound');
 
-  const items = published
-    ? (await publicSchedule(t.slug, locale)).items
-    : (await getSchedule(actor!, t.id, locale)).scheduled;
+  // All matches, also those played or waiting without a time and court (they come last).
+  const items = await scheduleExportItems(t.id, locale, t.schedulePublishedAt);
   const matches: ExportMatch[] = items
-    .filter((i) => i.startsAt && i.court)
     .map((i) => ({
       number: i.number,
       event: i.event,
@@ -62,9 +68,7 @@ async function loadSchedule(
       status: i.status,
       sets: i.sets,
     }))
-    .sort(
-      (p, q) => p.startsAt!.getTime() - q.startsAt!.getTime() || p.court!.number - q.court!.number,
-    );
+    .sort(byTimeAndCourt);
   const logo = await tournamentLogoFile(t.id);
   return {
     t,
@@ -113,6 +117,7 @@ export async function courtsPdf(actor: Actor | null, slug: string, locale: AppLo
 const XLSX_TEXTS = {
   nl: {
     all: 'Alles',
+    unplanned: 'Zonder tijd en baan',
     header: [
       'Datum',
       'Tijd',
@@ -142,6 +147,7 @@ const XLSX_TEXTS = {
   },
   en: {
     all: 'All',
+    unplanned: 'Without time or court',
     header: [
       'Date',
       'Time',
@@ -173,15 +179,18 @@ const XLSX_TEXTS = {
 
 /**
  * The schedule in Excel (D79): an "All" sheet and one per day, sorted by time and court, with
- * a frozen header and filters so a court or category is one click away.
+ * a frozen header and filters so a court or category is one click away. Matches without a time
+ * and court are in "All" (at the end, date and time empty) and in a sheet of their own.
  */
 export async function scheduleXlsx(actor: Actor | null, slug: string, locale: AppLocale) {
   const s = await loadSchedule(actor, slug, locale);
   const tx = XLSX_TEXTS[locale];
+  const dayOf = (m: ExportMatch) =>
+    m.startsAt ? utcToAmsterdamLocal(m.startsAt).slice(0, 10) : '';
   const row = (m: ExportMatch) => [
-    utcToAmsterdamLocal(m.startsAt!).slice(0, 10),
-    formatTime(m.startsAt!, locale),
-    m.court!.name ?? m.court!.number,
+    dayOf(m),
+    m.startsAt ? formatTime(m.startsAt, locale) : '',
+    m.court ? (m.court.name ?? m.court.number) : '',
     m.number,
     m.event,
     m.round,
@@ -194,7 +203,9 @@ export async function scheduleXlsx(actor: Actor | null, slug: string, locale: Ap
       : m.sets.map((x) => `${x.scoreA}-${x.scoreB}`).join(', '),
     tx.status[m.status as keyof typeof tx.status] ?? m.status,
   ];
-  const days = [...new Set(s.matches.map((m) => utcToAmsterdamLocal(m.startsAt!).slice(0, 10)))];
+  const planned = s.matches.filter((m) => m.startsAt && m.court);
+  const unplanned = s.matches.filter((m) => !(m.startsAt && m.court));
+  const days = [...new Set(planned.map(dayOf))];
   const prefix = s.published ? '' : `${tx.draft} `;
   const sheets: XlsxSheet[] = [
     { name: `${prefix}${tx.all}`, header: [...tx.header], rows: s.matches.map(row) },
@@ -202,10 +213,11 @@ export async function scheduleXlsx(actor: Actor | null, slug: string, locale: Ap
       ? days.map((d) => ({
           name: `${prefix}${formatDate(new Date(`${d}T12:00:00Z`), locale)}`,
           header: [...tx.header],
-          rows: s.matches
-            .filter((m) => utcToAmsterdamLocal(m.startsAt!).slice(0, 10) === d)
-            .map(row),
+          rows: planned.filter((m) => dayOf(m) === d).map(row),
         }))
+      : []),
+    ...(unplanned.length
+      ? [{ name: `${prefix}${tx.unplanned}`, header: [...tx.header], rows: unplanned.map(row) }]
       : []),
   ];
   return { bytes: toXlsxBook(sheets), filename: fileName(locale, 'schedule', s.t.slug, 'xlsx') };
