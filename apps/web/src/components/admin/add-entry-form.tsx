@@ -70,6 +70,10 @@ export function AddEntryForm({
       <label className="block max-w-md space-y-1.5 text-sm font-medium">
         {t('event')}
         <select
+          // React resets the form after each save, which puts the select back on its first
+          // option while the state still holds the chosen one; a new element per round keeps
+          // the screen and the form in step.
+          key={`event-${round}`}
           name="eventId"
           value={eventId}
           onChange={(e) => {
