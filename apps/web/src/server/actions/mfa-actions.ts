@@ -45,7 +45,7 @@ export async function newRecoveryCodesAction(
   try {
     const codes = await regenerateRecoveryCodes(
       await actorOrThrow(),
-      { code: formData.get('code') },
+      { code: formData.get('code'), password: formData.get('password') },
       await currentRequestMeta(),
     );
     return { ok: true, codes };

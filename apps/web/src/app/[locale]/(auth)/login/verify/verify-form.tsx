@@ -11,15 +11,18 @@ export function VerifyForm({
   locale,
   next,
   remember,
+  app = true,
 }: {
   locale: AppLocale;
   next: string;
   remember: boolean;
+  /** The authenticator app is on; without it only a recovery code can be typed here. */
+  app?: boolean;
 }) {
   const t = useTranslations('Auth.mfa');
   const [state, action] = useActionState(verifyLoginAction.bind(null, locale), initialFormState);
   // The app's code is digits: open the number pad. Recovery codes have letters.
-  const [recovery, setRecovery] = useState(false);
+  const [recovery, setRecovery] = useState(!app);
   return (
     <form action={action} className="space-y-5" noValidate>
       <FormError state={state} />
@@ -36,13 +39,15 @@ export function VerifyForm({
         inputMode={recovery ? 'text' : 'numeric'}
         maxLength={recovery ? 20 : 6}
       />
-      <button
-        type="button"
-        onClick={() => setRecovery((r) => !r)}
-        className="text-sm text-primary underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-      >
-        {recovery ? t('useApp') : t('useRecovery')}
-      </button>
+      {app && (
+        <button
+          type="button"
+          onClick={() => setRecovery((r) => !r)}
+          className="text-sm text-primary underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+        >
+          {recovery ? t('useApp') : t('useRecovery')}
+        </button>
+      )}
       <SubmitButton size="lg">{t('submit')}</SubmitButton>
     </form>
   );

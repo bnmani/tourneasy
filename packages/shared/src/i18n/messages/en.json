@@ -213,7 +213,9 @@
     "emptyOrder": "Choose at least one item.",
     "allergensRequired": "Tick the allergens, or tick \"Contains none of these allergens\".",
     "codeTaken": "This code is already used for another club.",
-    "notPaid": "The payment didn't go through. Nothing has been charged; you can try again."
+    "notPaid": "The payment didn't go through. Nothing has been charged; you can try again.",
+    "passkeyInvalid": "The passkey couldn't be checked. Try again.",
+    "passkeyLimit": "You have the maximum of 10 passkeys. Remove one first."
   },
   "Auth": {
     "login": {
@@ -300,7 +302,7 @@
     },
     "mfa": {
       "title": "Enter your code",
-      "intro": "Enter the 6-digit code from your authenticator app. Lost your phone? Use one of your recovery codes.",
+      "intro": "Enter the 6-digit code from your authenticator app.",
       "code": "6-digit code",
       "codeHint": "The code your authenticator app shows now.",
       "submit": "Log in",
@@ -308,7 +310,12 @@
       "recoveryCode": "Recovery code",
       "recoveryHint": "One of the recovery codes you saved, for example abcd-efgh-jk.",
       "useRecovery": "Lost your phone? Use a recovery code instead",
-      "useApp": "Use the code from the app instead"
+      "useApp": "Use the code from the app instead",
+      "introPasskey": "Confirm it's you with your passkey: Face ID, Touch ID, your fingerprint or your phone.",
+      "introBoth": "Confirm it's you with your passkey, or enter the code from your authenticator app.",
+      "usePasskey": "Use passkey",
+      "or": "or",
+      "passkeyCancelled": "The passkey wasn't used. Try again, or use a code."
     }
   },
   "Account": {
@@ -424,12 +431,12 @@
     "none": "No other active sessions.",
     "mfa": {
       "title": "Two-step login",
-      "intro": "After your password, Tourneasy asks for a code from an authenticator app such as Google Authenticator, Microsoft Authenticator or 1Password. Nobody can log in with just your password.",
-      "required": "Two-step login is required for organisers and admins. Set it up now; then you can use the portal again.",
+      "intro": "After your password, Tourneasy asks you to confirm it's you. Choose a passkey, an authenticator app, or both. Nobody can log in with just your password.",
+      "required": "Two-step login is required for organisers and admins. Add a passkey or set up the app; then you can use the portal again.",
       "on": "On since {date}.",
       "off": "Off.",
       "codesLeft": "{count, plural, =0 {No recovery codes left: make new ones.} one {# recovery code left.} other {# recovery codes left.}}",
-      "start": "Set up",
+      "start": "Set up the app",
       "step1": "1. Scan this QR code with your authenticator app.",
       "manual": "Can't scan? Enter this key in the app:",
       "step2": "2. Enter the 6-digit code the app shows now.",
@@ -444,12 +451,31 @@
       "newCodesHint": "The old codes stop working.",
       "code": "Code from the app",
       "password": "Your password",
-      "disable": "Turn off",
-      "disableHintStaff": "Note: as an organiser or admin you can only use the portal again after setting it up again, for example on a new phone.",
-      "disableHintPlayer": "After that only your password is needed to log in.",
+      "disable": "Turn off the app",
+      "disableHintStaff": "Note: without a passkey, as an organiser or admin you can only use the portal again after setting up two-step login again.",
+      "disableHintPlayer": "Your passkeys, if any, keep working.",
       "enabled": "Two-step login is on. Your other devices were logged out; log in there again with a code.",
-      "disabled": "Two-step login is off.",
-      "recoveryUsed": "You logged in with a recovery code. Make new recovery codes, or set up the app again if you lost your phone."
+      "disabled": "The authenticator app is off.",
+      "recoveryUsed": "You logged in with a recovery code. Make new recovery codes, or set up the app again if you lost your phone.",
+      "statusOn": "Two-step login is on.",
+      "appTitle": "Authenticator app",
+      "appIntro": "A 6-digit code from an app such as Google Authenticator, Microsoft Authenticator or 1Password."
+    },
+    "passkey": {
+      "title": "Passkey",
+      "recommended": "Easiest",
+      "intro": "Confirm with Face ID, Touch ID, your fingerprint, Windows Hello or a security key. Nothing to type. Add one on each device you use.",
+      "add": "Add a passkey on this device",
+      "added": "Passkey added.",
+      "addedOn": "Added {date}",
+      "lastUsed": "last used {date}",
+      "neverUsed": "not used yet",
+      "remove": "Remove",
+      "removeHint": "Remove the passkey \"{name}\". Enter your password to confirm.",
+      "removed": "Passkey removed.",
+      "cancelled": "The passkey wasn't added. Try again when your device asks.",
+      "alreadyAdded": "This device already has a passkey for your account.",
+      "unsupported": "This browser doesn't support passkeys. Use the authenticator app, or try another browser."
     }
   },
   "Privacy": {
@@ -2154,7 +2180,9 @@
     "pricing_purchase": "Package requested or bought",
     "pricing_package": "Package chosen",
     "pricing_markedPaid": "Package marked paid",
-    "pricing_cancelled": "Package purchase cancelled"
+    "pricing_cancelled": "Package purchase cancelled",
+    "auth_passkey_add": "Passkey added",
+    "auth_passkey_remove": "Passkey removed"
   },
   "Packages": {
     "FREE": {

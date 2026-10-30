@@ -3,6 +3,7 @@ import { getFormatter, getTranslations } from 'next-intl/server';
 import { FormSection } from '@/components/forms/fields';
 import { Button } from '@/components/ui/button';
 import { MfaDisable, MfaNewCodes, MfaSetup } from '@/components/account/mfa-panel';
+import { PasskeyAdd, PasskeyRemove } from '@/components/account/passkey-panel';
 import { FormSuccess } from '@/components/forms/fields';
 import { Link } from '@/i18n/navigation';
 import { firstParam, pageLocale, type LocaleParams, type SearchParams } from '@/lib/page';
@@ -27,12 +28,11 @@ export default async function SecurityPage({
   const query = await searchParams;
   const status = firstParam(query.status);
   const [sessions, mfa] = await Promise.all([listSessions(actor), mfaStatus(actor)]);
-  // The QR code shows when asked for, and straight away for admins who must set it up.
+  // The app's QR code shows once chosen; a passkey is the other choice (D88).
   const setup =
-    !mfa.enabledAt && (firstParam(query.mfa) === 'setup' || mfa.required)
-      ? await mfaSetup(actor)
-      : null;
+    !mfa.appEnabledAt && firstParam(query.mfa) === 'setup' ? await mfaSetup(actor) : null;
   const tm = await getTranslations('Security.mfa');
+  const tk = await getTranslations('Security.passkey');
   const staff =
     actor.mfaSetupRequired ||
     actor.roles.some((r) => r === 'ORGANISER' || r === 'ADMIN' || r === 'OWNER');
@@ -44,6 +44,7 @@ export default async function SecurityPage({
     <div className="space-y-6">
       <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{t('title')}</h1>
       {status === 'mfaDisabled' && <FormSuccess>{tm('disabled')}</FormSuccess>}
+      {status === 'passkeyRemoved' && <FormSuccess>{tk('removed')}</FormSuccess>}
       {status === 'recoveryUsed' && (
         <p
           role="status"
@@ -61,29 +62,74 @@ export default async function SecurityPage({
               {tm('required')}
             </p>
           )}
-          {mfa.enabledAt ? (
-            <>
-              <p className="text-sm font-medium">
-                {tm('on', {
-                  date: format.dateTime(mfa.enabledAt, { dateStyle: 'medium' }),
-                })}{' '}
-                <span className={mfa.codesLeft < 3 ? 'text-destructive' : 'text-muted-foreground'}>
-                  {tm('codesLeft', { count: mfa.codesLeft })}
-                </span>
-              </p>
-              <MfaNewCodes />
-              <MfaDisable locale={locale} staff={staff} />
-            </>
-          ) : setup ? (
-            <MfaSetup qrSvg={setup.qrSvg} secret={setup.secret} />
-          ) : (
-            <div className="flex flex-wrap items-center gap-3">
-              <p className="text-sm">{tm('off')}</p>
-              <Button asChild size="sm">
-                <Link href="/account/security?mfa=setup#two-step">{tm('start')}</Link>
-              </Button>
-            </div>
+          {mfa.on && (
+            <p className="text-sm font-medium">
+              {tm('statusOn')}{' '}
+              <span className={mfa.codesLeft < 3 ? 'text-destructive' : 'text-muted-foreground'}>
+                {tm('codesLeft', { count: mfa.codesLeft })}
+              </span>
+            </p>
           )}
+
+          <section className="space-y-3 rounded-md border p-4">
+            <h3 className="font-semibold">
+              {tk('title')}{' '}
+              <span className="ml-1 rounded bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground">
+                {tk('recommended')}
+              </span>
+            </h3>
+            <p className="text-sm text-muted-foreground">{tk('intro')}</p>
+            {mfa.passkeys.length > 0 && (
+              <ul className="divide-y rounded-md border">
+                {mfa.passkeys.map((p) => (
+                  <li key={p.id} className="space-y-1 p-3 text-sm">
+                    <p className="font-medium">{p.name}</p>
+                    <p className="text-muted-foreground">
+                      {tk('addedOn', {
+                        date: format.dateTime(p.createdAt, { dateStyle: 'medium' }),
+                      })}
+                      {' · '}
+                      {p.lastUsedAt
+                        ? tk('lastUsed', {
+                            date: format.dateTime(p.lastUsedAt, {
+                              dateStyle: 'medium',
+                              timeStyle: 'short',
+                            }),
+                          })
+                        : tk('neverUsed')}
+                    </p>
+                    <PasskeyRemove locale={locale} passkeyId={p.id} name={p.name} />
+                  </li>
+                ))}
+              </ul>
+            )}
+            <PasskeyAdd primary={!mfa.on} />
+          </section>
+
+          <section className="space-y-3 rounded-md border p-4">
+            <h3 className="font-semibold">{tm('appTitle')}</h3>
+            {mfa.appEnabledAt ? (
+              <>
+                <p className="text-sm">
+                  {tm('on', {
+                    date: format.dateTime(mfa.appEnabledAt, { dateStyle: 'medium' }),
+                  })}
+                </p>
+                <MfaDisable locale={locale} staff={staff && mfa.passkeys.length === 0} />
+              </>
+            ) : setup ? (
+              <MfaSetup qrSvg={setup.qrSvg} secret={setup.secret} />
+            ) : (
+              <>
+                <p className="text-sm text-muted-foreground">{tm('appIntro')}</p>
+                <Button asChild size="sm" variant="outline">
+                  <Link href="/account/security?mfa=setup#two-step">{tm('start')}</Link>
+                </Button>
+              </>
+            )}
+          </section>
+
+          {mfa.on && <MfaNewCodes app={!!mfa.appEnabledAt} />}
         </div>
       </FormSection>
 

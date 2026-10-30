@@ -15,7 +15,7 @@ import {
 } from '@/server/actions/mfa-actions';
 
 /** The recovery codes, shown once, with copy and "saved them". */
-function RecoveryCodes({ codes }: { codes: string[] }) {
+export function RecoveryCodes({ codes }: { codes: string[] }) {
   const t = useTranslations('Security.mfa');
   const router = useRouter();
   const [copied, setCopied] = useState(false);
@@ -87,7 +87,8 @@ export function MfaSetup({ qrSvg, secret }: { qrSvg: string; secret: string }) {
   );
 }
 
-export function MfaNewCodes() {
+/** New recovery codes: confirmed with an app code, or the password with passkeys only. */
+export function MfaNewCodes({ app = true }: { app?: boolean }) {
   const t = useTranslations('Security.mfa');
   const [state, action] = useActionState<CodesState, FormData>(
     newRecoveryCodesAction,
@@ -100,7 +101,18 @@ export function MfaNewCodes() {
       <form action={action} className="mt-3 max-w-xs space-y-3" noValidate>
         <FormError state={state} />
         <p className="text-muted-foreground">{t('newCodesHint')}</p>
-        {codeField(t('code'), state)}
+        {app ? (
+          codeField(t('code'), state)
+        ) : (
+          <TextField
+            name="password"
+            type="password"
+            label={t('password')}
+            state={state}
+            required
+            autoComplete="current-password"
+          />
+        )}
         <SubmitButton variant="outline">{t('newCodes')}</SubmitButton>
       </form>
     </details>

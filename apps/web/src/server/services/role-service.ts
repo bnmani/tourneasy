@@ -83,6 +83,7 @@ export async function listUsers(
         email: true,
         createdAt: true,
         totpEnabledAt: true,
+        _count: { select: { passkeys: true } },
         roles: { select: { role: true } },
         playerProfile: { select: { memberNumber: true } },
       },
@@ -104,7 +105,7 @@ export async function listUsers(
       ),
       /** An owner, seen by an admin: shown as a plain player that can't be changed. */
       protected: owners.has(u.id),
-      mfaEnabled: u.totpEnabledAt !== null,
+      mfaEnabled: u.totpEnabledAt !== null || u._count.passkeys > 0,
       createdAt: u.createdAt,
     })),
   };

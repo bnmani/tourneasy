@@ -1,7 +1,7 @@
 /**
- * Two-step login (D78): an authenticator app code after the password. Mandatory for admins and
- * owners (until it's on they act as players), optional for everyone else. Ten one-time recovery
- * codes cover a lost phone; an owner (or, for players and organisers, an admin) can reset it.
+ * Two-step login (D78): an authenticator app code, or a passkey (D88), after the password.
+ * Mandatory for staff (until it's on they act as players), optional for everyone else. Ten
+ * one-time recovery codes cover a lost phone; an owner can reset it.
  */
 import { prisma } from '@tourneasy/db';
 import { randomBytes } from 'node:crypto';
@@ -35,24 +35,41 @@ async function userSecret(userId: string) {
   return { ...user, secret };
 }
 
-export async function hasMfa(userId: string): Promise<boolean> {
+/** Which second steps someone has: the authenticator app and/or passkeys. */
+export async function mfaMethods(userId: string) {
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { totpEnabledAt: true },
+    select: { totpEnabledAt: true, _count: { select: { passkeys: true } } },
   });
-  return !!user?.totpEnabledAt;
+  return { app: !!user?.totpEnabledAt, passkeys: user?._count.passkeys ?? 0 };
+}
+
+export async function hasMfa(userId: string): Promise<boolean> {
+  const m = await mfaMethods(userId);
+  return m.app || m.passkeys > 0;
 }
 
 /** The status on the security page. */
 export async function mfaStatus(actor: Actor) {
-  const [user, codesLeft] = await Promise.all([
+  const [user, codesLeft, passkeys] = await Promise.all([
     prisma.user.findUniqueOrThrow({
       where: { id: actor.userId },
       select: { totpEnabledAt: true },
     }),
     prisma.mfaRecoveryCode.count({ where: { userId: actor.userId, usedAt: null } }),
+    prisma.passkey.findMany({
+      where: { userId: actor.userId },
+      orderBy: { createdAt: 'asc' },
+      select: { id: true, name: true, createdAt: true, lastUsedAt: true },
+    }),
   ]);
-  return { enabledAt: user.totpEnabledAt, codesLeft, required: actor.mfaSetupRequired };
+  return {
+    appEnabledAt: user.totpEnabledAt,
+    passkeys,
+    on: !!user.totpEnabledAt || passkeys.length > 0,
+    codesLeft,
+    required: actor.mfaSetupRequired,
+  };
 }
 
 /** The secret to scan, made once and kept until confirmed (a reload shows the same QR). */
@@ -74,7 +91,7 @@ export async function mfaSetup(actor: Actor) {
   return { secret: secret.replace(/(.{4})/g, '$1 ').trim(), qrSvg };
 }
 
-async function replaceRecoveryCodes(userId: string): Promise<string[]> {
+export async function replaceRecoveryCodes(userId: string): Promise<string[]> {
   const codes = Array.from({ length: RECOVERY_CODES }, newRecoveryCode);
   await prisma.$transaction([
     prisma.mfaRecoveryCode.deleteMany({ where: { userId } }),
@@ -126,8 +143,9 @@ export async function checkMfaCode(
 ): Promise<{ recoveryUsed: boolean }> {
   await enforce(`mfa:${userId}`, LIMITS.mfaPerUser);
   const user = await userSecret(userId);
-  if (!user.totpEnabledAt || !user.secret) throw new AppError('mfaInvalid');
-  const step = verifyTotp(user.secret, code, user.totpLastStep);
+  if (!(await hasMfa(userId))) throw new AppError('mfaInvalid');
+  const step =
+    user.totpEnabledAt && user.secret ? verifyTotp(user.secret, code, user.totpLastStep) : null;
   if (step !== null) {
     // Conditional: two requests with the same code can't both pass.
     const claimed = await prisma.user.updateMany({
@@ -157,13 +175,18 @@ export async function checkMfaCode(
   throw new AppError('mfaInvalid', { fields: { code: 'mfaInvalid' } });
 }
 
-/** New recovery codes (the old ones stop working); needs a current code from the app. */
+/**
+ * New recovery codes (the old ones stop working). Needs a current code from the app, or, with
+ * passkeys only, the password.
+ */
 export async function regenerateRecoveryCodes(
   actor: Actor,
-  input: { code?: unknown },
+  input: { code?: unknown; password?: unknown },
   meta: RequestMeta,
 ): Promise<string[]> {
-  await checkMfaCode(actor.userId, String(input.code ?? ''), meta);
+  const { app } = await mfaMethods(actor.userId);
+  if (app) await checkMfaCode(actor.userId, String(input.code ?? ''), meta);
+  else await assertPassword(actor.userId, input.password);
   const codes = await replaceRecoveryCodes(actor.userId);
   await writeAudit(prisma, {
     actorId: actor.userId,
@@ -175,34 +198,48 @@ export async function regenerateRecoveryCodes(
   return codes;
 }
 
+/** The password again, for changes to two-step login. */
+export async function assertPassword(userId: string, password: unknown) {
+  const user = await prisma.user.findUniqueOrThrow({
+    where: { id: userId },
+    select: { passwordHash: true },
+  });
+  if (!user.passwordHash || !(await verifyPassword(user.passwordHash, String(password ?? ''))))
+    throw new AppError('wrongPassword', { fields: { password: 'wrongPassword' } });
+}
+
+/** With no second step left, the recovery codes go too. */
+export async function dropRecoveryCodesIfNoMethod(userId: string) {
+  if (!(await hasMfa(userId))) await prisma.mfaRecoveryCode.deleteMany({ where: { userId } });
+}
+
 function clearMfa(userId: string) {
   return prisma.$transaction([
     prisma.user.update({
       where: { id: userId },
       data: { totpSecretEnc: null, totpEnabledAt: null, totpLastStep: null },
     }),
+    prisma.passkey.deleteMany({ where: { userId } }),
     prisma.mfaRecoveryCode.deleteMany({ where: { userId } }),
   ]);
 }
 
 /**
- * Switches it off with password and a code. Admins and owners may, but then act as players
- * until they set it up again (a new phone, say).
+ * Turns the authenticator app off, with password and a code. Passkeys stay. Without any second
+ * step left, staff act as players until they set one up again (a new phone, say).
  */
 export async function disableMfa(
   actor: Actor,
   input: { password?: unknown; code?: unknown },
   meta: RequestMeta,
 ): Promise<void> {
-  const user = await prisma.user.findUniqueOrThrow({
-    where: { id: actor.userId },
-    select: { passwordHash: true },
-  });
-  const password = String(input.password ?? '');
-  if (!user.passwordHash || !(await verifyPassword(user.passwordHash, password)))
-    throw new AppError('wrongPassword', { fields: { password: 'wrongPassword' } });
+  await assertPassword(actor.userId, input.password);
   await checkMfaCode(actor.userId, String(input.code ?? ''), meta);
-  await clearMfa(actor.userId);
+  await prisma.user.update({
+    where: { id: actor.userId },
+    data: { totpSecretEnc: null, totpEnabledAt: null, totpLastStep: null },
+  });
+  await dropRecoveryCodesIfNoMethod(actor.userId);
   await writeAudit(prisma, {
     actorId: actor.userId,
     action: 'auth.mfa.disable',

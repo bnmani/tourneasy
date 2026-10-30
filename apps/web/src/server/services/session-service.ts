@@ -59,10 +59,12 @@ function toActor(
     emailVerifiedAt: Date | null;
     totpEnabledAt: Date | null;
     roles: { role: Role }[];
+    _count: { passkeys: number };
   },
 ): Actor {
   const dbRoles = user.roles.map((r) => r.role);
-  const mfaEnabled = user.totpEnabledAt !== null;
+  // Two-step login is the authenticator app, a passkey, or both (D88).
+  const mfaEnabled = user.totpEnabledAt !== null || user._count.passkeys > 0;
   return {
     userId: user.id,
     sessionId,
@@ -151,7 +153,7 @@ export async function completeMfaSession(sessionId: string, rememberMe: boolean)
 export async function actorFromWebToken(token: string): Promise<Actor | null> {
   const session = await prisma.userSession.findUnique({
     where: { tokenHash: hashToken(token) },
-    include: { user: { include: { roles: true } } },
+    include: { user: { include: { roles: true, _count: { select: { passkeys: true } } } } },
   });
   const now = Date.now();
   if (
@@ -308,7 +310,7 @@ export async function actorFromAccessToken(token: string): Promise<Actor | null>
       expiresAt: { gt: new Date() },
       user: activeUserFilter,
     },
-    include: { user: { include: { roles: true } } },
+    include: { user: { include: { roles: true, _count: { select: { passkeys: true } } } } },
   });
   return session ? toActor(session.id, session.user) : null;
 }

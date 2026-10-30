@@ -54,6 +54,8 @@ export type ErrorCode =
   | 'lastOwner'
   | 'mfaRequired'
   | 'mfaInvalid'
+  | 'passkeyInvalid'
+  | 'passkeyLimit'
   | 'possibleDuplicate'
   | 'archiveTooEarly'
   | 'packageRequired'
@@ -116,6 +118,8 @@ const HTTP_STATUS: Record<ErrorCode, number> = {
   lastOwner: 409,
   mfaRequired: 401,
   mfaInvalid: 401,
+  passkeyInvalid: 401,
+  passkeyLimit: 409,
   possibleDuplicate: 409,
   archiveTooEarly: 409,
   packageRequired: 409,

@@ -213,7 +213,9 @@
     "emptyOrder": "Kies minstens één item.",
     "allergensRequired": "Vink de allergenen aan, of vink \"Bevat geen van deze allergenen\" aan.",
     "codeTaken": "Deze code wordt al gebruikt voor een andere club.",
-    "notPaid": "De betaling is niet gelukt. Er is niets afgeschreven; je kunt het opnieuw proberen."
+    "notPaid": "De betaling is niet gelukt. Er is niets afgeschreven; je kunt het opnieuw proberen.",
+    "passkeyInvalid": "De passkey kon niet worden gecontroleerd. Probeer het opnieuw.",
+    "passkeyLimit": "Je hebt het maximum van 10 passkeys. Verwijder er eerst een."
   },
   "Auth": {
     "login": {
@@ -300,7 +302,7 @@
     },
     "mfa": {
       "title": "Code invoeren",
-      "intro": "Vul de 6-cijferige code uit je authenticator-app in. Telefoon kwijt? Gebruik dan een van je herstelcodes.",
+      "intro": "Vul de 6-cijferige code uit je authenticator-app in.",
       "code": "6-cijferige code",
       "codeHint": "De code die je authenticator-app nu toont.",
       "submit": "Inloggen",
@@ -308,7 +310,12 @@
       "recoveryCode": "Herstelcode",
       "recoveryHint": "Een van de herstelcodes die je hebt bewaard, bijvoorbeeld abcd-efgh-jk.",
       "useRecovery": "Telefoon kwijt? Gebruik een herstelcode",
-      "useApp": "Gebruik de code uit de app"
+      "useApp": "Gebruik de code uit de app",
+      "introPasskey": "Bevestig dat jij het bent met je passkey: Face ID, Touch ID, je vingerafdruk of je telefoon.",
+      "introBoth": "Bevestig dat jij het bent met je passkey, of vul de code uit je authenticator-app in.",
+      "usePasskey": "Passkey gebruiken",
+      "or": "of",
+      "passkeyCancelled": "De passkey is niet gebruikt. Probeer het opnieuw, of gebruik een code."
     }
   },
   "Account": {
@@ -424,12 +431,12 @@
     "none": "Geen andere actieve sessies.",
     "mfa": {
       "title": "Tweestapsverificatie",
-      "intro": "Na je wachtwoord vraagt Tourneasy om een code uit een authenticator-app, zoals Google Authenticator, Microsoft Authenticator of 1Password. Zo kan niemand inloggen met alleen je wachtwoord.",
-      "required": "Voor organisatoren en beheerders is tweestapsverificatie verplicht. Stel het nu in; daarna kun je het beheer weer gebruiken.",
+      "intro": "Na je wachtwoord vraagt Tourneasy je te bevestigen dat jij het bent. Kies een passkey, een authenticator-app, of allebei. Met alleen je wachtwoord kan niemand inloggen.",
+      "required": "Inloggen in twee stappen is verplicht voor organisatoren en beheerders. Voeg een passkey toe of stel de app in; daarna kun je het portaal weer gebruiken.",
       "on": "Aan sinds {date}.",
       "off": "Staat uit.",
       "codesLeft": "{count, plural, =0 {Geen herstelcodes meer over: maak nieuwe aan.} one {Nog # herstelcode over.} other {Nog # herstelcodes over.}}",
-      "start": "Instellen",
+      "start": "App instellen",
       "step1": "1. Scan deze QR-code met je authenticator-app.",
       "manual": "Lukt scannen niet? Vul deze sleutel in de app in:",
       "step2": "2. Vul de 6-cijferige code in die de app nu laat zien.",
@@ -444,12 +451,31 @@
       "newCodesHint": "De oude codes werken daarna niet meer.",
       "code": "Code uit de app",
       "password": "Je wachtwoord",
-      "disable": "Uitschakelen",
-      "disableHintStaff": "Let op: als organisator of beheerder kun je het beheer pas weer gebruiken nadat je het opnieuw hebt ingesteld, bijvoorbeeld op een nieuwe telefoon.",
-      "disableHintPlayer": "Daarna is alleen je wachtwoord nodig om in te loggen.",
+      "disable": "App uitzetten",
+      "disableHintStaff": "Let op: zonder passkey kun je als organisator of beheerder het portaal pas weer gebruiken nadat je inloggen in twee stappen opnieuw hebt ingesteld.",
+      "disableHintPlayer": "Je passkeys, als je die hebt, blijven werken.",
       "enabled": "Tweestapsverificatie staat aan. Je andere apparaten zijn uitgelogd; daar log je opnieuw in met een code.",
-      "disabled": "Tweestapsverificatie staat uit.",
-      "recoveryUsed": "Je bent ingelogd met een herstelcode. Maak nieuwe herstelcodes aan, of stel de app opnieuw in als je je telefoon kwijt bent."
+      "disabled": "De authenticator-app staat uit.",
+      "recoveryUsed": "Je bent ingelogd met een herstelcode. Maak nieuwe herstelcodes aan, of stel de app opnieuw in als je je telefoon kwijt bent.",
+      "statusOn": "Inloggen in twee stappen staat aan.",
+      "appTitle": "Authenticator-app",
+      "appIntro": "Een 6-cijferige code uit een app zoals Google Authenticator, Microsoft Authenticator of 1Password."
+    },
+    "passkey": {
+      "title": "Passkey",
+      "recommended": "Makkelijkst",
+      "intro": "Bevestig met Face ID, Touch ID, je vingerafdruk, Windows Hello of een beveiligingssleutel. Niets te typen. Voeg er een toe op elk apparaat dat je gebruikt.",
+      "add": "Passkey toevoegen op dit apparaat",
+      "added": "Passkey toegevoegd.",
+      "addedOn": "Toegevoegd {date}",
+      "lastUsed": "laatst gebruikt {date}",
+      "neverUsed": "nog niet gebruikt",
+      "remove": "Verwijderen",
+      "removeHint": "Verwijder de passkey \"{name}\". Vul je wachtwoord in om te bevestigen.",
+      "removed": "Passkey verwijderd.",
+      "cancelled": "De passkey is niet toegevoegd. Probeer het opnieuw wanneer je apparaat erom vraagt.",
+      "alreadyAdded": "Dit apparaat heeft al een passkey voor je account.",
+      "unsupported": "Deze browser ondersteunt geen passkeys. Gebruik de authenticator-app, of probeer een andere browser."
     }
   },
   "Privacy": {
@@ -2154,7 +2180,9 @@
     "pricing_purchase": "Pakket aangevraagd of gekocht",
     "pricing_package": "Pakket gekozen",
     "pricing_markedPaid": "Pakket op betaald gezet",
-    "pricing_cancelled": "Pakketaankoop geannuleerd"
+    "pricing_cancelled": "Pakketaankoop geannuleerd",
+    "auth_passkey_add": "Passkey toegevoegd",
+    "auth_passkey_remove": "Passkey verwijderd"
   },
   "Packages": {
     "FREE": {

@@ -260,28 +260,28 @@ enum DevicePlatform {
 // ─────────────────────────────────────────────────────────────────────────────
 
 model User {
-  id                  String    @id @default(uuid()) @db.Uuid
-  email               String    @unique @db.Citext
-  emailVerifiedAt     DateTime?
-  passwordHash        String? // argon2id; null for magic-link-only users
-  name                String
-  locale              Locale    @default(nl)
-  image               String? // R2 object key
-  isActive            Boolean   @default(true)
-  lastLoginAt         DateTime?
-  failedLoginCount    Int       @default(0)
-  lockedUntil         DateTime?
+  id               String    @id @default(uuid()) @db.Uuid
+  email            String    @unique @db.Citext
+  emailVerifiedAt  DateTime?
+  passwordHash     String? // argon2id; null for magic-link-only users
+  name             String
+  locale           Locale    @default(nl)
+  image            String? // R2 object key
+  isActive         Boolean   @default(true)
+  lastLoginAt      DateTime?
+  failedLoginCount Int       @default(0)
+  lockedUntil      DateTime?
   /// Two-step login (D78): the authenticator secret, encrypted. Set while setting up;
   /// switched on once totpEnabledAt is set. Mandatory for admins and owners.
-  totpSecretEnc       String?
-  totpEnabledAt       DateTime?
+  totpSecretEnc    String?
+  totpEnabledAt    DateTime?
   /// Last 30-second step a code was accepted for, so a code can't be used twice.
-  totpLastStep        Int?
+  totpLastStep     Int?
   /// Food ordering allowed for this organiser's tournaments (owner's switch, D87); until when.
-  anonymisedAt        DateTime? // GDPR erasure: PII scrubbed, row kept for referential integrity
-  deletedAt           DateTime?
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
+  anonymisedAt     DateTime? // GDPR erasure: PII scrubbed, row kept for referential integrity
+  deletedAt        DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
   roles               UserRole[]                @relation("UserRoles")
   rolesGranted        UserRole[]                @relation("RoleGrantedBy")
@@ -303,6 +303,7 @@ model User {
   following           PlayerFollow[]
   playerInvitesSent   PlayerInvite[]
   recoveryCodes       MfaRecoveryCode[]
+  passkeys            Passkey[]
   packagePurchases    PackagePurchase[]
   foodOrders          FoodOrder[]
 
@@ -350,22 +351,24 @@ model Account {
 /// Web: the Auth.js JWT carries this id and is rejected once revokedAt is set.
 /// Mobile: refresh tokens rotate within this session (see RefreshToken).
 model UserSession {
-  id            String      @id @default(uuid()) @db.Uuid
-  userId        String      @db.Uuid
-  kind          SessionKind
+  id                String      @id @default(uuid()) @db.Uuid
+  userId            String      @db.Uuid
+  kind              SessionKind
   /// WEB only: SHA-256 of the opaque session cookie value. MOBILE sessions use RefreshToken.
-  tokenHash     String?     @unique
-  deviceName    String?
-  userAgent     String?
-  ipAddress     String?
-  lastSeenAt    DateTime    @default(now())
+  tokenHash         String?     @unique
+  deviceName        String?
+  userAgent         String?
+  ipAddress         String?
+  lastSeenAt        DateTime    @default(now())
   /// Unlocked for sensitive settings after re-entering the password (D54), until this moment.
-  elevatedUntil DateTime?
+  elevatedUntil     DateTime?
   /// Password accepted but the two-step code not yet (D78): not signed in until it is.
-  mfaPending    Boolean     @default(false)
-  expiresAt     DateTime
-  revokedAt     DateTime?
-  createdAt     DateTime    @default(now())
+  mfaPending        Boolean     @default(false)
+  /// The WebAuthn challenge being answered by this session (adding a passkey, or logging in).
+  webauthnChallenge String?
+  expiresAt         DateTime
+  revokedAt         DateTime?
+  createdAt         DateTime    @default(now())
 
   user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   refreshTokens RefreshToken[]
@@ -418,6 +421,26 @@ model MfaRecoveryCode {
   codeHash  String
   usedAt    DateTime?
   createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+/// A passkey (Face ID, Touch ID, Windows Hello, a phone or a security key) as the second login
+/// step (D88). Counts as two-step login, like the authenticator app.
+model Passkey {
+  id           String    @id @default(uuid()) @db.Uuid
+  userId       String    @db.Uuid
+  /// WebAuthn credential id, base64url.
+  credentialId String    @unique
+  publicKey    Bytes
+  counter      BigInt    @default(0)
+  transports   String[]
+  /// A name the user recognises, e.g. "iPhone".
+  name         String
+  createdAt    DateTime  @default(now())
+  lastUsedAt   DateTime?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
