@@ -1,12 +1,6 @@
 {
   "version": 1,
   "skills": {
-    "deploy-to-vercel": {
-      "source": "vercel-labs/agent-skills",
-      "sourceType": "github",
-      "skillPath": "skills/deploy-to-vercel/SKILL.md",
-      "computedHash": "a024eac409b1bb2e072a19e7e0d7f194ac5482c87fb1a2ad6f62d041b454040c"
-    },
     "vercel-cli-with-tokens": {
       "source": "vercel-labs/agent-skills",
       "sourceType": "github",
