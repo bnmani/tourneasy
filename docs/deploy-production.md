@@ -2,13 +2,13 @@
 
 The live site runs the same app as the test site, from its own branch and database:
 
-|                | Test                                   | Live                                |
-| -------------- | -------------------------------------- | ----------------------------------- |
-| Address        | https://test.tourneasy.app             | https://tourneasy.com               |
-| Branch         | `main` (every push)                    | `production` (only on a release)    |
-| Database       | Neon project (test)                    | Neon project `tourneasy-production` |
-| Search engines | blocked (`robots.txt`, `X-Robots-Tag`) | indexed                             |
-| Stripe         | test keys                              | live keys                           |
+|                | Test                                                                  | Live                                |
+| -------------- | --------------------------------------------------------------------- | ----------------------------------- |
+| Address        | https://test.tourneasy.app                                            | https://tourneasy.com               |
+| Branch         | `main` (every push)                                                   | `production` (only on a release)    |
+| Database       | Neon project (test)                                                   | Neon project `tourneasy-production` |
+| Search engines | noindex on every page (`X-Robots-Tag`), crawlable so old results drop | indexed                             |
+| Stripe         | test keys                                                             | live keys                           |
 
 A release: test on the test site, then fast-forward `production` to `main` and push. Hostinger
 rebuilds the live site from `production`.
