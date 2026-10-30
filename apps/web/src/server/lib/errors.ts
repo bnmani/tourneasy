@@ -55,7 +55,14 @@ export type ErrorCode =
   | 'mfaRequired'
   | 'mfaInvalid'
   | 'possibleDuplicate'
-  | 'archiveTooEarly';
+  | 'archiveTooEarly'
+  | 'packageRequired'
+  | 'packageTooSmall'
+  | 'noCreditsLeft'
+  | 'foodUnavailable'
+  | 'foodClosed'
+  | 'foodSoldOut'
+  | 'emptyOrder';
 
 const HTTP_STATUS: Record<ErrorCode, number> = {
   validation: 422,
@@ -111,6 +118,13 @@ const HTTP_STATUS: Record<ErrorCode, number> = {
   mfaInvalid: 401,
   possibleDuplicate: 409,
   archiveTooEarly: 409,
+  packageRequired: 409,
+  packageTooSmall: 409,
+  noCreditsLeft: 409,
+  foodUnavailable: 404,
+  foodClosed: 409,
+  foodSoldOut: 409,
+  emptyOrder: 422,
 };
 
 export class AppError extends Error {

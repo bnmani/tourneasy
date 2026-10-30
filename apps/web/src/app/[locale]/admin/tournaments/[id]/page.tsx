@@ -16,6 +16,10 @@ import {
 import { getActor, isPortalUser, requirePortal } from '@/server/auth/web';
 import { isAppError } from '@/server/lib/errors';
 import { setupChecklist } from '@/server/services/progress-service';
+import { tournamentPackage } from '@/server/services/pricing-service';
+import { foodAllowed } from '@/server/services/food-service';
+import { setFoodAccessAction } from '@/server/actions/pricing-food-actions';
+import { PackageCard } from '@/components/admin/package-card';
 import { SetupChecklist } from '@/components/admin/setup-checklist';
 import { entryCounts } from '@/server/services/registration-service';
 import { getTournament, tournamentOver } from '@/server/services/tournament-service';
@@ -57,6 +61,10 @@ export default async function AdminTournamentPage({
   const td = await getTranslations('DrawTypes');
   const counts = await entryCounts(actor, tournament.id);
   const setup = await setupChecklist(actor, tournament.id);
+  // Null while pricing is switched off (D87).
+  const pkg = await tournamentPackage(actor, tournament.id);
+  const isOwner = actor.roles.includes('OWNER');
+  const food = isOwner ? await foodAllowed(tournament.id) : false;
   const countOf = (status: string) =>
     counts.filter((c) => c.status === status).reduce((n, c) => n + c._count._all, 0);
   const confirmedEntries = countOf('CONFIRMED') + countOf('PENDING');
@@ -118,6 +126,38 @@ export default async function AdminTournamentPage({
           </p>
         )}
       </section>
+
+      {pkg && <PackageCard tournamentId={tournament.id} data={pkg} />}
+
+      {/* The owner decides per tournament whether it has food ordering (D87). */}
+      {isOwner && (
+        <section
+          id="food-access"
+          className="flex flex-col gap-3 rounded-lg border bg-card p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5"
+        >
+          <div>
+            <h2 className="font-semibold">{t('foodAccess.title')}</h2>
+            <p className="text-sm text-muted-foreground">
+              {tournament.foodAllowed
+                ? t('foodAccess.on')
+                : food
+                  ? t('foodAccess.viaPro')
+                  : t('foodAccess.off')}
+            </p>
+          </div>
+          <form
+            action={setFoodAccessAction.bind(null, locale, tournament.id, !tournament.foodAllowed)}
+          >
+            <Button
+              type="submit"
+              size="sm"
+              variant={tournament.foodAllowed ? 'outline' : 'secondary'}
+            >
+              {tournament.foodAllowed ? t('foodAccess.disable') : t('foodAccess.enable')}
+            </Button>
+          </form>
+        </section>
+      )}
 
       <section id="events" className="space-y-4 rounded-lg border bg-card p-4 sm:p-6">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">

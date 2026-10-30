@@ -11,6 +11,7 @@ import {
   CalendarClock,
   CalendarPlus,
   GitBranch,
+  Utensils,
   Mail,
   MapPin,
   Navigation,
@@ -32,6 +33,7 @@ import { isAppError } from '@/server/lib/errors';
 import { LiveMatches } from '@/components/matches/live-matches';
 import { TournamentNews } from '@/components/public/tournament-news';
 import { hasPublishedDraws } from '@/server/services/draw-service';
+import { foodMenu } from '@/server/services/food-service';
 import { pageLogo } from '@/server/services/logo-service';
 import { getPublicTournament } from '@/server/services/public-service';
 
@@ -199,6 +201,14 @@ export default async function TournamentPage({ params }: Props) {
               <Link href={`/tournaments/${t.slug}/draws`}>
                 <GitBranch aria-hidden="true" />
                 {tt('draws')}
+              </Link>
+            </Button>
+          )}
+          {(await foodMenu(null, t.slug).catch(() => null))?.open && (
+            <Button asChild className="bg-brand text-brand-foreground hover:bg-brand/90">
+              <Link href={`/tournaments/${t.slug}/food`}>
+                <Utensils aria-hidden="true" />
+                {tt('food')}
               </Link>
             </Button>
           )}

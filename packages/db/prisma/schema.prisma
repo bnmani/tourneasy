@@ -260,27 +260,28 @@ enum DevicePlatform {
 // ─────────────────────────────────────────────────────────────────────────────
 
 model User {
-  id               String    @id @default(uuid()) @db.Uuid
-  email            String    @unique @db.Citext
-  emailVerifiedAt  DateTime?
-  passwordHash     String? // argon2id; null for magic-link-only users
-  name             String
-  locale           Locale    @default(nl)
-  image            String? // R2 object key
-  isActive         Boolean   @default(true)
-  lastLoginAt      DateTime?
-  failedLoginCount Int       @default(0)
-  lockedUntil      DateTime?
+  id                  String    @id @default(uuid()) @db.Uuid
+  email               String    @unique @db.Citext
+  emailVerifiedAt     DateTime?
+  passwordHash        String? // argon2id; null for magic-link-only users
+  name                String
+  locale              Locale    @default(nl)
+  image               String? // R2 object key
+  isActive            Boolean   @default(true)
+  lastLoginAt         DateTime?
+  failedLoginCount    Int       @default(0)
+  lockedUntil         DateTime?
   /// Two-step login (D78): the authenticator secret, encrypted. Set while setting up;
   /// switched on once totpEnabledAt is set. Mandatory for admins and owners.
-  totpSecretEnc    String?
-  totpEnabledAt    DateTime?
+  totpSecretEnc       String?
+  totpEnabledAt       DateTime?
   /// Last 30-second step a code was accepted for, so a code can't be used twice.
-  totpLastStep     Int?
-  anonymisedAt     DateTime? // GDPR erasure: PII scrubbed, row kept for referential integrity
-  deletedAt        DateTime?
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+  totpLastStep        Int?
+  /// Food ordering allowed for this organiser's tournaments (owner's switch, D87); until when.
+  anonymisedAt        DateTime? // GDPR erasure: PII scrubbed, row kept for referential integrity
+  deletedAt           DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 
   roles               UserRole[]                @relation("UserRoles")
   rolesGranted        UserRole[]                @relation("RoleGrantedBy")
@@ -302,6 +303,8 @@ model User {
   following           PlayerFollow[]
   playerInvitesSent   PlayerInvite[]
   recoveryCodes       MfaRecoveryCode[]
+  packagePurchases    PackagePurchase[]
+  foodOrders          FoodOrder[]
 
   @@index([deletedAt])
 }
@@ -565,9 +568,10 @@ model Club {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
-  venue   Venue?          @relation(fields: [venueId], references: [id], onDelete: SetNull)
-  players PlayerProfile[]
-  teams   Team[]
+  venue    Venue?          @relation(fields: [venueId], references: [id], onDelete: SetNull)
+  players  PlayerProfile[]
+  teams    Team[]
+  discount ClubDiscount?
 
   @@index([name])
 }
@@ -719,6 +723,15 @@ model Tournament {
   vatRateBasisPoints   Int                @default(0) // 2100 = 21%. Sports entries are often VAT-exempt; configurable.
   isPublished          Boolean            @default(false)
   createdById          String?            @db.Uuid
+  /// Pricing (D87): the package this tournament runs on, when pricing is switched on.
+  packageKey           PackageKey?
+  packagePurchaseId    String?            @db.Uuid
+  /// Food ordering (D87): on for this tournament, orders close at, where to collect.
+  /// The owner allows food ordering for this tournament (D87); Pro includes it while pricing is on.
+  foodAllowed          Boolean            @default(false)
+  foodOrderingOn       Boolean            @default(false)
+  foodCutoffAt         DateTime?
+  foodPickupInfo       String?
   deletedAt            DateTime?
   createdAt            DateTime           @default(now())
   updatedAt            DateTime           @updatedAt
@@ -732,6 +745,10 @@ model Tournament {
   orders           Order[]
   courtSlots       CourtSlot[]
   logo             TournamentLogo?
+  packagePurchase  PackagePurchase?      @relation("TournamentPackage", fields: [packagePurchaseId], references: [id], onDelete: SetNull)
+  purchases        PackagePurchase[]     @relation("PurchaseFor")
+  foodItems        FoodItem[]
+  foodOrders       FoodOrder[]
 
   @@index([status, startsOn])
   @@index([startsOn])
@@ -1344,4 +1361,142 @@ model RateLimitBucket {
 
   @@id([key, windowStart])
   @@index([expiresAt])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Pricing and food ordering (D87)
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum PackageKey {
+  FREE
+  STANDARD
+  PRO
+  BUNDLE
+  CLUB
+}
+
+enum PurchaseStatus {
+  /// Asked for while online payment is off: the owner sends an invoice and marks it paid.
+  REQUESTED
+  /// Waiting for the online payment.
+  PENDING
+  PAID
+  CANCELLED
+}
+
+/// A discount on packages for organisers who are members of a club, or who use its code.
+model ClubDiscount {
+  id          String    @id @default(uuid()) @db.Uuid
+  clubId      String    @unique @db.Uuid
+  percent     Int
+  validUntil  DateTime? @db.Date
+  code        String?   @unique @db.Citext
+  note        String?
+  createdById String?   @db.Uuid
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  club Club @relation(fields: [clubId], references: [id], onDelete: Cascade)
+}
+
+/// An organiser buying a package: for one tournament, or a bundle of credits.
+model PackagePurchase {
+  id                    String         @id @default(uuid()) @db.Uuid
+  /// "TE-2026-0001", given when paid.
+  invoiceNumber         String?        @unique
+  userId                String         @db.Uuid
+  packageKey            PackageKey
+  /// The tournament it was bought for (none for a bundle).
+  tournamentId          String?        @db.Uuid
+  /// Bundle: how many tournaments it covers; used by tournaments that point to it.
+  credits               Int            @default(0)
+  validUntil            DateTime?
+  priceCents            Int
+  discountPercent       Int            @default(0)
+  netCents              Int
+  vatCents              Int
+  totalCents            Int
+  clubId                String?        @db.Uuid
+  status                PurchaseStatus
+  stripePaymentIntentId String?        @unique
+  paidAt                DateTime?
+  markedPaidById        String?        @db.Uuid
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+
+  user        User         @relation(fields: [userId], references: [id], onDelete: Restrict)
+  tournament  Tournament?  @relation("PurchaseFor", fields: [tournamentId], references: [id], onDelete: SetNull)
+  tournaments Tournament[] @relation("TournamentPackage")
+
+  @@index([userId, createdAt])
+  @@index([status])
+}
+
+/// One item on a tournament's food menu.
+model FoodItem {
+  id           String   @id @default(uuid()) @db.Uuid
+  tournamentId String   @db.Uuid
+  name         String
+  description  String?
+  priceCents   Int
+  /// EU allergen codes (gluten, milk, peanuts, …); empty with noAllergens = contains none.
+  allergens    String[] @default([])
+  noAllergens  Boolean  @default(false)
+  maxQuantity  Int?
+  sortOrder    Int      @default(0)
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  tournament Tournament      @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  lines      FoodOrderLine[]
+
+  @@index([tournamentId])
+}
+
+enum FoodOrderStatus {
+  /// Placed; paid online, or to pay at pickup when online payment isn't available.
+  PENDING
+  PAID
+  CANCELLED
+  REFUNDED
+}
+
+/// A player's food order for a tournament.
+model FoodOrder {
+  id                    String          @id @default(uuid()) @db.Uuid
+  orderNumber           String          @unique
+  tournamentId          String          @db.Uuid
+  userId                String          @db.Uuid
+  status                FoodOrderStatus @default(PENDING)
+  totalCents            Int
+  stripePaymentIntentId String?         @unique
+  paidAt                DateTime?
+  collectedAt           DateTime?
+  collectedById         String?         @db.Uuid
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+
+  tournament Tournament      @relation(fields: [tournamentId], references: [id], onDelete: Restrict)
+  user       User            @relation(fields: [userId], references: [id], onDelete: Restrict)
+  lines      FoodOrderLine[]
+
+  @@index([tournamentId, status])
+  @@index([userId])
+}
+
+/// One line of a food order, with the name and price at the moment of ordering.
+model FoodOrderLine {
+  id             String @id @default(uuid()) @db.Uuid
+  foodOrderId    String @db.Uuid
+  foodItemId     String @db.Uuid
+  name           String
+  unitPriceCents Int
+  quantity       Int
+
+  order FoodOrder @relation(fields: [foodOrderId], references: [id], onDelete: Cascade)
+  item  FoodItem  @relation(fields: [foodItemId], references: [id], onDelete: Restrict)
+
+  @@index([foodOrderId])
+  @@index([foodItemId])
 }

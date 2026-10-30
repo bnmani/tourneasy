@@ -5,6 +5,7 @@ import type { ReactNode } from 'react';
 import { TournamentBar } from '@/components/admin/tournament-bar';
 import { pageLocale } from '@/lib/page';
 import { requirePortal } from '@/server/auth/web';
+import { foodAllowed } from '@/server/services/food-service';
 import { canManageTournament } from '@/server/services/permissions';
 import { managedTournaments } from '@/server/services/tournament-service';
 
@@ -34,6 +35,7 @@ export default async function TournamentAdminLayout({
     <div className="space-y-6">
       <TournamentBar
         current={id}
+        food={await foodAllowed(id)}
         tournaments={tournaments.map((x) => ({
           id: x.id,
           name: x.name,

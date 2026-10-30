@@ -27,6 +27,7 @@ import { AppError, validationError } from '../lib/errors';
 import type { RequestMeta } from '../lib/request-meta';
 import { appUrl } from '../lib/urls';
 import { enforce, LIMITS } from '../lib/rate-limit';
+import { effectiveMaxParticipants } from './pricing-service';
 import { parseInput } from '../lib/validation';
 import { amountsDue, HOLD_MINUTES, paymentsEnabled, PROMOTION_HOURS } from '../payments/pricing';
 import { refundsForCancelledRegistration } from './refund-service';
@@ -154,13 +155,15 @@ async function loadTournament(slug: string) {
       withdrawalDeadline: true,
       maxEventsPerPlayer: true,
       maxParticipants: true,
+      packageKey: true,
       bundlePricesCents: true,
       partnerPaymentMode: true,
       events: { where: { deletedAt: null }, select: eventSelect },
     },
   });
   if (!t) throw new AppError('notFound');
-  return t;
+  // The package's player limit counts too while pricing is on (D87).
+  return { ...t, maxParticipants: await effectiveMaxParticipants(t) };
 }
 
 /** Entries (singles players or pairs) that hold a place in each event. */

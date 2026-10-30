@@ -257,6 +257,8 @@ export function fieldErrors(error: z.ZodError): Record<string, string> {
 }
 
 export const KNOWN_ERROR_KEYS = new Set([
+  'allergensRequired',
+  'codeTaken',
   'passwordMismatch',
   'smtpRejected',
   'gameScore',

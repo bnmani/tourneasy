@@ -14,6 +14,7 @@ import { writeAudit } from '../lib/audit';
 import { randomToken } from '../lib/crypto';
 import { AppError, validationError } from '../lib/errors';
 import { enforce, LIMITS } from '../lib/rate-limit';
+import { effectiveMaxParticipants } from './pricing-service';
 import type { RequestMeta } from '../lib/request-meta';
 import { parseInput } from '../lib/validation';
 import { looksLikeXlsx, readXlsx, toXlsx } from '../lib/xlsx';
@@ -93,13 +94,15 @@ async function loadTournament(tournamentId: string) {
       name: true,
       startsOn: true,
       maxParticipants: true,
+      packageKey: true,
       maxEventsPerPlayer: true,
       partnerPaymentMode: true,
       events: { where: { deletedAt: null }, select: eventSelect, orderBy: { sortOrder: 'asc' } },
     },
   });
   if (!t) throw new AppError('notFound');
-  return t;
+  // The package's player limit counts too while pricing is on (D87).
+  return { ...t, maxParticipants: await effectiveMaxParticipants(t) };
 }
 type TournamentRow = Awaited<ReturnType<typeof loadTournament>>;
 

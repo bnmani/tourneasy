@@ -1,6 +1,7 @@
 import type { CSSProperties } from 'react';
 import { getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
+import { pricingEnabled } from '@/server/services/pricing-service';
 import { Logo } from './logo';
 
 // On the dark band the badge is drawn light (and the shuttle dark), like the logo sheet.
@@ -11,6 +12,8 @@ const invertedMark = {
 
 export async function SiteFooter() {
   const t = await getTranslations('Footer');
+  // Only while the owner has switched pricing on (D87).
+  const pricing = await pricingEnabled();
 
   return (
     <footer className="bg-hero text-sm text-hero-muted">
@@ -20,6 +23,13 @@ export async function SiteFooter() {
           <Logo />
         </div>
         <ul className="flex flex-wrap gap-4">
+          {pricing && (
+            <li>
+              <Link href="/pricing" className="underline-offset-4 hover:underline">
+                {t('pricing')}
+              </Link>
+            </li>
+          )}
           <li>
             <Link href="/privacy" className="underline-offset-4 hover:underline">
               {t('privacy')}

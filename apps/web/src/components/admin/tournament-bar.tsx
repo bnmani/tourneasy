@@ -13,6 +13,7 @@ const SECTIONS = [
   'schedule',
   'matches',
   'payments',
+  'food',
   'news',
   'log',
 ] as const;
@@ -25,9 +26,12 @@ type Section = (typeof SECTIONS)[number];
 export function TournamentBar({
   current,
   tournaments,
+  food = false,
 }: {
   current: string;
   tournaments: { id: string; name: string; when: string }[];
+  /** Food ordering is allowed for this tournament (D87). */
+  food?: boolean;
 }) {
   const t = useTranslations('Admin.tournamentBar');
   const ta = useTranslations('Admin');
@@ -74,7 +78,7 @@ export function TournamentBar({
         </select>
       </label>
       <nav aria-label={t('sections')} className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-1">
-        {SECTIONS.map((s) => (
+        {SECTIONS.filter((s) => s !== 'food' || food || section === 'food').map((s) => (
           <Link
             key={s || 'overview'}
             href={href(current, s)}

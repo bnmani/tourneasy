@@ -22,6 +22,7 @@ export function AdminNav({ isAdmin, isOwner }: { isAdmin: boolean; isOwner: bool
     // Site-wide settings and the full log are for owners (D79).
     ...(isOwner
       ? [
+          { href: '/admin/pricing', label: t('navPricing') },
           { href: '/admin/appearance', label: t('navAppearance') },
           { href: '/admin/email', label: t('navEmail') },
           { href: '/admin/audit', label: t('navAudit') },

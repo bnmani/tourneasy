@@ -23,6 +23,7 @@ import type { RequestMeta } from '../lib/request-meta';
 import { localized, uniqueSlug } from '../lib/slug';
 import { pageCount, pageParams, parseInput } from '../lib/validation';
 import { assertAdmin, assertCanManageTournament, assertPortalAccess, isAdmin } from './permissions';
+import { assertPackageToOpen } from './pricing-service';
 import type { Actor } from './session-service';
 import { createVenue } from './venue-service';
 
@@ -283,8 +284,9 @@ export async function changeTournamentStatus(
   });
   const from = tournament.status as TournamentStatusCode;
   if (!STATUS_TRANSITIONS[from].includes(status)) throw new AppError('statusTransition');
-  // Opening entries needs at least one open event.
+  // Opening entries needs at least one open event, and a package while pricing is on (D87).
   if (status === 'OPEN' && tournament._count.events === 0) throw new AppError('noOpenEvents');
+  if (status === 'OPEN') await assertPackageToOpen(tournament);
   // Archiving only once the tournament is over: from the day after its end date (Dutch time).
   if (status === 'ARCHIVED' && !tournamentOver(tournament.endsOn))
     throw new AppError('archiveTooEarly');

@@ -21,7 +21,9 @@ import {
   type PaymentGateway,
 } from '../payments/gateway';
 import { amountsDue, HOLD_MINUTES } from '../payments/pricing';
+import { applyFoodIntent } from './food-service';
 import { assertAdmin, assertCanManageTournament, assertOwner } from './permissions';
+import { applyPackageIntent } from './pricing-service';
 import { refundsForCancelledRegistration, applyRefundUpdate } from './refund-service';
 import { eventText, fullName } from './registration-service';
 import type { Actor } from './session-service';
@@ -402,7 +404,12 @@ export async function handleWebhook(rawBody: string, signature: string) {
     });
   }
   try {
-    if (event.intent && event.type.startsWith('payment_intent.')) await applyIntent(event.intent);
+    if (event.intent && event.type.startsWith('payment_intent.')) {
+      // Entry orders first; otherwise a package purchase or a food order (D87).
+      const handled = await applyIntent(event.intent);
+      if (handled === null && !(await applyPackageIntent(event.intent)))
+        await applyFoodIntent(event.intent);
+    }
     if (event.refund?.id && event.type.startsWith('refund.'))
       await applyRefundUpdate(event.refund.id, event.refund.status);
     await prisma.stripeEvent.update({

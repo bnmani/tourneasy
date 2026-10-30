@@ -114,7 +114,10 @@ export function PayButton({
                   },
                 }}
               >
-                <CheckoutForm orderId={checkout.orderId!} amountLabel={amountLabel} />
+                <CheckoutForm
+                  returnUrl={`${window.location.origin}/${locale}/payments/${checkout.orderId!}`}
+                  amountLabel={amountLabel}
+                />
               </Elements>
             </>
           )}
@@ -124,9 +127,8 @@ export function PayButton({
   );
 }
 
-function CheckoutForm({ orderId, amountLabel }: { orderId: string; amountLabel: string }) {
+function CheckoutForm({ returnUrl, amountLabel }: { returnUrl: string; amountLabel: string }) {
   const t = useTranslations('Payments');
-  const locale = useLocale();
   const stripe = useStripe();
   const elements = useElements();
   const [busy, setBusy] = useState(false);
@@ -139,7 +141,7 @@ function CheckoutForm({ orderId, amountLabel }: { orderId: string; amountLabel: 
     setError(null);
     const { error: failure } = await stripe.confirmPayment({
       elements,
-      confirmParams: { return_url: `${window.location.origin}/${locale}/payments/${orderId}` },
+      confirmParams: { return_url: returnUrl },
     });
     // Only reached when the payment could not start (e.g. card declined); otherwise Stripe redirects.
     setError(failure?.message ?? t('failed'));
@@ -159,5 +161,65 @@ function CheckoutForm({ orderId, amountLabel }: { orderId: string; amountLabel: 
       </Button>
       <p className="text-center text-xs text-muted-foreground">{t('secureNote')}</p>
     </form>
+  );
+}
+
+/**
+ * A payment window for anything paid with a PaymentIntent made on the server (packages, food,
+ * D87): opened with the client secret; Stripe returns the payer to `returnUrl`.
+ */
+export function PaymentWindow({
+  checkout,
+  amountLabel,
+  onClose,
+}: {
+  checkout: { clientSecret: string; publishableKey: string; returnUrl: string } | null;
+  amountLabel: string;
+  onClose: () => void;
+}) {
+  const t = useTranslations('Payments');
+  const locale = useLocale();
+  const dialog = useRef<HTMLDialogElement>(null);
+  useEffect(() => {
+    if (checkout && !dialog.current?.open) dialog.current?.showModal();
+  }, [checkout]);
+  return (
+    <dialog
+      ref={dialog}
+      onClose={onClose}
+      aria-labelledby="pay-window-title"
+      className="m-auto w-[min(32rem,calc(100vw-2rem))] rounded-lg border bg-card p-0 text-card-foreground shadow-xl backdrop:bg-black/60"
+    >
+      <div className="flex items-center justify-between border-b px-5 py-3">
+        <h2 id="pay-window-title" className="font-heading text-lg font-semibold">
+          {t('dialogTitle')}
+        </h2>
+        <button
+          type="button"
+          onClick={() => dialog.current?.close()}
+          className="rounded-md p-2 hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+        >
+          <X aria-hidden="true" className="size-5" />
+          <span className="sr-only">{t('close')}</span>
+        </button>
+      </div>
+      <div className="p-5">
+        {checkout && (
+          <Elements
+            stripe={stripeFor(checkout.publishableKey)}
+            options={{
+              clientSecret: checkout.clientSecret,
+              locale: locale === 'nl' ? 'nl' : 'en',
+              appearance: {
+                theme: 'stripe',
+                variables: { colorPrimary: '#2e4a67', borderRadius: '8px' },
+              },
+            }}
+          >
+            <CheckoutForm returnUrl={checkout.returnUrl} amountLabel={amountLabel} />
+          </Elements>
+        )}
+      </div>
+    </dialog>
   );
 }

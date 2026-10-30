@@ -55,6 +55,9 @@ const SUCCESS = new Set([
   'resultSaved',
   'stageCreated',
   'newsEmailed',
+  'packageRequested',
+  'packagePaid',
+  'refunded',
 ]);
 
 /** Shows the outcome of the last action from ?status=… (success text or error key). */

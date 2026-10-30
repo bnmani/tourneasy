@@ -76,7 +76,8 @@
   "Footer": {
     "copyright": "© {year} Tourneasy",
     "privacy": "Privacyverklaring",
-    "terms": "Algemene voorwaarden"
+    "terms": "Algemene voorwaarden",
+    "pricing": "Prijzen voor organisatoren"
   },
   "NotFound": {
     "title": "Pagina niet gevonden",
@@ -202,7 +203,17 @@
     "possibleDuplicate": "Er bestaat al een speler met deze naam. Kies de bestaande speler of voeg toch een nieuwe toe.",
     "playerMaxEvents": "Deze speler doet al mee aan het maximum aantal onderdelen van dit toernooi (zie Instellingen → Capaciteit).",
     "partnerMaxEvents": "De partner doet al mee aan het maximum aantal onderdelen van dit toernooi (zie Instellingen → Capaciteit).",
-    "archiveTooEarly": "Dit toernooi is nog niet voorbij; archiveren kan vanaf de dag na de einddatum."
+    "archiveTooEarly": "Dit toernooi is nog niet voorbij; archiveren kan vanaf de dag na de einddatum.",
+    "packageRequired": "Kies een pakket voor dit toernooi voordat je de inschrijving opent.",
+    "packageTooSmall": "Dit toernooi heeft al meer inschrijvingen dan dat pakket toestaat.",
+    "noCreditsLeft": "Je hebt geen bundeltegoed meer.",
+    "foodUnavailable": "Eten bestellen is niet beschikbaar voor dit toernooi.",
+    "foodClosed": "Bestellen is gesloten.",
+    "foodSoldOut": "Van een van de items is niet genoeg meer. Verlaag het aantal en probeer opnieuw.",
+    "emptyOrder": "Kies minstens één item.",
+    "allergensRequired": "Vink de allergenen aan, of vink \"Bevat geen van deze allergenen\" aan.",
+    "codeTaken": "Deze code wordt al gebruikt voor een andere club.",
+    "notPaid": "De betaling is niet gelukt. Er is niets afgeschreven; je kunt het opnieuw proberen."
   },
   "Auth": {
     "login": {
@@ -808,7 +819,10 @@
       "newsEmailed": "Bericht wordt verstuurd naar de deelnemers.",
       "logoSaved": "Logo opgeslagen.",
       "logoRemoved": "Logo verwijderd.",
-      "invited": "{sent, plural, =0 {Geen uitnodigingen verstuurd} one {# uitnodiging verstuurd} other {# uitnodigingen verstuurd}}{skipped, plural, =0 {.} other {; # overgeslagen (al een account of geen e-mailadres).}}"
+      "invited": "{sent, plural, =0 {Geen uitnodigingen verstuurd} one {# uitnodiging verstuurd} other {# uitnodigingen verstuurd}}{skipped, plural, =0 {.} other {; # overgeslagen (al een account of geen e-mailadres).}}",
+      "packageRequested": "Aanvraag ontvangen. Je krijgt een factuur; het pakket geldt zodra die betaald is.",
+      "packagePaid": "Betaling ontvangen. Het pakket geldt nu.",
+      "refunded": "Klaar. De bestelling is terugbetaald of geannuleerd."
     },
     "grantShort": "Toekennen",
     "revokeShort": "Intrekken",
@@ -1373,7 +1387,8 @@
       "section_payments": "Betalingen",
       "section_log": "Logboek",
       "section_settings": "Instellingen",
-      "breadcrumbs": "Kruimelpad"
+      "breadcrumbs": "Kruimelpad",
+      "section_food": "Eten & drinken"
     },
     "setup": {
       "title": "Klaarzetten",
@@ -1410,7 +1425,97 @@
     "mfaOff": "Uit",
     "mfaReset": "Resetten",
     "mfaResetConfirm": "Tweestapsverificatie van {name} resetten? Alle apparaten worden uitgelogd en bij de volgende login stelt die persoon het opnieuw in.",
-    "mfaResetDone": "Tweestapsverificatie gereset. Bij de volgende login stelt de gebruiker het opnieuw in."
+    "mfaResetDone": "Tweestapsverificatie gereset. Bij de volgende login stelt de gebruiker het opnieuw in.",
+    "navPricing": "Prijzen",
+    "foodAccess": {
+      "title": "Eten bestellen",
+      "on": "Toegestaan voor dit toernooi. De organisator stelt het menu in onder Eten & drinken.",
+      "viaPro": "Inbegrepen bij het Pro-pakket. Je kunt het hier ook toestaan, dan blijft het aan los van het pakket.",
+      "off": "Niet toegestaan voor dit toernooi. Alleen jij als eigenaar beslist dit, per toernooi.",
+      "enable": "Eten bestellen toestaan",
+      "disable": "Eten bestellen stoppen"
+    },
+    "pricing": {
+      "title": "Prijzen",
+      "intro": "Pakketten en prijzen voor organisatoren, clubkortingen en aankopen.",
+      "offNotice": "Prijzen staan uit. Organisatoren zien geen prijzen, er is geen pakket nodig en de prijzenpagina en de link in de footer zijn verborgen.",
+      "switches": "Schakelaars",
+      "enabled": "Prijzen aan",
+      "enabledHint": "Als dit aan staat, hebben organisatoren een pakket nodig voordat ze de inschrijving openen, en het pakket beperkt het aantal spelers.",
+      "onlinePayment": "Online betalen (Stripe)",
+      "onlinePaymentHint": "Als dit uit staat, vragen organisatoren een pakket aan en stuur jij een factuur; zet die hieronder op betaald.",
+      "packages": "Pakketten",
+      "packagesHint": "Prijzen zijn exclusief 21% btw. Laat max. spelers leeg voor onbeperkt.",
+      "package": "Pakket",
+      "price": "Prijs (€)",
+      "maxPlayers": "Max. spelers",
+      "visible": "Tonen",
+      "credits": "tegoeden",
+      "unlimited": "Onbeperkt",
+      "company": "Factuurgegevens",
+      "companyHint": "Staat op elke factuur. Nodig voordat je pakketten verkoopt.",
+      "companyFields": {
+        "name": "Bedrijfsnaam",
+        "address": "Adres",
+        "kvk": "KvK-nummer",
+        "vatNumber": "Btw-nummer",
+        "email": "Factuur-e-mail",
+        "iban": "IBAN"
+      },
+      "save": "Prijzen opslaan",
+      "discounts": "Clubkortingen",
+      "discountsHint": "Leden van de club krijgen de korting automatisch; anderen kunnen de code gebruiken.",
+      "noDiscounts": "Nog geen clubkortingen.",
+      "club": "Club",
+      "chooseClub": "Kies een club",
+      "percent": "Korting %",
+      "validUntil": "Geldig tot",
+      "code": "Code (optioneel)",
+      "note": "Notitie",
+      "addDiscount": "Korting opslaan",
+      "discountInvalid": "Controleer de club, een percentage van 1 tot 100 en de code.",
+      "until": "tot {date}",
+      "noEnd": "geen einddatum",
+      "remove": "Verwijderen",
+      "purchases": "Aankopen",
+      "noPurchases": "Nog geen aankopen.",
+      "date": "Datum",
+      "buyer": "Organisator",
+      "total": "Totaal incl. btw",
+      "purchaseStatus": "Status",
+      "discountApplied": "{percent}% korting",
+      "statuses": {
+        "REQUESTED": "Factuur aangevraagd",
+        "PENDING": "Bezig met online betalen",
+        "PAID": "Betaald",
+        "CANCELLED": "Geannuleerd"
+      },
+      "invoice": "Factuur",
+      "markPaid": "Op betaald zetten",
+      "cancel": "Annuleren"
+    },
+    "package": {
+      "title": "Pakket",
+      "current": "Huidig pakket",
+      "none": "Nog geen pakket",
+      "introNone": "Kies een pakket voordat je de inschrijving opent.",
+      "introChange": "Je kunt altijd overstappen naar een groter pakket.",
+      "entries": "{count, plural, one {# inschrijving tot nu toe.} other {# inschrijvingen tot nu toe.}}",
+      "pendingInvoice": "{name} aangevraagd ({total}). Het geldt zodra de factuur betaald is.",
+      "pendingPayment": "De betaling voor {name} ({total}) is bezig.",
+      "choose": "Pakket kiezen",
+      "yours": "huidig",
+      "free": "Gratis",
+      "plusVat": "excl. btw · {total} incl. btw",
+      "unlimited": "Onbeperkt spelers",
+      "upTo": "Tot {count} spelers",
+      "discount": "{club}: {percent}% clubkorting toegepast.",
+      "code": "Kortingscode",
+      "pay": "Betaal {total}",
+      "requestInvoice": "Factuur aanvragen",
+      "useCredit": "Bundeltegoed gebruiken voor Pro (nog {count})",
+      "invoiceHint": "Je ontvangt een factuur per e-mail. Het pakket geldt zodra die betaald is."
+    }
   },
   "Legal": {
     "draftNotice": "Concept — deze tekst wordt nog juridisch gecontroleerd.",
@@ -1645,7 +1750,8 @@
     "koScoring_SF": "Vanaf halve finale",
     "koScoring_F": "Finale",
     "news": "Nieuws",
-    "eventsTable": "Onderdelen en inschrijfgeld"
+    "eventsTable": "Onderdelen en inschrijfgeld",
+    "food": "Eten & drinken bestellen"
   },
   "Calendar": {
     "title": "Kalender",
@@ -2026,6 +2132,169 @@
     "auth_mfa_disable": "Tweestapsverificatie uitgezet",
     "auth_mfa_reset": "Tweestapsverificatie gereset door beheer",
     "auth_mfa_recoveryUsed": "Ingelogd met een herstelcode",
-    "auth_mfa_recoveryCodes": "Nieuwe herstelcodes gemaakt"
+    "auth_mfa_recoveryCodes": "Nieuwe herstelcodes gemaakt",
+    "food_access": "Eten bestellen toegestaan of gestopt",
+    "food_settings": "Instellingen eten bestellen gewijzigd",
+    "food_itemAdded": "Etenitem toegevoegd",
+    "food_itemUpdated": "Etenitem gewijzigd",
+    "food_itemRemoved": "Etenitem verwijderd",
+    "food_ordered": "Eten besteld",
+    "food_collected": "Etenbestelling uitgegeven",
+    "food_refunded": "Etenbestelling terugbetaald",
+    "pricing_update": "Prijzen gewijzigd",
+    "pricing_discount": "Clubkorting opgeslagen",
+    "pricing_discountRemoved": "Clubkorting verwijderd",
+    "pricing_purchase": "Pakket aangevraagd of gekocht",
+    "pricing_package": "Pakket gekozen",
+    "pricing_markedPaid": "Pakket op betaald gezet",
+    "pricing_cancelled": "Pakketaankoop geannuleerd"
+  },
+  "Packages": {
+    "FREE": {
+      "name": "Gratis",
+      "unit": "per toernooi",
+      "features": ["Online inschrijven", "Schema's en planning", "Wedstrijdtafel"]
+    },
+    "STANDARD": {
+      "name": "Standaard",
+      "unit": "per toernooi",
+      "features": [
+        "Alles van Gratis",
+        "Online betalen van inschrijfgeld",
+        "E-mail naar alle spelers"
+      ]
+    },
+    "PRO": {
+      "name": "Pro",
+      "unit": "per toernooi",
+      "features": [
+        "Alles van Standaard",
+        "Onbeperkt spelers",
+        "Eten & drinken bestellen",
+        "Voorrang bij support"
+      ]
+    },
+    "BUNDLE": {
+      "name": "Bundel",
+      "unit": "5 Pro-toernooien, 12 maanden geldig",
+      "features": ["5 × Pro", "Gebruik een tegoed voor elk van je toernooien"]
+    },
+    "CLUB": {
+      "name": "Club",
+      "unit": "per jaar",
+      "features": ["Onbeperkt toernooien voor één club", "In overleg met ons"]
+    }
+  },
+  "Pricing": {
+    "title": "Prijzen voor organisatoren",
+    "intro": "Organiseer een badmintontoernooi met Tourneasy. Spelers betalen nooit voor het gebruik van Tourneasy.",
+    "paid": "Betaling ontvangen. Dank je wel!",
+    "requested": "Aanvraag ontvangen. Je krijgt een factuur per e-mail.",
+    "discount": "Als lid van {club} krijg je {percent}% korting.",
+    "free": "Gratis",
+    "exVat": "excl. {vat}% btw · {total} incl. btw",
+    "upTo": "Tot {count} spelers",
+    "buy": "Koop voor {total}",
+    "requestInvoice": "Factuur aanvragen",
+    "contact": "Neem contact met ons op om dit te regelen.",
+    "pickInTournament": "Kies dit pakket op de overzichtspagina van je toernooi.",
+    "howItWorks": "Maak je toernooi aan en kies op de overzichtspagina een pakket voordat je de inschrijving opent. Je kunt later overstappen naar een groter pakket.",
+    "toPortal": "Naar je portaal",
+    "login": "Log in om te beginnen",
+    "code": "Kortingscode"
+  },
+  "Food": {
+    "allergens": {
+      "gluten": "Gluten",
+      "crustaceans": "Schaaldieren",
+      "eggs": "Eieren",
+      "fish": "Vis",
+      "peanuts": "Pinda's",
+      "soybeans": "Soja",
+      "milk": "Melk",
+      "nuts": "Noten",
+      "celery": "Selderij",
+      "mustard": "Mosterd",
+      "sesame": "Sesam",
+      "sulphites": "Sulfiet",
+      "lupin": "Lupine",
+      "molluscs": "Weekdieren"
+    },
+    "admin": {
+      "title": "Eten & drinken",
+      "intro": "Laat spelers vooraf eten en drinken bestellen en ophalen op het toernooi.",
+      "notAllowed": "Eten bestellen is niet ingeschakeld voor dit toernooi. Vraag de eigenaar van de site om het toe te staan.",
+      "playerView": "Bekijk als speler",
+      "settings": "Bestellen",
+      "on": "Bestellen open voor spelers",
+      "cutoffAt": "Besteldeadline",
+      "cutoffHint": "Spelers kunnen bestellen tot dit moment (Nederlandse tijd).",
+      "pickupInfo": "Waar ophalen",
+      "pickupHint": "Bijvoorbeeld: kantine, vanaf 12:00.",
+      "saveSettings": "Opslaan",
+      "menu": "Menu",
+      "noItems": "Nog geen items. Voeg hieronder het eerste toe.",
+      "hidden": "Verborgen",
+      "orderedNoLimit": "{count} besteld",
+      "ordered": "{count} van {max} besteld",
+      "noAllergensShort": "Geen allergenen",
+      "edit": "Wijzigen",
+      "hide": "Verbergen (heeft bestellingen)",
+      "remove": "Verwijderen",
+      "addItem": "Item toevoegen",
+      "name": "Naam",
+      "price": "Prijs (€)",
+      "maxQuantity": "Voorraad",
+      "maxQuantityHint": "Laat leeg voor geen limiet.",
+      "description": "Omschrijving",
+      "allergens": "Allergenen",
+      "allergensHint": "Wettelijk verplicht: vink elk allergeen aan dat het item bevat.",
+      "noAllergens": "Bevat geen van deze allergenen",
+      "active": "Op het menu",
+      "saveItem": "Item opslaan",
+      "orders": "Bestellingen",
+      "export": "Exporteren naar Excel",
+      "collectedCount": "{count} opgehaald",
+      "revenue": "Betaald",
+      "search": "Zoeken",
+      "searchPlaceholder": "Bestelcode, naam of lidnummer",
+      "noOrders": "Nog geen bestellingen.",
+      "paid": "Betaald",
+      "paying": "Bezig met online betalen",
+      "payAtPickup": "Betalen bij ophalen",
+      "collected": "Opgehaald",
+      "handOut": "Uitgeven",
+      "handOutPaid": "Betaald en uitgegeven",
+      "refund": "Terugbetalen",
+      "cancelOrder": "Bestelling annuleren"
+    },
+    "player": {
+      "title": "Eten & drinken",
+      "orderBy": "bestellen tot {date} {time}",
+      "back": "Terug naar het toernooi",
+      "paidDone": "Betaald. Laat je code zien bij het ophalen.",
+      "placedDone": "Bestelling geplaatst. Betaal bij het ophalen.",
+      "pickup": "Ophalen bij",
+      "closed": "Bestellen is gesloten.",
+      "login": "Log in om te bestellen",
+      "onlyPlayers": "Alleen spelers die ingeschreven zijn voor dit toernooi kunnen bestellen.",
+      "empty": "Het menu is nog leeg.",
+      "allergyNote": "Allergieën? Bekijk de allergenen per item en vraag het bij de balie als je twijfelt.",
+      "myOrders": "Je bestellingen",
+      "qr": "Ophaalcode {number}",
+      "statusPaid": "betaald",
+      "statusPaying": "betaling bezig",
+      "statusPayAtPickup": "betalen bij ophalen",
+      "collected": "Opgehaald",
+      "showCode": "Laat deze code zien bij de balie.",
+      "noAllergens": "Geen allergenen",
+      "contains": "Bevat: {list}",
+      "soldOut": "Uitverkocht",
+      "left": "Nog {count}",
+      "less": "Eén {name} minder",
+      "more": "Eén {name} meer",
+      "total": "Totaal",
+      "order": "Bestellen"
+    }
   }
 }
