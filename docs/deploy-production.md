@@ -78,6 +78,9 @@ Never run `prisma db seed` there: it wipes everything and adds demo players.
 
 ## Scheduled jobs
 
+The server runs housekeeping itself every 5 minutes (D90); the runtime logs show
+`[housekeeping] running every 5 minutes` shortly after each start. GitHub Actions is a backup:
+
 GitHub Actions **Housekeeping** calls both sites every 15 minutes. The live site's key is the
 repository secret `CRON_KEY_PROD`; its SHA-256 is in the live database (`SiteSetting
 cron.keyHash`). The live site joins once the repository variable `PROD_SITE_URL` is set to
