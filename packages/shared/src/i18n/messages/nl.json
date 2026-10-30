@@ -201,7 +201,8 @@
     "mfaInvalid": "Die code klopt niet of is al gebruikt. Probeer de volgende code.",
     "possibleDuplicate": "Er bestaat al een speler met deze naam. Kies de bestaande speler of voeg toch een nieuwe toe.",
     "playerMaxEvents": "Deze speler doet al mee aan het maximum aantal onderdelen van dit toernooi (zie Instellingen → Capaciteit).",
-    "partnerMaxEvents": "De partner doet al mee aan het maximum aantal onderdelen van dit toernooi (zie Instellingen → Capaciteit)."
+    "partnerMaxEvents": "De partner doet al mee aan het maximum aantal onderdelen van dit toernooi (zie Instellingen → Capaciteit).",
+    "archiveTooEarly": "Dit toernooi is nog niet voorbij; archiveren kan vanaf de dag na de einddatum."
   },
   "Auth": {
     "login": {
@@ -614,7 +615,8 @@
       "settingsLink": "Instellingen",
       "settingsTitle": "Instellingen · {tournament}",
       "settingsIntro": "Gegevens, logo en organisatoren van het toernooi. De voortgang en categorieën staan in het overzicht.",
-      "details": "Toernooigegevens"
+      "details": "Toernooigegevens",
+      "archiveAfter": "Archiveren kan vanaf {date}, de dag na het toernooi."
     },
     "events": {
       "new": "Nieuw onderdeel",

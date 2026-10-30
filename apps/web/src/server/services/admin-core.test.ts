@@ -18,6 +18,7 @@ import { actorFromWebToken, createWebSession, type Actor } from './session-servi
 import {
   addOrganiser,
   changeTournamentStatus,
+  tournamentOver,
   createTournament,
   getTournament,
   listTournaments,
@@ -194,6 +195,21 @@ describe('tournaments', () => {
       changeTournamentStatus(admin, t.id, { status: 'FINISHED' }, meta),
     ).rejects.toMatchObject({ code: 'statusTransition' });
     expect(await prisma.auditLog.count({ where: { action: 'tournament.status' } })).toBe(1);
+  });
+
+  it('archives only after the end date (D86)', async () => {
+    const admin = await newAdmin();
+    const t = await createTournament(admin, tournamentInput, meta); // still to come
+    await expect(
+      changeTournamentStatus(admin, t.id, { status: 'ARCHIVED' }, meta),
+    ).rejects.toMatchObject({ code: 'archiveTooEarly' });
+    await prisma.tournament.update({
+      where: { id: t.id },
+      data: { startsOn: new Date('2020-03-14'), endsOn: new Date('2020-03-15') },
+    });
+    await changeTournamentStatus(admin, t.id, { status: 'ARCHIVED' }, meta);
+    expect(tournamentOver(new Date('2027-03-14'), new Date('2027-03-14T22:30:00Z'))).toBe(false);
+    expect(tournamentOver(new Date('2027-03-14'), new Date('2027-03-14T23:30:00Z'))).toBe(true);
   });
 
   it('organisers can be added later by an admin', async () => {

@@ -201,7 +201,8 @@
     "mfaInvalid": "That code is wrong or was already used. Try the next code.",
     "possibleDuplicate": "A player with this name already exists. Pick the existing player or add a new one anyway.",
     "playerMaxEvents": "This player is already in the maximum number of categories for this tournament (see Settings → Capacity).",
-    "partnerMaxEvents": "The partner is already in the maximum number of categories for this tournament (see Settings → Capacity)."
+    "partnerMaxEvents": "The partner is already in the maximum number of categories for this tournament (see Settings → Capacity).",
+    "archiveTooEarly": "This tournament is not over yet; you can archive it from the day after its end date."
   },
   "Auth": {
     "login": {
@@ -614,7 +615,8 @@
       "settingsLink": "Settings",
       "settingsTitle": "Settings · {tournament}",
       "settingsIntro": "The tournament's details, logo and organisers. Progress and categories are on the overview.",
-      "details": "Tournament details"
+      "details": "Tournament details",
+      "archiveAfter": "Archiving is possible from {date}, the day after the tournament."
     },
     "events": {
       "new": "New event",

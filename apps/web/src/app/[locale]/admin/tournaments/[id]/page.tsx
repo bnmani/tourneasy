@@ -1,5 +1,5 @@
 import { STATUS_TRANSITIONS, type TournamentStatusCode } from '@tourneasy/shared/schemas';
-import { formatEuro } from '@tourneasy/shared';
+import { formatDate, formatEuro } from '@tourneasy/shared';
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import { Badge, PageHeader, StatusNotice } from '@/components/admin/ui';
@@ -18,7 +18,7 @@ import { isAppError } from '@/server/lib/errors';
 import { setupChecklist } from '@/server/services/progress-service';
 import { SetupChecklist } from '@/components/admin/setup-checklist';
 import { entryCounts } from '@/server/services/registration-service';
-import { getTournament } from '@/server/services/tournament-service';
+import { getTournament, tournamentOver } from '@/server/services/tournament-service';
 import { notFound } from 'next/navigation';
 
 type Params = { params: Promise<{ locale: string; id: string }> };
@@ -63,6 +63,8 @@ export default async function AdminTournamentPage({
   const waitlistedEntries = countOf('WAITLISTED');
   const liveEntries = confirmedEntries + waitlistedEntries;
   const next = STATUS_TRANSITIONS[tournament.status as TournamentStatusCode];
+  // Archiving only after the last day (D86); before that the button isn't offered.
+  const over = tournamentOver(tournament.endsOn);
 
   return (
     <>
@@ -84,14 +86,16 @@ export default async function AdminTournamentPage({
           {next.length > 0 && (
             <span className="text-sm text-muted-foreground">{t('tournaments.changeStatus')}</span>
           )}
-          {next.map((s) => (
-            <form key={s} action={tournamentStatusAction.bind(null, locale, tournament.id)}>
-              <input type="hidden" name="status" value={s} />
-              <Button type="submit" size="sm" variant="secondary">
-                {ts(s)}
-              </Button>
-            </form>
-          ))}
+          {next
+            .filter((s) => s !== 'ARCHIVED' || over)
+            .map((s) => (
+              <form key={s} action={tournamentStatusAction.bind(null, locale, tournament.id)}>
+                <input type="hidden" name="status" value={s} />
+                <Button type="submit" size="sm" variant="secondary">
+                  {ts(s)}
+                </Button>
+              </form>
+            ))}
           <form
             action={publishTournamentAction.bind(
               null,
@@ -106,6 +110,13 @@ export default async function AdminTournamentPage({
           </form>
         </div>
         <p className="text-sm text-muted-foreground">{t('tournaments.publishHint')}</p>
+        {next.includes('ARCHIVED') && !over && (
+          <p className="text-sm text-muted-foreground">
+            {t('tournaments.archiveAfter', {
+              date: formatDate(new Date(tournament.endsOn.getTime() + 86_400_000), locale),
+            })}
+          </p>
+        )}
       </section>
 
       <section id="events" className="space-y-4 rounded-lg border bg-card p-4 sm:p-6">

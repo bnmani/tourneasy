@@ -54,7 +54,8 @@ export type ErrorCode =
   | 'lastOwner'
   | 'mfaRequired'
   | 'mfaInvalid'
-  | 'possibleDuplicate';
+  | 'possibleDuplicate'
+  | 'archiveTooEarly';
 
 const HTTP_STATUS: Record<ErrorCode, number> = {
   validation: 422,
@@ -109,6 +110,7 @@ const HTTP_STATUS: Record<ErrorCode, number> = {
   mfaRequired: 401,
   mfaInvalid: 401,
   possibleDuplicate: 409,
+  archiveTooEarly: 409,
 };
 
 export class AppError extends Error {

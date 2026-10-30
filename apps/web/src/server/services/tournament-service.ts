@@ -10,6 +10,7 @@ import {
   STATUS_TRANSITIONS,
   tournamentSchema,
   tournamentStatusSchema,
+  utcToAmsterdamLocal,
   venueSchema,
   type TournamentStatusCode,
 } from '@tourneasy/shared';
@@ -263,6 +264,11 @@ export async function updateTournament(
   return tournament;
 }
 
+/** Whether the tournament's last day has passed (Dutch time), so it may be archived. */
+export function tournamentOver(endsOn: Date, now = new Date()): boolean {
+  return utcToAmsterdamLocal(now).slice(0, 10) > endsOn.toISOString().slice(0, 10);
+}
+
 export async function changeTournamentStatus(
   actor: Actor,
   id: string,
@@ -279,6 +285,9 @@ export async function changeTournamentStatus(
   if (!STATUS_TRANSITIONS[from].includes(status)) throw new AppError('statusTransition');
   // Opening entries needs at least one open event.
   if (status === 'OPEN' && tournament._count.events === 0) throw new AppError('noOpenEvents');
+  // Archiving only once the tournament is over: from the day after its end date (Dutch time).
+  if (status === 'ARCHIVED' && !tournamentOver(tournament.endsOn))
+    throw new AppError('archiveTooEarly');
 
   await prisma.tournament.update({ where: { id }, data: { status: status as TournamentStatus } });
   await writeAudit(prisma, {
