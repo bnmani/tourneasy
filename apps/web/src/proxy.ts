@@ -1,8 +1,8 @@
 import createMiddleware from 'next-intl/middleware';
-import type { NextRequest } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 import { routing } from './i18n/routing';
 import { contentSecurityPolicy } from './lib/csp';
-import { isProductionSite } from './lib/site';
+import { isProductionSite, wwwRedirect } from './lib/site';
 
 const intl = createMiddleware(routing);
 const isDev = process.env.NODE_ENV === 'development';
@@ -10,6 +10,13 @@ const isDev = process.env.NODE_ENV === 'development';
 // Next.js 16 "proxy" (formerly middleware): redirects "/" to the best-matching locale
 // (cookie → Accept-Language → nl) and sets the page's script policy.
 export default function proxy(request: NextRequest) {
+  // www.tourneasy.com → tourneasy.com: one address for logins, passkeys and search engines.
+  // The Host header is what the visitor typed; behind Hostinger's proxy nextUrl is internal.
+  const www = wwwRedirect(
+    request.headers.get('x-forwarded-host') ?? request.headers.get('host'),
+    `${request.nextUrl.pathname}${request.nextUrl.search}`,
+  );
+  if (www) return NextResponse.redirect(www, 308);
   const nonce = Buffer.from(crypto.randomUUID()).toString('base64');
   const policy = contentSecurityPolicy({ nonce, dev: isDev });
   // On the request, so Next.js puts the nonce on its scripts; on the response for the browser.
