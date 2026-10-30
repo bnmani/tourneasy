@@ -6,3 +6,6 @@ coverage
 pnpm-lock.yaml
 packages/db/prisma/migrations
 *.docx
+# Third-party Claude Code skills (PR #13): kept as their authors wrote them.
+.claude/skills
+skills-lock.json
