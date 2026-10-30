@@ -57,7 +57,7 @@ export function PasskeyAdd({ primary }: { primary: boolean }) {
     });
   }
 
-  if (codes) return <RecoveryCodes codes={codes} />;
+  if (codes) return <RecoveryCodes codes={codes} onDone={() => setCodes(null)} />;
   if (!supported) return <p className="text-sm text-muted-foreground">{t('unsupported')}</p>;
   return (
     <div className="space-y-2">

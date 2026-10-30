@@ -15,7 +15,7 @@ import {
 } from '@/server/actions/mfa-actions';
 
 /** The recovery codes, shown once, with copy and "saved them". */
-export function RecoveryCodes({ codes }: { codes: string[] }) {
+export function RecoveryCodes({ codes, onDone }: { codes: string[]; onDone?: () => void }) {
   const t = useTranslations('Security.mfa');
   const router = useRouter();
   const [copied, setCopied] = useState(false);
@@ -39,7 +39,15 @@ export function RecoveryCodes({ codes }: { codes: string[] }) {
         >
           {copied ? t('recoveryCopied') : t('recoveryCopy')}
         </Button>
-        <Button type="button" size="sm" onClick={() => router.refresh()}>
+        <Button
+          type="button"
+          size="sm"
+          onClick={() => {
+            // Closes the codes, then reloads the page data (the status line, the codes left).
+            onDone?.();
+            router.refresh();
+          }}
+        >
           {t('recoveryDone')}
         </Button>
       </div>
@@ -94,7 +102,9 @@ export function MfaNewCodes({ app = true }: { app?: boolean }) {
     newRecoveryCodesAction,
     initialFormState,
   );
-  if (state.codes) return <RecoveryCodes codes={state.codes} />;
+  const [saved, setSaved] = useState<string[] | null>(null);
+  if (state.codes && state.codes !== saved)
+    return <RecoveryCodes codes={state.codes} onDone={() => setSaved(state.codes!)} />;
   return (
     <details className="text-sm">
       <summary className="cursor-pointer font-medium">{t('newCodes')}</summary>
