@@ -23,6 +23,6 @@ export default function proxy(request: NextRequest) {
 }
 
 export const config = {
-  // Skip API routes, Next.js internals and files with an extension (favicon.ico, robots.txt…).
-  matcher: '/((?!api|_next|_vercel|.*\\..*).*)',
+  // Skip API routes, Next.js internals, the app icon and files with an extension (robots.txt…).
+  matcher: '/((?!api|_next|_vercel|apple-icon|.*\\..*).*)',
 };

@@ -17,6 +17,8 @@ import {
   TournamentStatus,
 } from '@prisma/client';
 
+import { AGE_CATEGORIES, LEVEL_CLASSES } from './reference-data';
+
 const prisma = new PrismaClient();
 
 const POLICY_VERSION = '2026-10';
@@ -80,28 +82,12 @@ async function main(): Promise<void> {
   await wipe();
 
   // ── Configuration: age categories & levels ────────────────────────────────
-  const ageCategoryData = [
-    { code: 'U11', name: t('Onder 11', 'Under 11'), maxAge: 10, sortOrder: 1 },
-    { code: 'U13', name: t('Onder 13', 'Under 13'), maxAge: 12, sortOrder: 2 },
-    { code: 'U15', name: t('Onder 15', 'Under 15'), maxAge: 14, sortOrder: 3 },
-    { code: 'U17', name: t('Onder 17', 'Under 17'), maxAge: 16, sortOrder: 4 },
-    { code: 'U19', name: t('Onder 19', 'Under 19'), maxAge: 18, sortOrder: 5 },
-    { code: 'SENIOR', name: t('Senioren', 'Senior'), sortOrder: 6 },
-    { code: 'V35', name: t('Veteranen 35+', 'Veterans 35+'), minAge: 35, sortOrder: 7 },
-    { code: 'V45', name: t('Veteranen 45+', 'Veterans 45+'), minAge: 45, sortOrder: 8 },
-  ];
-  await prisma.ageCategory.createMany({ data: ageCategoryData });
+  await prisma.ageCategory.createMany({ data: AGE_CATEGORIES });
   const ages = Object.fromEntries(
     (await prisma.ageCategory.findMany()).map((a) => [a.code, a.id]),
   ) as Record<string, string>;
 
-  await prisma.levelClass.createMany({
-    data: ['A', 'B', 'C', 'D'].map((code, i) => ({
-      code,
-      name: t(`Niveau ${code}`, `Level ${code}`),
-      rank: i + 1,
-    })),
-  });
+  await prisma.levelClass.createMany({ data: LEVEL_CLASSES });
   const levels = Object.fromEntries(
     (await prisma.levelClass.findMany()).map((l) => [l.code, l.id]),
   ) as Record<string, string>;

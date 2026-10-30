@@ -70,8 +70,15 @@ organisers take real money, check with an accountant whether this needs Stripe C
 - Neon: the free plan suspends the database when idle (slow first page) and keeps little history
   for restores. A paid plan is advised for the live site.
 
+## Database (done by Claude)
+
+The Neon project `tourneasy-production` has all migrations, the reference lists
+(`prisma/reference-data.ts`: adds what is missing, never deletes) and the scheduler key's hash.
+Never run `prisma db seed` there: it wipes everything and adds demo players.
+
 ## Scheduled jobs
 
 GitHub Actions **Housekeeping** calls both sites every 15 minutes. The live site's key is the
 repository secret `CRON_KEY_PROD`; its SHA-256 is in the live database (`SiteSetting
-cron.keyHash`). A site without a key is skipped.
+cron.keyHash`). The live site joins once the repository variable `PROD_SITE_URL` is set to
+`https://tourneasy.com` (after launch). A site without a key or URL is skipped.
