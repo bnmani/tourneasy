@@ -8,6 +8,7 @@ import { redirect } from 'next/navigation';
 import type { FormState } from '@/components/forms/form-state';
 import { currentRequestMeta, getActor } from '../auth/web';
 import { AppError, isAppError, type ErrorCode } from '../lib/errors';
+import { withStatus } from '../lib/urls';
 import {
   type FoodCheckout,
   markCollected,
@@ -47,7 +48,7 @@ async function act(target: string, ok: string, work: () => Promise<unknown>) {
     if (!isAppError(error)) console.error('[pricing/food action] failed', error);
   }
   revalidatePath('/', 'layout');
-  redirect(`${target}${target.includes('?') ? '&' : '?'}status=${status}`);
+  redirect(withStatus(target, status));
 }
 
 // ── Owner: pricing ─────────────────────────────────────────────────────────────────

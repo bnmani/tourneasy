@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { safeRedirectPath } from './urls';
+import { safeRedirectPath, withStatus } from './urls';
 
 describe('safeRedirectPath', () => {
   it('keeps same-site paths', () => {
@@ -22,5 +22,15 @@ describe('safeRedirectPath', () => {
       null,
     ])
       expect(safeRedirectPath(bad, '/fallback')).toBe('/fallback');
+  });
+});
+
+describe('withStatus', () => {
+  it('puts the status before the #section, so the page reloads', () => {
+    expect(withStatus('/en/admin/tournaments/1#food-access', 'saved')).toBe(
+      '/en/admin/tournaments/1?status=saved#food-access',
+    );
+    expect(withStatus('/en/admin/users?q=a', 'saved')).toBe('/en/admin/users?q=a&status=saved');
+    expect(withStatus('/en/admin/pricing', 'deleted')).toBe('/en/admin/pricing?status=deleted');
   });
 });

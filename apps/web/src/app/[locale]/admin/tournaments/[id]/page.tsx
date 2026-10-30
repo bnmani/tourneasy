@@ -18,7 +18,7 @@ import { isAppError } from '@/server/lib/errors';
 import { setupChecklist } from '@/server/services/progress-service';
 import { tournamentPackage } from '@/server/services/pricing-service';
 import { foodAllowed } from '@/server/services/food-service';
-import { setFoodAccessAction } from '@/server/actions/pricing-food-actions';
+import { FoodAccessToggle } from '@/components/admin/food-access-toggle';
 import { PackageCard } from '@/components/admin/package-card';
 import { SetupChecklist } from '@/components/admin/setup-checklist';
 import { entryCounts } from '@/server/services/registration-service';
@@ -145,17 +145,13 @@ export default async function AdminTournamentPage({
                   : t('foodAccess.off')}
             </p>
           </div>
-          <form
-            action={setFoodAccessAction.bind(null, locale, tournament.id, !tournament.foodAllowed)}
-          >
-            <Button
-              type="submit"
-              size="sm"
-              variant={tournament.foodAllowed ? 'outline' : 'secondary'}
-            >
-              {tournament.foodAllowed ? t('foodAccess.disable') : t('foodAccess.enable')}
-            </Button>
-          </form>
+          <FoodAccessToggle
+            locale={locale}
+            tournamentId={tournament.id}
+            on={tournament.foodAllowed}
+            label={t('foodAccess.title')}
+            stateLabel={{ on: t('foodAccess.stateOn'), off: t('foodAccess.stateOff') }}
+          />
         </section>
       )}
 

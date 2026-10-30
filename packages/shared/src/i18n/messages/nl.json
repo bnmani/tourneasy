@@ -1432,8 +1432,8 @@
       "on": "Toegestaan voor dit toernooi. De organisator stelt het menu in onder Eten & drinken.",
       "viaPro": "Inbegrepen bij het Pro-pakket. Je kunt het hier ook toestaan, dan blijft het aan los van het pakket.",
       "off": "Niet toegestaan voor dit toernooi. Alleen jij als eigenaar beslist dit, per toernooi.",
-      "enable": "Eten bestellen toestaan",
-      "disable": "Eten bestellen stoppen"
+      "stateOn": "Aan",
+      "stateOff": "Uit"
     },
     "pricing": {
       "title": "Prijzen",

@@ -1432,8 +1432,8 @@
       "on": "Allowed for this tournament. The organiser can set up the menu under Food & drink.",
       "viaPro": "Included with the Pro package. You can also allow it here so it stays on regardless of the package.",
       "off": "Not allowed for this tournament. Only you as owner decide this, per tournament.",
-      "enable": "Allow food ordering",
-      "disable": "Stop food ordering"
+      "stateOn": "On",
+      "stateOff": "Off"
     },
     "pricing": {
       "title": "Pricing",

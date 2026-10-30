@@ -29,3 +29,12 @@ export function safeRedirectPath(target: unknown, fallback: string): string {
     return fallback;
   }
 }
+
+/**
+ * Adds ?status= to a redirect target, before any #section. After the hash it would be part of
+ * the hash: the browser only scrolls, the page isn't reloaded and the change doesn't show.
+ */
+export function withStatus(target: string, status: string): string {
+  const [path = '', hash] = target.split('#');
+  return `${path}${path.includes('?') ? '&' : '?'}status=${status}${hash ? `#${hash}` : ''}`;
+}
