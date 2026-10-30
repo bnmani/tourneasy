@@ -93,7 +93,9 @@ export function PackageCard({
               {t('current')}: <strong>{tp(`${data.current}.name` as 'FREE.name')}</strong>
             </>
           ) : (
-            <span className="text-amber-700 dark:text-amber-300">{t('none')}</span>
+            <span className="rounded-md border border-amber-500/60 bg-amber-500/10 px-2 py-0.5 font-medium">
+              {t('none')}
+            </span>
           )}
         </span>
       </div>

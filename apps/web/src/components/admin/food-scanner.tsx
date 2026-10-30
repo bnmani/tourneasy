@@ -206,7 +206,7 @@ export function FoodScanner({
                 ))}
               </ul>
               {collected ? (
-                <p className="rounded-md border border-amber-500/50 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
+                <p className="rounded-md border border-amber-500/60 bg-amber-500/10 px-4 py-3 text-sm font-medium">
                   {order.collectedAt
                     ? t('alreadyCollected', {
                         time: formatTime(new Date(order.collectedAt), locale),
