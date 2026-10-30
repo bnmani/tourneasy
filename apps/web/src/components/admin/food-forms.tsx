@@ -6,6 +6,7 @@ import { useActionState } from 'react';
 import {
   CheckboxField,
   FormError,
+  FormSuccess,
   SubmitButton,
   TextAreaField,
   TextField,
@@ -31,6 +32,7 @@ export function FoodSettingsForm({
   return (
     <form action={action} className="space-y-4" noValidate>
       <FormError state={state} />
+      {state.ok && <FormSuccess>{t('settingsSaved')}</FormSuccess>}
       <CheckboxField name="on" label={t('on')} state={state} defaultChecked={values.on} />
       <div className="grid gap-4 sm:grid-cols-2">
         <TextField
@@ -95,6 +97,7 @@ export function FoodItemForm({
   return (
     <form action={action} className="space-y-4" noValidate>
       <FormError state={state} />
+      {state.ok && <FormSuccess>{item ? t('itemSaved') : t('itemAdded')}</FormSuccess>}
       <div className="grid gap-4 sm:grid-cols-[2fr_1fr_1fr]">
         <TextField
           name="name"

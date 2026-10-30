@@ -1492,7 +1492,8 @@
       },
       "invoice": "Factuur",
       "markPaid": "Op betaald zetten",
-      "cancel": "Annuleren"
+      "cancel": "Annuleren",
+      "discountSaved": "Korting opgeslagen."
     },
     "package": {
       "title": "Pakket",
@@ -1514,7 +1515,9 @@
       "pay": "Betaal {total}",
       "requestInvoice": "Factuur aanvragen",
       "useCredit": "Bundeltegoed gebruiken voor Pro (nog {count})",
-      "invoiceHint": "Je ontvangt een factuur per e-mail. Het pakket geldt zodra die betaald is."
+      "invoiceHint": "Je ontvangt een factuur per e-mail. Het pakket geldt zodra die betaald is.",
+      "chosen": "Pakket opgeslagen.",
+      "requested": "Aanvraag ontvangen. Je krijgt een factuur; het pakket geldt zodra die betaald is."
     }
   },
   "Legal": {
@@ -2266,7 +2269,10 @@
       "handOut": "Uitgeven",
       "handOutPaid": "Betaald en uitgegeven",
       "refund": "Terugbetalen",
-      "cancelOrder": "Bestelling annuleren"
+      "cancelOrder": "Bestelling annuleren",
+      "settingsSaved": "Opgeslagen.",
+      "itemAdded": "Item toegevoegd. Je kunt het volgende toevoegen.",
+      "itemSaved": "Item opgeslagen."
     },
     "player": {
       "title": "Eten & drinken",

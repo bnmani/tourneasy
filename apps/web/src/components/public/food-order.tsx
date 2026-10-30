@@ -29,6 +29,7 @@ export function FoodOrder({ slug, items }: { slug: string; items: MenuItem[] }) 
   const router = useRouter();
   const [qty, setQty] = useState<Record<string, number>>({});
   const [error, setError] = useState<string | null>(null);
+  const [placed, setPlaced] = useState(false);
   const [pending, start] = useTransition();
   const [checkout, setCheckout] = useState<{
     clientSecret: string;
@@ -46,6 +47,7 @@ export function FoodOrder({ slug, items }: { slug: string; items: MenuItem[] }) 
 
   function order() {
     setError(null);
+    setPlaced(false);
     const lines = Object.entries(qty)
       .filter(([, n]) => n > 0)
       .map(([itemId, quantity]) => ({ itemId, quantity }));
@@ -62,8 +64,9 @@ export function FoodOrder({ slug, items }: { slug: string; items: MenuItem[] }) 
           returnUrl: `${window.location.origin}/${locale}/payments/done?kind=food&id=${res.orderId}`,
         });
       } else {
+        // Refresh in place: the new order and its pickup code appear under "Your orders".
         setQty({});
-        router.replace(`/tournaments/${slug}/food?status=placed#orders`);
+        setPlaced(true);
         router.refresh();
       }
     });
@@ -137,6 +140,11 @@ export function FoodOrder({ slug, items }: { slug: string; items: MenuItem[] }) 
           {t('order')}
         </Button>
       </div>
+      {placed && (
+        <p role="status" className="rounded-md border bg-secondary px-4 py-3 text-sm">
+          {t('placedDone')}
+        </p>
+      )}
       {error && (
         <p role="alert" className="text-sm text-destructive">
           {error}

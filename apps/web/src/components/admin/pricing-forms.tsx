@@ -7,6 +7,7 @@ import {
   CheckboxField,
   FormError,
   FormSection,
+  FormSuccess,
   SubmitButton,
   TextField,
 } from '@/components/forms/fields';
@@ -166,6 +167,7 @@ export function ClubDiscountForm({
   return (
     <form action={action} className="space-y-3" noValidate>
       <FormError state={state} />
+      {state.ok && <FormSuccess>{t('discountSaved')}</FormSuccess>}
       <div className="grid gap-3 sm:grid-cols-[2fr_6rem_10rem_1fr_2fr_auto] sm:items-end">
         <label className="text-sm">
           <span className="block font-medium">{t('club')}</span>

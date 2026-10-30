@@ -44,6 +44,7 @@ export function PackageCard({
   const [choice, setChoice] = useState(data.current ?? data.options[0]?.key ?? 'FREE');
   const [code, setCode] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [done, setDone] = useState<'saved' | 'requested' | null>(null);
   const [pending, start] = useTransition();
   const [checkout, setCheckout] = useState<{
     clientSecret: string;
@@ -56,6 +57,7 @@ export function PackageCard({
 
   function buy() {
     setError(null);
+    setDone(null);
     start(async () => {
       const res = await buyPackageAction({
         packageKey: choice,
@@ -75,9 +77,8 @@ export function PackageCard({
         });
         return;
       }
-      router.replace(
-        `/admin/tournaments/${tournamentId}?status=${res.kind === 'done' ? 'saved' : 'packageRequested'}#package`,
-      );
+      // Refresh in place; a redirect to this page with #package can leave it waiting.
+      setDone(res.kind === 'done' ? 'saved' : 'requested');
       router.refresh();
     });
   }
@@ -191,6 +192,11 @@ export function PackageCard({
         )}
       </div>
       {!data.onlinePayment && <p className="text-xs text-muted-foreground">{t('invoiceHint')}</p>}
+      {done && (
+        <p role="status" className="rounded-md border bg-secondary px-4 py-3 text-sm">
+          {done === 'saved' ? t('chosen') : t('requested')}
+        </p>
+      )}
       {error && (
         <p role="alert" className="text-sm text-destructive">
           {error}

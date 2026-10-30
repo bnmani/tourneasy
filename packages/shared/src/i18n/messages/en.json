@@ -1492,7 +1492,8 @@
       },
       "invoice": "Invoice",
       "markPaid": "Mark paid",
-      "cancel": "Cancel"
+      "cancel": "Cancel",
+      "discountSaved": "Discount saved."
     },
     "package": {
       "title": "Package",
@@ -1514,7 +1515,9 @@
       "pay": "Pay {total}",
       "requestInvoice": "Request invoice",
       "useCredit": "Use a bundle credit for Pro ({count} left)",
-      "invoiceHint": "You'll receive an invoice by email. The package applies once it is paid."
+      "invoiceHint": "You'll receive an invoice by email. The package applies once it is paid.",
+      "chosen": "Package saved.",
+      "requested": "Request received. You'll get an invoice; the package applies once it is paid."
     }
   },
   "Legal": {
@@ -2262,7 +2265,10 @@
       "handOut": "Hand out",
       "handOutPaid": "Paid and handed out",
       "refund": "Refund",
-      "cancelOrder": "Cancel order"
+      "cancelOrder": "Cancel order",
+      "settingsSaved": "Saved.",
+      "itemAdded": "Item added. You can add the next one.",
+      "itemSaved": "Item saved."
     },
     "player": {
       "title": "Food & drink",

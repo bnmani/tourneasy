@@ -38,17 +38,20 @@ async function actorOrThrow() {
   return actor;
 }
 
-/** Runs `work`, then back to `target` with ?status=ok or the error code. */
-async function act(target: string, ok: string, work: () => Promise<unknown>) {
-  let status = ok;
+/**
+ * Runs `work` and refreshes the page in place (the change shows, the scroll position stays).
+ * An error goes back to `target` with ?status=code. No redirect on success: a second redirect
+ * to the URL already open, with a #section, is a hash-only jump and leaves the page waiting.
+ */
+async function act(target: string, work: () => Promise<unknown>) {
   try {
     await work();
   } catch (error) {
-    status = isAppError(error) ? error.code : 'unexpected';
     if (!isAppError(error)) console.error('[pricing/food action] failed', error);
+    revalidatePath('/', 'layout');
+    redirect(withStatus(target.split('#')[0]!, isAppError(error) ? error.code : 'unexpected'));
   }
   revalidatePath('/', 'layout');
-  redirect(withStatus(target, status));
 }
 
 // ── Owner: pricing ─────────────────────────────────────────────────────────────────
@@ -105,23 +108,23 @@ export async function saveClubDiscountAction(
     return toFormState(error, formData);
   }
   revalidatePath('/', 'layout');
-  redirect(`/${locale}/admin/pricing?status=saved#discounts`);
+  return { ok: true };
 }
 
 export async function removeClubDiscountAction(locale: AppLocale, id: string) {
-  await act(`/${locale}/admin/pricing#discounts`, 'deleted', async () =>
+  await act(`/${locale}/admin/pricing#discounts`, async () =>
     removeClubDiscount(await actorOrThrow(), id, await currentRequestMeta()),
   );
 }
 
 export async function markPurchasePaidAction(locale: AppLocale, id: string) {
-  await act(`/${locale}/admin/pricing#purchases`, 'saved', async () =>
+  await act(`/${locale}/admin/pricing#purchases`, async () =>
     ownerMarkPaid(await actorOrThrow(), id, await currentRequestMeta()),
   );
 }
 
 export async function cancelPurchaseAction(locale: AppLocale, id: string) {
-  await act(`/${locale}/admin/pricing#purchases`, 'saved', async () =>
+  await act(`/${locale}/admin/pricing#purchases`, async () =>
     ownerCancelPurchase(await actorOrThrow(), id, await currentRequestMeta()),
   );
 }
@@ -147,7 +150,7 @@ export async function buyPackageAction(input: {
 }
 
 export async function applyBundleCreditAction(locale: AppLocale, tournamentId: string) {
-  await act(`/${locale}/admin/tournaments/${tournamentId}#package`, 'saved', async () =>
+  await act(`/${locale}/admin/tournaments/${tournamentId}#package`, async () =>
     applyBundleCredit(await actorOrThrow(), tournamentId, await currentRequestMeta()),
   );
 }
@@ -159,7 +162,7 @@ export async function setFoodAccessAction(
   tournamentId: string,
   enabled: boolean,
 ) {
-  await act(`/${locale}/admin/tournaments/${tournamentId}#food-access`, 'saved', async () =>
+  await act(`/${locale}/admin/tournaments/${tournamentId}#food-access`, async () =>
     setFoodAccess(await actorOrThrow(), tournamentId, enabled, await currentRequestMeta()),
   );
 }
@@ -190,7 +193,7 @@ export async function saveFoodSettingsAction(
     return toFormState(error, formData);
   }
   revalidatePath('/', 'layout');
-  redirect(`${foodPath(locale, tournamentId)}?status=saved`);
+  return { ok: true };
 }
 
 export async function saveFoodItemAction(
@@ -216,7 +219,7 @@ export async function saveFoodItemAction(
     return toFormState(error, formData);
   }
   revalidatePath('/', 'layout');
-  redirect(`${foodPath(locale, tournamentId)}?status=saved#menu`);
+  return { ok: true };
 }
 
 export async function removeFoodItemAction(
@@ -224,7 +227,7 @@ export async function removeFoodItemAction(
   tournamentId: string,
   itemId: string,
 ) {
-  await act(`${foodPath(locale, tournamentId)}#menu`, 'deleted', async () =>
+  await act(`${foodPath(locale, tournamentId)}#menu`, async () =>
     removeFoodItem(await actorOrThrow(), tournamentId, itemId, await currentRequestMeta()),
   );
 }
@@ -234,7 +237,7 @@ export async function markCollectedAction(
   tournamentId: string,
   orderId: string,
 ) {
-  await act(`${foodPath(locale, tournamentId)}#orders`, 'saved', async () =>
+  await act(`${foodPath(locale, tournamentId)}#orders`, async () =>
     markCollected(await actorOrThrow(), tournamentId, orderId, await currentRequestMeta()),
   );
 }
@@ -244,7 +247,7 @@ export async function refundFoodOrderAction(
   tournamentId: string,
   orderId: string,
 ) {
-  await act(`${foodPath(locale, tournamentId)}#orders`, 'refunded', async () =>
+  await act(`${foodPath(locale, tournamentId)}#orders`, async () =>
     refundFoodOrder(await actorOrThrow(), tournamentId, orderId, await currentRequestMeta()),
   );
 }
