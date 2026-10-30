@@ -301,10 +301,14 @@
     "mfa": {
       "title": "Enter your code",
       "intro": "Enter the 6-digit code from your authenticator app. Lost your phone? Use one of your recovery codes.",
-      "code": "Code",
-      "codeHint": "6 digits from the app, or a recovery code (for example abcd-efgh-jk).",
+      "code": "6-digit code",
+      "codeHint": "The code your authenticator app shows now.",
       "submit": "Log in",
-      "cancel": "Cancel and log out"
+      "cancel": "Cancel and log out",
+      "recoveryCode": "Recovery code",
+      "recoveryHint": "One of the recovery codes you saved, for example abcd-efgh-jk.",
+      "useRecovery": "Lost your phone? Use a recovery code instead",
+      "useApp": "Use the code from the app instead"
     }
   },
   "Account": {

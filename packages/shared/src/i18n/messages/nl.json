@@ -301,10 +301,14 @@
     "mfa": {
       "title": "Code invoeren",
       "intro": "Vul de 6-cijferige code uit je authenticator-app in. Telefoon kwijt? Gebruik dan een van je herstelcodes.",
-      "code": "Code",
-      "codeHint": "6 cijfers uit de app, of een herstelcode (bijvoorbeeld abcd-efgh-jk).",
+      "code": "6-cijferige code",
+      "codeHint": "De code die je authenticator-app nu toont.",
       "submit": "Inloggen",
-      "cancel": "Annuleren en uitloggen"
+      "cancel": "Annuleren en uitloggen",
+      "recoveryCode": "Herstelcode",
+      "recoveryHint": "Een van de herstelcodes die je hebt bewaard, bijvoorbeeld abcd-efgh-jk.",
+      "useRecovery": "Telefoon kwijt? Gebruik een herstelcode",
+      "useApp": "Gebruik de code uit de app"
     }
   },
   "Account": {
