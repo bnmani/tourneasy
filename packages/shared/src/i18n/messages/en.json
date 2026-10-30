@@ -2297,6 +2297,21 @@
       "more": "One more {name}",
       "total": "Total",
       "order": "Order"
+    },
+    "scan": {
+      "open": "Scan pickup code",
+      "title": "Scan pickup code",
+      "close": "Close",
+      "hint": "Hold the player's QR code inside the frame.",
+      "cameraError": "The camera can't be opened. Allow camera access for this site in your browser, or search the order code in the list instead.",
+      "unknown": "Code {code} is not an order for this tournament.",
+      "alreadyCollected": "Already collected at {time}. Do not hand it out again.",
+      "handedOut": "Handed out.",
+      "notPaid": "Not paid yet: the online payment has not finished.",
+      "collectMoney": "Collect {total} before handing it out.",
+      "handOut": "Hand out",
+      "handOutPaid": "Paid and handed out",
+      "next": "Scan next code"
     }
   }
 }

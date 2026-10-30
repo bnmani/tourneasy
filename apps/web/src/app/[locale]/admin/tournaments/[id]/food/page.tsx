@@ -2,6 +2,7 @@ import { formatEuro, utcToAmsterdamLocal } from '@tourneasy/shared';
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import { FoodItemForm, FoodSettingsForm } from '@/components/admin/food-forms';
+import { FoodScanner } from '@/components/admin/food-scanner';
 import { Badge, PageHeader, StatusNotice } from '@/components/admin/ui';
 import { Button } from '@/components/ui/button';
 import { Link } from '@/i18n/navigation';
@@ -142,11 +143,14 @@ export default async function FoodAdminPage({ params, searchParams }: Props) {
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-lg font-semibold">{t('orders')}</h2>
           {list.orders.length > 0 && (
-            <Button asChild variant="outline" size="sm">
-              <a href={`/api/v1/admin/tournaments/${id}/food.xlsx?lang=${locale}`} download>
-                {t('export')}
-              </a>
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <FoodScanner tournamentId={id} orders={list.orders} />
+              <Button asChild variant="outline" size="sm">
+                <a href={`/api/v1/admin/tournaments/${id}/food.xlsx?lang=${locale}`} download>
+                  {t('export')}
+                </a>
+              </Button>
+            </div>
           )}
         </div>
         {list.totals.length > 0 && (

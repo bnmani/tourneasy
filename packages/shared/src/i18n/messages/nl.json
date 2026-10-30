@@ -2301,6 +2301,21 @@
       "more": "Eén {name} meer",
       "total": "Totaal",
       "order": "Bestellen"
+    },
+    "scan": {
+      "open": "Ophaalcode scannen",
+      "title": "Ophaalcode scannen",
+      "close": "Sluiten",
+      "hint": "Houd de QR-code van de speler binnen het kader.",
+      "cameraError": "De camera kan niet worden geopend. Sta cameratoegang voor deze site toe in je browser, of zoek de bestelcode in de lijst.",
+      "unknown": "Code {code} is geen bestelling voor dit toernooi.",
+      "alreadyCollected": "Al opgehaald om {time}. Niet nog een keer uitgeven.",
+      "handedOut": "Uitgegeven.",
+      "notPaid": "Nog niet betaald: de online betaling is niet afgerond.",
+      "collectMoney": "Reken eerst {total} af.",
+      "handOut": "Uitgeven",
+      "handOutPaid": "Betaald en uitgegeven",
+      "next": "Volgende code scannen"
     }
   }
 }
