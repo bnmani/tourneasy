@@ -32,7 +32,9 @@ export async function confirmMfaAction(_prev: CodesState, formData: FormData): P
       { code: formData.get('code') },
       await currentRequestMeta(),
     );
-    return { ok: true, codes };
+    // Next to a passkey there are no new codes: the page just shows the app as on.
+    if (!codes) revalidatePath('/', 'layout');
+    return { ok: true, codes: codes ?? undefined };
   } catch (error) {
     return toFormState(error, formData);
   }

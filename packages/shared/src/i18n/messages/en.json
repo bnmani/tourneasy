@@ -215,7 +215,9 @@
     "codeTaken": "This code is already used for another club.",
     "notPaid": "The payment didn't go through. Nothing has been charged; you can try again.",
     "passkeyInvalid": "The passkey couldn't be checked. Try again.",
-    "passkeyLimit": "You have the maximum of 10 passkeys. Remove one first."
+    "passkeyLimit": "You have the maximum of 10 passkeys. Remove one first.",
+    "purchasePending": "There is already an open purchase for this. Wait until it is paid, or ask the site owner to cancel it.",
+    "mfaAppRequired": "Set up the authenticator app on the website to log in to the mobile app. Passkeys only work on the website."
   },
   "Auth": {
     "login": {
@@ -475,7 +477,8 @@
       "removed": "Passkey removed.",
       "cancelled": "The passkey wasn't added. Try again when your device asks.",
       "alreadyAdded": "This device already has a passkey for your account.",
-      "unsupported": "This browser doesn't support passkeys. Use the authenticator app, or try another browser."
+      "unsupported": "This browser doesn't support passkeys. Use the authenticator app, or try another browser.",
+      "mobileNote": "The Tourneasy mobile app can't use passkeys yet. If you use it, also set up the authenticator app."
     }
   },
   "Privacy": {
@@ -2343,7 +2346,11 @@
       "collectMoney": "Collect {total} before handing it out.",
       "handOut": "Hand out",
       "handOutPaid": "Paid and handed out",
-      "next": "Scan next code"
+      "next": "Scan next code",
+      "retry": "Try again",
+      "refunded": "Order {code} was refunded. Do not hand it out.",
+      "cancelled": "Order {code} was cancelled. Do not hand it out.",
+      "neverPaid": "Order {code} was never paid. Do not hand it out."
     }
   }
 }

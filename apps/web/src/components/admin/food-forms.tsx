@@ -88,8 +88,11 @@ export function FoodItemForm({
     initialFormState,
   );
   const chosen = (key: string) => {
-    const v = state.values?.allergens;
-    if (v !== undefined) return Array.isArray(v) ? v.includes(key) : v === key;
+    // After a failed save show what was submitted; no allergens field means none were ticked.
+    if (state.values) {
+      const v = state.values.allergens;
+      return Array.isArray(v) ? v.includes(key) : v === key;
+    }
     return item?.allergens.includes(key) ?? false;
   };
   const allergenError = state.fields?.allergens;

@@ -103,24 +103,25 @@ export async function replaceRecoveryCodes(userId: string): Promise<string[]> {
 }
 
 /**
- * Switches it on with the first code from the app. Returns the recovery codes (shown once).
- * Every other device is signed out, so they log in again with a code.
+ * Switches the app on with its first code. When it is the first second step, the recovery codes
+ * come back (shown once) and every other device is signed out. Next to a passkey (D88) the
+ * existing codes and devices stay; null then.
  */
 export async function confirmMfaSetup(
   actor: Actor,
   input: { code?: unknown },
   meta: RequestMeta,
-): Promise<string[]> {
+): Promise<string[] | null> {
   await enforce(`mfa:${actor.userId}`, LIMITS.mfaPerUser);
   const user = await userSecret(actor.userId);
   if (user.totpEnabledAt || !user.secret) throw new AppError('forbidden');
+  const first = !(await hasMfa(actor.userId));
   const step = verifyTotp(user.secret, String(input.code ?? ''), null);
   if (step === null) throw new AppError('mfaInvalid', { fields: { code: 'mfaInvalid' } });
   await prisma.user.update({
     where: { id: actor.userId },
     data: { totpEnabledAt: new Date(), totpLastStep: step },
   });
-  const codes = await replaceRecoveryCodes(actor.userId);
   await writeAudit(prisma, {
     actorId: actor.userId,
     action: 'auth.mfa.enable',
@@ -128,6 +129,8 @@ export async function confirmMfaSetup(
     entityId: actor.userId,
     meta,
   });
+  if (!first) return null;
+  const codes = await replaceRecoveryCodes(actor.userId);
   await revokeAllSessions(actor.userId, actor.sessionId);
   return codes;
 }

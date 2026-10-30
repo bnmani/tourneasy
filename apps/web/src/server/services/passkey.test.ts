@@ -3,7 +3,8 @@ import { isoBase64URL, isoCBOR } from '@simplewebauthn/server/helpers';
 import { createHash, generateKeyPairSync, randomBytes, sign, type KeyObject } from 'node:crypto';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { createPlayer, meta, resetDatabase } from '@/test/db';
-import { checkMfaCode, hasMfa, resetUserMfa } from './mfa-service';
+import { currentStep, totpCode } from '../lib/totp';
+import { checkMfaCode, confirmMfaSetup, hasMfa, mfaSetup, resetUserMfa } from './mfa-service';
 import {
   addPasskey,
   passkeyLoginOptions,
@@ -194,6 +195,22 @@ describe('passkeys as the second step (D88)', () => {
     await removePasskey(actor, passkey.id, { password: PASSWORD }, meta);
     expect(await hasMfa(player.userId)).toBe(false);
     expect(await prisma.mfaRecoveryCode.count({ where: { userId: player.userId } })).toBe(0);
+  });
+
+  it('adding the app next to a passkey keeps the recovery codes and devices', async () => {
+    const player = await person();
+    const { codes } = await addOne(player);
+    const other = await createWebSession(player.userId, meta, true);
+    const actor = (await player.actor())!;
+    const secret = (await mfaSetup(actor)).secret.replace(/\s/g, '');
+    expect(
+      await confirmMfaSetup(actor, { code: totpCode(secret, currentStep()) }, meta),
+    ).toBeNull();
+    // The saved codes still work, and the other device is still signed in.
+    await expect(checkMfaCode(player.userId, codes![1]!, meta)).resolves.toEqual({
+      recoveryUsed: true,
+    });
+    expect(await actorFromWebToken(other.token)).not.toBeNull();
   });
 
   it("an owner's reset removes the passkeys too", async () => {

@@ -177,7 +177,9 @@ export function PackageCard({
         <Button
           type="button"
           onClick={buy}
-          disabled={pending || !chosen || choice === data.current}
+          disabled={
+            pending || !chosen || choice === data.current || data.pending?.status === 'REQUESTED'
+          }
         >
           {!chosen || chosen.quote.priceCents === 0
             ? t('choose')

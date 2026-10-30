@@ -79,6 +79,7 @@ export default async function SecurityPage({
               </span>
             </h3>
             <p className="text-sm text-muted-foreground">{tk('intro')}</p>
+            <p className="text-xs text-muted-foreground">{tk('mobileNote')}</p>
             {mfa.passkeys.length > 0 && (
               <ul className="divide-y rounded-md border">
                 {mfa.passkeys.map((p) => (

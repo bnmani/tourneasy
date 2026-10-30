@@ -64,15 +64,29 @@ export const DEFAULT_PRICING: PricingSettings = {
   company: { name: '', address: '', kvk: '', vatNumber: '', email: '', iban: '' },
 };
 
+/** Read on every page (the footer link) and every entry: cached briefly, cleared on save. */
+const CACHE_MS = 30_000;
+let cached: { value: PricingSettings; until: number } | null = null;
+
+export function clearPricingCache() {
+  cached = null;
+}
+
 export async function getPricing(): Promise<PricingSettings> {
+  if (cached && cached.until > Date.now()) return cached.value;
   const row = await prisma.siteSetting.findUnique({ where: { key: PRICING_KEY } });
   const parsed = settingsSchema.safeParse(row?.value);
-  if (!parsed.success) return DEFAULT_PRICING;
   // Packages added later get their defaults.
-  const plans = DEFAULT_PRICING.plans.map(
-    (d) => parsed.data.plans.find((p) => p.key === d.key) ?? d,
-  );
-  return { ...parsed.data, plans };
+  const value = parsed.success
+    ? {
+        ...parsed.data,
+        plans: DEFAULT_PRICING.plans.map(
+          (d) => parsed.data.plans.find((p) => p.key === d.key) ?? d,
+        ),
+      }
+    : DEFAULT_PRICING;
+  cached = { value, until: Date.now() + CACHE_MS };
+  return value;
 }
 
 const planOf = (settings: PricingSettings, key: PackageKey) =>
@@ -139,6 +153,7 @@ export async function savePricing(actor: Actor, input: unknown, meta: RequestMet
       meta,
     });
   });
+  clearPricingCache();
 }
 
 // ── Club discounts ──────────────────────────────────────────────────────────────────
@@ -375,6 +390,39 @@ async function setPackage(
   });
 }
 
+/**
+ * An earlier purchase still open for the same tournament (or bundle). An invoice request blocks
+ * a new one until the owner marks it paid or cancels it. An unfinished online payment is checked
+ * with Stripe: paid after all, it is applied; otherwise it is cancelled so a new one can start.
+ */
+async function settleOpenPurchase(
+  userId: string,
+  tournamentId: string | null,
+): Promise<'none' | 'paid'> {
+  const open = await prisma.packagePurchase.findFirst({
+    where: {
+      status: { in: ['REQUESTED', 'PENDING'] },
+      ...(tournamentId ? { tournamentId } : { userId, tournamentId: null, packageKey: 'BUNDLE' }),
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+  if (!open) return 'none';
+  if (open.status === 'REQUESTED') throw new AppError('purchasePending');
+  if (open.stripePaymentIntentId) {
+    const gateway = await getGateway();
+    if (!gateway) throw new AppError('purchasePending');
+    const intent = await gateway.retrieveIntent(open.stripePaymentIntentId);
+    if (intent.status === 'succeeded') {
+      await markPaid(open.id, null);
+      return 'paid';
+    }
+    if (intent.status === 'processing') throw new AppError('purchasePending');
+    await gateway.cancelIntent(open.stripePaymentIntentId);
+  }
+  await prisma.packagePurchase.update({ where: { id: open.id }, data: { status: 'CANCELLED' } });
+  return 'none';
+}
+
 export type BuyResult =
   | { kind: 'done' }
   | { kind: 'requested'; purchaseId: string }
@@ -429,6 +477,10 @@ export async function buyPackage(
     });
     return { kind: 'done' };
   }
+
+  // One open purchase per tournament (or per organiser for a bundle): no double invoices.
+  const settled = await settleOpenPurchase(actor.userId, data.tournamentId ?? null);
+  if (settled === 'paid') return { kind: 'done' };
 
   const discount = await discountFor(actor.userId, data.code);
   const q = quote(plan.priceCents, discount?.percent ?? 0);

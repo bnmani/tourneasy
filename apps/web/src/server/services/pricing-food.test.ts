@@ -4,6 +4,7 @@ import { createPlayer, meta, resetDatabase } from '@/test/db';
 import { FakeGateway, setGatewayForTests } from '../payments/gateway';
 import {
   foodAllowed,
+  foodOrderingOpen,
   foodMenu,
   foodOrders,
   markCollected,
@@ -17,6 +18,7 @@ import { handleWebhook } from './payment-service';
 import {
   assertPackageToOpen,
   buyPackage,
+  clearPricingCache,
   effectiveMaxParticipants,
   ownerMarkPaid,
   publicPricing,
@@ -26,7 +28,10 @@ import {
 } from './pricing-service';
 import { actorFromWebToken, createWebSession } from './session-service';
 
-beforeEach(resetDatabase);
+beforeEach(async () => {
+  clearPricingCache();
+  await resetDatabase();
+});
 afterEach(() => setGatewayForTests(undefined));
 
 async function person(role?: Role, overrides: Record<string, unknown> = {}) {
@@ -119,6 +124,10 @@ describe('pricing (D87)', () => {
     // Online payment off: a request for an invoice; the owner marks it paid.
     const res = await buyPackage(org.actor, { packageKey: 'STANDARD', tournamentId: t.id }, meta);
     expect(res.kind).toBe('requested');
+    // A second request for the same tournament waits for the first.
+    await expect(
+      buyPackage(org.actor, { packageKey: 'PRO', tournamentId: t.id }, meta),
+    ).rejects.toMatchObject({ code: 'purchasePending' });
     await ownerMarkPaid(owner.actor, (res as { purchaseId: string }).purchaseId, meta);
     const after = await prisma.tournament.findUniqueOrThrow({ where: { id: t.id } });
     expect(after.packageKey).toBe('STANDARD');
@@ -135,15 +144,25 @@ describe('pricing (D87)', () => {
     const org = await person(Role.ORGANISER);
     const t = await tournament(org.userId);
 
+    const abandoned = await buyPackage(org.actor, { packageKey: 'BUNDLE' }, meta);
+    expect(abandoned.kind).toBe('pay');
+    // Trying again cancels the unfinished payment instead of opening a second one.
     const res = await buyPackage(org.actor, { packageKey: 'BUNDLE' }, meta);
     expect(res.kind).toBe('pay');
-    const purchase = await prisma.packagePurchase.findFirstOrThrow();
+    expect(
+      await prisma.packagePurchase.count({ where: { status: { in: ['PENDING', 'REQUESTED'] } } }),
+    ).toBe(1);
+    const purchase = await prisma.packagePurchase.findFirstOrThrow({
+      where: { status: 'PENDING' },
+    });
     const intent = gateway.pay(purchase.stripePaymentIntentId!);
     await handleWebhook(
       JSON.stringify({ id: 'evt_1', type: 'payment_intent.succeeded', intent, raw: {} }),
       'valid',
     );
-    expect((await prisma.packagePurchase.findFirstOrThrow()).status).toBe('PAID');
+    expect(
+      (await prisma.packagePurchase.findUniqueOrThrow({ where: { id: purchase.id } })).status,
+    ).toBe('PAID');
     await applyBundleCredit(org.actor, t.id, meta);
     expect((await prisma.tournament.findUniqueOrThrow({ where: { id: t.id } })).packageKey).toBe(
       'PRO',
@@ -282,6 +301,28 @@ describe('food ordering (D87)', () => {
     ).rejects.toMatchObject({
       code: 'foodClosed',
     });
+  });
+
+  it('switching food off closes ordering, unless Pro still includes it', async () => {
+    const { owner, org, t } = await setup();
+    await setFoodAccess(owner.actor, t.id, true, meta);
+    await saveFoodSettings(
+      org.actor,
+      t.id,
+      { on: true, cutoffAt: '2099-01-01T20:00' },
+      meta,
+      toUtc,
+    );
+    expect(await foodOrderingOpen(t.slug)).toBe(true);
+
+    await savePricing(owner.actor, plans(true), meta);
+    await prisma.tournament.update({ where: { id: t.id }, data: { packageKey: 'PRO' } });
+    await setFoodAccess(owner.actor, t.id, false, meta);
+    expect(await foodOrderingOpen(t.slug)).toBe(true);
+
+    await prisma.tournament.update({ where: { id: t.id }, data: { packageKey: 'STANDARD' } });
+    await setFoodAccess(owner.actor, t.id, false, meta);
+    expect(await foodOrderingOpen(t.slug)).toBe(false);
   });
 
   it('pays online and refunds in full', async () => {

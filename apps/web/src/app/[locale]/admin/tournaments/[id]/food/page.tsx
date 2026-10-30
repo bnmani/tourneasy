@@ -144,7 +144,7 @@ export default async function FoodAdminPage({ params, searchParams }: Props) {
           <h2 className="text-lg font-semibold">{t('orders')}</h2>
           {list.orders.length > 0 && (
             <div className="flex flex-wrap gap-2">
-              <FoodScanner tournamentId={id} orders={list.orders} />
+              <FoodScanner tournamentId={id} orders={list.orders} closed={list.closed} />
               <Button asChild variant="outline" size="sm">
                 <a href={`/api/v1/admin/tournaments/${id}/food.xlsx?lang=${locale}`} download>
                   {t('export')}

@@ -65,11 +65,13 @@ export async function setFoodAccess(
   meta: RequestMeta,
 ) {
   assertOwner(actor);
-  await prisma.tournament.update({
-    where: { id: tournamentId },
-    // Taking it away also closes ordering; the menu and orders stay.
-    data: { foodAllowed: enabled, ...(enabled ? {} : { foodOrderingOn: false }) },
-  });
+  await prisma.tournament.update({ where: { id: tournamentId }, data: { foodAllowed: enabled } });
+  // Taking it away closes ordering, unless the Pro package still includes it. Menu and orders stay.
+  if (!enabled && !(await foodAllowed(tournamentId)))
+    await prisma.tournament.update({
+      where: { id: tournamentId },
+      data: { foodOrderingOn: false },
+    });
   await writeAudit(prisma, {
     actorId: actor.userId,
     action: 'food.access',
@@ -293,6 +295,15 @@ const pickupQr = (orderNumber: string) =>
   QRCode.toString(orderNumber, { type: 'svg', margin: 1, errorCorrectionLevel: 'M' });
 
 /** The menu for players, and the viewer's own orders; null when food isn't offered. */
+/** Whether players can order now: the tournament page's button, without loading the menu. */
+export async function foodOrderingOpen(slug: string, now = new Date()): Promise<boolean> {
+  const t = await prisma.tournament.findFirst({
+    where: { slug, isPublished: true, deletedAt: null },
+    select: { id: true, foodOrderingOn: true, foodCutoffAt: true },
+  });
+  return !!t && (await orderingOpen(t, now));
+}
+
 export async function foodMenu(viewer: Actor | null, slug: string, now = new Date()) {
   const t = await publicTournament(slug);
   if (!t.foodOrderingOn || !(await foodAllowed(t.id))) return null;
@@ -312,7 +323,8 @@ export async function foodMenu(viewer: Actor | null, slug: string, now = new Dat
     : [];
   return {
     tournament: t,
-    open: await orderingOpen(t, now),
+    // Access was checked above: open is just the deadline.
+    open: !!t.foodCutoffAt && t.foodCutoffAt > now,
     canOrder: !!viewer && (await hasEntry(viewer.userId, t.id)),
     items: items.map((i) => ({
       ...i,
@@ -478,6 +490,11 @@ export async function reconcileFoodOrder(actor: Actor, orderId: string) {
 
 export async function foodOrders(actor: Actor, tournamentId: string, now = new Date()) {
   await assertCanManageTournament(actor, tournamentId);
+  // Refunded, cancelled and never-paid orders: only their code and status, for the scanner.
+  const closed = await prisma.foodOrder.findMany({
+    where: { tournamentId, NOT: liveOrder(now) },
+    select: { orderNumber: true, status: true },
+  });
   const orders = await prisma.foodOrder.findMany({
     where: { tournamentId, ...liveOrder(now) },
     orderBy: { createdAt: 'asc' },
@@ -522,6 +539,7 @@ export async function foodOrders(actor: Actor, tournamentId: string, now = new D
       lines: o.lines.map((l) => ({ name: l.name, quantity: l.quantity })),
     })),
     totals: [...totals.values()],
+    closed,
     revenueCents: orders.filter((o) => o.status === 'PAID').reduce((n, o) => n + o.totalCents, 0),
   };
 }

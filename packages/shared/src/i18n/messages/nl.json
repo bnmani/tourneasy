@@ -215,7 +215,9 @@
     "codeTaken": "Deze code wordt al gebruikt voor een andere club.",
     "notPaid": "De betaling is niet gelukt. Er is niets afgeschreven; je kunt het opnieuw proberen.",
     "passkeyInvalid": "De passkey kon niet worden gecontroleerd. Probeer het opnieuw.",
-    "passkeyLimit": "Je hebt het maximum van 10 passkeys. Verwijder er eerst een."
+    "passkeyLimit": "Je hebt het maximum van 10 passkeys. Verwijder er eerst een.",
+    "purchasePending": "Hier staat al een open aankoop voor. Wacht tot die betaald is, of vraag de eigenaar van de site om die te annuleren.",
+    "mfaAppRequired": "Stel de authenticator-app in op de website om in de mobiele app in te loggen. Passkeys werken alleen op de website."
   },
   "Auth": {
     "login": {
@@ -475,7 +477,8 @@
       "removed": "Passkey verwijderd.",
       "cancelled": "De passkey is niet toegevoegd. Probeer het opnieuw wanneer je apparaat erom vraagt.",
       "alreadyAdded": "Dit apparaat heeft al een passkey voor je account.",
-      "unsupported": "Deze browser ondersteunt geen passkeys. Gebruik de authenticator-app, of probeer een andere browser."
+      "unsupported": "Deze browser ondersteunt geen passkeys. Gebruik de authenticator-app, of probeer een andere browser.",
+      "mobileNote": "De mobiele app van Tourneasy kan nog geen passkeys gebruiken. Gebruik je die, stel dan ook de authenticator-app in."
     }
   },
   "Privacy": {
@@ -2347,7 +2350,11 @@
       "collectMoney": "Reken eerst {total} af.",
       "handOut": "Uitgeven",
       "handOutPaid": "Betaald en uitgegeven",
-      "next": "Volgende code scannen"
+      "next": "Volgende code scannen",
+      "retry": "Opnieuw proberen",
+      "refunded": "Bestelling {code} is terugbetaald. Niet uitgeven.",
+      "cancelled": "Bestelling {code} is geannuleerd. Niet uitgeven.",
+      "neverPaid": "Bestelling {code} is nooit betaald. Niet uitgeven."
     }
   }
 }

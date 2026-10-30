@@ -44,9 +44,12 @@ async function reader(): Promise<(canvas: HTMLCanvasElement) => Promise<string |
 export function FoodScanner({
   tournamentId,
   orders,
+  closed,
 }: {
   tournamentId: string;
   orders: ScanOrder[];
+  /** Refunded, cancelled or never-paid orders: scanned, they say why not to hand out. */
+  closed: { orderNumber: string; status: string }[];
 }) {
   const t = useTranslations('Food.scan');
   const locale = useLocale() as AppLocale;
@@ -56,6 +59,8 @@ export function FoodScanner({
   const [open, setOpen] = useState(false);
   const [code, setCode] = useState<string | null>(null);
   const [cameraError, setCameraError] = useState(false);
+  // Bumped by "Try again" so the camera effect runs once more.
+  const [attempt, setAttempt] = useState(0);
   const [handedOut, setHandedOut] = useState<Set<string>>(new Set());
   const [pending, start] = useTransition();
   const scanning = open && code === null;
@@ -109,10 +114,13 @@ export function FoodScanner({
       clearTimeout(timer);
       stream?.getTracks().forEach((tr) => tr.stop());
     };
-  }, [scanning]);
+  }, [scanning, attempt]);
 
   const order = code ? orders.find((o) => o.orderNumber === code) : undefined;
-  const collected = !!order && (!!order.collectedAt || handedOut.has(order.id));
+  const closedOrder = code && !order ? closed.find((o) => o.orderNumber === code) : undefined;
+  // Handed out just now (here): a confirmation, not the "already collected" warning.
+  const justHandedOut = !!order && handedOut.has(order.id);
+  const collected = !!order && !justHandedOut && !!order.collectedAt;
   const notPaidYet = !!order && order.status !== 'PAID' && order.online;
   const euro = (c: number) => formatEuro(c, locale);
 
@@ -131,6 +139,7 @@ export function FoodScanner({
         size="sm"
         onClick={() => {
           setCode(null);
+          setCameraError(false);
           setOpen(true);
         }}
       >
@@ -142,6 +151,7 @@ export function FoodScanner({
         onClose={() => {
           setOpen(false);
           setCode(null);
+          setCameraError(false);
         }}
         aria-labelledby="food-scan-title"
         className="m-auto w-[min(28rem,calc(100vw-2rem))] rounded-lg border bg-card p-0 text-card-foreground shadow-xl backdrop:bg-black/60"
@@ -162,9 +172,22 @@ export function FoodScanner({
         <div className="space-y-4 p-4">
           {scanning &&
             (cameraError ? (
-              <p role="alert" className="text-sm text-destructive">
-                {t('cameraError')}
-              </p>
+              <div className="space-y-3">
+                <p role="alert" className="text-sm text-destructive">
+                  {t('cameraError')}
+                </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => {
+                    setCameraError(false);
+                    setAttempt((a) => a + 1);
+                  }}
+                >
+                  {t('retry')}
+                </Button>
+              </div>
             ) : (
               <>
                 <div className="relative overflow-hidden rounded-md bg-black">
@@ -188,7 +211,13 @@ export function FoodScanner({
               role="alert"
               className="rounded-md border border-destructive/40 px-4 py-3 text-sm text-destructive"
             >
-              {t('unknown', { code })}
+              {closedOrder
+                ? closedOrder.status === 'REFUNDED'
+                  ? t('refunded', { code })
+                  : closedOrder.status === 'CANCELLED'
+                    ? t('cancelled', { code })
+                    : t('neverPaid', { code })
+                : t('unknown', { code })}
             </p>
           )}
 
@@ -205,13 +234,15 @@ export function FoodScanner({
                   </li>
                 ))}
               </ul>
-              {collected ? (
+              {justHandedOut ? (
+                <p className="rounded-md border border-primary/30 bg-secondary px-4 py-3 text-sm font-medium text-secondary-foreground">
+                  {t('handedOut')}
+                </p>
+              ) : collected ? (
                 <p className="rounded-md border border-amber-500/60 bg-amber-500/10 px-4 py-3 text-sm font-medium">
-                  {order.collectedAt
-                    ? t('alreadyCollected', {
-                        time: formatTime(new Date(order.collectedAt), locale),
-                      })
-                    : t('handedOut')}
+                  {t('alreadyCollected', {
+                    time: formatTime(new Date(order.collectedAt!), locale),
+                  })}
                 </p>
               ) : notPaidYet ? (
                 <p className="rounded-md border border-destructive/40 px-4 py-3 text-sm text-destructive">

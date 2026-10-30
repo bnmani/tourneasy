@@ -133,10 +133,10 @@ describe('two-step login (D78)', () => {
     expect((await actorFromWebToken(pending.token))?.roles).toContain('ADMIN');
 
     // A recovery code works once.
-    await expect(checkMfaCode(admin.userId, codes[0]!.toUpperCase(), meta)).resolves.toEqual({
+    await expect(checkMfaCode(admin.userId, codes![0]!.toUpperCase(), meta)).resolves.toEqual({
       recoveryUsed: true,
     });
-    await expect(checkMfaCode(admin.userId, codes[0]!, meta)).rejects.toMatchObject({
+    await expect(checkMfaCode(admin.userId, codes![0]!, meta)).rejects.toMatchObject({
       code: 'mfaInvalid',
     });
 

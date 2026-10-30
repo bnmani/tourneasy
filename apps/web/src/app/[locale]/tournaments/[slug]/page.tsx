@@ -33,7 +33,7 @@ import { isAppError } from '@/server/lib/errors';
 import { LiveMatches } from '@/components/matches/live-matches';
 import { TournamentNews } from '@/components/public/tournament-news';
 import { hasPublishedDraws } from '@/server/services/draw-service';
-import { foodMenu } from '@/server/services/food-service';
+import { foodOrderingOpen } from '@/server/services/food-service';
 import { pageLogo } from '@/server/services/logo-service';
 import { getPublicTournament } from '@/server/services/public-service';
 
@@ -204,7 +204,7 @@ export default async function TournamentPage({ params }: Props) {
               </Link>
             </Button>
           )}
-          {(await foodMenu(null, t.slug).catch(() => null))?.open && (
+          {(await foodOrderingOpen(t.slug)) && (
             <Button asChild className="bg-brand text-brand-foreground hover:bg-brand/90">
               <Link href={`/tournaments/${t.slug}/food`}>
                 <Utensils aria-hidden="true" />
