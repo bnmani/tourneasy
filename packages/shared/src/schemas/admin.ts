@@ -66,12 +66,15 @@ export const MATCHES_PER_ENTRY_OPTIONS = [3, 5, 7, 9] as const;
 /** …after which the best N of the overall ranking go to the knock-out stage. */
 export const KNOCKOUT_SIZE_OPTIONS = [4, 8, 16, 32] as const;
 
-/** Allowed status changes (organiser workflow). Archive is possible from any final-ish state. */
+/**
+ * Allowed status changes (organiser workflow). Archive is offered from every status, but only
+ * once the tournament is over (D86, D91): a tournament left at Open or Closed can still be put away.
+ */
 export const STATUS_TRANSITIONS: Record<TournamentStatusCode, TournamentStatusCode[]> = {
   DRAFT: ['OPEN', 'ARCHIVED'],
-  OPEN: ['CLOSED', 'DRAFT'],
-  CLOSED: ['IN_PROGRESS', 'OPEN'],
-  IN_PROGRESS: ['FINISHED'],
+  OPEN: ['CLOSED', 'DRAFT', 'ARCHIVED'],
+  CLOSED: ['IN_PROGRESS', 'OPEN', 'ARCHIVED'],
+  IN_PROGRESS: ['FINISHED', 'ARCHIVED'],
   FINISHED: ['ARCHIVED'],
   ARCHIVED: ['DRAFT'],
 };

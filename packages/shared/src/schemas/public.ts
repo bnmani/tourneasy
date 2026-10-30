@@ -113,6 +113,9 @@ export const publicTournamentSchema = publicTournamentSummarySchema.extend({
   description: localized,
   dayStartTime: z.string().nullable(),
   withdrawalDeadline: isoDateTime,
+  /** What a withdrawal gets back (D91): the policy and the percentage of the fee. */
+  refundPolicy: z.enum(['AUTOMATIC_BEFORE_DEADLINE', 'ADMIN_APPROVAL', 'NO_REFUNDS']),
+  refundPercent: z.number().int(),
   maxEventsPerPlayer: z.number().int(),
   /** Multi-category discount (D52): total in cents for 1, 2, 3 … categories; empty = none. */
   bundlePricesCents: z.array(z.number().int()),

@@ -356,6 +356,18 @@ export default async function TournamentPage({ params }: Props) {
                 { label: tt('registrationOpens'), value: dateTime(t.registrationOpensAt) },
                 { label: tt('registrationCloses'), value: dateTime(t.registrationClosesAt) },
                 { label: tt('withdrawal'), value: dateTime(t.withdrawalDeadline) },
+                {
+                  label: tt('refund'),
+                  value:
+                    t.refundPolicy === 'NO_REFUNDS'
+                      ? tt('refundNone')
+                      : tt(
+                          t.refundPolicy === 'AUTOMATIC_BEFORE_DEADLINE'
+                            ? 'refundAutomatic'
+                            : 'refundApproval',
+                          { percent: t.refundPercent },
+                        ),
+                },
                 ...(t.dayStartTime ? [{ label: tt('firstMatch'), value: t.dayStartTime }] : []),
                 {
                   label: tt('maxEvents'),

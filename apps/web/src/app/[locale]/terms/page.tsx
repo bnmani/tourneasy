@@ -12,5 +12,5 @@ export async function generateMetadata({ params }: LocaleParams): Promise<Metada
 export default async function TermsPage({ params }: LocaleParams) {
   await pageLocale(params);
   const t = await getTranslations('Legal');
-  return <LegalPage title={t('termsTitle')} draftNotice={t('draftNotice')} body={t('termsBody')} />;
+  return <LegalPage title={t('termsTitle')} updated={t('updated')} body={t('termsBody')} />;
 }

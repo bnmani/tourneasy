@@ -12,7 +12,5 @@ export async function generateMetadata({ params }: LocaleParams): Promise<Metada
 export default async function PrivacyPolicyPage({ params }: LocaleParams) {
   await pageLocale(params);
   const t = await getTranslations('Legal');
-  return (
-    <LegalPage title={t('privacyTitle')} draftNotice={t('draftNotice')} body={t('privacyBody')} />
-  );
+  return <LegalPage title={t('privacyTitle')} updated={t('updated')} body={t('privacyBody')} />;
 }

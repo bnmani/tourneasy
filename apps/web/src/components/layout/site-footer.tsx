@@ -1,6 +1,7 @@
 import type { CSSProperties } from 'react';
 import { getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
+import { CONTACT_EMAIL } from '@/lib/site';
 import { pricingEnabled } from '@/server/services/pricing-service';
 import { Logo } from './logo';
 
@@ -39,6 +40,11 @@ export async function SiteFooter() {
             <Link href="/terms" className="underline-offset-4 hover:underline">
               {t('terms')}
             </Link>
+          </li>
+          <li>
+            <a href={`mailto:${CONTACT_EMAIL}`} className="underline-offset-4 hover:underline">
+              {t('contact')}
+            </a>
           </li>
         </ul>
         {/* Year passed as a string so it isn't formatted as "2.026" in Dutch. */}

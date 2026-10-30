@@ -212,6 +212,23 @@ describe('tournaments', () => {
     expect(tournamentOver(new Date('2027-03-14'), new Date('2027-03-14T23:30:00Z'))).toBe(true);
   });
 
+  it('archives a tournament that ended while still Closed (D91)', async () => {
+    const admin = await newAdmin();
+    const t = await createTournament(admin, tournamentInput, meta);
+    await prisma.tournament.update({ where: { id: t.id }, data: { status: 'CLOSED' } });
+    await expect(
+      changeTournamentStatus(admin, t.id, { status: 'ARCHIVED' }, meta),
+    ).rejects.toMatchObject({ code: 'archiveTooEarly' });
+    await prisma.tournament.update({
+      where: { id: t.id },
+      data: { startsOn: new Date('2020-03-14'), endsOn: new Date('2020-03-15') },
+    });
+    await changeTournamentStatus(admin, t.id, { status: 'ARCHIVED' }, meta);
+    expect((await prisma.tournament.findUniqueOrThrow({ where: { id: t.id } })).status).toBe(
+      'ARCHIVED',
+    );
+  });
+
   it('organisers can be added later by an admin', async () => {
     const admin = await newAdmin();
     const t = await createTournament(admin, tournamentInput, meta);
