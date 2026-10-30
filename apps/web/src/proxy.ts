@@ -2,6 +2,7 @@ import createMiddleware from 'next-intl/middleware';
 import type { NextRequest } from 'next/server';
 import { routing } from './i18n/routing';
 import { contentSecurityPolicy } from './lib/csp';
+import { isProductionSite } from './lib/site';
 
 const intl = createMiddleware(routing);
 const isDev = process.env.NODE_ENV === 'development';
@@ -16,6 +17,8 @@ export default function proxy(request: NextRequest) {
   request.headers.set('Content-Security-Policy', policy);
   const response = intl(request);
   response.headers.set('Content-Security-Policy', policy);
+  // Pages on the test site stay out of search results, even when linked from elsewhere.
+  if (!isProductionSite()) response.headers.set('X-Robots-Tag', 'noindex, nofollow');
   return response;
 }
 

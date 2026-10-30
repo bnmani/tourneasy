@@ -1,7 +1,8 @@
 name: Housekeeping
 
 # Every 15 minutes: payment holds, reminders, deadline and results emails, email queue (D62).
-# The key lives in the repository secret CRON_KEY (its hash is stored in the database).
+# Each site has its own key in a repository secret (its hash is stored in that site's database):
+# CRON_KEY for the test site, CRON_KEY_PROD for the live site. A site without a key is skipped.
 on:
   schedule:
     - cron: '*/15 * * * *'
@@ -9,21 +10,24 @@ on:
 
 permissions: {}
 
-concurrency:
-  group: housekeeping
-  cancel-in-progress: false
-
 jobs:
   run:
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        site: [test, production]
+    concurrency:
+      group: housekeeping-${{ matrix.site }}
+      cancel-in-progress: false
     steps:
       - name: Call the site
         env:
-          CRON_KEY: ${{ secrets.CRON_KEY }}
-          SITE_URL: ${{ vars.SITE_URL || 'https://test.tourneasy.app' }}
+          CRON_KEY: ${{ matrix.site == 'production' && secrets.CRON_KEY_PROD || secrets.CRON_KEY }}
+          SITE_URL: ${{ matrix.site == 'production' && (vars.PROD_SITE_URL || 'https://tourneasy.com') || (vars.SITE_URL || 'https://test.tourneasy.app') }}
         run: |
-          if [ -z "$CRON_KEY" ]; then echo "CRON_KEY secret not set"; exit 0; fi
+          if [ -z "$CRON_KEY" ]; then echo "No key for this site yet; skipped."; exit 0; fi
           curl --fail-with-body --silent --show-error --max-time 120 \
             -X POST -H "Authorization: Bearer $CRON_KEY" \
             "$SITE_URL/api/cron/housekeeping"
