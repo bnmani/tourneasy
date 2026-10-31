@@ -24,8 +24,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     '/venues',
     '/clubs',
     '/help',
-    '/help/players',
-    '/help/organisers',
     '/privacy',
     '/terms',
   ];

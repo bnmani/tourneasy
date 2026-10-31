@@ -16,11 +16,17 @@ export type HelpBlock =
   /** A desktop screenshot with the same page on a phone next to it. */
   | { pair: { desktop: HelpImage; phone: HelpImage } };
 
-export type HelpSection = { id: string; title: string; blocks: HelpBlock[] };
+export type HelpSection = {
+  id: string;
+  title: string;
+  blocks: HelpBlock[];
+  /** Shown to the owner only: settings other admins can't open. */
+  ownerOnly?: boolean;
+};
 
 export type HelpGuide = {
   title: string;
-  /** One line for the help index and the page description. */
+  /** One line for the page description. */
   summary: string;
   intro: string;
   facts: { title: string; text: string }[];

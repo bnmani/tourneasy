@@ -688,6 +688,7 @@ export const en: Record<HelpGuideKey, HelpGuide> = {
       },
       {
         id: 'owner',
+        ownerOnly: true,
         title: 'Owner settings',
         blocks: [
           {

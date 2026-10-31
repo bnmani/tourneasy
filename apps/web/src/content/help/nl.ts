@@ -703,6 +703,7 @@ export const nl: Record<HelpGuideKey, HelpGuide> = {
       },
       {
         id: 'owner',
+        ownerOnly: true,
         title: 'Instellingen voor de eigenaar',
         blocks: [
           {

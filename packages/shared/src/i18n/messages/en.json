@@ -2362,11 +2362,7 @@
   },
   "Help": {
     "title": "Help",
-    "intro": "Guides for every kind of account, with screenshots of the site. Pick the one that fits you.",
-    "read": "Read the guide",
     "contents": "On this page",
-    "allGuides": "All guides",
-    "stuck": "Still stuck? Email {email}. For questions about a tournament, use the contact details on its page.",
-    "adminOnly": "Only for administrators, inside the portal."
+    "stuck": "Still stuck? Email {email}. For questions about a tournament, use the contact details on its page."
   }
 }

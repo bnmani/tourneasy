@@ -28,8 +28,8 @@ export function AdminNav({ isAdmin, isOwner }: { isAdmin: boolean; isOwner: bool
           { href: '/admin/audit', label: t('navAudit') },
         ]
       : []),
-    // Admins read their guide in the portal; organisers go to the public organiser guide (D92).
-    { href: isAdmin ? '/admin/help' : '/help/organisers', label: t('navHelp') },
+    // The staff guides for this user's roles (D92).
+    { href: '/admin/help', label: t('navHelp') },
   ];
   return (
     <nav aria-label={t('portal')} className="min-w-0">

@@ -1,51 +1,31 @@
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
-import { helpGuide, PUBLIC_GUIDES } from '@/content/help';
-import { Link } from '@/i18n/navigation';
+import { HelpGuideView } from '@/components/help/help-guide';
+import { helpGuide } from '@/content/help';
 import { pageLocale, type LocaleParams } from '@/lib/page';
 import { CONTACT_EMAIL } from '@/lib/site';
-import { getActor } from '@/server/auth/web';
 
 export async function generateMetadata({ params }: LocaleParams): Promise<Metadata> {
   const locale = await pageLocale(params);
-  const t = await getTranslations({ locale, namespace: 'Help' });
-  return { title: t('title'), description: t('intro') };
+  const guide = helpGuide(locale, 'players');
+  return { title: guide.title, description: guide.summary };
 }
 
-/** The help index (D92): the public guides, plus the administrator guide for admins. */
+/** Public help (D92): the player guide. Staff guides are in the portal under Help. */
 export default async function HelpPage({ params }: LocaleParams) {
   const locale = await pageLocale(params);
-  const [t, actor] = await Promise.all([getTranslations('Help'), getActor()]);
-  const cards = [
-    ...PUBLIC_GUIDES.map((key) => ({ key, href: `/help/${key}`, extra: null })),
-    ...(actor?.roles.includes('ADMIN')
-      ? [{ key: 'admins' as const, href: '/admin/help', extra: t('adminOnly') }]
-      : []),
-  ];
+  const t = await getTranslations('Help');
+  const guide = helpGuide(locale, 'players');
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-10 sm:py-16">
-      <h1 className="font-heading text-3xl font-bold tracking-tight sm:text-4xl">{t('title')}</h1>
-      <p className="mt-3 max-w-2xl text-lg text-muted-foreground">{t('intro')}</p>
-      <ul className="mt-8 grid gap-4 sm:grid-cols-2">
-        {cards.map(({ key, href, extra }) => {
-          const guide = helpGuide(locale, key);
-          return (
-            <li key={key}>
-              <Link
-                href={href}
-                className="flex h-full flex-col rounded-lg border bg-card p-5 transition-colors hover:border-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-              >
-                <span className="font-heading text-xl font-semibold">{guide.title}</span>
-                <span className="mt-1.5 text-muted-foreground">{guide.summary}</span>
-                {extra && <span className="mt-1 text-sm text-muted-foreground">{extra}</span>}
-                <span className="mt-4 text-sm font-medium text-primary">{t('read')} →</span>
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
-      <p className="mt-10 text-sm text-muted-foreground">{t('stuck', { email: CONTACT_EMAIL })}</p>
+    <div className="mx-auto max-w-6xl px-4 py-10 sm:py-14">
+      <h1 className="mb-8 font-heading text-3xl font-bold tracking-tight sm:text-4xl">
+        {guide.title}
+      </h1>
+      <HelpGuideView guide={guide} locale={locale} contentsLabel={t('contents')} />
+      <p className="mt-14 border-t pt-6 text-sm text-muted-foreground">
+        {t('stuck', { email: CONTACT_EMAIL })}
+      </p>
     </div>
   );
 }

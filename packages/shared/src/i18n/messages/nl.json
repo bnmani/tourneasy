@@ -2366,11 +2366,7 @@
   },
   "Help": {
     "title": "Help",
-    "intro": "Handleidingen voor elk soort account, met schermafbeeldingen van de site. Kies de handleiding die bij je past.",
-    "read": "Lees de handleiding",
     "contents": "Op deze pagina",
-    "allGuides": "Alle handleidingen",
-    "stuck": "Kom je er niet uit? Mail naar {email}. Voor vragen over een toernooi gebruik je de contactgegevens op de toernooipagina.",
-    "adminOnly": "Alleen voor beheerders, in het beheer."
+    "stuck": "Kom je er niet uit? Mail naar {email}. Voor vragen over een toernooi gebruik je de contactgegevens op de toernooipagina."
   }
 }
