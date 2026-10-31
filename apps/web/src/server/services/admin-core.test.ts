@@ -1,3 +1,4 @@
+import { playerEligibility } from '@tourneasy/shared/rules';
 import { prisma, Role } from '@tourneasy/db';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createPlayer, meta, resetDatabase } from '@/test/db';
@@ -411,7 +412,7 @@ describe('players', () => {
     const result = await importPlayersFile(admin, typed, meta);
     expect(result).toMatchObject({ created: 1, skipped: 0, errors: [] });
     const lotte = await prisma.playerProfile.findFirstOrThrow({ where: { lastName: 'Bakker' } });
-    expect(lotte.dateOfBirth.toISOString().slice(0, 10)).toBe('1990-05-07');
+    expect(lotte.dateOfBirth!.toISOString().slice(0, 10)).toBe('1990-05-07');
     expect(lotte.phone).toBe('+31612345678');
 
     const grid = readXlsx(await exportPlayersXlsx(admin, { q: 'lotte' }));
@@ -426,6 +427,31 @@ describe('players', () => {
       meta,
     );
     expect(other.errors).toEqual([{ line: 2, field: 'gender', error: 'required' }]);
+  });
+
+  it('imports players without a date of birth; they may not enter events yet (D95)', async () => {
+    const admin = await newAdmin();
+    const file = toXlsx(
+      'Blad1',
+      ['firstName', 'lastName', 'email', 'phone', 'dateOfBirth', 'gender', 'preferredEvents'],
+      [['Ravi', 'Kumar', 'ravi@example.test', '+919876543210', '', 'MALE', 'HD GD']],
+    );
+    expect(await importPlayersFile(admin, file, meta)).toMatchObject({ created: 1, errors: [] });
+    const ravi = await prisma.playerProfile.findFirstOrThrow({ where: { lastName: 'Kumar' } });
+    expect(ravi.dateOfBirth).toBeNull();
+    expect(ravi.isMinor).toBe(false);
+    expect(ravi.preferredDisciplines).toEqual(['HD', 'GD']);
+    expect(
+      playerEligibility(
+        {
+          gender: 'MALE',
+          dateOfBirth: null,
+          levelRank: { singles: null, doubles: null, mixed: null },
+        },
+        { discipline: 'HD', ageCategory: null, levelRank: null },
+        new Date('2027-03-01'),
+      ),
+    ).toEqual(['birthDateUnknown']);
   });
 
   it('rejects files that are not player CSVs', async () => {

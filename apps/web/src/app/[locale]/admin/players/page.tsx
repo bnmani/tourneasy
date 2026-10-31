@@ -293,7 +293,9 @@ export default async function AdminPlayersPage({
                     <div className="text-muted-foreground">{p.phone ?? ''}</div>
                   </td>
                   <td className="px-3 py-2">{tg(p.gender)}</td>
-                  <td className="px-3 py-2 tabular-nums">{ageOn(p.dateOfBirth)}</td>
+                  <td className="px-3 py-2 tabular-nums">
+                    {p.dateOfBirth ? ageOn(p.dateOfBirth) : t('none')}
+                  </td>
                   <td className="px-3 py-2">{p.preferredDisciplines.join(' ') || t('none')}</td>
                   <td className="px-3 py-2">{p.club?.name ?? t('none')}</td>
                   <td className="px-3 py-2 text-right tabular-nums">{p.categoriesPlayed}</td>

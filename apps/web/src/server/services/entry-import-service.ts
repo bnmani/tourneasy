@@ -590,7 +590,7 @@ export async function searchPlayersForEntry(
       memberNumber: p.memberNumber,
       name: fullName(p),
       club: p.club?.shortName ?? p.club?.name ?? null,
-      born: p.dateOfBirth.getUTCFullYear(),
+      born: p.dateOfBirth?.getUTCFullYear() ?? null,
     }));
 }
 

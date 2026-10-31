@@ -76,12 +76,12 @@ export async function namesakes(spec: PlayerSpec) {
   });
   const same = rows.filter((p) => nameKey(p.firstName, p.lastNamePrefix, p.lastName) === wanted);
   const born = normaliseDate(spec.dateOfBirth);
-  if (born && same.some((p) => p.dateOfBirth.toISOString().slice(0, 10) === born)) return [];
+  if (born && same.some((p) => p.dateOfBirth?.toISOString().slice(0, 10) === born)) return [];
   return same.slice(0, 5).map((p) => ({
     memberNumber: p.memberNumber,
     name: [p.firstName, p.lastNamePrefix, p.lastName].filter(Boolean).join(' '),
     club: p.club?.name ?? null,
-    born: p.dateOfBirth.getUTCFullYear(),
+    born: p.dateOfBirth?.getUTCFullYear() ?? null,
   }));
 }
 

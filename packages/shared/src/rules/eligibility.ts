@@ -10,11 +10,13 @@ export type Gender = 'MALE' | 'FEMALE' | 'OTHER';
 export const DOUBLES: readonly Discipline[] = ['HD', 'DD', 'GD'];
 export const isDoubles = (d: Discipline) => DOUBLES.includes(d);
 
-export type EligibilityReason = 'gender' | 'tooOld' | 'tooYoung' | 'levelTooLow' | 'mixedNeedsBoth';
+export type EligibilityReason =
+  'gender' | 'tooOld' | 'tooYoung' | 'levelTooLow' | 'mixedNeedsBoth' | 'birthDateUnknown';
 
 export type EligiblePlayer = {
   gender: Gender;
-  dateOfBirth: Date | string;
+  /** Null for an imported player who hasn't filled it in yet (D95): no event until they do. */
+  dateOfBirth: Date | string | null;
   /** Level rank per discipline group (1 = strongest class); null when unknown. */
   levelRank: { singles: number | null; doubles: number | null; mixed: number | null };
 };
@@ -90,7 +92,8 @@ export function playerEligibility(
   if (gender && player.gender !== gender) reasons.push('gender');
   if (event.discipline === 'GD' && player.gender === 'OTHER') reasons.push('gender');
 
-  if (event.ageCategory) {
+  if (player.dateOfBirth === null) reasons.push('birthDateUnknown');
+  else if (event.ageCategory) {
     const age = ageOnReferenceDay(player.dateOfBirth, tournamentStartsOn, event.ageCategory);
     if (event.ageCategory.maxAge !== null && age > event.ageCategory.maxAge) reasons.push('tooOld');
     if (event.ageCategory.minAge !== null && age < event.ageCategory.minAge)

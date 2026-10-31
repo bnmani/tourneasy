@@ -132,7 +132,7 @@ export default async function AdminPlayerPage({
           lastName: player.lastName,
           contactEmail: player.contactEmail ?? '',
           phone: player.phone ?? '',
-          dateOfBirth: player.dateOfBirth.toISOString().slice(0, 10),
+          dateOfBirth: player.dateOfBirth?.toISOString().slice(0, 10) ?? '',
           gender: player.gender,
           nationality: player.nationality ?? '',
           clubId: player.clubId ?? '',

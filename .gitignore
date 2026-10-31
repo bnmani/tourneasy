@@ -36,3 +36,6 @@ Prompt - *.docx
 # design briefs and the separate front-end chat's working folder
 *.docx
 /Front end/
+
+# Player lists with personal data (D95): never commit
+/imports/

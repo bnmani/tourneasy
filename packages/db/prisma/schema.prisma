@@ -494,7 +494,8 @@ model PlayerProfile {
   firstName            String
   lastNamePrefix       String? // Dutch "tussenvoegsel": van, de, van der…
   lastName             String
-  dateOfBirth          DateTime     @db.Date
+  /// Null for players imported without one (D95): they fill it in when they activate their account.
+  dateOfBirth          DateTime?    @db.Date
   gender               Gender
   nationality          String?      @db.Char(2) // ISO 3166-1 alpha-2
   phone                String?

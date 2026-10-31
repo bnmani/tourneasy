@@ -150,7 +150,7 @@ export function AddEntryForm({
                     <span>
                       <span className="font-medium">{d.name}</span>{' '}
                       <span className="text-muted-foreground">
-                        {[d.club, d.memberNumber, t('bornIn', { year: d.born })]
+                        {[d.club, d.memberNumber, d.born && t('bornIn', { year: d.born })]
                           .filter(Boolean)
                           .join(' · ')}
                       </span>

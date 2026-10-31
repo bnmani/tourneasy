@@ -1403,7 +1403,7 @@ export async function exportTournamentEntries(
         p.player.lastNamePrefix ?? '',
         p.player.lastName,
         p.player.gender,
-        p.player.dateOfBirth.toISOString().slice(0, 10),
+        p.player.dateOfBirth?.toISOString().slice(0, 10) ?? '',
         p.player.club?.name ?? '',
         p.player.user?.email ?? p.player.contactEmail ?? '',
         p.player.phone ?? '',

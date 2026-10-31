@@ -145,7 +145,7 @@ export async function anonymiseProfile(tx: Tx, profileId: string, now: Date) {
       lastNamePrefix: null,
       lastName: 'player',
       // Keep only the birth year: results by age category stay meaningful.
-      dateOfBirth: new Date(Date.UTC(dob.getUTCFullYear(), 0, 1)),
+      dateOfBirth: dob ? new Date(Date.UTC(dob.getUTCFullYear(), 0, 1)) : null,
       phone: null,
       contactEmail: null,
       nationality: null,

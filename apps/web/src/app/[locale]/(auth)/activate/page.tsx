@@ -34,7 +34,13 @@ export default async function ActivatePage({
               email: invite.email,
             })}
           </p>
-          <ActivateForm locale={locale} token={token} minor={invite.minor} />
+          <ActivateForm
+            locale={locale}
+            token={token}
+            minor={invite.minor}
+            needsDateOfBirth={invite.needsDateOfBirth}
+            gender={invite.gender}
+          />
         </div>
       ) : (
         <div className="space-y-4">

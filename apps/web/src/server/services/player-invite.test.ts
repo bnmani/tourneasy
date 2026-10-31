@@ -20,7 +20,10 @@ async function admin() {
 }
 
 let n = 0;
-async function accountless(email: string | null, dateOfBirth = new Date('1990-05-01')) {
+async function accountless(
+  email: string | null,
+  dateOfBirth: Date | null = new Date('1990-05-01'),
+) {
   n += 1;
   return prisma.playerProfile.create({
     data: {
@@ -118,5 +121,47 @@ describe('account invites for players without an account (D76)', () => {
     await expect(invitePlayers(player, { ids: [ruud.id] }, 'nl', meta)).rejects.toBeInstanceOf(
       AppError,
     );
+  });
+
+  it('asks an imported player without a date of birth for it, and for the gender (D95)', async () => {
+    const actor = await admin();
+    const lisa = await accountless('lisa@example.test', null);
+    await invitePlayers(actor, { ids: [lisa.id] }, 'en', meta);
+    const { token } = lastMailTo('lisa@example.test');
+    expect(await getPlayerInvite(token!)).toMatchObject({
+      needsDateOfBirth: true,
+      gender: 'MALE',
+      minor: false,
+    });
+    const base = {
+      token,
+      password,
+      passwordRepeat: password,
+      acceptTerms: true,
+      acceptPrivacy: true,
+    };
+
+    // Without the date of birth the account isn't made.
+    await expect(acceptPlayerInvite(base, 'en', meta)).rejects.toMatchObject({
+      code: 'validation',
+      details: { fields: { dateOfBirth: 'required' } },
+    });
+
+    // A date that makes her a minor needs a parent's consent, as on sign-up.
+    const young = new Date();
+    young.setUTCFullYear(young.getUTCFullYear() - 12);
+    const youngDate = young.toISOString().slice(0, 10);
+    await expect(
+      acceptPlayerInvite({ ...base, dateOfBirth: youngDate, gender: 'FEMALE' }, 'en', meta),
+    ).rejects.toMatchObject({
+      details: { fields: { parentalConsent: 'parentalConsentRequired' } },
+    });
+
+    await acceptPlayerInvite({ ...base, dateOfBirth: '1994-02-03', gender: 'FEMALE' }, 'en', meta);
+    const profile = await prisma.playerProfile.findUniqueOrThrow({ where: { id: lisa.id } });
+    expect(profile.dateOfBirth?.toISOString().slice(0, 10)).toBe('1994-02-03');
+    expect(profile.gender).toBe('FEMALE');
+    expect(profile.isMinor).toBe(false);
+    expect(profile.userId).not.toBeNull();
   });
 });

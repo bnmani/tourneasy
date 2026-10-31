@@ -4,7 +4,7 @@
  * signed in with the existing profile (member number, entries and results stay).
  */
 import { ConsentType, type Locale, Prisma, prisma, Role } from '@tourneasy/db';
-import { acceptPlayerInviteSchema, fieldErrors, isMinor } from '@tourneasy/shared';
+import { acceptPlayerInviteSchema, fieldErrors, isMinor, parseDateOnly } from '@tourneasy/shared';
 import type { AppLocale } from '@tourneasy/shared/i18n';
 import { z } from 'zod';
 import { sendMailSafely } from '../email/mailer';
@@ -121,6 +121,7 @@ async function validInvite(token: string) {
           lastName: true,
           memberNumber: true,
           dateOfBirth: true,
+          gender: true,
           contactEmail: true,
         },
       },
@@ -146,7 +147,10 @@ export async function getPlayerInvite(token: string) {
     firstName: invite.player.firstName,
     memberNumber: invite.player.memberNumber,
     email: invite.email,
-    minor: isMinor(invite.player.dateOfBirth),
+    minor: invite.player.dateOfBirth ? isMinor(invite.player.dateOfBirth) : false,
+    /** Imported without a date of birth: the activation form asks for it (D95). */
+    needsDateOfBirth: invite.player.dateOfBirth === null,
+    gender: invite.player.gender,
   };
 }
 
@@ -161,7 +165,12 @@ export async function acceptPlayerInvite(
   const data = result.data;
   const invite = await validInvite(data.token);
   if (!invite) throw new AppError('tokenInvalid');
-  const minor = isMinor(invite.player.dateOfBirth);
+  // An imported profile may lack the date of birth: the player gives it now (D95).
+  const dateOfBirth =
+    invite.player.dateOfBirth ?? (data.dateOfBirth ? parseDateOnly(data.dateOfBirth) : null);
+  if (!dateOfBirth) throw validationError({ dateOfBirth: 'required' });
+  const gender = data.gender ?? invite.player.gender;
+  const minor = isMinor(dateOfBirth);
   if (minor && (!data.parentalConsent || !data.guardianName)) {
     throw validationError({
       ...(data.parentalConsent ? {} : { parentalConsent: 'parentalConsentRequired' }),
@@ -216,6 +225,8 @@ export async function acceptPlayerInvite(
         data: {
           userId: user.id,
           contactEmail: null,
+          dateOfBirth,
+          gender,
           isMinor: minor,
           parentalConsentAt: minor ? now : null,
         },

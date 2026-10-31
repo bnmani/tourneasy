@@ -169,7 +169,7 @@ describe('GDPR', () => {
       phone: null,
       publicProfile: false,
     });
-    expect(user.playerProfile?.dateOfBirth.toISOString()).toBe('1995-01-01T00:00:00.000Z');
+    expect(user.playerProfile?.dateOfBirth?.toISOString()).toBe('1995-01-01T00:00:00.000Z');
     expect(await actorFromWebToken('x')).toBeNull();
     await expect(authenticate({ identifier: email, password }, meta)).rejects.toMatchObject({
       code: 'invalidCredentials',

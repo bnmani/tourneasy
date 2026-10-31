@@ -167,6 +167,10 @@ export const acceptPlayerInviteSchema = z
     acceptPrivacy: z.literal(true, { error: 'mustAccept' }),
     parentalConsent: z.boolean().optional(),
     guardianName: optionalText(120),
+    /** Asked when the profile was imported without one (D95); the service requires it then. */
+    dateOfBirth: z.preprocess((v) => (v === '' ? undefined : v), dateOfBirthSchema.optional()),
+    /** The player confirms (or corrects) the imported gender (D95). */
+    gender: z.preprocess((v) => (v === '' ? undefined : v), z.enum(GENDERS).optional()),
   })
   .refine((v) => v.passwordRepeat === undefined || v.passwordRepeat === v.password, {
     path: ['passwordRepeat'],

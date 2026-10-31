@@ -37,7 +37,7 @@ export async function getMyAccount(actor: Actor) {
       firstName: user.playerProfile.firstName,
       lastNamePrefix: user.playerProfile.lastNamePrefix,
       lastName: user.playerProfile.lastName,
-      dateOfBirth: user.playerProfile.dateOfBirth.toISOString().slice(0, 10),
+      dateOfBirth: user.playerProfile.dateOfBirth?.toISOString().slice(0, 10) ?? '',
       gender: user.playerProfile.gender,
       nationality: user.playerProfile.nationality,
       phone: user.playerProfile.phone,

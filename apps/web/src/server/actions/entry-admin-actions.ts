@@ -12,7 +12,7 @@ export type EntryPlayerOption = {
   memberNumber: string;
   name: string;
   club: string | null;
-  born: number;
+  born: number | null;
 };
 
 /** Live player search on the add-entry form (organisers of this tournament). */

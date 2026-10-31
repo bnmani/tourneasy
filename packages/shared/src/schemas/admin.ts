@@ -120,6 +120,8 @@ const dateOnly = z
   .min(1, 'required')
   .refine((v) => parseDateOnly(v) !== null, 'dateInvalid')
   .transform((v) => parseDateOnly(v)!);
+/** An empty date stays unknown (D95): imported players fill in their date of birth later. */
+const optionalDateOnly = z.preprocess(emptyToUndefined, dateOnly.optional());
 const localDateTime = z
   .string({ error: 'required' })
   .min(1, 'required')
@@ -414,7 +416,7 @@ export const adminPlayerSchema = z
     lastName: personNameSchema(80),
     contactEmail: optionalEmail,
     phone: optionalPhone,
-    dateOfBirth: dateOnly,
+    dateOfBirth: optionalDateOnly,
     gender: z.enum(GENDERS, { error: 'required' }),
     nationality: z.preprocess(
       emptyToUndefined,

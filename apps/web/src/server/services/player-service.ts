@@ -209,7 +209,8 @@ export function profileData(input: ReturnType<typeof adminPlayerSchema.parse>) {
     levelDoublesId: input.levelDoublesId ?? null,
     levelMixedId: input.levelMixedId ?? null,
     preferredDisciplines: input.preferredDisciplines as Discipline[],
-    isMinor: isMinor(input.dateOfBirth),
+    // Unknown date of birth: not marked as a minor until it is filled in (D95).
+    isMinor: input.dateOfBirth ? isMinor(input.dateOfBirth) : undefined,
   };
 }
 
@@ -420,7 +421,7 @@ async function exportPlayerTable(
     p.lastName,
     playerEmail(p) ?? '',
     p.phone ?? '',
-    p.dateOfBirth.toISOString().slice(0, 10),
+    p.dateOfBirth?.toISOString().slice(0, 10) ?? '',
     p.gender,
     p.club?.name ?? '',
     p.federationId ?? '',
