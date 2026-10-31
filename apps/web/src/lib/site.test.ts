@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isProductionSite, wwwRedirect } from './site';
+import { housekeepingMinutes, isProductionSite, wwwRedirect } from './site';
 
 describe('isProductionSite', () => {
   it('is only the live domain', () => {
@@ -8,6 +8,20 @@ describe('isProductionSite', () => {
     expect(isProductionSite('https://test.tourneasy.app')).toBe(false);
     expect(isProductionSite('http://localhost:3000')).toBe(false);
     expect(isProductionSite(undefined)).toBe(false);
+  });
+});
+
+describe('housekeepingMinutes', () => {
+  it('runs every 15 minutes live and every 60 elsewhere', () => {
+    expect(housekeepingMinutes('https://tourneasy.com', undefined)).toBe(15);
+    expect(housekeepingMinutes('https://test.tourneasy.app', undefined)).toBe(60);
+    expect(housekeepingMinutes(undefined, undefined)).toBe(60);
+  });
+  it('takes a sensible override and ignores the rest', () => {
+    expect(housekeepingMinutes('https://tourneasy.com', '30')).toBe(30);
+    expect(housekeepingMinutes('https://tourneasy.com', '1')).toBe(15);
+    expect(housekeepingMinutes('https://tourneasy.com', 'often')).toBe(15);
+    expect(housekeepingMinutes('https://test.tourneasy.app', '')).toBe(60);
   });
 });
 

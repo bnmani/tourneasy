@@ -1,12 +1,14 @@
 name: Housekeeping
 
-# Every 15 minutes: payment holds, reminders, deadline and results emails, email queue (D62).
+# Backup for the housekeeping the sites run themselves (D90, D94): once an hour, so the
+# databases can sleep in between. Payment holds, reminders, deadline and results emails, email
+# queue (D62).
 # Each site has its own key in a repository secret (its hash is stored in that site's database):
 # CRON_KEY for the test site, CRON_KEY_PROD for the live site. The live site runs once the
 # repository variable PROD_SITE_URL is set (after launch). A site without a key or URL is skipped.
 on:
   schedule:
-    - cron: '*/15 * * * *'
+    - cron: '17 * * * *'
   workflow_dispatch:
 
 permissions: {}

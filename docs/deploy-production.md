@@ -67,8 +67,6 @@ organisers take real money, check with an accountant whether this needs Stripe C
 
 - Privacy policy and terms: the pages still show the draft notice; give Claude the final texts.
 - Pricing stays off until you switch it on under Owner → Pricing.
-- Neon: the free plan suspends the database when idle (slow first page) and keeps little history
-  for restores. A paid plan is advised for the live site.
 
 ## Database (done by Claude)
 
@@ -78,10 +76,18 @@ Never run `prisma db seed` there: it wipes everything and adds demo players.
 
 ## Scheduled jobs
 
-The server runs housekeeping itself every 5 minutes (D90); the runtime logs show
-`[housekeeping] running every 5 minutes` shortly after each start. GitHub Actions is a backup:
+The server runs housekeeping itself (D90): every 15 minutes on the live site, every 60 on the
+test site (D94). The runtime logs show `[housekeeping] running every 15 minutes` shortly after
+each start. `HOUSEKEEPING_INTERVAL_MIN` (5 to 1440) overrides the interval. Every run wakes the
+database, which Neon bills per hour awake, so keep it at 15 or more.
 
-GitHub Actions **Housekeeping** calls both sites every 15 minutes. The live site's key is the
-repository secret `CRON_KEY_PROD`; its SHA-256 is in the live database (`SiteSetting
-cron.keyHash`). The live site joins once the repository variable `PROD_SITE_URL` is set to
-`https://tourneasy.com` (after launch). A site without a key or URL is skipped.
+GitHub Actions **Housekeeping** is an hourly backup that calls both sites. The live site's key is
+the repository secret `CRON_KEY_PROD`; its SHA-256 is in the live database (`SiteSetting
+cron.keyHash`). The live site is called once the repository variable `PROD_SITE_URL` is set. A
+site without a key or URL is skipped.
+
+## Neon plan (D94)
+
+Both projects are on the **Launch** plan (pay per use, since 31-10-2026). The live project keeps
+7 days of history (restore to any moment), scales from 0.25 to 1 compute unit on busy days, and
+sleeps after 5 idle minutes. Expect about $8 to $10 a month for both projects.

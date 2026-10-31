@@ -1,16 +1,15 @@
 import { PHASE_PRODUCTION_BUILD } from 'next/constants';
 
-/** How often the server runs housekeeping itself (payment holds, reminders, the email queue). */
-const EVERY_MS = 5 * 60_000;
 /** First run shortly after start, once the server is up. */
 const FIRST_AFTER_MS = 60_000;
 
 /**
- * Runs housekeeping (D62) inside the server, every 5 minutes (D90). GitHub's 15-minute schedule
- * is best effort: on busy days it runs a few times a day, which left payment holds and queued
- * emails waiting for hours. It stays as a backup; every job is safe to run twice (emails are
- * claimed one by one, reminders have dedupe keys). Off in development and during the build;
- * HOUSEKEEPING_IN_PROCESS=0 switches it off.
+ * Runs housekeeping (D62) inside the server (D90): every 15 minutes on the live site and every 60
+ * on the test site, so the database can sleep in between (D94, see housekeepingMinutes). Emails
+ * go out when they are queued; this run catches up on what is left, releases payment holds and
+ * sends reminders. GitHub Actions stays as an hourly backup; every job is safe to run twice
+ * (emails are claimed one by one, reminders have dedupe keys). Off in development and during
+ * the build; HOUSEKEEPING_IN_PROCESS=0 switches it off.
  */
 export async function register() {
   if (process.env.NEXT_RUNTIME !== 'nodejs') return;
@@ -19,6 +18,8 @@ export async function register() {
   if (process.env.HOUSEKEEPING_IN_PROCESS === '0') return;
 
   const { runHousekeeping } = await import('./server/services/jobs-service');
+  const { housekeepingMinutes } = await import('./lib/site');
+  const minutes = housekeepingMinutes();
   let running = false;
   let first = true;
   const tick = async () => {
@@ -30,7 +31,7 @@ export async function register() {
       // when they did something.
       if (first || Object.values(result).some((n) => typeof n === 'number' && n > 0))
         console.log(
-          `[housekeeping]${first ? ' running every 5 minutes; first run:' : ''}`,
+          `[housekeeping]${first ? ` running every ${minutes} minutes; first run:` : ''}`,
           JSON.stringify(result),
         );
       first = false;
@@ -43,6 +44,6 @@ export async function register() {
   // unref: never keeps the process alive on its own.
   setTimeout(() => {
     void tick();
-    setInterval(() => void tick(), EVERY_MS).unref();
+    setInterval(() => void tick(), minutes * 60_000).unref();
   }, FIRST_AFTER_MS).unref();
 }
