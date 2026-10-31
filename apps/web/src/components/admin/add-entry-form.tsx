@@ -3,7 +3,15 @@
 import type { AppLocale } from '@tourneasy/shared/i18n';
 import { Search, UserPlus, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { useActionState, useEffect, useId, useRef, useState, useTransition } from 'react';
+import {
+  useActionState,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+  useTransition,
+} from 'react';
 import { FormError, FormSuccess, SubmitButton } from '@/components/forms/fields';
 import { initialFormState } from '@/components/forms/form-state';
 import { Button } from '@/components/ui/button';
@@ -63,6 +71,14 @@ export function AddEntryForm({
     setSeenState(state);
     setVersion((v) => v + 1);
   }
+  // React resets the form when an answer arrives, after drawing it: that puts the category
+  // list back on its first option while the state (and the player fields) keep the chosen
+  // category. Put the list back right after the reset, before the screen is painted.
+  const eventSelect = useRef<HTMLSelectElement>(null);
+  useLayoutEffect(() => {
+    if (eventSelect.current && eventSelect.current.value !== eventId)
+      eventSelect.current.value = eventId;
+  }, [state, eventId]);
   const pickExisting = (side: 'player' | 'partner', option: EntryPlayerOption) => {
     setPresets((p) => ({ ...p, [side]: option }));
     if (side === 'player') setPlayer(option);
@@ -89,10 +105,7 @@ export function AddEntryForm({
       <label className="block max-w-md space-y-1.5 text-sm font-medium">
         {t('event')}
         <select
-          // React resets the form after each save, which puts the select back on its first
-          // option while the state still holds the chosen one; a new element per round keeps
-          // the screen and the form in step.
-          key={`event-${version}`}
+          ref={eventSelect}
           name="eventId"
           value={eventId}
           onChange={(e) => {

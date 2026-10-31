@@ -80,6 +80,7 @@ export async function addEntryAction(
         allowNew: formData.get('allowNew') === '1',
       },
       await currentRequestMeta(),
+      locale,
     );
     revalidatePath(`/${locale}/admin/tournaments/${tournamentId}/entries`);
     return { ok: true, added: { ...result, count: (prev.added?.count ?? 0) + 1 } };

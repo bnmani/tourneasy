@@ -8,6 +8,7 @@
  * The participants export can be imported back (partner rows follow their entrant).
  */
 import { Prisma, prisma, type RegistrationStatus } from '@tourneasy/db';
+import type { AppLocale } from '@tourneasy/shared/i18n';
 import { isDoubles, pairEligibility, parseCsvObjects } from '@tourneasy/shared';
 import { z } from 'zod';
 import { writeAudit } from '../lib/audit';
@@ -463,6 +464,8 @@ export async function addEntryAsOrganiser(
   tournamentId: string,
   input: unknown,
   meta: RequestMeta,
+  /** The language of the page, for the category name in the reply. */
+  locale: AppLocale = actor.locale,
 ) {
   await assertCanManageTournament(actor, tournamentId);
   const data = parseInput(addEntrySchema, input);
@@ -504,7 +507,7 @@ export async function addEntryAsOrganiser(
   return {
     status,
     name: [fullName(p1.player), partner ? fullName(partner) : null].filter(Boolean).join(' / '),
-    event: eventText(event, actor.locale),
+    event: eventText(event, locale),
   };
 }
 
