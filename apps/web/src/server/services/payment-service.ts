@@ -529,6 +529,64 @@ export async function markShareAsPaid(
   });
 }
 
+/** An order item paid at the desk and still standing: what "Undo" can take back (D96). */
+const deskPaidItem = {
+  order: {
+    status: 'PAID',
+    payments: { some: { method: 'MANUAL', status: 'SUCCEEDED' } },
+  },
+} satisfies Prisma.OrderItemWhereInput;
+
+/**
+ * Undoes a desk payment recorded by mistake (D96): the MANUAL payment and its order are
+ * cancelled and the share is unpaid again. Only while nothing of it was refunded; money that
+ * really changed hands goes back through a refund instead.
+ */
+export async function undoDeskPayment(actor: Actor, input: unknown, meta: RequestMeta) {
+  const { participantId } = parseInput(manualPaymentSchema, input);
+  const share = await prisma.registrationParticipant.findUnique({
+    where: { id: participantId },
+    select: {
+      id: true,
+      paymentStatus: true,
+      registration: { select: { event: { select: { tournamentId: true } } } },
+    },
+  });
+  if (!share) throw new AppError('notFound');
+  await assertCanManageTournament(actor, share.registration.event.tournamentId);
+  const item = await prisma.orderItem.findFirst({
+    where: { participantId: share.id, refundedCents: 0, ...deskPaidItem },
+    orderBy: { order: { createdAt: 'desc' } },
+    select: {
+      order: { select: { id: true, orderNumber: true, payments: { select: { id: true } } } },
+    },
+  });
+  if (share.paymentStatus !== 'PAID' || !item) throw new AppError('statusTransition');
+  await prisma.$transaction(async (tx) => {
+    const cancelled = await tx.order.updateMany({
+      where: { id: item.order.id, status: 'PAID' },
+      data: { status: 'CANCELLED' },
+    });
+    if (cancelled.count !== 1) throw new AppError('statusTransition');
+    await tx.payment.updateMany({
+      where: { orderId: item.order.id, method: 'MANUAL', status: 'SUCCEEDED' },
+      data: { status: 'CANCELED' },
+    });
+    await tx.registrationParticipant.update({
+      where: { id: share.id },
+      data: { paymentStatus: 'UNPAID' },
+    });
+    await writeAudit(tx, {
+      actorId: actor.userId,
+      action: 'payment.manual.undo',
+      entityType: 'Order',
+      entityId: item.order.id,
+      after: { participantId: share.id, orderNumber: item.order.orderNumber },
+      meta,
+    });
+  });
+}
+
 // ── Admin overview ─────────────────────────────────────────────────────────────────
 
 export type PaymentFilters = { tournamentId?: string; status?: OrderStatus; page?: number };

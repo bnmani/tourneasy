@@ -8,6 +8,7 @@ import {
   markShareAsPaid,
   paymentsOverview,
   reconcileOrder,
+  undoDeskPayment,
 } from './payment-service';
 import { approveRefund } from './refund-service';
 import {
@@ -361,5 +362,40 @@ describe('refunds and desk payments', () => {
     ).rejects.toMatchObject({
       code: 'statusTransition',
     });
+  });
+
+  it('undoes a desk payment made by mistake, once, and not after a refund (D96)', async () => {
+    setGatewayForTests(null);
+    const t = await tournament();
+    const de = await event(t.id, 'DE');
+    const anna = await player();
+    await enter(anna.actor, [{ eventId: de.id }]);
+    const share = await prisma.registrationParticipant.findFirstOrThrow();
+    const admin = await player({}, Role.ADMIN);
+    await markShareAsPaid(admin.actor, { participantId: share.id }, meta);
+
+    // A player can't undo it; the organiser can.
+    await expect(
+      undoDeskPayment(anna.actor, { participantId: share.id }, meta),
+    ).rejects.toMatchObject({ code: 'notFound' });
+    await undoDeskPayment(admin.actor, { participantId: share.id }, meta);
+    const after = await prisma.registrationParticipant.findUniqueOrThrow({
+      where: { id: share.id },
+    });
+    expect(after.paymentStatus).toBe('UNPAID');
+    expect(await prisma.order.findFirstOrThrow()).toMatchObject({ status: 'CANCELLED' });
+    expect(await prisma.payment.findFirstOrThrow()).toMatchObject({ status: 'CANCELED' });
+    expect(await prisma.auditLog.count({ where: { action: 'payment.manual.undo' } })).toBe(1);
+    await expect(
+      undoDeskPayment(admin.actor, { participantId: share.id }, meta),
+    ).rejects.toMatchObject({ code: 'statusTransition' });
+
+    // Paid again, then cancelled with a refund: the money went back, nothing to undo.
+    await markShareAsPaid(admin.actor, { participantId: share.id }, meta);
+    const registrationId = (await prisma.registration.findFirstOrThrow()).id;
+    await cancelEntryAsOrganiser(admin.actor, registrationId, { reason: 'Mistake' }, meta, NOW);
+    await expect(
+      undoDeskPayment(admin.actor, { participantId: share.id }, meta),
+    ).rejects.toMatchObject({ code: 'statusTransition' });
   });
 });

@@ -1268,6 +1268,18 @@ export async function listTournamentEntries(
           role: true,
           active: true,
           paymentStatus: true,
+          // Paid at the desk and not refunded: the organiser can undo it (D96).
+          orderItems: {
+            where: {
+              refundedCents: 0,
+              order: {
+                status: 'PAID',
+                payments: { some: { method: 'MANUAL', status: 'SUCCEEDED' } },
+              },
+            },
+            select: { id: true },
+            take: 1,
+          },
           player: {
             select: {
               memberNumber: true,

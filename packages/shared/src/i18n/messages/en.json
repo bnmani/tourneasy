@@ -860,7 +860,8 @@
       "invited": "{sent, plural, =0 {No invitations sent} one {# invitation sent} other {# invitations sent}}{skipped, plural, =0 {.} other {; # skipped (already an account or no email address).}}",
       "packageRequested": "Request received. You'll get an invoice; the package applies once it is paid.",
       "packagePaid": "Payment received. The package now applies.",
-      "refunded": "Done. The order has been refunded or cancelled."
+      "refunded": "Done. The order has been refunded or cancelled.",
+      "paymentUndone": "The desk payment has been undone: the entry is unpaid again."
     },
     "grantShort": "Grant",
     "revokeShort": "Remove",
@@ -901,6 +902,9 @@
       "viewEntries": "View participants",
       "summary": "{count, plural, =0 {No entries yet} one {# entry} other {# entries}}",
       "markPaid": "Paid at the desk",
+      "undoPaid": "Undo",
+      "undoPaidConfirm": "Not paid after all? This cancels the desk payment.",
+      "undoPaidYes": "Yes, undo",
       "import": "Import",
       "importTitle": "Import participants: {tournament}",
       "importHelp": "Upload an Excel or CSV file with one row per entry: the category (as in the export, e.g. \"Men's doubles · Seniors\"), the player and for doubles the partner (columns starting with partner). The member number is enough when you know it; otherwise name, gender (M/F) and date of birth, optionally email and club. Players who don't exist yet are created automatically. Columns: {columns}. Full categories go to the waiting list; no emails are sent.",
