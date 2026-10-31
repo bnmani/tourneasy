@@ -78,7 +78,8 @@
     "privacy": "Privacyverklaring",
     "terms": "Algemene voorwaarden",
     "pricing": "Prijzen voor organisatoren",
-    "contact": "Contact"
+    "contact": "Contact",
+    "help": "Help"
   },
   "NotFound": {
     "title": "Pagina niet gevonden",
@@ -533,6 +534,7 @@
     "navClubs": "Clubs",
     "navPlayers": "Spelers",
     "navAudit": "Auditlog",
+    "navHelp": "Help",
     "new": "Nieuw",
     "edit": "Bewerken",
     "save": "Opslaan",
@@ -2361,5 +2363,14 @@
       "cancelled": "Bestelling {code} is geannuleerd. Niet uitgeven.",
       "neverPaid": "Bestelling {code} is nooit betaald. Niet uitgeven."
     }
+  },
+  "Help": {
+    "title": "Help",
+    "intro": "Handleidingen voor elk soort account, met schermafbeeldingen van de site. Kies de handleiding die bij je past.",
+    "read": "Lees de handleiding",
+    "contents": "Op deze pagina",
+    "allGuides": "Alle handleidingen",
+    "stuck": "Kom je er niet uit? Mail naar {email}. Voor vragen over een toernooi gebruik je de contactgegevens op de toernooipagina.",
+    "adminOnly": "Alleen voor beheerders, in het beheer."
   }
 }

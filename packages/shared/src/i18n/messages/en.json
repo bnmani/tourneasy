@@ -78,7 +78,8 @@
     "privacy": "Privacy policy",
     "terms": "Terms and conditions",
     "pricing": "Pricing for organisers",
-    "contact": "Contact"
+    "contact": "Contact",
+    "help": "Help"
   },
   "NotFound": {
     "title": "Page not found",
@@ -533,6 +534,7 @@
     "navClubs": "Clubs",
     "navPlayers": "Players",
     "navAudit": "Audit log",
+    "navHelp": "Help",
     "new": "New",
     "edit": "Edit",
     "save": "Save",
@@ -2357,5 +2359,14 @@
       "cancelled": "Order {code} was cancelled. Do not hand it out.",
       "neverPaid": "Order {code} was never paid. Do not hand it out."
     }
+  },
+  "Help": {
+    "title": "Help",
+    "intro": "Guides for every kind of account, with screenshots of the site. Pick the one that fits you.",
+    "read": "Read the guide",
+    "contents": "On this page",
+    "allGuides": "All guides",
+    "stuck": "Still stuck? Email {email}. For questions about a tournament, use the contact details on its page.",
+    "adminOnly": "Only for administrators, inside the portal."
   }
 }

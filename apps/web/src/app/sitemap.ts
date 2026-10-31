@@ -17,7 +17,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       },
     }));
 
-  const statics = ['', '/tournaments', '/calendar', '/venues', '/clubs', '/privacy', '/terms'];
+  const statics = [
+    '',
+    '/tournaments',
+    '/calendar',
+    '/venues',
+    '/clubs',
+    '/help',
+    '/help/players',
+    '/help/organisers',
+    '/privacy',
+    '/terms',
+  ];
   let dynamic: MetadataRoute.Sitemap = [];
   try {
     const { tournaments, venues, clubs } = await sitemapEntries();

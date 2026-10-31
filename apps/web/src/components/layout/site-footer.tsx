@@ -32,6 +32,11 @@ export async function SiteFooter() {
             </li>
           )}
           <li>
+            <Link href="/help" className="underline-offset-4 hover:underline">
+              {t('help')}
+            </Link>
+          </li>
+          <li>
             <Link href="/privacy" className="underline-offset-4 hover:underline">
               {t('privacy')}
             </Link>
