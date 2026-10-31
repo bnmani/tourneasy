@@ -347,4 +347,32 @@ describe('one-step import and add-entry screen (D63)', () => {
     await add('1999-03-03', true);
     expect(await count()).toBe(2);
   });
+
+  it('finds imported players without a date of birth for events without an age limit (D95)', async () => {
+    const { t, de } = await setup();
+    const veterans = await prisma.ageCategory.create({
+      data: {
+        code: 'V35',
+        name: { nl: 'Veteranen 35+', en: 'Veterans 35+' },
+        minAge: 35,
+        sortOrder: 7,
+      },
+    });
+    const v35 = await prisma.tournamentEvent.create({
+      data: { tournamentId: t.id, discipline: 'DE', feeCents: 1500, ageCategoryId: veterans.id },
+    });
+    await prisma.playerProfile.create({
+      data: {
+        memberNumber: 'TE950001',
+        firstName: 'Priya',
+        lastName: 'Imported',
+        gender: 'FEMALE',
+      },
+    });
+    const actor = await admin();
+    const open = await searchPlayersForEntry(actor, t.id, de.id, 'Imported');
+    expect(open.map((p) => p.memberNumber)).toEqual(['TE950001']);
+    expect(open[0]!.born).toBeNull();
+    expect(await searchPlayersForEntry(actor, t.id, v35.id, 'Imported')).toEqual([]);
+  });
 });

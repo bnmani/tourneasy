@@ -429,7 +429,7 @@ describe('players', () => {
     expect(other.errors).toEqual([{ line: 2, field: 'gender', error: 'required' }]);
   });
 
-  it('imports players without a date of birth; they may not enter events yet (D95)', async () => {
+  it('imports players without a date of birth; only age-limited events need it (D95)', async () => {
     const admin = await newAdmin();
     const file = toXlsx(
       'Blad1',
@@ -441,17 +441,24 @@ describe('players', () => {
     expect(ravi.dateOfBirth).toBeNull();
     expect(ravi.isMinor).toBe(false);
     expect(ravi.preferredDisciplines).toEqual(['HD', 'GD']);
-    expect(
-      playerEligibility(
-        {
-          gender: 'MALE',
-          dateOfBirth: null,
-          levelRank: { singles: null, doubles: null, mixed: null },
-        },
-        { discipline: 'HD', ageCategory: null, levelRank: null },
-        new Date('2027-03-01'),
-      ),
-    ).toEqual(['birthDateUnknown']);
+    // Senior (no age limit) is fine; an age-limited category needs the date of birth.
+    const unknownAge = {
+      gender: 'MALE' as const,
+      dateOfBirth: null,
+      levelRank: { singles: null, doubles: null, mixed: null },
+    };
+    type Category = { minAge: number | null; maxAge: number | null } & {
+      referenceMonth: number;
+      referenceDay: number;
+    };
+    const senior: Category = { minAge: null, maxAge: null, referenceMonth: 1, referenceDay: 1 };
+    const veterans: Category = { minAge: 35, maxAge: null, referenceMonth: 1, referenceDay: 1 };
+    const on = new Date('2027-03-01');
+    const event = (ageCategory: Category | null) =>
+      ({ discipline: 'HD', ageCategory, levelRank: null }) as const;
+    expect(playerEligibility(unknownAge, event(senior), on)).toEqual([]);
+    expect(playerEligibility(unknownAge, event(null), on)).toEqual([]);
+    expect(playerEligibility(unknownAge, event(veterans), on)).toEqual(['birthDateUnknown']);
   });
 
   it('rejects files that are not player CSVs', async () => {

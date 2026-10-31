@@ -15,7 +15,7 @@ export type EligibilityReason =
 
 export type EligiblePlayer = {
   gender: Gender;
-  /** Null for an imported player who hasn't filled it in yet (D95): no event until they do. */
+  /** Null for an imported player who hasn't filled it in yet (D95): no age-limited event. */
   dateOfBirth: Date | string | null;
   /** Level rank per discipline group (1 = strongest class); null when unknown. */
   levelRank: { singles: number | null; doubles: number | null; mixed: number | null };
@@ -92,12 +92,16 @@ export function playerEligibility(
   if (gender && player.gender !== gender) reasons.push('gender');
   if (event.discipline === 'GD' && player.gender === 'OTHER') reasons.push('gender');
 
-  if (player.dateOfBirth === null) reasons.push('birthDateUnknown');
-  else if (event.ageCategory) {
-    const age = ageOnReferenceDay(player.dateOfBirth, tournamentStartsOn, event.ageCategory);
-    if (event.ageCategory.maxAge !== null && age > event.ageCategory.maxAge) reasons.push('tooOld');
-    if (event.ageCategory.minAge !== null && age < event.ageCategory.minAge)
-      reasons.push('tooYoung');
+  // Age only matters for a category with an age limit: Senior is open to every age, so an
+  // imported player without a date of birth may play there (D95).
+  const category = event.ageCategory;
+  if (category && (category.minAge !== null || category.maxAge !== null)) {
+    if (player.dateOfBirth === null) reasons.push('birthDateUnknown');
+    else {
+      const age = ageOnReferenceDay(player.dateOfBirth, tournamentStartsOn, category);
+      if (category.maxAge !== null && age > category.maxAge) reasons.push('tooOld');
+      if (category.minAge !== null && age < category.minAge) reasons.push('tooYoung');
+    }
   }
 
   const playerRank = player.levelRank[levelGroup(event.discipline)];
