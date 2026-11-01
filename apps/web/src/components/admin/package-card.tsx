@@ -8,7 +8,11 @@ import { PaymentWindow } from '@/components/payments/pay-button';
 import { Button } from '@/components/ui/button';
 import { useRouter } from '@/i18n/navigation';
 import { cn } from '@/lib/utils';
-import { buyPackageAction, applyBundleCreditAction } from '@/server/actions/pricing-food-actions';
+import {
+  applyBundleCreditAction,
+  buyPackageAction,
+  givePackageAction,
+} from '@/server/actions/pricing-food-actions';
 
 type Quote = {
   priceCents: number;
@@ -20,6 +24,8 @@ type Quote = {
 
 export type PackageCardData = {
   current: string | null;
+  canPay: boolean;
+  canGive: boolean;
   onlinePayment: boolean;
   discount: { percent: number; clubName: string } | null;
   creditsLeft: number;
@@ -44,7 +50,7 @@ export function PackageCard({
   const [choice, setChoice] = useState(data.current ?? data.options[0]?.key ?? 'FREE');
   const [code, setCode] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [done, setDone] = useState<'saved' | 'requested' | null>(null);
+  const [done, setDone] = useState<'saved' | 'requested' | 'given' | null>(null);
   const [pending, start] = useTransition();
   const [checkout, setCheckout] = useState<{
     clientSecret: string;
@@ -79,6 +85,21 @@ export function PackageCard({
       }
       // Refresh in place; a redirect to this page with #package can leave it waiting.
       setDone(res.kind === 'done' ? 'saved' : 'requested');
+      router.refresh();
+    });
+  }
+
+  function give() {
+    if (!window.confirm(t('giveConfirm'))) return;
+    setError(null);
+    setDone(null);
+    start(async () => {
+      const res = await givePackageAction({ packageKey: choice, tournamentId });
+      if (!res.ok) {
+        setError(te.has(res.error as 'invalid') ? te(res.error as 'invalid') : te('unexpected'));
+        return;
+      }
+      setDone('given');
       router.refresh();
     });
   }
@@ -162,43 +183,66 @@ export function PackageCard({
         </p>
       )}
 
-      <div className="flex flex-wrap items-end gap-3">
-        {!data.discount && chosen && chosen.quote.priceCents > 0 && (
-          <label className="text-sm">
-            <span className="block font-medium">{t('code')}</span>
-            <input
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-              maxLength={30}
-              className="h-10 w-40 rounded-md border border-input bg-background px-3 text-base sm:text-sm"
-            />
-          </label>
-        )}
-        <Button
-          type="button"
-          onClick={buy}
-          disabled={
-            pending || !chosen || choice === data.current || data.pending?.status === 'REQUESTED'
-          }
-        >
-          {!chosen || chosen.quote.priceCents === 0
-            ? t('choose')
-            : data.onlinePayment
-              ? t('pay', { total: euro(chosen.quote.totalCents) })
-              : t('requestInvoice')}
-        </Button>
-        {data.creditsLeft > 0 && data.current !== 'PRO' && (
-          <form action={applyBundleCreditAction.bind(null, locale, tournamentId)}>
-            <Button type="submit" variant="outline">
-              {t('useCredit', { count: data.creditsLeft })}
+      {data.canPay ? (
+        <>
+          <div className="flex flex-wrap items-end gap-3">
+            {!data.discount && chosen && chosen.quote.priceCents > 0 && (
+              <label className="text-sm">
+                <span className="block font-medium">{t('code')}</span>
+                <input
+                  value={code}
+                  onChange={(e) => setCode(e.target.value)}
+                  maxLength={30}
+                  className="h-10 w-40 rounded-md border border-input bg-background px-3 text-base sm:text-sm"
+                />
+              </label>
+            )}
+            <Button
+              type="button"
+              onClick={buy}
+              disabled={
+                pending ||
+                !chosen ||
+                choice === data.current ||
+                data.pending?.status === 'REQUESTED'
+              }
+            >
+              {!chosen || chosen.quote.priceCents === 0
+                ? t('choose')
+                : data.onlinePayment
+                  ? t('pay', { total: euro(chosen.quote.totalCents) })
+                  : t('requestInvoice')}
             </Button>
-          </form>
-        )}
-      </div>
-      {!data.onlinePayment && <p className="text-xs text-muted-foreground">{t('invoiceHint')}</p>}
+            {data.creditsLeft > 0 && data.current !== 'PRO' && (
+              <form action={applyBundleCreditAction.bind(null, locale, tournamentId)}>
+                <Button type="submit" variant="outline">
+                  {t('useCredit', { count: data.creditsLeft })}
+                </Button>
+              </form>
+            )}
+          </div>
+          {!data.onlinePayment && (
+            <p className="text-xs text-muted-foreground">{t('invoiceHint')}</p>
+          )}
+        </>
+      ) : (
+        <div className="space-y-3">
+          <p className="text-sm text-muted-foreground">{t('infoOnly')}</p>
+          {data.canGive && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={give}
+              disabled={pending || !chosen || choice === data.current}
+            >
+              {t('give')}
+            </Button>
+          )}
+        </div>
+      )}
       {done && (
         <p role="status" className="rounded-md border bg-secondary px-4 py-3 text-sm">
-          {done === 'saved' ? t('chosen') : t('requested')}
+          {t(done === 'saved' ? 'chosen' : done === 'given' ? 'given' : 'requested')}
         </p>
       )}
       {error && (

@@ -1616,6 +1616,10 @@
       "useCredit": "Bundeltegoed gebruiken voor Pro (nog {count})",
       "invoiceHint": "Je ontvangt een factuur per e-mail. Het pakket geldt zodra die betaald is.",
       "chosen": "Pakket opgeslagen.",
+      "give": "Dit pakket toekennen",
+      "giveConfirm": "Dit pakket zonder betaling toekennen? Het wordt vastgelegd in het wijzigingslog. Terugdraaien: ken op dezelfde manier een ander pakket toe.",
+      "given": "Pakket toegekend.",
+      "infoOnly": "De organisator kiest en betaalt het pakket hier. Je ziet dit ter informatie.",
       "requested": "Aanvraag ontvangen. Je krijgt een factuur; het pakket geldt zodra die betaald is."
     }
   },

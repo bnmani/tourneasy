@@ -23,6 +23,7 @@ import {
 import {
   type BuyResult,
   buyPackage,
+  givePackage,
   ownerCancelPurchase,
   ownerMarkPaid,
   PACKAGES,
@@ -146,6 +147,20 @@ export async function buyPackageAction(input: {
     return { ok: true, ...result };
   } catch (error) {
     if (!isAppError(error)) console.error('[pricing action] buy failed', error);
+    return { ok: false, error: isAppError(error) ? error.code : 'unexpected' };
+  }
+}
+
+export async function givePackageAction(input: {
+  packageKey: string;
+  tournamentId: string;
+}): Promise<{ ok: true } | { ok: false; error: ErrorCode }> {
+  try {
+    await givePackage(await actorOrThrow(), input, await currentRequestMeta());
+    revalidatePath('/', 'layout');
+    return { ok: true };
+  } catch (error) {
+    if (!isAppError(error)) console.error('[pricing action] give failed', error);
     return { ok: false, error: isAppError(error) ? error.code : 'unexpected' };
   }
 }

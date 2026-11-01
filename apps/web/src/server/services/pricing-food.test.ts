@@ -21,11 +21,13 @@ import {
   buyPackage,
   clearPricingCache,
   effectiveMaxParticipants,
+  givePackage,
   ownerMarkPaid,
   publicPricing,
   saveClubDiscount,
   savePricing,
   applyBundleCredit,
+  tournamentPackage,
 } from './pricing-service';
 import { actorFromWebToken, createWebSession } from './session-service';
 
@@ -48,6 +50,8 @@ async function tournament(organiserId?: string, slug = 'almere-open') {
     data: {
       name: 'Almere Open',
       slug,
+      // Packages apply to external organisers' tournaments; own ones never need one (D103).
+      type: 'THIRD_PARTY',
       isPublished: true,
       startsOn: new Date('2027-03-13'),
       endsOn: new Date('2027-03-13'),
@@ -88,7 +92,11 @@ describe('pricing (D87)', () => {
     expect(await publicPricing(null)).toBeNull();
     await expect(assertPackageToOpen(t)).resolves.toBeUndefined();
     expect(
-      await effectiveMaxParticipants({ maxParticipants: null, packageKey: 'FREE' }),
+      await effectiveMaxParticipants({
+        type: 'THIRD_PARTY',
+        maxParticipants: null,
+        packageKey: 'FREE',
+      }),
     ).toBeNull();
     await expect(
       buyPackage(owner.actor, { packageKey: 'PRO', tournamentId: t.id }, meta),
@@ -99,10 +107,74 @@ describe('pricing (D87)', () => {
     });
     await savePricing(owner.actor, plans(true), meta);
     await expect(assertPackageToOpen(t)).rejects.toMatchObject({ code: 'packageRequired' });
-    expect(await effectiveMaxParticipants({ maxParticipants: null, packageKey: 'FREE' })).toBe(16);
-    expect(await effectiveMaxParticipants({ maxParticipants: 10, packageKey: 'STANDARD' })).toBe(
-      10,
+    expect(
+      await effectiveMaxParticipants({
+        type: 'THIRD_PARTY',
+        maxParticipants: null,
+        packageKey: 'FREE',
+      }),
+    ).toBe(16);
+    expect(
+      await effectiveMaxParticipants({
+        type: 'THIRD_PARTY',
+        maxParticipants: 10,
+        packageKey: 'STANDARD',
+      }),
+    ).toBe(10);
+  });
+
+  it('leaves own tournaments alone, shows admins the card without Pay, lets the owner give (D103)', async () => {
+    const owner = await person(Role.OWNER);
+    const admin = await person(Role.ADMIN);
+    const org = await person(Role.ORGANISER);
+    await savePricing(owner.actor, plans(true), meta);
+
+    // Own tournament: no package needed, no cap from a package, no card.
+    const own = await prisma.tournament.update({
+      where: { id: (await tournament(undefined, 'own-open')).id },
+      data: { type: 'SELF' },
+    });
+    await expect(assertPackageToOpen(own)).resolves.toBeUndefined();
+    expect(
+      await effectiveMaxParticipants({ type: 'SELF', maxParticipants: null, packageKey: 'FREE' }),
+    ).toBeNull();
+    expect(await tournamentPackage(owner.actor, own.id)).toBeNull();
+
+    // Organiser's tournament: the organiser pays; admins and the owner only look.
+    const t = await tournament(org.userId);
+    expect(await tournamentPackage(org.actor, t.id)).toMatchObject({
+      canPay: true,
+      canGive: false,
+    });
+    expect(await tournamentPackage(admin.actor, t.id)).toMatchObject({
+      canPay: false,
+      canGive: false,
+    });
+    expect(await tournamentPackage(owner.actor, t.id)).toMatchObject({
+      canPay: false,
+      canGive: true,
+    });
+
+    // Only the owner gives; giving another package is the way back, each one in the log.
+    await expect(
+      givePackage(admin.actor, { tournamentId: t.id, packageKey: 'PRO' }, meta),
+    ).rejects.toBeDefined();
+    await givePackage(owner.actor, { tournamentId: t.id, packageKey: 'PRO' }, meta);
+    expect((await prisma.tournament.findUniqueOrThrow({ where: { id: t.id } })).packageKey).toBe(
+      'PRO',
     );
+    await givePackage(owner.actor, { tournamentId: t.id, packageKey: 'STANDARD' }, meta);
+    const after = await prisma.tournament.findUniqueOrThrow({ where: { id: t.id } });
+    expect(after).toMatchObject({ packageKey: 'STANDARD', packagePurchaseId: null });
+    const log = await prisma.auditLog.findMany({
+      where: { action: 'pricing.packageGiven', entityId: t.id },
+      orderBy: { createdAt: 'asc' },
+    });
+    expect(log.map((l) => (l.after as { packageKey: string }).packageKey)).toEqual([
+      'PRO',
+      'STANDARD',
+    ]);
+    expect(await prisma.packagePurchase.count()).toBe(0);
   });
 
   it('applies a club discount, sells by invoice and numbers invoices', async () => {

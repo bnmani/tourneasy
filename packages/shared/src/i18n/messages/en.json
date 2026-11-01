@@ -1616,6 +1616,10 @@
       "useCredit": "Use a bundle credit for Pro ({count} left)",
       "invoiceHint": "You'll receive an invoice by email. The package applies once it is paid.",
       "chosen": "Package saved.",
+      "give": "Give this package",
+      "giveConfirm": "Give this package without payment? It is recorded in the change log. To undo, give another package the same way.",
+      "given": "Package given.",
+      "infoOnly": "The organiser chooses and pays for the package here. You see this for information.",
       "requested": "Request received. You'll get an invoice; the package applies once it is paid."
     }
   },

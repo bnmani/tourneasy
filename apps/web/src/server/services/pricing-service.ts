@@ -5,14 +5,14 @@
  * company details on invoices are owner settings. While pricing is off nothing is enforced.
  * Prices exclude VAT; invoices add 21%.
  */
-import { type PackageKey, Prisma, prisma } from '@tourneasy/db';
+import { type PackageKey, Prisma, prisma, type TournamentType } from '@tourneasy/db';
 import { z } from 'zod';
 import { writeAudit } from '../lib/audit';
 import { AppError } from '../lib/errors';
 import type { RequestMeta } from '../lib/request-meta';
 import { parseInput } from '../lib/validation';
 import { getGateway } from '../payments/gateway';
-import { assertCanManageTournament, assertOwner, isAdmin } from './permissions';
+import { assertCanManageTournament, assertOwner, isAdmin, isOwner } from './permissions';
 import type { Actor } from './session-service';
 
 export const PRICING_KEY = 'pricing';
@@ -297,11 +297,16 @@ export async function pricingEnabled(): Promise<boolean> {
 
 // ── Enforcement (only while pricing is on) ─────────────────────────────────────────
 
-/** The tournament's player cap: its own maximum and its package's limit, whichever is lower. */
+/**
+ * The tournament's player cap: its own maximum and its package's limit, whichever is lower.
+ * Own tournaments (SELF) never need a package, so only their own maximum counts (D103).
+ */
 export async function effectiveMaxParticipants(t: {
+  type: TournamentType;
   maxParticipants: number | null;
   packageKey: PackageKey | null;
 }): Promise<number | null> {
+  if (t.type === 'SELF') return t.maxParticipants;
   const settings = await getPricing();
   if (!settings.enabled || !t.packageKey) return t.maxParticipants;
   const limit = planOf(settings, t.packageKey).maxPlayers;
@@ -309,8 +314,12 @@ export async function effectiveMaxParticipants(t: {
   return t.maxParticipants === null ? limit : Math.min(t.maxParticipants, limit);
 }
 
-/** Opening entries needs a package while pricing is on. */
-export async function assertPackageToOpen(t: { packageKey: PackageKey | null }) {
+/** Opening entries needs a package while pricing is on, except for own tournaments (D103). */
+export async function assertPackageToOpen(t: {
+  type: TournamentType;
+  packageKey: PackageKey | null;
+}) {
+  if (t.type === 'SELF') return;
   if ((await getPricing()).enabled && !t.packageKey) throw new AppError('packageRequired');
 }
 
@@ -343,11 +352,13 @@ export async function tournamentPackage(actor: Actor, tournamentId: string) {
   await assertCanManageTournament(actor, tournamentId);
   const settings = await getPricing();
   if (!settings.enabled) return null;
-  const [t, discount, credits, pending, entries] = await Promise.all([
-    prisma.tournament.findUniqueOrThrow({
-      where: { id: tournamentId },
-      select: { packageKey: true },
-    }),
+  const t = await prisma.tournament.findUniqueOrThrow({
+    where: { id: tournamentId },
+    select: { packageKey: true, type: true },
+  });
+  // Own tournaments never need a package (D103).
+  if (t.type === 'SELF') return null;
+  const [discount, credits, pending, entries] = await Promise.all([
     discountFor(actor.userId),
     bundleCredits(actor.userId),
     prisma.packagePurchase.findFirst({
@@ -364,6 +375,9 @@ export async function tournamentPackage(actor: Actor, tournamentId: string) {
   ]);
   return {
     current: t.packageKey,
+    // Admins and the owner see the card for information; the organiser buys (D103).
+    canPay: !isAdmin(actor),
+    canGive: isOwner(actor),
     onlinePayment: settings.onlinePayment,
     discount,
     creditsLeft: credits.reduce((n, b) => n + b.left, 0),
@@ -387,6 +401,38 @@ async function setPackage(
   await db.tournament.update({
     where: { id: tournamentId },
     data: { packageKey, packagePurchaseId: purchaseId },
+  });
+}
+
+const givePackageSchema = z.object({
+  tournamentId: z.string().uuid(),
+  packageKey: z.enum(['FREE', 'STANDARD', 'PRO']),
+});
+
+/**
+ * The owner gives an organiser's tournament a package without payment (D103). Giving another
+ * package the same way is the way back; each change is in the change log.
+ */
+export async function givePackage(actor: Actor, input: unknown, meta: RequestMeta) {
+  assertOwner(actor);
+  const data = parseInput(givePackageSchema, input);
+  const t = await prisma.tournament.findFirst({
+    where: { id: data.tournamentId, deletedAt: null },
+    select: { packageKey: true, packagePurchaseId: true },
+  });
+  if (!t) throw new AppError('notFound');
+  if (t.packageKey === data.packageKey) return;
+  await prisma.$transaction(async (tx) => {
+    await setPackage(tx, data.tournamentId, data.packageKey, null);
+    await writeAudit(tx, {
+      actorId: actor.userId,
+      action: 'pricing.packageGiven',
+      entityType: 'Tournament',
+      entityId: data.tournamentId,
+      before: { packageKey: t.packageKey, purchaseId: t.packagePurchaseId },
+      after: { packageKey: data.packageKey },
+      meta,
+    });
   });
 }
 

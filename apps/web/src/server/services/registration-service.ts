@@ -154,6 +154,7 @@ async function loadTournament(slug: string) {
       registrationClosesAt: true,
       withdrawalDeadline: true,
       maxEventsPerPlayer: true,
+      type: true,
       maxParticipants: true,
       packageKey: true,
       bundlePricesCents: true,

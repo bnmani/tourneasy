@@ -94,6 +94,7 @@ async function loadTournament(tournamentId: string) {
       id: true,
       name: true,
       startsOn: true,
+      type: true,
       maxParticipants: true,
       packageKey: true,
       maxEventsPerPlayer: true,
