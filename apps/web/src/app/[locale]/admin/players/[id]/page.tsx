@@ -4,8 +4,7 @@ import { getFormatter, getTranslations } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import { MergePlayerForm, PlayerForm } from '@/components/admin/player-forms';
 import { Badge, PageHeader, StatusNotice } from '@/components/admin/ui';
-import { FormSection } from '@/components/forms/fields';
-import { Button } from '@/components/ui/button';
+import { FormSection, SubmitButton } from '@/components/forms/fields';
 import { personName } from '@/lib/labels';
 import { firstParam, pageLocale, type SearchParams } from '@/lib/page';
 import { requireRole } from '@/server/auth/web';
@@ -108,9 +107,9 @@ export default async function AdminPlayerPage({
                   })}
                 </p>
               )}
-              <Button type="submit" size="sm">
+              <SubmitButton size="sm" pendingLabel={t('players.invite.sending')}>
                 {lastInvite ? t('players.invite.inviteResend') : t('players.invite.inviteSend')}
-              </Button>
+              </SubmitButton>
             </form>
           ) : (
             <p className="text-muted-foreground">{t('players.invite.inviteNoEmail')}</p>

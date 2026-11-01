@@ -2,7 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import { useActionState, useEffect, useRef, useState, startTransition } from 'react';
-import { FormError } from '@/components/forms/fields';
+import { FormError, SubmitButton } from '@/components/forms/fields';
 import { type FormState, initialFormState } from '@/components/forms/form-state';
 import { Button } from '@/components/ui/button';
 
@@ -118,9 +118,15 @@ export function BulkRemove({
         <div className="flex flex-wrap items-center gap-3">
           {invite && (
             <>
-              <Button type="submit" formAction={invite} variant="outline" size="sm">
+              {/* Busy until every email is sent; disabled so a second click can't send again (D104). */}
+              <SubmitButton
+                formAction={invite}
+                variant="outline"
+                size="sm"
+                pendingLabel={t('inviting', { count })}
+              >
                 {t('invite', { count })}
-              </Button>
+              </SubmitButton>
               <span className="text-muted-foreground">{t('inviteHint')}</span>
             </>
           )}

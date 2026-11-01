@@ -90,15 +90,26 @@ describe('account invites for players without an account (D76)', () => {
     ).rejects.toMatchObject({ code: 'tokenInvalid' });
   });
 
-  it('a new invite replaces the old link; minors need a guardian', async () => {
+  it('skips a repeat within 10 minutes, keeps earlier links working; minors need a guardian', async () => {
     const actor = await admin();
     const kid = await accountless('kid@example.test', new Date(Date.now() - 12 * 365 * 864e5));
     await invitePlayers(actor, { ids: [kid.id] }, 'en', meta);
     const first = lastMailTo('kid@example.test').token!;
+    // A double click: skipped, no second email (D104).
+    expect(await invitePlayers(actor, { ids: [kid.id] }, 'en', meta)).toEqual({
+      sent: 0,
+      skipped: 1,
+    });
+    expect(lastMailTo('kid@example.test').token).toBe(first);
+    // Ten minutes later a resend goes out, and the first link still works.
+    await prisma.playerInvite.updateMany({
+      where: { playerId: kid.id },
+      data: { createdAt: new Date(Date.now() - 11 * 60_000) },
+    });
     await invitePlayers(actor, { ids: [kid.id] }, 'en', meta);
     const second = lastMailTo('kid@example.test').token!;
     expect(first).not.toBe(second);
-    expect(await getPlayerInvite(first)).toBeNull();
+    expect(await getPlayerInvite(first)).toMatchObject({ minor: true });
     expect(await getPlayerInvite(second)).toMatchObject({ minor: true });
 
     const base = { token: second, password, acceptTerms: true, acceptPrivacy: true };
@@ -112,6 +123,8 @@ describe('account invites for players without an account (D76)', () => {
     );
     const consents = await prisma.consent.findMany({ where: { userId } });
     expect(consents.map((c) => c.type)).toContain('PARENTAL_CONSENT');
+    // Activating with one link ends the other.
+    expect(await getPlayerInvite(first)).toBeNull();
   });
 
   it('only admins can invite', async () => {

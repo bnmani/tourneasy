@@ -453,6 +453,24 @@ describe('players', () => {
     expect((await listPlayers(admin, { q: 'Dup' })).total).toBe(0);
   });
 
+  it('lists players 25, 50, 75 or 100 per page (D104)', async () => {
+    const admin = await newAdmin();
+    await prisma.playerProfile.createMany({
+      data: Array.from({ length: 60 }, (_, i) => ({
+        memberNumber: `TE8${String(i).padStart(5, '0')}`,
+        firstName: 'Page',
+        lastName: `Player${i}`,
+        gender: 'MALE' as const,
+      })),
+    });
+    expect(await listPlayers(admin, {})).toMatchObject({ pages: 3 });
+    const fifty = await listPlayers(admin, { perPage: 50 });
+    expect(fifty).toMatchObject({ pages: 2 });
+    expect(fifty.players).toHaveLength(50);
+    // Any other size falls back to 25.
+    expect((await listPlayers(admin, { perPage: 5000 })).players).toHaveLength(25);
+  });
+
   it('imports CSV (create, update, line errors) and exports for Excel', async () => {
     const admin = await newAdmin(Role.OWNER); // merge and export: owners (D80)
     await prisma.club.create({ data: { name: 'BC Utrecht Smash', slug: 'bc-utrecht-smash' } });

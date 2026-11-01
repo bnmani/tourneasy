@@ -11,11 +11,14 @@ export function parseInput<S extends z.ZodTypeAny>(schema: S, input: unknown): z
 
 export const PAGE_SIZE = 25;
 
-export function pageParams(page: number | undefined) {
+/** Page sizes a list may offer (players list, D104). */
+export const PAGE_SIZES = [25, 50, 75, 100] as const;
+
+export function pageParams(page: number | undefined, size: number = PAGE_SIZE) {
   const current = Math.max(1, Math.floor(page ?? 1) || 1);
-  return { page: current, skip: (current - 1) * PAGE_SIZE, take: PAGE_SIZE };
+  return { page: current, skip: (current - 1) * size, take: size };
 }
 
-export function pageCount(total: number): number {
-  return Math.max(1, Math.ceil(total / PAGE_SIZE));
+export function pageCount(total: number, size: number = PAGE_SIZE): number {
+  return Math.max(1, Math.ceil(total / size));
 }

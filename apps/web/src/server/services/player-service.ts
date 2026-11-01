@@ -18,7 +18,7 @@ import { writeAudit } from '../lib/audit';
 import { excelSerialToIsoDate, looksLikeXlsx, readXlsx, toXlsx } from '../lib/xlsx';
 import { AppError } from '../lib/errors';
 import type { RequestMeta } from '../lib/request-meta';
-import { pageCount, pageParams, parseInput } from '../lib/validation';
+import { PAGE_SIZE, PAGE_SIZES, pageCount, pageParams, parseInput } from '../lib/validation';
 import { verifyPassword } from '../lib/password';
 import { anonymiseProfile, anonymiseUser } from './gdpr-service';
 import { assertAdmin, assertNotHiddenOwner, assertOwner } from './permissions';
@@ -64,6 +64,8 @@ export type PlayerFilters = {
   clubId?: string;
   account?: 'with' | 'without';
   page?: number;
+  /** One of PAGE_SIZES; others fall back to the default (D104). */
+  perPage?: number;
 };
 
 /** The player list filter; also used by the portal search. */
@@ -129,7 +131,10 @@ export function playerName(p: {
 
 export async function listPlayers(actor: Actor, filters: PlayerFilters = {}) {
   assertAdmin(actor);
-  const { page, skip, take } = pageParams(filters.page);
+  const size = (PAGE_SIZES as readonly number[]).includes(filters.perPage ?? 0)
+    ? filters.perPage!
+    : PAGE_SIZE;
+  const { page, skip, take } = pageParams(filters.page, size);
   const where = whereFor(filters);
   const [total, players] = await Promise.all([
     prisma.playerProfile.count({ where }),
@@ -157,7 +162,7 @@ export async function listPlayers(actor: Actor, filters: PlayerFilters = {}) {
     players: players.map((p) => ({ ...p, categoriesPlayed: playedOf.get(p.id) ?? 0 })),
     total,
     page,
-    pages: pageCount(total),
+    pages: pageCount(total, size),
   };
 }
 

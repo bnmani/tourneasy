@@ -5,6 +5,7 @@ import { DISCIPLINES, GENDERS } from '@tourneasy/shared/schemas';
 import { ageOn } from '@tourneasy/shared';
 import { getFormatter, getTranslations } from 'next-intl/server';
 import { PlayerAddedNotice } from '@/components/admin/player-added-notice';
+import { AutoSubmitSelect } from '@/components/admin/auto-submit-select';
 import { Badge, FilterBar, filterInputClass, PageHeader, Pagination } from '@/components/admin/ui';
 import { Button } from '@/components/ui/button';
 import { ScrollRegion } from '@/components/ui/scroll-region';
@@ -15,6 +16,7 @@ import { lastInvites } from '@/server/services/player-invite-service';
 import { Link } from '@/i18n/navigation';
 import { personName } from '@/lib/labels';
 import { firstParam, pageLocale, type LocaleParams, type SearchParams } from '@/lib/page';
+import { PAGE_SIZE, PAGE_SIZES } from '@/server/lib/validation';
 import { requireRole } from '@/server/auth/web';
 import { getProfileOptions } from '@/server/services/profile-service';
 import { SortHeader } from '@/components/admin/sort-header';
@@ -53,8 +55,10 @@ export default async function AdminPlayersPage({
     sort: pick('sort', PLAYER_SORTS),
     dir: pick('dir', ['asc', 'desc'] as const),
   };
+  // Players per page (D104); kept in every link below.
+  const perPage = Number(firstParam(query.perPage)) || PAGE_SIZE;
   const [result, options] = await Promise.all([
-    listPlayers(actor, { ...filters, page: Number(firstParam(query.page) ?? 1) }),
+    listPlayers(actor, { ...filters, page: Number(firstParam(query.page) ?? 1), perPage }),
     getProfileOptions(),
   ]);
   const isOwner = actor.roles.includes('OWNER');
@@ -69,6 +73,7 @@ export default async function AdminPlayersPage({
       (e): e is [string, string] => typeof e[1] === 'string' && e[1] !== '',
     ),
   );
+  if (perPage !== PAGE_SIZE) filterQuery.set('perPage', String(perPage));
   const format = await getFormatter();
   // Header links keep the filters and go back to page 1.
   const sortProps = {
@@ -198,6 +203,21 @@ export default async function AdminPlayersPage({
           <option value="with">{t('players.withAccount')}</option>
           <option value="without">{t('players.withoutAccount')}</option>
         </select>
+        <label className="sr-only" htmlFor="perPage">
+          {t('players.perPage', { count: perPage })}
+        </label>
+        <AutoSubmitSelect
+          id="perPage"
+          name="perPage"
+          defaultValue={String(perPage)}
+          className={filterInputClass}
+        >
+          {PAGE_SIZES.map((n) => (
+            <option key={n} value={n}>
+              {t('players.perPage', { count: n })}
+            </option>
+          ))}
+        </AutoSubmitSelect>
         <Button type="submit" variant="outline">
           {t('filter')}
         </Button>

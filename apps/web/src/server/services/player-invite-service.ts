@@ -21,12 +21,18 @@ import type { Actor } from './session-service';
 import { acceptOrganiserInvites } from './tournament-service';
 
 export const PLAYER_INVITE_TTL_DAYS = 14;
+/** A player invited this recently is skipped, so a double click doesn't send twice (D104). */
+export const PLAYER_INVITE_COOLDOWN_MIN = 10;
 const MAX_PER_BATCH = 500;
 
 const idsSchema = z.object({ ids: z.array(z.string().uuid()).min(1).max(MAX_PER_BATCH) });
 
-/** Players that can get an invite: no account, a contact email nobody uses as login. */
+/**
+ * Players that can get an invite: no account, a contact email nobody uses as login, and not
+ * invited in the last few minutes.
+ */
 async function invitable(ids: string[]) {
+  const recent = new Date(Date.now() - PLAYER_INVITE_COOLDOWN_MIN * 60_000);
   const players = await prisma.playerProfile.findMany({
     where: {
       id: { in: ids },
@@ -34,6 +40,7 @@ async function invitable(ids: string[]) {
       deletedAt: null,
       mergedIntoId: null,
       contactEmail: { not: null },
+      accountInvites: { none: { usedAt: null, createdAt: { gt: recent } } },
     },
     select: { id: true, firstName: true, memberNumber: true, contactEmail: true },
   });
@@ -48,7 +55,10 @@ async function invitable(ids: string[]) {
   return players.filter((p) => !taken.has(p.contactEmail!.toLowerCase()));
 }
 
-/** Sends (or re-sends) the invite; an earlier unused link stops working. */
+/**
+ * Sends (or re-sends) the invite. Earlier links keep working until they expire or the player
+ * activates, so a repeated email is harmless (D104).
+ */
 export async function invitePlayers(
   actor: Actor,
   input: unknown,
@@ -65,7 +75,6 @@ export async function invitePlayers(
   for (const p of players) {
     const token = randomToken();
     await prisma.$transaction(async (tx) => {
-      await tx.playerInvite.deleteMany({ where: { playerId: p.id, usedAt: null } });
       await tx.playerInvite.create({
         data: {
           playerId: p.id,

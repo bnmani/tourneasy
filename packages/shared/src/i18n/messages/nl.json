@@ -813,6 +813,7 @@
       "saveAndAddAnother": "Opslaan en nog een toevoegen",
       "playerAdded": "Speler {name} toegevoegd ({number}).",
       "addAnother": "Nog een speler toevoegen",
+      "perPage": "{count} per pagina",
       "invitedBadge": "Uitgenodigd {date}",
       "invite": {
         "inviteTitle": "Account laten activeren",
@@ -821,7 +822,8 @@
         "inviteResend": "Opnieuw sturen",
         "inviteLast": "Laatst uitgenodigd: {date}",
         "inviteNoEmail": "Voeg eerst een e-mailadres toe om een uitnodiging te sturen.",
-        "inviteSent": "Uitnodiging verstuurd."
+        "inviteSent": "Uitnodiging verstuurd.",
+        "sending": "Bezig met versturen…"
       },
       "mergeCheck": "Controleren",
       "mergeCompareTitle": "Controleer voordat je samenvoegt",
@@ -885,7 +887,7 @@
       "newsEmailed": "Bericht wordt verstuurd naar de deelnemers.",
       "logoSaved": "Logo opgeslagen.",
       "logoRemoved": "Logo verwijderd.",
-      "invited": "{sent, plural, =0 {Geen uitnodigingen verstuurd} one {# uitnodiging verstuurd} other {# uitnodigingen verstuurd}}{skipped, plural, =0 {.} other {; # overgeslagen (al een account of geen e-mailadres).}}",
+      "invited": "{sent, plural, =0 {Geen uitnodigingen verstuurd} one {# uitnodiging verstuurd} other {# uitnodigingen verstuurd}}{skipped, plural, =0 {.} other {; # overgeslagen (al een account, geen e-mailadres, of in de laatste 10 minuten uitgenodigd).}}",
       "packageRequested": "Aanvraag ontvangen. Je krijgt een factuur; het pakket geldt zodra die betaald is.",
       "packagePaid": "Betaling ontvangen. Het pakket geldt nu.",
       "refunded": "Klaar. De bestelling is terugbetaald of geannuleerd.",
@@ -1470,7 +1472,8 @@
       "removed": "{count, plural, =0 {Geen spelers verwijderd (al verwijderd).} one {# speler verwijderd.} other {# spelers verwijderd.}}",
       "invite": "{count, plural, one {Uitnodiging sturen} other {# uitnodigingen sturen}}",
       "inviteHint": "Alleen geselecteerde spelers zonder account en met een e-mailadres krijgen een link om hun account te activeren.",
-      "invited": "{sent, plural, =0 {Geen uitnodigingen verstuurd} one {# uitnodiging verstuurd} other {# uitnodigingen verstuurd}}{skipped, plural, =0 {.} other {; # overgeslagen (al een account of geen e-mailadres).}}",
+      "inviting": "{count, plural, one {Uitnodiging versturen…} other {# uitnodigingen versturen…}}",
+      "invited": "{sent, plural, =0 {Geen uitnodigingen verstuurd} one {# uitnodiging verstuurd} other {# uitnodigingen verstuurd}}{skipped, plural, =0 {.} other {; # overgeslagen (al een account, geen e-mailadres, of in de laatste 10 minuten uitgenodigd).}}",
       "dialogTitle": "{count, plural, one {# speler verwijderen?} other {# spelers verwijderen?}}"
     },
     "usersJoined": "Lid sinds",

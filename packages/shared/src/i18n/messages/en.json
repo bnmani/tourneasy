@@ -813,6 +813,7 @@
       "saveAndAddAnother": "Save and add another",
       "playerAdded": "Player {name} added ({number}).",
       "addAnother": "Add another player",
+      "perPage": "{count} per page",
       "invitedBadge": "Invited {date}",
       "invite": {
         "inviteTitle": "Let them activate an account",
@@ -821,7 +822,8 @@
         "inviteResend": "Send again",
         "inviteLast": "Last invited: {date}",
         "inviteNoEmail": "Add an email address first to send an invitation.",
-        "inviteSent": "Invitation sent."
+        "inviteSent": "Invitation sent.",
+        "sending": "Sending…"
       },
       "mergeCheck": "Check",
       "mergeCompareTitle": "Check before you merge",
@@ -885,7 +887,7 @@
       "newsEmailed": "The message is being sent to the participants.",
       "logoSaved": "Logo saved.",
       "logoRemoved": "Logo removed.",
-      "invited": "{sent, plural, =0 {No invitations sent} one {# invitation sent} other {# invitations sent}}{skipped, plural, =0 {.} other {; # skipped (already an account or no email address).}}",
+      "invited": "{sent, plural, =0 {No invitations sent} one {# invitation sent} other {# invitations sent}}{skipped, plural, =0 {.} other {; # skipped (already an account, no email address, or invited in the last 10 minutes).}}",
       "packageRequested": "Request received. You'll get an invoice; the package applies once it is paid.",
       "packagePaid": "Payment received. The package now applies.",
       "refunded": "Done. The order has been refunded or cancelled.",
@@ -1470,7 +1472,8 @@
       "removed": "{count, plural, =0 {No players removed (already removed).} one {# player removed.} other {# players removed.}}",
       "invite": "{count, plural, one {Send invitation} other {Send # invitations}}",
       "inviteHint": "Only selected players without an account and with an email address get a link to activate their account.",
-      "invited": "{sent, plural, =0 {No invitations sent} one {# invitation sent} other {# invitations sent}}{skipped, plural, =0 {.} other {; # skipped (already an account or no email address).}}",
+      "inviting": "{count, plural, one {Sending invitation…} other {Sending # invitations…}}",
+      "invited": "{sent, plural, =0 {No invitations sent} one {# invitation sent} other {# invitations sent}}{skipped, plural, =0 {.} other {; # skipped (already an account, no email address, or invited in the last 10 minutes).}}",
       "dialogTitle": "{count, plural, one {Remove # player?} other {Remove # players?}}"
     },
     "usersJoined": "Member since",
