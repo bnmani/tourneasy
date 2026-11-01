@@ -27,6 +27,7 @@ export function ResetForm({ locale, token }: { locale: AppLocale; token: string 
       <input type="hidden" name="token" value={token} />
       <TextField
         name="password"
+        fillRepeat="passwordRepeat"
         type="password"
         label={t('reset.newPassword')}
         hint={t('register.passwordHint', { min: PASSWORD_MIN_LENGTH })}

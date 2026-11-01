@@ -18,7 +18,9 @@
     "no": "Nee",
     "numberRange": "Tussen {min} en {max}.",
     "phoneCountry": "Land (landnummer)",
-    "moreInfo": "Meer informatie"
+    "moreInfo": "Meer informatie",
+    "showPassword": "Wachtwoord tonen",
+    "hidePassword": "Wachtwoord verbergen"
   },
   "Header": {
     "homeLink": "Tourneasy, naar de startpagina",
@@ -152,7 +154,7 @@
     "partnerNotFound": "Geen speler gevonden. Vul een lidnummer (bijv. TE100023) of e-mailadres in.",
     "partnerSelf": "Je kunt niet met jezelf spelen.",
     "partnerIneligible": "Je partner mag niet in dit onderdeel spelen (geslacht, leeftijd of niveau).",
-    "partnerAlreadyEntered": "Je partner staat al ingeschreven voor dit onderdeel.",
+    "partnerAlreadyEntered": "Je partner staat al ingeschreven voor dit onderdeel. Heeft die jou uitgenodigd, accepteer de uitnodiging dan op je dashboard.",
     "notEligible": "Je mag niet in dit onderdeel spelen.",
     "alreadyEntered": "Je staat al ingeschreven voor dit onderdeel.",
     "maxEvents": "Je hebt het maximum aantal onderdelen voor dit toernooi bereikt.",
@@ -958,7 +960,9 @@
       "refundOnWay": "Terugbetaling onderweg: terugdraaien kan zodra die klaar is",
       "undoCancel": "Terugdraaien",
       "undoCancelConfirm": "Deze inschrijving terugzetten? Bevestigd als er plek is, anders als eerste op de wachtlijst. Terugbetaald geld wordt niet teruggevorderd: de inschrijving is weer onbetaald. Er gaat geen e-mail uit.",
-      "undoCancelDraw": "Dit onderdeel heeft al een schema zonder deze inschrijving: maak of pas het schema daarna aan."
+      "undoCancelDraw": "Dit onderdeel heeft al een schema zonder deze inschrijving: maak of pas het schema daarna aan.",
+      "search": "Naam, lidnummer, club of e-mail",
+      "found": "{count, plural, =0 {Geen inschrijvingen gevonden} one {# inschrijving gevonden} other {# inschrijvingen gevonden}} voor “{query}”"
     },
     "navPayments": "Betalingen",
     "payments": {

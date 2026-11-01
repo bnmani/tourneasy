@@ -26,6 +26,7 @@ import {
 } from '../services/auth-service';
 import { checkMfaCode, hasMfa } from '../services/mfa-service';
 import { acceptPlayerInvite } from '../services/player-invite-service';
+import { invitedAddress } from '../services/registration-service';
 import {
   actorFromWebToken,
   completeMfaSession,
@@ -46,7 +47,12 @@ export async function registerAction(
       booleans: ['acceptTerms', 'acceptPrivacy', 'parentalConsent'],
       arrays: ['preferredDisciplines'],
     });
-    result = await signUp({ ...input, locale }, meta);
+    // From an invitation link (?next=/xx/invites/<token>): its address counts as confirmed.
+    const token = /^\/(?:nl|en)\/invites\/([A-Za-z0-9_-]{20,})$/.exec(
+      String(formData.get('next') ?? ''),
+    )?.[1];
+    const invitedEmail = token ? await invitedAddress(token) : null;
+    result = await signUp({ ...input, locale }, meta, { invitedEmail });
     const session = await createWebSession(result.userId, meta, true);
     await setSessionCookie(session.token, session.expiresAt, session.persistent);
   } catch (error) {

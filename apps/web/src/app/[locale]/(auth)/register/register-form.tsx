@@ -22,7 +22,16 @@ import { registerAction } from '@/server/actions/auth-actions';
 
 const linkClass = 'font-medium text-primary underline underline-offset-4';
 
-export function RegisterForm({ locale, next }: { locale: AppLocale; next?: string }) {
+export function RegisterForm({
+  locale,
+  next,
+  invitedEmail,
+}: {
+  locale: AppLocale;
+  next?: string;
+  /** Signing up from an invitation: the address it was sent to (D101). */
+  invitedEmail?: string;
+}) {
   const t = useTranslations('Auth.register');
   const tc = useTranslations('Common');
   const td = useTranslations('Disciplines');
@@ -72,6 +81,7 @@ export function RegisterForm({ locale, next }: { locale: AppLocale; next?: strin
           label={t('email')}
           state={state}
           required
+          defaultValue={invitedEmail}
           autoComplete="email"
           inputMode="email"
         />
@@ -151,6 +161,7 @@ export function RegisterForm({ locale, next }: { locale: AppLocale; next?: strin
       <FormSection title={t('sectionAccount')}>
         <TextField
           name="password"
+          fillRepeat="passwordRepeat"
           type="password"
           label={t('password')}
           hint={t('passwordHint', { min: PASSWORD_MIN_LENGTH })}

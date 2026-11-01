@@ -300,6 +300,8 @@ export async function enterTournament(
   const seen = new Set<string>();
   const errors: Record<string, string> = {};
   const planned: PlannedEntry[] = [];
+  // Open invitations from the chosen partner to me: entering together accepts them (D101).
+  const joins: string[] = [];
 
   for (const choice of data.events) {
     if (seen.has(choice.eventId)) continue;
@@ -348,7 +350,24 @@ export async function enterTournament(
         continue;
       }
       if ((await playerEntries(partner.id, t.id)).has(event.id)) {
-        errors[`partner.${event.id}`] = 'partnerAlreadyEntered';
+        const invite = await prisma.partnerInvite.findFirst({
+          where: {
+            status: 'PENDING',
+            expiresAt: { gt: now },
+            registration: {
+              eventId: event.id,
+              status: { in: LIVE },
+              participants: { some: { playerId: partner.id, active: true } },
+            },
+            OR: [
+              { toPlayerId: player.id },
+              ...(player.user?.email ? [{ toEmail: player.user.email }] : []),
+            ],
+          },
+          select: { id: true },
+        });
+        if (invite) joins.push(invite.id);
+        else errors[`partner.${event.id}`] = 'partnerAlreadyEntered';
         continue;
       }
     } else if (resolved.email === (player.user?.email ?? '').toLowerCase()) {
@@ -363,8 +382,13 @@ export async function enterTournament(
     });
   }
 
-  if (entered.size + planned.length > t.maxEventsPerPlayer) errors.events = 'maxEvents';
+  if (entered.size + planned.length + joins.length > t.maxEventsPerPlayer)
+    errors.events = 'maxEvents';
   if (Object.keys(errors).length > 0) throw validationError(errors);
+  if (planned.length === 0) {
+    for (const id of joins) await respondToInvite(actor, { id }, true, meta, now);
+    return { registrations: [], holdExpiresAt: null, joined: joins.length };
+  }
   for (const p of planned) if (p.partnerEmail) await limitInviteEmail(actor.userId, p.partnerEmail);
 
   if (data.phone && data.phone !== player.phone) {
@@ -545,6 +569,10 @@ export async function enterTournament(
       return { ...c, participantId: p?.id ?? null, paymentStatus: p?.paymentStatus ?? 'UNPAID' };
     }),
     holdExpiresAt: created.some((c) => c.status === 'PENDING') ? holdUntil : null,
+    joined: await (async () => {
+      for (const id of joins) await respondToInvite(actor, { id }, true, meta, now);
+      return joins.length;
+    })(),
   };
 }
 
@@ -824,6 +852,7 @@ async function findInvite(ref: InviteRef) {
       expiresAt: true,
       toEmail: true,
       toPlayerId: true,
+      toPlayer: { select: { contactEmail: true, user: { select: { email: true } } } },
       fromPlayer: { select: { ...playerSelect } },
       registration: {
         select: {
@@ -854,6 +883,18 @@ async function findInvite(ref: InviteRef) {
 }
 
 /** Invite details for the invite page; `forMe` says whether the signed-in player may answer. */
+/**
+ * The address an open invitation link was sent to (D101), or null. Whoever opens the link has
+ * that mailbox, the same proof as a confirmation link.
+ */
+export async function invitedAddress(token: string, now = new Date()): Promise<string | null> {
+  const invite = await findInvite({ token });
+  if (!invite || invite.status !== 'PENDING' || invite.expiresAt <= now) return null;
+  const address =
+    invite.toEmail ?? invite.toPlayer?.user?.email ?? invite.toPlayer?.contactEmail ?? null;
+  return address?.toLowerCase() ?? null;
+}
+
 export async function getInvite(ref: InviteRef, actor: Actor | null, now = new Date()) {
   const invite = await findInvite(ref);
   if (!invite) throw new AppError('inviteInvalid');
@@ -903,8 +944,24 @@ export async function respondToInvite(
   const r = invite.registration;
   const t = r.event.tournament;
 
+  if (accept && !actor.emailVerified) {
+    // Opened through the invitation link sent to this very address: that confirms it (D101).
+    const address = 'token' in ref ? await invitedAddress(ref.token, now) : null;
+    const user = await prisma.user.findUniqueOrThrow({
+      where: { id: actor.userId },
+      select: { email: true },
+    });
+    if (!address || address !== user.email.toLowerCase()) throw new AppError('emailNotVerified');
+    await prisma.user.update({ where: { id: actor.userId }, data: { emailVerifiedAt: now } });
+    await writeAudit(prisma, {
+      actorId: actor.userId,
+      action: 'user.email.verifiedByInvite',
+      entityType: 'User',
+      entityId: actor.userId,
+      meta,
+    });
+  }
   if (accept) {
-    if (!actor.emailVerified) throw new AppError('emailNotVerified');
     const reasons = [
       ...eligibility(me, r.event, t.startsOn),
       ...pairEligibility(r.event.discipline, invite.fromPlayer, me),
@@ -1223,7 +1280,38 @@ export async function withdrawMyRegistration(
 
 // ── Organiser: entry list ─────────────────────────────────────────────────────────
 
-export type EntryFilters = { eventId?: string; status?: RegistrationStatus | 'ALL' };
+export type EntryFilters = {
+  eventId?: string;
+  status?: RegistrationStatus | 'ALL';
+  /** Name, member number, club or email of one of the players (D101). */
+  q?: string;
+};
+
+/** Every word must match one of the player's name, number, club or email (D101). */
+function playerSearch(q: string | undefined): Prisma.RegistrationWhereInput {
+  const words = (q ?? '').trim().split(/\s+/).filter(Boolean).slice(0, 5);
+  if (words.length === 0) return {};
+  return {
+    participants: {
+      some: {
+        active: true,
+        player: {
+          AND: words.map((w) => ({
+            OR: [
+              { firstName: { contains: w, mode: 'insensitive' as const } },
+              { lastNamePrefix: { contains: w, mode: 'insensitive' as const } },
+              { lastName: { contains: w, mode: 'insensitive' as const } },
+              { memberNumber: { contains: w, mode: 'insensitive' as const } },
+              { contactEmail: { contains: w, mode: 'insensitive' as const } },
+              { user: { email: { contains: w, mode: 'insensitive' as const } } },
+              { club: { name: { contains: w, mode: 'insensitive' as const } } },
+            ],
+          })),
+        },
+      },
+    },
+  };
+}
 
 export async function listTournamentEntries(
   actor: Actor,
@@ -1237,6 +1325,7 @@ export async function listTournamentEntries(
     where: {
       event: { tournamentId, deletedAt: null, ...(filters.eventId ? { id: filters.eventId } : {}) },
       status: statusFilter,
+      ...playerSearch(filters.q),
     },
     orderBy: [
       { event: { sortOrder: 'asc' } },

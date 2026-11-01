@@ -44,14 +44,24 @@ export default async function EntriesPage({ params, searchParams }: Props) {
 
   const eventId = firstParam(query.eventId) || undefined;
   const cancelled = firstParam(query.state) === 'cancelled';
+  const q = firstParam(query.q)?.trim().slice(0, 80) || undefined;
   const status: RegistrationStatus | undefined = cancelled ? 'CANCELLED' : undefined;
   const [entries, allCancelled] = await Promise.all([
-    listTournamentEntries(actor, id, { eventId, status }),
+    listTournamentEntries(actor, id, { eventId, status, q }),
     listCancelledEntries(actor, id),
   ]);
-  const cancelledEntries = eventId
-    ? allCancelled.filter((c) => c.event.id === eventId)
-    : allCancelled;
+  const words = (q ?? '').toLowerCase().split(/\s+/).filter(Boolean);
+  const cancelledEntries = allCancelled.filter(
+    (c) =>
+      (!eventId || c.event.id === eventId) &&
+      words.every((w) =>
+        c.players.some((p) =>
+          [p.firstName, p.lastNamePrefix, p.lastName, p.memberNumber]
+            .filter(Boolean)
+            .some((v) => v!.toLowerCase().includes(w)),
+        ),
+      ),
+  );
 
   const t = await getTranslations('Admin');
   const ts = await getTranslations('RegistrationStatuses');
@@ -101,6 +111,17 @@ export default async function EntriesPage({ params, searchParams }: Props) {
       </details>
 
       <FilterBar action={`/${locale}/admin/tournaments/${id}/entries`}>
+        <label className="sr-only" htmlFor="q">
+          {t('entries.search')}
+        </label>
+        <input
+          id="q"
+          name="q"
+          type="search"
+          defaultValue={q ?? ''}
+          placeholder={t('entries.search')}
+          className={filterInputClass}
+        />
         <label className="sr-only" htmlFor="eventId">
           {t('entries.allEvents')}
         </label>
@@ -135,9 +156,11 @@ export default async function EntriesPage({ params, searchParams }: Props) {
       </FilterBar>
 
       <p className="text-sm text-muted-foreground">
-        {cancelled
-          ? t('entries.summary', { count: entries.length })
-          : t('entries.counts', { confirmed, waitlisted })}
+        {q
+          ? t('entries.found', { count: entries.length, query: q })
+          : cancelled
+            ? t('entries.summary', { count: entries.length })
+            : t('entries.counts', { confirmed, waitlisted })}
       </p>
 
       {entries.length === 0 ? (

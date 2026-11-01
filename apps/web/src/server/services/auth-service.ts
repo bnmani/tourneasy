@@ -46,8 +46,15 @@ function displayName(first: string, prefix: string | undefined, last: string): s
 
 // ── Sign-up ────────────────────────────────────────────────────────────────────────
 
-export async function signUp(input: unknown, meta: RequestMeta) {
+export async function signUp(
+  input: unknown,
+  meta: RequestMeta,
+  /** The address an invitation link was sent to, when the sign-up started from it (D101). */
+  options: { invitedEmail?: string | null } = {},
+) {
   const data = parse(signUpSchema, input);
+  // Signing up from an invitation with the invited address: the link proved the mailbox.
+  const confirmed = !!options.invitedEmail && options.invitedEmail === data.email.toLowerCase();
   await enforce(`signup:ip:${meta.ip ?? 'unknown'}`, LIMITS.signUpPerIp);
 
   const dateOfBirth = parseDateOnly(data.dateOfBirth)!;
@@ -105,6 +112,7 @@ export async function signUp(input: unknown, meta: RequestMeta) {
       const user = await tx.user.create({
         data: {
           email: data.email,
+          ...(confirmed ? { emailVerifiedAt: now } : {}),
           name,
           passwordHash,
           locale: data.locale as Locale,
@@ -136,7 +144,7 @@ export async function signUp(input: unknown, meta: RequestMeta) {
   }
 
   await acceptOrganiserInvites(created.userId, data.email);
-  await sendVerificationEmail(created.userId);
+  if (!confirmed) await sendVerificationEmail(created.userId);
   return created;
 }
 

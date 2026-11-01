@@ -25,6 +25,7 @@ export function ChangePasswordForm() {
       />
       <TextField
         name="newPassword"
+        fillRepeat="newPasswordRepeat"
         type="password"
         label={t('newPassword')}
         hint={tr('passwordHint', { min: PASSWORD_MIN_LENGTH })}

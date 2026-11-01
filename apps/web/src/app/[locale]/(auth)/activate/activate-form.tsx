@@ -83,6 +83,7 @@ export function ActivateForm({
       </section>
       <TextField
         name="password"
+        fillRepeat="passwordRepeat"
         type="password"
         label={t('register.password')}
         hint={t('register.passwordHint', { min: PASSWORD_MIN_LENGTH })}

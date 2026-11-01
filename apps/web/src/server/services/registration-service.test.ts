@@ -5,6 +5,7 @@ import {
   cancelEntryAsOrganiser,
   enterTournament,
   getEntryOptions,
+  invitedAddress,
   listMyInvites,
   listMyRegistrations,
   listTournamentEntries,
@@ -12,6 +13,7 @@ import {
   searchPartners,
   withdrawMyRegistration,
 } from './registration-service';
+import { signUp } from './auth-service';
 import { actorFromWebToken, createWebSession } from './session-service';
 
 beforeEach(resetDatabase);
@@ -277,6 +279,116 @@ describe('doubles partners', () => {
     await respondToInvite(newcomer.actor, { id: invites[0]!.id }, true, meta, NOW);
     const r = await prisma.registration.findFirstOrThrow({ include: { participants: true } });
     expect(r.participants.map((p) => p.role).sort()).toEqual(['PARTNER', 'PRIMARY']);
+  });
+
+  it('an invitation link confirms the address: at sign-up and when accepting (D101)', async () => {
+    const t = await tournament();
+    const hd = await event(t.id, 'HD');
+    const bram = await player({ firstName: 'Bram', gender: 'MALE' });
+    const invite = async (email: string, from = bram) => {
+      await enterTournament(
+        from.actor,
+        'utrecht-open',
+        { events: [{ eventId: hd.id, partner: email }], ...terms },
+        meta,
+        NOW,
+      );
+      return lastMailTo(email)
+        .link!.split('/invites/')[1]!
+        .split(/[?#\s]/)[0]!;
+    };
+    const token = await invite('nico@example.test');
+    expect(await invitedAddress(token, NOW)).toBe('nico@example.test');
+
+    const details = {
+      firstName: 'Nico',
+      lastName: 'Nieuw',
+      phone: '+31612345678',
+      password: 'Shuttle-Smash-2027',
+      dateOfBirth: '1990-01-01',
+      gender: 'MALE',
+      acceptTerms: true,
+      acceptPrivacy: true,
+    };
+    // Same address as the invitation: confirmed at once, no confirmation email.
+    const nico = await signUp({ ...details, email: 'Nico@example.test' }, meta, {
+      invitedEmail: 'nico@example.test',
+    });
+    const user = await prisma.user.findUniqueOrThrow({ where: { id: nico.userId } });
+    expect(user.emailVerifiedAt).not.toBeNull();
+    expect(lastMailTo('Nico@example.test').mail?.subject ?? '').not.toMatch(/bevestig|confirm/i);
+    // Another address: still needs confirming.
+    const other = await signUp({ ...details, email: 'other@example.test' }, meta, {
+      invitedEmail: 'nico@example.test',
+    });
+    expect(
+      (await prisma.user.findUniqueOrThrow({ where: { id: other.userId } })).emailVerifiedAt,
+    ).toBeNull();
+
+    // Someone who signed up unconfirmed and then opens the link: accepting confirms the address.
+    const wim = await player({ firstName: 'Wim', gender: 'MALE' });
+    const token2 = await invite('late@example.test', wim);
+    const late = await player(
+      { firstName: 'Lars', gender: 'MALE', email: 'late@example.test' },
+      false,
+    );
+    const invites = await listMyInvites(late.actor, NOW);
+    // Through the dashboard (no link): the address isn't proven.
+    await expect(
+      respondToInvite(late.actor, { id: invites[0]!.id }, true, meta, NOW),
+    ).rejects.toMatchObject({ code: 'emailNotVerified' });
+    await respondToInvite(late.actor, { token: token2 }, true, meta, NOW);
+    expect(
+      (await prisma.user.findUniqueOrThrow({ where: { id: late.userId } })).emailVerifiedAt,
+    ).not.toBeNull();
+  });
+
+  it('entering together with the player who invited you accepts the invitation (D101)', async () => {
+    const t = await tournament();
+    const hd = await event(t.id, 'HD');
+    const bram = await player({ firstName: 'Bram', gender: 'MALE' });
+    await enterTournament(
+      bram.actor,
+      'utrecht-open',
+      { events: [{ eventId: hd.id, partner: 'nico@example.test' }], ...terms },
+      meta,
+      NOW,
+    );
+    const nico = await player({ firstName: 'Nico', gender: 'MALE', email: 'nico@example.test' });
+    const result = await enterTournament(
+      nico.actor,
+      'utrecht-open',
+      { events: [{ eventId: hd.id, partner: bram.profile.memberNumber }], ...terms },
+      meta,
+      NOW,
+    );
+    expect(result.joined).toBe(1);
+    const regs = await prisma.registration.findMany({ include: { participants: true } });
+    expect(regs).toHaveLength(1);
+    expect(regs[0]!.participants.map((p) => p.role).sort()).toEqual(['PARTNER', 'PRIMARY']);
+
+    // Someone else picking Bram still gets the clear "already entered" answer.
+    const piet = await player({ firstName: 'Piet', gender: 'MALE' });
+    await expect(
+      enterTournament(
+        piet.actor,
+        'utrecht-open',
+        { events: [{ eventId: hd.id, partner: bram.profile.memberNumber }], ...terms },
+        meta,
+        NOW,
+      ),
+    ).rejects.toMatchObject({
+      details: { fields: { [`partner.${hd.id}`]: 'partnerAlreadyEntered' } },
+    });
+
+    // The participant list finds Nico's entry by name.
+    const admin = await player({}, true);
+    await prisma.userRole.create({ data: { userId: admin.userId, role: Role.ADMIN } });
+    const adminActor = (await actorFromWebToken(
+      (await createWebSession(admin.userId, meta, true)).token,
+    ))!;
+    expect(await listTournamentEntries(adminActor, t.id, { q: 'nico' })).toHaveLength(1);
+    expect(await listTournamentEntries(adminActor, t.id, { q: 'nobody' })).toHaveLength(0);
   });
 
   it('lets a player enter without a partner as "looking for a partner"', async () => {

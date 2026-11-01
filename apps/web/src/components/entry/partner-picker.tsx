@@ -128,6 +128,9 @@ export function PartnerPicker({
               id={`${id}-email`}
               name={`partner.${eventId}`}
               type="email"
+              // Typed an email in the search box: keep it, don't make them type it again.
+              defaultValue={query.includes('@') ? query.trim() : ''}
+              autoFocus
               placeholder={t('partnerInviteEmail')}
               disabled={disabled}
               autoComplete="off"

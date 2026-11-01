@@ -1,6 +1,7 @@
 'use client';
 
 import { joinPhone, PHONE_COUNTRIES, splitPhone } from '@tourneasy/shared';
+import { Eye, EyeOff } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useMemo, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { useFormStatus } from 'react-dom';
@@ -115,6 +116,11 @@ type TextFieldProps = Omit<FieldProps, 'children'> & {
   /** Number fields: limits for the browser's arrows and keyboard, shown as a hint. */
   min?: number;
   max?: number;
+  /**
+   * Password: the name of its repeat field. When a password manager fills this field (the
+   * whole value at once, not typed or pasted), the repeat field gets the same value.
+   */
+  fillRepeat?: string;
 };
 
 export function TextField({
@@ -126,9 +132,11 @@ export function TextField({
   inputMode,
   min,
   max,
+  fillRepeat,
   ...field
 }: TextFieldProps) {
   const tc = useTranslations('Common');
+  const [shown, setShown] = useState(false);
   const range =
     type === 'number' && min !== undefined && max !== undefined
       ? tc('numberRange', { min, max })
@@ -140,23 +148,58 @@ export function TextField({
   return (
     // key: remount with the echoed value after a failed submit (defaultValue is read once).
     <Field key={value} {...field} hint={hint}>
-      {(a11y) => (
-        <input
-          {...a11y}
-          name={field.name}
-          type={type}
-          min={min}
-          max={max}
-          step={type === 'number' ? 1 : undefined}
-          required={field.required}
-          autoComplete={autoComplete}
-          defaultValue={value}
-          minLength={minLength}
-          maxLength={maxLength}
-          inputMode={inputMode}
-          className={inputClass}
-        />
-      )}
+      {(a11y) => {
+        const input = (
+          <input
+            {...a11y}
+            name={field.name}
+            type={type === 'password' && shown ? 'text' : type}
+            min={min}
+            max={max}
+            step={type === 'number' ? 1 : undefined}
+            required={field.required}
+            autoComplete={autoComplete}
+            defaultValue={value}
+            minLength={minLength}
+            maxLength={maxLength}
+            inputMode={inputMode}
+            className={cn(inputClass, type === 'password' && 'pr-11')}
+            onInput={
+              fillRepeat
+                ? (e) => {
+                    // Typing and pasting fire an InputEvent with its kind; a password manager
+                    // sets the whole value without one (or as a "replacement").
+                    const native = e.nativeEvent as InputEvent;
+                    const kind = 'inputType' in native ? native.inputType : undefined;
+                    if (kind && kind !== 'insertReplacementText') return;
+                    const repeat = e.currentTarget.form?.elements.namedItem(fillRepeat);
+                    if (repeat instanceof HTMLInputElement && !repeat.value)
+                      repeat.value = e.currentTarget.value;
+                  }
+                : undefined
+            }
+          />
+        );
+        if (type !== 'password') return input;
+        return (
+          <div className="relative">
+            {input}
+            <button
+              type="button"
+              onClick={() => setShown((s) => !s)}
+              aria-label={shown ? tc('hidePassword') : tc('showPassword')}
+              aria-pressed={shown}
+              className="absolute inset-y-0 right-0 flex w-10 items-center justify-center rounded-r-md text-muted-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+            >
+              {shown ? (
+                <EyeOff aria-hidden="true" className="size-4" />
+              ) : (
+                <Eye aria-hidden="true" className="size-4" />
+              )}
+            </button>
+          </div>
+        );
+      }}
     </Field>
   );
 }
