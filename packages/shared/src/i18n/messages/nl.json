@@ -860,8 +860,7 @@
       "invited": "{sent, plural, =0 {Geen uitnodigingen verstuurd} one {# uitnodiging verstuurd} other {# uitnodigingen verstuurd}}{skipped, plural, =0 {.} other {; # overgeslagen (al een account of geen e-mailadres).}}",
       "packageRequested": "Aanvraag ontvangen. Je krijgt een factuur; het pakket geldt zodra die betaald is.",
       "packagePaid": "Betaling ontvangen. Het pakket geldt nu.",
-      "refunded": "Klaar. De bestelling is terugbetaald of geannuleerd.",
-      "paymentUndone": "De betaling aan de balie is teruggedraaid: de inschrijving is weer onbetaald."
+      "refunded": "Klaar. De bestelling is terugbetaald of geannuleerd."
     },
     "grantShort": "Toekennen",
     "revokeShort": "Intrekken",
@@ -903,8 +902,7 @@
       "summary": "{count, plural, =0 {Nog geen inschrijvingen} one {# inschrijving} other {# inschrijvingen}}",
       "markPaid": "Betaald aan de balie",
       "undoPaid": "Terugdraaien",
-      "undoPaidConfirm": "Toch niet betaald? Dit draait de betaling aan de balie terug.",
-      "undoPaidYes": "Ja, terugdraaien",
+      "undoPaidConfirm": "Toch niet betaald? Dit draait de betaling aan de balie terug; de inschrijving is weer onbetaald.",
       "import": "Importeren",
       "importTitle": "Deelnemers importeren: {tournament}",
       "importHelp": "Upload een Excel- of CSV-bestand met één regel per inschrijving: het onderdeel (zoals in de export, bijv. \"Herendubbel · Senioren\"), de speler en bij dubbels de partner (kolommen die met partner beginnen). Ken je het lidnummer, dan is dat genoeg; anders naam, geslacht (M/V) en geboortedatum, eventueel e-mail en club. Spelers die nog niet bestaan worden automatisch aangemaakt. Kolommen: {columns}. Volle onderdelen gaan naar de wachtlijst; er worden geen e-mails verstuurd.",
@@ -1108,7 +1106,9 @@
       "allDone": "Iedereen is aanwezig en heeft betaald.",
       "presentOf": "{present}/{total} aanwezig",
       "allPresent": "Iedereen aanwezig",
-      "checkInPrint": "Lijst afdrukken (pdf)"
+      "checkInPrint": "Lijst afdrukken (pdf)",
+      "undoPay": "Betaling terugdraaien",
+      "undoPayConfirm": "De betaling aan de balie van {name} terugdraaien? De inschrijving is dan weer onbetaald."
     },
     "navEmail": "E-mail",
     "emailSettings": {
@@ -2321,7 +2321,10 @@
       "cancelOrder": "Bestelling annuleren",
       "settingsSaved": "Opgeslagen.",
       "itemAdded": "Item toegevoegd. Je kunt het volgende toevoegen.",
-      "itemSaved": "Item opgeslagen."
+      "itemSaved": "Item opgeslagen.",
+      "toHandOut": "Uit te geven ({count})",
+      "collectedList": "Opgehaald ({count})",
+      "allHandedOut": "Alles is uitgegeven."
     },
     "player": {
       "title": "Eten & drinken",

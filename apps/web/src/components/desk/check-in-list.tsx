@@ -4,7 +4,11 @@ import { Search } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useMemo, useState } from 'react';
 import { cn } from '@/lib/utils';
-import { payAtDeskAction, playerCheckInAction } from '@/server/actions/match-actions';
+import {
+  payAtDeskAction,
+  playerCheckInAction,
+  undoPayAtDeskAction,
+} from '@/server/actions/match-actions';
 import { CheckInToggle, QuickButton } from './quick-buttons';
 
 export type CheckInRow = {
@@ -17,6 +21,8 @@ export type CheckInRow = {
   present: boolean;
   /** "€ 25,00" when something is still to pay. */
   unpaid: string | null;
+  /** Something was paid at the desk and can be undone (D96). */
+  deskPaid: boolean;
 };
 
 /** The day's players at the desk (D74): search, one tap per player, pay what's open. */
@@ -135,6 +141,16 @@ function Rows({
                       {t('payAtDesk')}
                     </QuickButton>
                   </>
+                )}
+                {r.deskPaid && (
+                  <QuickButton
+                    size="sm"
+                    variant="ghost"
+                    action={() => undoPayAtDeskAction(tournamentId, r.playerId)}
+                    confirm={t('undoPayConfirm', { name: r.name })}
+                  >
+                    {t('undoPay')}
+                  </QuickButton>
                 )}
                 <div className="w-44">
                   <CheckInToggle

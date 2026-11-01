@@ -22,6 +22,7 @@ import {
   unscheduleMatch,
 } from '../services/schedule-service';
 import { payAtDesk, setPlayerCheckIn } from '../services/checkin-service';
+import { undoDeskPayment, undoDeskPaymentsForPlayer } from '../services/payment-service';
 
 async function actorOrThrow() {
   const actor = await getActor();
@@ -256,6 +257,25 @@ export async function playerCheckInAction(
       present,
       await currentRequestMeta(),
     ),
+  );
+}
+
+/** Undoes the player's desk payments in this tournament, made by mistake (D96). */
+export async function undoPayAtDeskAction(tournamentId: string, playerId: string) {
+  return quick(async () =>
+    undoDeskPaymentsForPlayer(
+      await actorOrThrow(),
+      tournamentId,
+      playerId,
+      await currentRequestMeta(),
+    ),
+  );
+}
+
+/** Undoes one share's desk payment from the participants list (D96). */
+export async function undoSharePaymentAction(participantId: string) {
+  return quick(async () =>
+    undoDeskPayment(await actorOrThrow(), { participantId }, await currentRequestMeta()),
   );
 }
 

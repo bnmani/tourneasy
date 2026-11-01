@@ -431,6 +431,7 @@ async function CheckInView({
             : null,
           present: p.present,
           unpaid: p.unpaidCents > 0 ? formatEuro(p.unpaidCents, locale) : null,
+          deskPaid: p.deskPaid,
         }))}
       />
     </div>

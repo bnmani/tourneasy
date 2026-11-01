@@ -43,7 +43,6 @@ const SUCCESS = new Set([
   'organiserInvited',
   'cancelled',
   'markedPaid',
-  'paymentUndone',
   'refundApproved',
   'refundRejected',
   'locked',

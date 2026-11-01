@@ -10,7 +10,9 @@ import { Link } from '@/i18n/navigation';
 import { eventLabel, personName } from '@/lib/labels';
 import { firstParam, pageLocale, type SearchParams } from '@/lib/page';
 import { cn } from '@/lib/utils';
-import { markPaidAction, undoDeskPaymentAction } from '@/server/actions/payment-actions';
+import { QuickButton } from '@/components/desk/quick-buttons';
+import { undoSharePaymentAction } from '@/server/actions/match-actions';
+import { markPaidAction } from '@/server/actions/payment-actions';
 import { cancelEntryAction } from '@/server/actions/registration-actions';
 import { requirePortal } from '@/server/auth/web';
 import { isAppError } from '@/server/lib/errors';
@@ -228,26 +230,18 @@ export default async function EntriesPage({ params, searchParams }: Props) {
                           )}
                           {p.paymentStatus === 'PAID' && p.orderItems.length > 0 && (
                             // Paid at the desk by mistake: undo it, after a confirmation (D96).
-                            <details className="inline">
-                              <summary className="inline cursor-pointer font-medium text-primary underline-offset-4 hover:underline">
-                                {' '}
-                                {t('entries.undoPaid')}
-                              </summary>
-                              <form
-                                action={undoDeskPaymentAction.bind(null, locale, id, p.id)}
-                                className="mt-1 flex flex-wrap items-center gap-2 whitespace-normal"
+                            <>
+                              {' '}
+                              <QuickButton
+                                size="sm"
+                                variant="link"
+                                className="h-auto p-0 text-xs"
+                                action={undoSharePaymentAction.bind(null, p.id)}
+                                confirm={t('entries.undoPaidConfirm')}
                               >
-                                <span className="text-muted-foreground">
-                                  {t('entries.undoPaidConfirm')}
-                                </span>
-                                <button
-                                  type="submit"
-                                  className="font-medium text-destructive underline-offset-4 hover:underline"
-                                >
-                                  {t('entries.undoPaidYes')}
-                                </button>
-                              </form>
-                            </details>
+                                {t('entries.undoPaid')}
+                              </QuickButton>
+                            </>
                           )}
                         </span>
                       ))}

@@ -9,6 +9,7 @@ import {
   paymentsOverview,
   reconcileOrder,
   undoDeskPayment,
+  undoDeskPaymentsForPlayer,
 } from './payment-service';
 import { approveRefund } from './refund-service';
 import {
@@ -397,5 +398,24 @@ describe('refunds and desk payments', () => {
     await expect(
       undoDeskPayment(admin.actor, { participantId: share.id }, meta),
     ).rejects.toMatchObject({ code: 'statusTransition' });
+  });
+
+  it("undoes all of a player's desk payments from the match desk (D96)", async () => {
+    setGatewayForTests(null);
+    const t = await tournament();
+    const de = await event(t.id, 'DE');
+    const anna = await player();
+    await enter(anna.actor, [{ eventId: de.id }]);
+    const share = await prisma.registrationParticipant.findFirstOrThrow();
+    const admin = await player({}, Role.ADMIN);
+    await expect(
+      undoDeskPaymentsForPlayer(admin.actor, t.id, share.playerId, meta),
+    ).rejects.toMatchObject({ code: 'statusTransition' });
+    await markShareAsPaid(admin.actor, { participantId: share.id }, meta);
+    expect(await undoDeskPaymentsForPlayer(admin.actor, t.id, share.playerId, meta)).toBe(1);
+    expect(
+      (await prisma.registrationParticipant.findUniqueOrThrow({ where: { id: share.id } }))
+        .paymentStatus,
+    ).toBe('UNPAID');
   });
 });

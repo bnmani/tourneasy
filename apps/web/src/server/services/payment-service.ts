@@ -587,6 +587,28 @@ export async function undoDeskPayment(actor: Actor, input: unknown, meta: Reques
   });
 }
 
+/** The match desk's undo (D96): every desk payment of this player in the tournament. */
+export async function undoDeskPaymentsForPlayer(
+  actor: Actor,
+  tournamentId: string,
+  playerId: string,
+  meta: RequestMeta,
+) {
+  await assertCanManageTournament(actor, tournamentId);
+  const shares = await prisma.registrationParticipant.findMany({
+    where: {
+      playerId,
+      paymentStatus: 'PAID',
+      registration: { event: { tournamentId } },
+      orderItems: { some: { refundedCents: 0, ...deskPaidItem } },
+    },
+    select: { id: true },
+  });
+  if (shares.length === 0) throw new AppError('statusTransition');
+  for (const s of shares) await undoDeskPayment(actor, { participantId: s.id }, meta);
+  return shares.length;
+}
+
 // ── Admin overview ─────────────────────────────────────────────────────────────────
 
 export type PaymentFilters = { tournamentId?: string; status?: OrderStatus; page?: number };

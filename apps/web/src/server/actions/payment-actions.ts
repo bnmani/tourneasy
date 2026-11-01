@@ -5,7 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { currentRequestMeta, getActor } from '../auth/web';
 import { AppError, isAppError, type ErrorCode } from '../lib/errors';
-import { createCheckout, markShareAsPaid, undoDeskPayment } from '../services/payment-service';
+import { createCheckout, markShareAsPaid } from '../services/payment-service';
 import {
   clearPaymentSettings,
   lockSettings,
@@ -65,17 +65,6 @@ export async function markPaidAction(
 ) {
   await act(`/${locale}/admin/tournaments/${tournamentId}/entries`, 'markedPaid', async () =>
     markShareAsPaid(await actorOrThrow(), { participantId }, await currentRequestMeta()),
-  );
-}
-
-/** Organiser: a desk payment was recorded by mistake (D96). */
-export async function undoDeskPaymentAction(
-  locale: AppLocale,
-  tournamentId: string,
-  participantId: string,
-) {
-  await act(`/${locale}/admin/tournaments/${tournamentId}/entries`, 'paymentUndone', async () =>
-    undoDeskPayment(await actorOrThrow(), { participantId }, await currentRequestMeta()),
   );
 }
 

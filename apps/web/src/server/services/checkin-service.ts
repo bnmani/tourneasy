@@ -72,6 +72,18 @@ export async function checkInList(
       paymentStatus: true,
       checkedInAt: true,
       registration: { select: { event: { select: { feeCents: true } } } },
+      // Paid at the desk and not refunded: the desk can undo it (D96).
+      orderItems: {
+        where: {
+          refundedCents: 0,
+          order: {
+            status: 'PAID',
+            payments: { some: { method: 'MANUAL', status: 'SUCCEEDED' } },
+          },
+        },
+        select: { id: true },
+        take: 1,
+      },
       player: {
         select: {
           id: true,
@@ -162,6 +174,7 @@ export async function checkInList(
         matches: p.matches,
         present: p.shares.every((s) => checkedInFor(s.checkedInAt, day, days[0]!)),
         unpaidCents: unpaid.reduce((sum, s) => sum + (due.get(s.id) ?? 0), 0),
+        deskPaid: p.shares.some((s) => s.paymentStatus === 'PAID' && s.orderItems.length > 0),
       };
     }),
   );

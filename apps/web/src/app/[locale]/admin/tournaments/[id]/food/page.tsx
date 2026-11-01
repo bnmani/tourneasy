@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import { FoodItemForm, FoodSettingsForm } from '@/components/admin/food-forms';
 import { FoodScanner } from '@/components/admin/food-scanner';
+import { cn } from '@/lib/utils';
 import { Badge, PageHeader, StatusNotice } from '@/components/admin/ui';
 import { Button } from '@/components/ui/button';
 import { Link } from '@/i18n/navigation';
@@ -51,6 +52,8 @@ export default async function FoodAdminPage({ params, searchParams }: Props) {
           (o.memberNumber ?? '').toLowerCase().includes(q),
       )
     : list.orders;
+  const toHandOut = orders.filter((o) => !o.collectedAt);
+  const collected = orders.filter((o) => o.collectedAt);
   const euro = (c: number) => formatEuro(c, locale);
 
   return (
@@ -188,48 +191,71 @@ export default async function FoodAdminPage({ params, searchParams }: Props) {
         {orders.length === 0 ? (
           <p className="text-sm text-muted-foreground">{t('noOrders')}</p>
         ) : (
-          <ul className="divide-y rounded-md border">
-            {orders.map((o) => (
-              <li
-                key={o.id}
-                className="flex flex-col gap-2 p-3 text-sm sm:flex-row sm:items-center sm:justify-between"
-              >
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <code className="font-semibold">{o.orderNumber}</code>
-                    <span className="font-medium">{o.name}</span>
-                    {o.memberNumber && (
-                      <span className="text-muted-foreground">{o.memberNumber}</span>
-                    )}
-                    <Badge tone={o.status === 'PAID' ? 'primary' : 'muted'}>
-                      {o.status === 'PAID' ? t('paid') : o.online ? t('paying') : t('payAtPickup')}
-                    </Badge>
-                    {o.collectedAt && <Badge tone="muted">{t('collected')}</Badge>}
-                  </div>
-                  <p className="text-muted-foreground">
-                    {o.lines.map((l) => `${l.quantity}× ${l.name}`).join(', ')} ·{' '}
-                    {euro(o.totalCents)}
-                  </p>
-                </div>
-                <div className="flex shrink-0 gap-2">
-                  {!o.collectedAt && (o.status === 'PAID' || !o.online) && (
-                    <form action={markCollectedAction.bind(null, locale, id, o.id)}>
-                      <Button type="submit" size="sm">
-                        {o.status === 'PAID' ? t('handOut') : t('handOutPaid')}
-                      </Button>
-                    </form>
-                  )}
-                  {!o.collectedAt && (o.status === 'PAID' ? o.online : !o.online) && (
-                    <form action={refundFoodOrderAction.bind(null, locale, id, o.id)}>
-                      <Button type="submit" size="sm" variant="outline">
-                        {o.status === 'PAID' ? t('refund') : t('cancelOrder')}
-                      </Button>
-                    </form>
-                  )}
-                </div>
-              </li>
-            ))}
-          </ul>
+          // Still to hand out on top; collected orders below, like the desk's check-in (D97).
+          [
+            { key: 'todo', title: t('toHandOut', { count: toHandOut.length }), list: toHandOut },
+            {
+              key: 'done',
+              title: t('collectedList', { count: collected.length }),
+              list: collected,
+            },
+          ]
+            .filter((group) => group.key === 'todo' || group.list.length > 0)
+            .map(({ key, title, list }) => (
+              <div key={key} className="space-y-2">
+                <h3 className="text-sm font-semibold text-muted-foreground">{title}</h3>
+                {list.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">{t('allHandedOut')}</p>
+                ) : (
+                  <ul className={cn('divide-y rounded-md border', key === 'done' && 'opacity-80')}>
+                    {list.map((o) => (
+                      <li
+                        key={o.id}
+                        className="flex flex-col gap-2 p-3 text-sm sm:flex-row sm:items-center sm:justify-between"
+                      >
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <code className="font-semibold">{o.orderNumber}</code>
+                            <span className="font-medium">{o.name}</span>
+                            {o.memberNumber && (
+                              <span className="text-muted-foreground">{o.memberNumber}</span>
+                            )}
+                            <Badge tone={o.status === 'PAID' ? 'primary' : 'muted'}>
+                              {o.status === 'PAID'
+                                ? t('paid')
+                                : o.online
+                                  ? t('paying')
+                                  : t('payAtPickup')}
+                            </Badge>
+                            {o.collectedAt && <Badge tone="muted">{t('collected')}</Badge>}
+                          </div>
+                          <p className="text-muted-foreground">
+                            {o.lines.map((l) => `${l.quantity}× ${l.name}`).join(', ')} ·{' '}
+                            {euro(o.totalCents)}
+                          </p>
+                        </div>
+                        <div className="flex shrink-0 gap-2">
+                          {!o.collectedAt && (o.status === 'PAID' || !o.online) && (
+                            <form action={markCollectedAction.bind(null, locale, id, o.id)}>
+                              <Button type="submit" size="sm">
+                                {o.status === 'PAID' ? t('handOut') : t('handOutPaid')}
+                              </Button>
+                            </form>
+                          )}
+                          {!o.collectedAt && (o.status === 'PAID' ? o.online : !o.online) && (
+                            <form action={refundFoodOrderAction.bind(null, locale, id, o.id)}>
+                              <Button type="submit" size="sm" variant="outline">
+                                {o.status === 'PAID' ? t('refund') : t('cancelOrder')}
+                              </Button>
+                            </form>
+                          )}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            ))
         )}
       </section>
     </>
