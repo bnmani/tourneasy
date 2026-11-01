@@ -862,7 +862,8 @@
       "invited": "{sent, plural, =0 {No invitations sent} one {# invitation sent} other {# invitations sent}}{skipped, plural, =0 {.} other {; # skipped (already an account or no email address).}}",
       "packageRequested": "Request received. You'll get an invoice; the package applies once it is paid.",
       "packagePaid": "Payment received. The package now applies.",
-      "refunded": "Done. The order has been refunded or cancelled."
+      "refunded": "Done. The order has been refunded or cancelled.",
+      "refundReopened": "Refund request reopened: it waits for a decision again."
     },
     "grantShort": "Grant",
     "revokeShort": "Remove",
@@ -959,7 +960,9 @@
       "settings": "Stripe settings",
       "adminDecides": "An admin decides on this request.",
       "tournamentTitle": "Payments · {tournament}",
-      "tournamentIntro": "Received, refunded and still outstanding for this tournament, with all orders."
+      "tournamentIntro": "Received, refunded and still outstanding for this tournament, with all orders.",
+      "declined": "Declined refund requests",
+      "reopen": "Reopen"
     },
     "paymentSettings": {
       "title": "Stripe settings",
@@ -1126,7 +1129,13 @@
       "allPresent": "Everyone present",
       "checkInPrint": "Print list (PDF)",
       "undoPay": "Undo payment",
-      "undoPayConfirm": "Undo the desk payment for {name}? The entry is unpaid again."
+      "undoPayConfirm": "Undo the desk payment for {name}? The entry is unpaid again.",
+      "backToWaiting": "Back to waiting",
+      "stageRemovable": "{event}: the latest stage has no results yet and can still be removed.",
+      "removeKnockout": "Remove knockout stage",
+      "removeKnockoutConfirm": "Remove the knockout stage of {event}? Its matches and court times are removed; you can make it again from the group results.",
+      "removeRound": "Remove last round",
+      "removeRoundConfirm": "Remove the latest round of {event}? Its pairings and court times are removed; you can pair it again."
     },
     "navEmail": "Email",
     "emailSettings": {
@@ -2338,7 +2347,8 @@
       "itemSaved": "Item saved.",
       "toHandOut": "To hand out ({count})",
       "collectedList": "Collected ({count})",
-      "allHandedOut": "Everything has been handed out."
+      "allHandedOut": "Everything has been handed out.",
+      "undoHandOut": "Undo hand-out"
     },
     "player": {
       "title": "Food & drink",

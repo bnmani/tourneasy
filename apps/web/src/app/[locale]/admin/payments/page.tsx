@@ -106,7 +106,13 @@ export default async function PaymentsPage({ params, searchParams }: Props) {
         </Button>
       </FilterBar>
 
-      <PaymentsView locale={locale} overview={overview} href={href} canDecide />
+      <PaymentsView
+        locale={locale}
+        overview={overview}
+        href={href}
+        canDecide
+        backPath={`/${locale}/admin/payments`}
+      />
     </>
   );
 }

@@ -11,8 +11,11 @@ import {
   recordResult,
   recordRetirement,
   recordWalkover,
+  removeKnockoutStage,
+  removeLastSwissRound,
   setCheckIn,
   startMatch,
+  unstartMatch,
 } from '../services/results-service';
 import {
   moveMatch,
@@ -268,6 +271,22 @@ export async function undoPayAtDeskAction(tournamentId: string, playerId: string
       await actorOrThrow(),
       tournamentId,
       playerId,
+      await currentRequestMeta(),
+    ),
+  );
+}
+
+/** "On court" by mistake: back to waiting (D99). */
+export async function quickUnstartMatchAction(matchId: string) {
+  return quick(async () => unstartMatch(await actorOrThrow(), matchId, await currentRequestMeta()));
+}
+
+/** Removes a knockout stage or the latest Swiss round that has no results yet (D99). */
+export async function removeStageAction(eventId: string, kind: 'knockout' | 'swiss') {
+  return quick(async () =>
+    (kind === 'knockout' ? removeKnockoutStage : removeLastSwissRound)(
+      await actorOrThrow(),
+      eventId,
       await currentRequestMeta(),
     ),
   );

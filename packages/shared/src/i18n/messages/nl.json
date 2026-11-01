@@ -862,7 +862,8 @@
       "invited": "{sent, plural, =0 {Geen uitnodigingen verstuurd} one {# uitnodiging verstuurd} other {# uitnodigingen verstuurd}}{skipped, plural, =0 {.} other {; # overgeslagen (al een account of geen e-mailadres).}}",
       "packageRequested": "Aanvraag ontvangen. Je krijgt een factuur; het pakket geldt zodra die betaald is.",
       "packagePaid": "Betaling ontvangen. Het pakket geldt nu.",
-      "refunded": "Klaar. De bestelling is terugbetaald of geannuleerd."
+      "refunded": "Klaar. De bestelling is terugbetaald of geannuleerd.",
+      "refundReopened": "Terugbetalingsverzoek heropend: er moet opnieuw over beslist worden."
     },
     "grantShort": "Toekennen",
     "revokeShort": "Intrekken",
@@ -959,7 +960,9 @@
       "settings": "Stripe-instellingen",
       "adminDecides": "Een beheerder beoordeelt deze aanvraag.",
       "tournamentTitle": "Betalingen · {tournament}",
-      "tournamentIntro": "Ontvangen, terugbetaald en nog openstaand voor dit toernooi, met alle bestellingen."
+      "tournamentIntro": "Ontvangen, terugbetaald en nog openstaand voor dit toernooi, met alle bestellingen.",
+      "declined": "Afgewezen terugbetalingsverzoeken",
+      "reopen": "Heropenen"
     },
     "paymentSettings": {
       "title": "Stripe-instellingen",
@@ -1126,7 +1129,13 @@
       "allPresent": "Iedereen aanwezig",
       "checkInPrint": "Lijst afdrukken (pdf)",
       "undoPay": "Betaling terugdraaien",
-      "undoPayConfirm": "De betaling aan de balie van {name} terugdraaien? De inschrijving is dan weer onbetaald."
+      "undoPayConfirm": "De betaling aan de balie van {name} terugdraaien? De inschrijving is dan weer onbetaald.",
+      "backToWaiting": "Terug naar wachtend",
+      "stageRemovable": "{event}: de laatste fase heeft nog geen uitslagen en kan nog worden verwijderd.",
+      "removeKnockout": "Knock-outfase verwijderen",
+      "removeKnockoutConfirm": "De knock-outfase van {event} verwijderen? De wedstrijden en baantijden verdwijnen; je kunt hem opnieuw maken uit de pouleuitslagen.",
+      "removeRound": "Laatste ronde verwijderen",
+      "removeRoundConfirm": "De laatste ronde van {event} verwijderen? De indeling en baantijden verdwijnen; je kunt opnieuw indelen."
     },
     "navEmail": "E-mail",
     "emailSettings": {
@@ -2342,7 +2351,8 @@
       "itemSaved": "Item opgeslagen.",
       "toHandOut": "Uit te geven ({count})",
       "collectedList": "Opgehaald ({count})",
-      "allHandedOut": "Alles is uitgegeven."
+      "allHandedOut": "Alles is uitgegeven.",
+      "undoHandOut": "Uitgifte terugdraaien"
     },
     "player": {
       "title": "Eten & drinken",

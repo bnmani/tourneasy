@@ -74,8 +74,9 @@ export const STATUS_TRANSITIONS: Record<TournamentStatusCode, TournamentStatusCo
   DRAFT: ['OPEN', 'ARCHIVED'],
   OPEN: ['CLOSED', 'DRAFT', 'ARCHIVED'],
   CLOSED: ['IN_PROGRESS', 'OPEN', 'ARCHIVED'],
-  IN_PROGRESS: ['FINISHED', 'ARCHIVED'],
-  FINISHED: ['ARCHIVED'],
+  // A step back is always possible (D99): nothing is deleted by a status change.
+  IN_PROGRESS: ['FINISHED', 'CLOSED', 'ARCHIVED'],
+  FINISHED: ['ARCHIVED', 'IN_PROGRESS'],
   ARCHIVED: ['DRAFT'],
 };
 

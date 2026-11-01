@@ -11,7 +11,7 @@ import {
   undoDeskPayment,
   undoDeskPaymentsForPlayer,
 } from './payment-service';
-import { approveRefund } from './refund-service';
+import { approveRefund, rejectRefund, reopenRefund } from './refund-service';
 import {
   cancelEntryAsOrganiser,
   enterTournament,
@@ -305,6 +305,28 @@ describe('refunds and desk payments', () => {
       status: 'PARTIALLY_REFUNDED',
     });
     expect(lastMailTo(anna.email).mail?.subject).toContain('Terugbetaling');
+  });
+
+  it('reopens a refund request declined by mistake (D99)', async () => {
+    const { anna, registrationId } = await paidEntry({ refundPolicy: 'ADMIN_APPROVAL' });
+    await withdrawMyRegistration(anna.actor, registrationId, {}, meta, NOW);
+    const admin = await player({}, Role.ADMIN);
+    const requestId = (await paymentsOverview(admin.actor)).refundRequests[0]!.id;
+    await rejectRefund(admin.actor, requestId, meta);
+    let overview = await paymentsOverview(admin.actor);
+    expect(overview.refundRequests).toHaveLength(0);
+    expect(overview.declinedRefunds.map((r) => r.id)).toEqual([requestId]);
+    await expect(reopenRefund(anna.actor, requestId, meta)).rejects.toMatchObject({
+      code: 'forbidden',
+    });
+    await reopenRefund(admin.actor, requestId, meta);
+    overview = await paymentsOverview(admin.actor);
+    expect(overview.refundRequests.map((r) => r.id)).toEqual([requestId]);
+    expect(overview.declinedRefunds).toHaveLength(0);
+    expect(await approveRefund(admin.actor, requestId, meta)).toBe('SUCCEEDED');
+    await expect(reopenRefund(admin.actor, requestId, meta)).rejects.toMatchObject({
+      code: 'statusTransition',
+    });
   });
 
   it('waits for an admin under ADMIN_APPROVAL, then pays back', async () => {

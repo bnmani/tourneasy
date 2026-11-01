@@ -47,6 +47,7 @@ export default async function TournamentPaymentsPage({ params, searchParams }: P
       />
       <StatusNotice status={firstParam(query.status)} />
       <PaymentsView
+        backPath={`/${locale}/admin/tournaments/${id}/payments`}
         locale={locale}
         overview={overview}
         href={(p) => `/admin/tournaments/${id}/payments?page=${p}`}

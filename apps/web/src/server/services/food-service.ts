@@ -573,6 +573,42 @@ export async function markCollected(
   });
 }
 
+/**
+ * Undoes a hand-out made by mistake (D99): the order is to hand out again. An order paid at
+ * pickup ("Paid and handed out") is unpaid again too; one paid online stays paid.
+ */
+export async function undoCollected(
+  actor: Actor,
+  tournamentId: string,
+  orderId: string,
+  meta: RequestMeta,
+) {
+  await assertCanManageTournament(actor, tournamentId);
+  const o = await prisma.foodOrder.findFirst({ where: { id: orderId, tournamentId } });
+  if (!o || !o.collectedAt || o.status !== 'PAID') throw new AppError('notFound');
+  // Paid at pickup: the payment was recorded together with the hand-out.
+  const paidAtPickup =
+    !o.stripePaymentIntentId &&
+    !!o.paidAt &&
+    Math.abs(o.paidAt.getTime() - o.collectedAt.getTime()) < 5_000;
+  await prisma.foodOrder.update({
+    where: { id: orderId },
+    data: {
+      collectedAt: null,
+      collectedById: null,
+      ...(paidAtPickup ? { status: 'PENDING' as FoodOrderStatus, paidAt: null } : {}),
+    },
+  });
+  await writeAudit(prisma, {
+    actorId: actor.userId,
+    action: 'food.uncollected',
+    entityType: 'FoodOrder',
+    entityId: orderId,
+    after: { unpaidAgain: paidAtPickup },
+    meta,
+  });
+}
+
 /** Cancels an order; one paid online is refunded in full. */
 export async function refundFoodOrder(
   actor: Actor,

@@ -12,6 +12,7 @@ import {
   markCollectedAction,
   refundFoodOrderAction,
   removeFoodItemAction,
+  undoCollectedAction,
 } from '@/server/actions/pricing-food-actions';
 import { requirePortal } from '@/server/auth/web';
 import { ALLERGENS, foodOrders, foodSettings } from '@/server/services/food-service';
@@ -235,6 +236,14 @@ export default async function FoodAdminPage({ params, searchParams }: Props) {
                           </p>
                         </div>
                         <div className="flex shrink-0 gap-2">
+                          {o.collectedAt && (
+                            // Handed out by mistake: back to the list to hand out (D99).
+                            <form action={undoCollectedAction.bind(null, locale, id, o.id)}>
+                              <Button type="submit" size="sm" variant="ghost">
+                                {t('undoHandOut')}
+                              </Button>
+                            </form>
+                          )}
                           {!o.collectedAt && (o.status === 'PAID' || !o.online) && (
                             <form action={markCollectedAction.bind(null, locale, id, o.id)}>
                               <Button type="submit" size="sm">

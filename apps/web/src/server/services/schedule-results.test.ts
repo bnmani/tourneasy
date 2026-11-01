@@ -10,6 +10,10 @@ import {
   playerHistory,
   recordResult,
   recordWalkover,
+  removeKnockoutStage,
+  removeLastSwissRound,
+  startMatch,
+  unstartMatch,
   setCheckIn,
   stageStatus,
 } from './results-service';
@@ -267,8 +271,54 @@ describe('results', () => {
     const numbers = desk.items.map((i) => i.number);
     expect(new Set(numbers).size).toBe(numbers.length);
     expect(desk.items.find((i) => i.a === null || i.a.startsWith('Winner #'))).toBeTruthy();
+
+    // Made after a wrong group result (D99): remove it while unplayed, then make it again.
+    expect(await stageStatus(event.id)).toMatchObject({ canRemoveKnockout: true });
+    await removeKnockoutStage(actor, event.id, meta);
+    expect(await prisma.draw.count({ where: { eventId: event.id, stage: 'KNOCKOUT' } })).toBe(0);
+    expect(await stageStatus(event.id)).toMatchObject({ canKnockout: true });
+    await createKnockoutFromGroups(actor, event.id, meta);
+
+    // A match put on court by mistake goes back to waiting while no score is in.
+    const first = await prisma.match.findFirstOrThrow({
+      where: {
+        draw: { eventId: event.id, stage: 'KNOCKOUT' },
+        entryAId: { not: null },
+        entryBId: { not: null },
+        status: 'SCHEDULED',
+      },
+    });
+    await startMatch(actor, first.id, meta);
+    await unstartMatch(actor, first.id, meta);
+    expect(await prisma.match.findUniqueOrThrow({ where: { id: first.id } })).toMatchObject({
+      status: 'SCHEDULED',
+      startedAt: null,
+    });
+    await startMatch(actor, first.id, meta);
+    expect(await stageStatus(event.id)).toMatchObject({ canRemoveKnockout: false });
+    await expect(removeKnockoutStage(actor, event.id, meta)).rejects.toMatchObject({
+      code: 'drawStarted',
+    });
+    await unstartMatch(actor, first.id, meta);
     await playAll(actor, event.id);
     expect((await eventPodium(event.id))?.first).toBeTruthy();
+  });
+
+  it('removes an unplayed Swiss round and pairs it again (D99)', async () => {
+    const actor = await admin();
+    const { event } = await setup('SWISS', 6);
+    await generateDraw(actor, event.id, meta, seededRng(4));
+    await publishDraws(actor, event.id, true, meta);
+    await expect(removeLastSwissRound(actor, event.id, meta)).rejects.toMatchObject({
+      code: 'statusTransition',
+    });
+    await playAll(actor, event.id);
+    await nextSwissRound(actor, event.id, meta);
+    expect(await stageStatus(event.id)).toMatchObject({ canRemoveSwissRound: true });
+    await removeLastSwissRound(actor, event.id, meta);
+    expect(await prisma.match.count({ where: { draw: { eventId: event.id }, round: 2 } })).toBe(0);
+    await nextSwissRound(actor, event.id, meta);
+    expect(await prisma.match.count({ where: { draw: { eventId: event.id }, round: 2 } })).toBe(3);
   });
 
   it('pairs Swiss rounds from the standings without rematches', async () => {
@@ -282,6 +332,10 @@ describe('results', () => {
     }
     await expect(nextSwissRound(actor, event.id, meta)).rejects.toMatchObject({
       code: 'stageExists',
+    });
+    // Round 3 is played: it can't be removed (D99).
+    await expect(removeLastSwissRound(actor, event.id, meta)).rejects.toMatchObject({
+      code: 'drawStarted',
     });
     const matches = await prisma.match.findMany({ where: { draw: { eventId: event.id } } });
     const pairs = matches.map((m) => [m.entryAId, m.entryBId].sort().join('|'));

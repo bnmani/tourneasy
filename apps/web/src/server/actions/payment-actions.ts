@@ -12,7 +12,7 @@ import {
   savePaymentSettings,
   unlockSettings,
 } from '../services/payment-settings-service';
-import { approveRefund, rejectRefund } from '../services/refund-service';
+import { approveRefund, rejectRefund, reopenRefund } from '../services/refund-service';
 import type { FormState } from '@/components/forms/form-state';
 import { toFormState } from './form-utils';
 
@@ -65,6 +65,15 @@ export async function markPaidAction(
 ) {
   await act(`/${locale}/admin/tournaments/${tournamentId}/entries`, 'markedPaid', async () =>
     markShareAsPaid(await actorOrThrow(), { participantId }, await currentRequestMeta()),
+  );
+}
+
+/** Admin: a refund request declined by mistake waits for a decision again (D99). */
+export async function reopenRefundAction(locale: AppLocale, refundId: string, back: string) {
+  await act(
+    back.startsWith(`/${locale}/admin`) ? back : `/${locale}/admin/payments`,
+    'refundReopened',
+    async () => reopenRefund(await actorOrThrow(), refundId, await currentRequestMeta()),
   );
 }
 

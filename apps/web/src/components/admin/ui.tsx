@@ -45,6 +45,7 @@ const SUCCESS = new Set([
   'markedPaid',
   'refundApproved',
   'refundRejected',
+  'refundReopened',
   'locked',
   'drawGenerated',
   'drawPublished',

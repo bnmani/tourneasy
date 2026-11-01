@@ -198,6 +198,17 @@ describe('tournaments', () => {
     expect(await prisma.auditLog.count({ where: { action: 'tournament.status' } })).toBe(1);
   });
 
+  it('can step back from In progress and Finished (D99)', async () => {
+    const admin = await newAdmin();
+    const t = await createTournament(admin, tournamentInput, meta);
+    await prisma.tournament.update({ where: { id: t.id }, data: { status: 'FINISHED' } });
+    await changeTournamentStatus(admin, t.id, { status: 'IN_PROGRESS' }, meta);
+    await changeTournamentStatus(admin, t.id, { status: 'CLOSED' }, meta);
+    expect((await prisma.tournament.findUniqueOrThrow({ where: { id: t.id } })).status).toBe(
+      'CLOSED',
+    );
+  });
+
   it('archives only after the end date (D86)', async () => {
     const admin = await newAdmin();
     const t = await createTournament(admin, tournamentInput, meta); // still to come

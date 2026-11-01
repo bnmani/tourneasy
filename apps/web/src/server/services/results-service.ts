@@ -237,6 +237,28 @@ export async function startMatch(actor: Actor, matchId: string, meta: RequestMet
   });
 }
 
+/** "On court" by mistake (D99): back to waiting, as long as no score has been entered. */
+export async function unstartMatch(actor: Actor, matchId: string, meta: RequestMeta) {
+  const m = await authorise(actor, matchId);
+  if (m.status !== 'IN_PROGRESS') throw new AppError('statusTransition');
+  if (await prisma.matchSet.count({ where: { matchId: m.id } }))
+    throw new AppError('statusTransition');
+  await prisma.$transaction(async (tx) => {
+    const updated = await tx.match.updateMany({
+      where: { id: m.id, status: 'IN_PROGRESS' },
+      data: { status: 'SCHEDULED', startedAt: null },
+    });
+    if (updated.count !== 1) throw new AppError('statusTransition');
+    await writeAudit(tx, {
+      actorId: actor.userId,
+      action: 'match.unstart',
+      entityType: 'Match',
+      entityId: m.id,
+      meta,
+    });
+  });
+}
+
 /** Desk check-in of one player (each partner checks in separately). */
 export async function setCheckIn(
   actor: Actor,
@@ -522,6 +544,61 @@ export async function nextSwissRound(actor: Actor, eventId: string, meta: Reques
   });
 }
 
+/** Match states that mean something was played or is being played (a stage can't go then). */
+const PLAYED = ['COMPLETED', 'WALKOVER', 'RETIRED', 'IN_PROGRESS'] as const;
+
+/**
+ * Removes the knockout stage (D99), e.g. after a group result was corrected: only while none
+ * of its matches is played or on court. Its court slots become free; make it again after.
+ */
+export async function removeKnockoutStage(actor: Actor, eventId: string, meta: RequestMeta) {
+  await eventForStage(actor, eventId);
+  const draws = await prisma.draw.findMany({
+    where: { eventId, stage: 'KNOCKOUT' },
+    select: { id: true, matches: { select: { status: true } } },
+  });
+  if (draws.length === 0) throw new AppError('notFound');
+  if (draws.some((d) => d.matches.some((m) => PLAYED.includes(m.status as never))))
+    throw new AppError('drawStarted');
+  await prisma.$transaction(async (tx) => {
+    await tx.draw.deleteMany({ where: { id: { in: draws.map((d) => d.id) } } });
+    await writeAudit(tx, {
+      actorId: actor.userId,
+      action: 'draw.knockoutRemoved',
+      entityType: 'TournamentEvent',
+      entityId: eventId,
+      meta,
+    });
+  });
+}
+
+/** Removes the latest Swiss round (D99) while none of its matches is played or on court. */
+export async function removeLastSwissRound(actor: Actor, eventId: string, meta: RequestMeta) {
+  const event = await eventForStage(actor, eventId);
+  if (event.drawType !== 'SWISS') throw new AppError('statusTransition');
+  const draw = await prisma.draw.findFirst({
+    where: { eventId, status: { not: 'DRAFT' } },
+    select: { id: true, matches: { select: { id: true, round: true, status: true } } },
+  });
+  if (!draw) throw new AppError('notFound');
+  const round = Math.max(0, ...draw.matches.map((m) => m.round));
+  // Round 1 is the draw itself: that goes through the draw page.
+  if (round <= 1) throw new AppError('statusTransition');
+  const last = draw.matches.filter((m) => m.round === round);
+  if (last.some((m) => PLAYED.includes(m.status as never))) throw new AppError('drawStarted');
+  await prisma.$transaction(async (tx) => {
+    await tx.match.deleteMany({ where: { id: { in: last.map((m) => m.id) } } });
+    await writeAudit(tx, {
+      actorId: actor.userId,
+      action: 'draw.swissRoundRemoved',
+      entityType: 'TournamentEvent',
+      entityId: eventId,
+      after: { round },
+      meta,
+    });
+  });
+}
+
 /** What the organiser can do next per event (for the desk page). */
 export async function stageStatus(eventId: string) {
   const event = await prisma.tournamentEvent.findUniqueOrThrow({
@@ -552,7 +629,18 @@ export async function stageStatus(eventId: string) {
     groupsDone &&
     Math.max(0, ...swiss.matches.map((m) => m.round)) <
       swissRoundCount(swiss.entries.filter((e) => e.registrationId).length);
-  return { canKnockout, canNextSwissRound };
+  const knockout = draws.filter((d) => d.stage === 'KNOCKOUT');
+  const canRemoveKnockout =
+    knockout.length > 0 &&
+    knockout.every((d) => d.matches.every((m) => !PLAYED.includes(m.status as never)));
+  const lastRound = swiss ? Math.max(0, ...swiss.matches.map((m) => m.round)) : 0;
+  const canRemoveSwissRound =
+    !!swiss &&
+    lastRound > 1 &&
+    swiss.matches
+      .filter((m) => m.round === lastRound)
+      .every((m) => !PLAYED.includes(m.status as never));
+  return { canKnockout, canNextSwissRound, canRemoveKnockout, canRemoveSwissRound };
 }
 
 // ── Results for display ────────────────────────────────────────────────────────────

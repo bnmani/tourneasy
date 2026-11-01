@@ -12,6 +12,8 @@ import {
   knockoutStageAction,
   quickCheckInAction,
   quickStartMatchAction,
+  quickUnstartMatchAction,
+  removeStageAction,
   quickWalkoverAction,
   resultAction,
   retireAction,
@@ -149,6 +151,37 @@ export default async function DeskPage({ params, searchParams }: Props) {
             ))}
         </section>
       )}
+      {stages.some((s) => s.canRemoveKnockout || s.canRemoveSwissRound) && (
+        // A stage made before a result was corrected can go again while unplayed (D99).
+        <section className="space-y-2 rounded-lg border p-4 text-sm">
+          {stages
+            .filter((s) => s.canRemoveKnockout || s.canRemoveSwissRound)
+            .map((s) => (
+              <div key={s.id} className="flex flex-wrap items-center justify-between gap-2">
+                <span className="text-muted-foreground">
+                  {td('stageRemovable', { event: s.label })}
+                </span>
+                <QuickButton
+                  size="sm"
+                  variant="outline"
+                  action={removeStageAction.bind(
+                    null,
+                    s.id,
+                    s.canRemoveKnockout ? 'knockout' : 'swiss',
+                  )}
+                  confirm={td(
+                    s.canRemoveKnockout ? 'removeKnockoutConfirm' : 'removeRoundConfirm',
+                    {
+                      event: s.label,
+                    },
+                  )}
+                >
+                  {td(s.canRemoveKnockout ? 'removeKnockout' : 'removeRound')}
+                </QuickButton>
+              </div>
+            ))}
+        </section>
+      )}
 
       <AutoRefresh seconds={10} />
       <nav aria-label={td('views')} className="flex gap-2 overflow-x-auto pb-1">
@@ -237,6 +270,16 @@ export default async function DeskPage({ params, searchParams }: Props) {
                         action={quickStartMatchAction.bind(null, item.id)}
                       >
                         {td('onCourt')}
+                      </QuickButton>
+                    )}
+                    {item.status === 'IN_PROGRESS' && item.sets.length === 0 && (
+                      // On court by mistake: back to waiting while no score is in (D99).
+                      <QuickButton
+                        size="sm"
+                        variant="ghost"
+                        action={quickUnstartMatchAction.bind(null, item.id)}
+                      >
+                        {td('backToWaiting')}
                       </QuickButton>
                     )}
 

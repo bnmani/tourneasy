@@ -705,6 +705,29 @@ export async function paymentsOverview(actor: Actor, filters: PaymentFilters = {
       outstandingShares: outstanding.length,
     },
     refundRequests,
+    // Declined requests, newest first: a decline made by mistake can be reopened (D99).
+    declinedRefunds: await prisma.refund.findMany({
+      where: { status: 'REJECTED', payment: { order: tournamentWhere } },
+      orderBy: { processedAt: 'desc' },
+      take: 20,
+      select: {
+        id: true,
+        amountCents: true,
+        processedAt: true,
+        payment: {
+          select: {
+            order: {
+              select: {
+                orderNumber: true,
+                user: { select: { name: true } },
+                tournament: { select: { name: true } },
+              },
+            },
+          },
+        },
+        orderItem: { select: { description: true } },
+      },
+    }),
   };
 }
 

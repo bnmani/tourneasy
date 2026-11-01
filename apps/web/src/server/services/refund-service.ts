@@ -247,6 +247,41 @@ export async function rejectRefund(actor: Actor, refundId: string, meta: Request
   await notifyRefund(refundId, 'rejected');
 }
 
+/**
+ * Reopens a refund request declined by mistake (D99): it waits for a decision again. Not when
+ * another refund for the same entry is already open or on its way. No email (the decision
+ * that follows sends one).
+ */
+export async function reopenRefund(actor: Actor, refundId: string, meta: RequestMeta) {
+  assertAdmin(actor);
+  const refund = await prisma.refund.findUnique({
+    where: { id: refundId },
+    select: { status: true, orderItemId: true, paymentId: true },
+  });
+  if (!refund) throw new AppError('notFound');
+  if (refund.status !== 'REJECTED') throw new AppError('statusTransition');
+  const open = await prisma.refund.count({
+    where: {
+      id: { not: refundId },
+      paymentId: refund.paymentId,
+      ...(refund.orderItemId ? { orderItemId: refund.orderItemId } : {}),
+      status: { in: ['REQUESTED', 'APPROVED', 'PENDING'] },
+    },
+  });
+  if (open > 0) throw new AppError('statusTransition');
+  await prisma.refund.update({
+    where: { id: refundId },
+    data: { status: 'REQUESTED', processedById: null, processedAt: null },
+  });
+  await writeAudit(prisma, {
+    actorId: actor.userId,
+    action: 'refund.reopen',
+    entityType: 'Refund',
+    entityId: refundId,
+    meta,
+  });
+}
+
 async function notifyRefund(refundId: string, kind: 'requested' | 'processed' | 'rejected') {
   const refund = await prisma.refund.findUniqueOrThrow({
     where: { id: refundId },

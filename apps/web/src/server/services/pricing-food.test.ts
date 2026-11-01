@@ -8,6 +8,7 @@ import {
   foodMenu,
   foodOrders,
   markCollected,
+  undoCollected,
   placeFoodOrder,
   refundFoodOrder,
   saveFoodItem,
@@ -290,6 +291,15 @@ describe('food ordering (D87)', () => {
     const done = await prisma.foodOrder.findUniqueOrThrow({ where: { id: placed.orderId } });
     expect(done.status).toBe('PAID'); // paid at pickup
     expect(done.totalCents).toBe(800);
+    // Handed out by mistake (D99): to hand out again, and unpaid again (paid at pickup).
+    await undoCollected(org.actor, t.id, placed.orderId, meta);
+    expect(
+      await prisma.foodOrder.findUniqueOrThrow({ where: { id: placed.orderId } }),
+    ).toMatchObject({ collectedAt: null, status: 'PENDING', paidAt: null });
+    await expect(undoCollected(org.actor, t.id, placed.orderId, meta)).rejects.toMatchObject({
+      code: 'notFound',
+    });
+    await markCollected(org.actor, t.id, placed.orderId, meta);
 
     // After the deadline nobody orders any more.
     await prisma.tournament.update({

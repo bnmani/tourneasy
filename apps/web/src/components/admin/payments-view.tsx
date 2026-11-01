@@ -5,7 +5,7 @@ import { Pagination } from '@/components/admin/ui';
 import { Button } from '@/components/ui/button';
 import { ScrollRegion } from '@/components/ui/scroll-region';
 import { cn } from '@/lib/utils';
-import { refundDecisionAction } from '@/server/actions/payment-actions';
+import { refundDecisionAction, reopenRefundAction } from '@/server/actions/payment-actions';
 import type { paymentsOverview } from '@/server/services/payment-service';
 
 /**
@@ -17,11 +17,14 @@ export async function PaymentsView({
   overview,
   href,
   canDecide,
+  backPath,
 }: {
   locale: AppLocale;
   overview: Awaited<ReturnType<typeof paymentsOverview>>;
   href: (page: number) => string;
   canDecide: boolean;
+  /** Where to come back after a reopen (the page this view is on). */
+  backPath: string;
 }) {
   const tp = await getTranslations('Admin.payments');
   const to = await getTranslations('OrderStatuses');
@@ -82,6 +85,47 @@ export async function PaymentsView({
                   </div>
                 ) : (
                   <p className="text-sm text-muted-foreground">{tp('adminDecides')}</p>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {overview.declinedRefunds.length > 0 && (
+        // A decline made by mistake can be reopened by an admin (D99).
+        <section aria-labelledby="declined-title" className="space-y-3">
+          <h2 id="declined-title" className="text-lg font-semibold">
+            {tp('declined')}
+          </h2>
+          <ul className="divide-y rounded-lg border bg-card opacity-90">
+            {overview.declinedRefunds.map((r) => (
+              <li
+                key={r.id}
+                className="flex flex-col gap-2 p-3 text-sm sm:flex-row sm:items-center sm:justify-between"
+              >
+                <div>
+                  <p className="font-medium">
+                    {euro(r.amountCents)} · {r.payment.order.user.name}
+                  </p>
+                  <p className="text-muted-foreground">
+                    {r.payment.order.tournament.name} · {r.orderItem?.description} ·{' '}
+                    {r.payment.order.orderNumber}
+                    {r.processedAt && (
+                      <>
+                        {' '}
+                        ·{' '}
+                        {format.dateTime(r.processedAt, { dateStyle: 'short', timeStyle: 'short' })}
+                      </>
+                    )}
+                  </p>
+                </div>
+                {canDecide && (
+                  <form action={reopenRefundAction.bind(null, locale, r.id, backPath)}>
+                    <Button type="submit" size="sm" variant="outline">
+                      {tp('reopen')}
+                    </Button>
+                  </form>
                 )}
               </li>
             ))}

@@ -12,6 +12,7 @@ import { withStatus } from '../lib/urls';
 import {
   type FoodCheckout,
   markCollected,
+  undoCollected,
   placeFoodOrder,
   refundFoodOrder,
   removeFoodItem,
@@ -239,6 +240,17 @@ export async function markCollectedAction(
 ) {
   await act(`${foodPath(locale, tournamentId)}#orders`, async () =>
     markCollected(await actorOrThrow(), tournamentId, orderId, await currentRequestMeta()),
+  );
+}
+
+/** Undoes a hand-out made by mistake (D99). */
+export async function undoCollectedAction(
+  locale: AppLocale,
+  tournamentId: string,
+  orderId: string,
+) {
+  await act(`${foodPath(locale, tournamentId)}#orders`, async () =>
+    undoCollected(await actorOrThrow(), tournamentId, orderId, await currentRequestMeta()),
   );
 }
 
