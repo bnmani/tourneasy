@@ -219,7 +219,9 @@
     "passkeyInvalid": "De passkey kon niet worden gecontroleerd. Probeer het opnieuw.",
     "passkeyLimit": "Je hebt het maximum van 10 passkeys. Verwijder er eerst een.",
     "purchasePending": "Hier staat al een open aankoop voor. Wacht tot die betaald is, of vraag de eigenaar van de site om die te annuleren.",
-    "mfaAppRequired": "Stel de authenticator-app in op de website om in de mobiele app in te loggen. Passkeys werken alleen op de website."
+    "mfaAppRequired": "Stel de authenticator-app in op de website om in de mobiele app in te loggen. Passkeys werken alleen op de website.",
+    "enteredAgain": "Deze speler staat al opnieuw ingeschreven voor dit onderdeel. Annuleer die inschrijving eerst als je deze terug wilt.",
+    "refundInProgress": "Er loopt nog een terugbetaling voor deze inschrijving. Probeer het opnieuw zodra die klaar is."
   },
   "Auth": {
     "login": {
@@ -914,7 +916,23 @@
         "waitlisted": "Op de wachtlijst",
         "skipped": "Overgeslagen"
       },
-      "importNewPlayers": "Nieuwe speler(s): {numbers}"
+      "importNewPlayers": "Nieuwe speler(s): {numbers}",
+      "cancelledTitle": "Geannuleerde inschrijvingen ({count})",
+      "cancelledIntro": "Alle geannuleerde inschrijvingen, nieuwste eerst. Terugdraaien zet een inschrijving terug: bevestigd als er plek is, anders als eerste op de wachtlijst.",
+      "noCancelled": "Geen geannuleerde inschrijvingen.",
+      "colCancelled": "Geannuleerd",
+      "colReason": "Reden",
+      "colMoney": "Geld",
+      "byOrganiser": "Door de organisatie",
+      "byOrganiserName": "Door {name}",
+      "byPlayer": "Afgemeld door de speler",
+      "byExpired": "Betaling niet op tijd afgerond",
+      "refundedAmount": "{amount} terugbetaald",
+      "deskPayBack": "betaald aan de balie: zelf terugbetalen",
+      "refundOnWay": "Terugbetaling onderweg: terugdraaien kan zodra die klaar is",
+      "undoCancel": "Terugdraaien",
+      "undoCancelConfirm": "Deze inschrijving terugzetten? Bevestigd als er plek is, anders als eerste op de wachtlijst. Terugbetaald geld wordt niet teruggevorderd: de inschrijving is weer onbetaald. Er gaat geen e-mail uit.",
+      "undoCancelDraw": "Dit onderdeel heeft al een schema zonder deze inschrijving: maak of pas het schema daarna aan."
     },
     "navPayments": "Betalingen",
     "payments": {

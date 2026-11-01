@@ -23,6 +23,7 @@ import {
 } from '../services/schedule-service';
 import { payAtDesk, setPlayerCheckIn } from '../services/checkin-service';
 import { undoDeskPayment, undoDeskPaymentsForPlayer } from '../services/payment-service';
+import { restoreRegistration } from '../services/registration-service';
 
 async function actorOrThrow() {
   const actor = await getActor();
@@ -269,6 +270,13 @@ export async function undoPayAtDeskAction(tournamentId: string, playerId: string
       playerId,
       await currentRequestMeta(),
     ),
+  );
+}
+
+/** Puts a cancelled entry back (D98): confirmed when there is room, else first in line. */
+export async function restoreEntryAction(registrationId: string) {
+  return quick(async () =>
+    restoreRegistration(await actorOrThrow(), registrationId, await currentRequestMeta()),
   );
 }
 

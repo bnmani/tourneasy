@@ -16,8 +16,10 @@ import {
   cancelEntryAsOrganiser,
   enterTournament,
   expireStaleHolds,
+  listCancelledEntries,
   listMyRegistrations,
   respondToInvite,
+  restoreRegistration,
   withdrawMyRegistration,
 } from './registration-service';
 import { actorFromWebToken, createWebSession } from './session-service';
@@ -417,5 +419,98 @@ describe('refunds and desk payments', () => {
       (await prisma.registrationParticipant.findUniqueOrThrow({ where: { id: share.id } }))
         .paymentStatus,
     ).toBe('UNPAID');
+  });
+});
+
+describe('undoing a cancellation (D98)', () => {
+  it('puts the entry back, confirmed when there is room, and logs it', async () => {
+    setGatewayForTests(null);
+    const t = await tournament();
+    const de = await event(t.id, 'DE');
+    const anna = await player();
+    const entered = await enter(anna.actor, [{ eventId: de.id }]);
+    const registrationId = entered.registrations[0]!.id;
+    const admin = await player({}, Role.ADMIN);
+    await cancelEntryAsOrganiser(admin.actor, registrationId, { reason: 'Wrong event' }, meta, NOW);
+
+    const listed = await listCancelledEntries(admin.actor, t.id);
+    expect(listed).toMatchObject([{ id: registrationId, by: 'organiser', reason: 'Wrong event' }]);
+    await expect(restoreRegistration(anna.actor, registrationId, meta)).rejects.toMatchObject({
+      code: 'notFound',
+    });
+
+    expect(await restoreRegistration(admin.actor, registrationId, meta)).toEqual({
+      status: 'CONFIRMED',
+    });
+    const r = await prisma.registration.findUniqueOrThrow({
+      where: { id: registrationId },
+      include: { participants: true },
+    });
+    expect(r).toMatchObject({ status: 'CONFIRMED', cancelledAt: null, cancelReason: null });
+    expect(r.participants.every((p) => p.active)).toBe(true);
+    expect(await listCancelledEntries(admin.actor, t.id)).toEqual([]);
+    expect(await prisma.auditLog.count({ where: { action: 'registration.restore' } })).toBe(1);
+    await expect(restoreRegistration(admin.actor, registrationId, meta)).rejects.toMatchObject({
+      code: 'notFound',
+    });
+  });
+
+  it('goes first on the waiting list when its place was taken, and refuses duplicates', async () => {
+    setGatewayForTests(null);
+    const t = await tournament();
+    const de = await event(t.id, 'DE', { maxEntries: 1 });
+    const anna = await player();
+    const bea = await player();
+    const cara = await player();
+    const a = (await enter(anna.actor, [{ eventId: de.id }])).registrations[0]!.id;
+    const b = (await enter(bea.actor, [{ eventId: de.id }])).registrations[0]!.id;
+    await enter(cara.actor, [{ eventId: de.id }]);
+    const admin = await player({}, Role.ADMIN);
+    await cancelEntryAsOrganiser(admin.actor, a, {}, meta, NOW);
+    // Bea moved up; Cara waits.
+    expect((await prisma.registration.findUniqueOrThrow({ where: { id: b } })).status).not.toBe(
+      'WAITLISTED',
+    );
+    expect(await restoreRegistration(admin.actor, a, meta)).toEqual({ status: 'WAITLISTED' });
+    const waiting = await prisma.registration.findMany({
+      where: { eventId: de.id, status: 'WAITLISTED' },
+      orderBy: { waitlistPosition: 'asc' },
+    });
+    expect(waiting.map((w) => [w.id === a, w.waitlistPosition])).toEqual([
+      [true, 1],
+      [false, 2],
+    ]);
+
+    // Cancelled again, and Anna enters once more: the old entry can't come back next to it.
+    await cancelEntryAsOrganiser(admin.actor, a, {}, meta, NOW);
+    await enter(anna.actor, [{ eventId: de.id }]);
+    await expect(restoreRegistration(admin.actor, a, meta)).rejects.toMatchObject({
+      code: 'enteredAgain',
+    });
+  });
+
+  it('leaves a refunded entry unpaid again', async () => {
+    const t = await tournament({ refundPolicy: 'NO_REFUNDS' });
+    const de = await event(t.id, 'DE');
+    const anna = await player();
+    const entered = await enter(anna.actor, [{ eventId: de.id }]);
+    const checkout = await createCheckout(
+      anna.actor,
+      { participantIds: [entered.registrations[0]!.participantId!] },
+      NOW,
+    );
+    gateway.pay([...gateway.intents.keys()][0]!);
+    await reconcileOrder(checkout.orderId!, anna.actor);
+    const registrationId = entered.registrations[0]!.id;
+    const admin = await player({}, Role.ADMIN);
+    await cancelEntryAsOrganiser(admin.actor, registrationId, {}, meta, NOW);
+    const listed = await listCancelledEntries(admin.actor, t.id);
+    expect(listed[0]).toMatchObject({ refundedCents: 1500 });
+
+    await restoreRegistration(admin.actor, registrationId, meta);
+    const share = await prisma.registrationParticipant.findFirstOrThrow({
+      where: { registrationId },
+    });
+    expect(share).toMatchObject({ active: true, paymentStatus: 'UNPAID' });
   });
 });

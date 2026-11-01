@@ -329,7 +329,7 @@ export const nl: Record<HelpGuideKey, HelpGuide> = {
               '**Inschrijving toevoegen** voor een speler die zich telefonisch of bij de club aanmeldt',
               'Inschrijvingen **Importeren** uit Excel, of **Exporteren (Excel)** voor je eigen lijsten',
               'Een inschrijving markeren als **Betaald aan de balie** bij contante betaling',
-              'Een inschrijving **Annuleren** om de plek vrij te maken',
+              'Een inschrijving **Annuleren** om de plek vrij te maken; die komt onderaan bij **Geannuleerde inschrijvingen**, waar **Terugdraaien** hem terugzet',
             ],
           },
           {

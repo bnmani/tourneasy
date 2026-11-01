@@ -219,7 +219,9 @@
     "passkeyInvalid": "The passkey couldn't be checked. Try again.",
     "passkeyLimit": "You have the maximum of 10 passkeys. Remove one first.",
     "purchasePending": "There is already an open purchase for this. Wait until it is paid, or ask the site owner to cancel it.",
-    "mfaAppRequired": "Set up the authenticator app on the website to log in to the mobile app. Passkeys only work on the website."
+    "mfaAppRequired": "Set up the authenticator app on the website to log in to the mobile app. Passkeys only work on the website.",
+    "enteredAgain": "This player is already entered in this event again. Cancel that entry first if you want this one back.",
+    "refundInProgress": "A refund for this entry is still on its way. Try again once it has completed."
   },
   "Auth": {
     "login": {
@@ -914,7 +916,23 @@
         "waitlisted": "On the waiting list",
         "skipped": "Skipped"
       },
-      "importNewPlayers": "New player(s): {numbers}"
+      "importNewPlayers": "New player(s): {numbers}",
+      "cancelledTitle": "Cancelled entries ({count})",
+      "cancelledIntro": "Every cancelled entry, newest first. Undo puts an entry back: confirmed when there is room, otherwise first on the waiting list.",
+      "noCancelled": "No cancelled entries.",
+      "colCancelled": "Cancelled",
+      "colReason": "Reason",
+      "colMoney": "Money",
+      "byOrganiser": "By the organisers",
+      "byOrganiserName": "By {name}",
+      "byPlayer": "Withdrawn by the player",
+      "byExpired": "Payment not completed in time",
+      "refundedAmount": "{amount} refunded",
+      "deskPayBack": "paid at the desk: pay back yourself",
+      "refundOnWay": "Refund on its way: undo possible once it has completed",
+      "undoCancel": "Undo",
+      "undoCancelConfirm": "Put this entry back? It is confirmed when there is room, otherwise first on the waiting list. Refunded money is not taken back: the entry is unpaid again. No email is sent.",
+      "undoCancelDraw": "This event already has a draw without this entry: redo or adjust the draw afterwards."
     },
     "navPayments": "Payments",
     "payments": {

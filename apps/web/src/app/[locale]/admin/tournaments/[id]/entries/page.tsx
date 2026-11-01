@@ -11,12 +11,16 @@ import { eventLabel, personName } from '@/lib/labels';
 import { firstParam, pageLocale, type SearchParams } from '@/lib/page';
 import { cn } from '@/lib/utils';
 import { QuickButton } from '@/components/desk/quick-buttons';
-import { undoSharePaymentAction } from '@/server/actions/match-actions';
+import { restoreEntryAction, undoSharePaymentAction } from '@/server/actions/match-actions';
 import { markPaidAction } from '@/server/actions/payment-actions';
+import { formatEuro } from '@tourneasy/shared';
 import { cancelEntryAction } from '@/server/actions/registration-actions';
 import { requirePortal } from '@/server/auth/web';
 import { isAppError } from '@/server/lib/errors';
-import { listTournamentEntries } from '@/server/services/registration-service';
+import {
+  listCancelledEntries,
+  listTournamentEntries,
+} from '@/server/services/registration-service';
 import { getTournament } from '@/server/services/tournament-service';
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -41,7 +45,13 @@ export default async function EntriesPage({ params, searchParams }: Props) {
   const eventId = firstParam(query.eventId) || undefined;
   const cancelled = firstParam(query.state) === 'cancelled';
   const status: RegistrationStatus | undefined = cancelled ? 'CANCELLED' : undefined;
-  const entries = await listTournamentEntries(actor, id, { eventId, status });
+  const [entries, allCancelled] = await Promise.all([
+    listTournamentEntries(actor, id, { eventId, status }),
+    listCancelledEntries(actor, id),
+  ]);
+  const cancelledEntries = eventId
+    ? allCancelled.filter((c) => c.event.id === eventId)
+    : allCancelled;
 
   const t = await getTranslations('Admin');
   const ts = await getTranslations('RegistrationStatuses');
@@ -280,6 +290,104 @@ export default async function EntriesPage({ params, searchParams }: Props) {
           </table>
         </ScrollRegion>
       )}
+
+      {/* Every cancellation with its undo, like the desk's check-in and food lists (D98). */}
+      <section id="cancelled" aria-labelledby="cancelled-title" className="space-y-3">
+        <div>
+          <h2 id="cancelled-title" className="text-lg font-semibold">
+            {t('entries.cancelledTitle', { count: cancelledEntries.length })}
+          </h2>
+          <p className="text-sm text-muted-foreground">{t('entries.cancelledIntro')}</p>
+        </div>
+        {cancelledEntries.length === 0 ? (
+          <p className="text-sm text-muted-foreground">{t('entries.noCancelled')}</p>
+        ) : (
+          <ScrollRegion
+            label={t('entries.cancelledTitle', { count: cancelledEntries.length })}
+            className="rounded-lg border bg-card opacity-90"
+          >
+            <table className="w-full min-w-[56rem] text-left text-sm">
+              <thead className="border-b bg-muted/50 text-xs text-muted-foreground uppercase">
+                <tr>
+                  <th scope="col" className="px-3 py-2">
+                    {t('entries.event')}
+                  </th>
+                  <th scope="col" className="px-3 py-2">
+                    {t('entries.players')}
+                  </th>
+                  <th scope="col" className="px-3 py-2">
+                    {t('entries.colCancelled')}
+                  </th>
+                  <th scope="col" className="px-3 py-2">
+                    {t('entries.colReason')}
+                  </th>
+                  <th scope="col" className="px-3 py-2">
+                    {t('entries.colMoney')}
+                  </th>
+                  <th scope="col" className="px-3 py-2">
+                    <span className="sr-only">{t('entries.undoCancel')}</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y">
+                {cancelledEntries.map((c) => (
+                  <tr key={c.id} className="align-top">
+                    <td className="px-3 py-3 font-medium">{eventLabel(c.event, locale)}</td>
+                    <td className="px-3 py-3">
+                      {c.players.map((p) => (
+                        <span key={p.memberNumber} className="block">
+                          {personName(p)}{' '}
+                          <span className="text-xs text-muted-foreground">{p.memberNumber}</span>
+                        </span>
+                      ))}
+                    </td>
+                    <td className="px-3 py-3 text-xs">
+                      {c.cancelledAt &&
+                        format.dateTime(c.cancelledAt, { dateStyle: 'short', timeStyle: 'short' })}
+                      <span className="block text-muted-foreground">
+                        {c.by === 'player'
+                          ? t('entries.byPlayer')
+                          : c.by === 'expired'
+                            ? t('entries.byExpired')
+                            : c.byName
+                              ? t('entries.byOrganiserName', { name: c.byName })
+                              : t('entries.byOrganiser')}
+                      </span>
+                    </td>
+                    <td className="px-3 py-3 text-xs">
+                      {c.reason && c.reason !== 'holdExpired' ? c.reason : '—'}
+                    </td>
+                    <td className="px-3 py-3 text-xs">
+                      {c.refundPending
+                        ? t('entries.refundOnWay')
+                        : c.refundedCents > 0
+                          ? t('entries.refundedAmount', {
+                              amount: formatEuro(c.refundedCents, locale),
+                            }) + (c.deskRefund ? ` · ${t('entries.deskPayBack')}` : '')
+                          : '—'}
+                    </td>
+                    <td className="px-3 py-3 text-right">
+                      {!c.refundPending && (
+                        <QuickButton
+                          size="sm"
+                          variant="outline"
+                          action={restoreEntryAction.bind(null, c.id)}
+                          confirm={
+                            t('entries.undoCancelConfirm') +
+                            (c.outsideDraw ? ` ${t('entries.undoCancelDraw')}` : '')
+                          }
+                        >
+                          {t('entries.undoCancel')}
+                        </QuickButton>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </ScrollRegion>
+        )}
+      </section>
     </>
   );
 }

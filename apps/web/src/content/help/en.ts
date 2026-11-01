@@ -320,7 +320,7 @@ export const en: Record<HelpGuideKey, HelpGuide> = {
               '**Add entry** for a player who signs up by phone or at the club',
               '**Import** entries from Excel, or **Export (Excel)** for your own lists',
               'Mark an entry **Paid at the desk** when someone pays in cash',
-              '**Cancel** an entry to free its place',
+              '**Cancel** an entry to free its place; it moves to **Cancelled entries** at the bottom, where **Undo** puts it back',
             ],
           },
           {

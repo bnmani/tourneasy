@@ -1341,6 +1341,182 @@ export async function cancelEntryAsOrganiser(
   await refundsForCancelledRegistration(r.id, 'full', actor.userId, meta);
 }
 
+const CANCEL_ACTIONS = [
+  'registration.cancelByOrganiser',
+  'registration.withdraw',
+  'registration.holdExpired',
+];
+
+/**
+ * The tournament's cancelled entries, newest first (D98): who cancelled (organiser, player or
+ * an expired payment hold), when, why, and what happened to the money.
+ */
+export async function listCancelledEntries(actor: Actor, tournamentId: string) {
+  await assertCanManageTournament(actor, tournamentId);
+  const rows = await prisma.registration.findMany({
+    where: { status: 'CANCELLED', event: { tournamentId, deletedAt: null } },
+    orderBy: { cancelledAt: 'desc' },
+    select: {
+      id: true,
+      cancelledAt: true,
+      cancelReason: true,
+      event: {
+        select: { id: true, discipline: true, name: true, ageCategory: true, levelClass: true },
+      },
+      participants: {
+        orderBy: { role: 'asc' },
+        select: {
+          paymentStatus: true,
+          player: {
+            select: { memberNumber: true, firstName: true, lastNamePrefix: true, lastName: true },
+          },
+        },
+      },
+      orderItems: {
+        select: {
+          refunds: {
+            select: { status: true, amountCents: true, payment: { select: { method: true } } },
+          },
+        },
+      },
+      drawEntries: { select: { id: true }, take: 1 },
+    },
+  });
+  const audits = await prisma.auditLog.findMany({
+    where: {
+      entityType: 'Registration',
+      entityId: { in: rows.map((r) => r.id) },
+      action: { in: CANCEL_ACTIONS },
+    },
+    orderBy: { createdAt: 'desc' },
+    select: { entityId: true, action: true, actor: { select: { name: true } } },
+  });
+  const drawn = new Set(
+    (
+      await prisma.draw.findMany({
+        where: { eventId: { in: [...new Set(rows.map((r) => r.event.id))] } },
+        select: { eventId: true },
+      })
+    ).map((d) => d.eventId),
+  );
+  return rows.map((r) => {
+    const audit = audits.find((a) => a.entityId === r.id);
+    const refunds = r.orderItems.flatMap((i) => i.refunds);
+    return {
+      id: r.id,
+      cancelledAt: r.cancelledAt,
+      reason: r.cancelReason,
+      event: r.event,
+      players: r.participants.map((p) => ({ ...p.player, paymentStatus: p.paymentStatus })),
+      by: (audit?.action === 'registration.withdraw'
+        ? 'player'
+        : audit?.action === 'registration.holdExpired'
+          ? 'expired'
+          : 'organiser') as 'player' | 'expired' | 'organiser',
+      byName: audit?.actor?.name ?? null,
+      refundedCents: refunds
+        .filter((f) => f.status === 'SUCCEEDED')
+        .reduce((n, f) => n + f.amountCents, 0),
+      refundPending: refunds.some((f) => f.status === 'APPROVED' || f.status === 'PENDING'),
+      deskRefund: refunds.some((f) => f.status === 'SUCCEEDED' && f.payment.method === 'MANUAL'),
+      // The event has a draw without this entry: restoring needs the draw adjusted.
+      outsideDraw: drawn.has(r.event.id) && r.drawEntries.length === 0,
+    };
+  });
+}
+
+/**
+ * Undoes a cancellation (D98). The entry is confirmed again when the event has room, otherwise
+ * it goes to the top of the waiting list (its place may have gone to someone who moved up).
+ * Refunded shares are unpaid again (a refund can't be taken back); an open refund request is
+ * declined; a refund still on its way blocks the undo. No emails.
+ */
+export async function restoreRegistration(
+  actor: Actor,
+  registrationId: string,
+  meta: RequestMeta,
+  now = new Date(),
+) {
+  const r = await prisma.registration.findFirst({
+    where: { id: registrationId, status: 'CANCELLED' },
+    select: {
+      id: true,
+      eventId: true,
+      event: { select: { tournamentId: true } },
+      participants: { select: { id: true, playerId: true, paymentStatus: true } },
+      orderItems: { select: { refunds: { select: { id: true, status: true } } } },
+    },
+  });
+  if (!r) throw new AppError('notFound');
+  await assertCanManageTournament(actor, r.event.tournamentId);
+  const refunds = r.orderItems.flatMap((i) => i.refunds);
+  if (refunds.some((f) => f.status === 'APPROVED' || f.status === 'PENDING'))
+    throw new AppError('refundInProgress');
+  const again = await prisma.registrationParticipant.findFirst({
+    where: {
+      active: true,
+      playerId: { in: r.participants.map((p) => p.playerId) },
+      registration: { eventId: r.eventId, status: { in: LIVE }, id: { not: r.id } },
+    },
+    select: { id: true },
+  });
+  if (again) throw new AppError('enteredAgain');
+
+  const status = await prisma.$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT id FROM "TournamentEvent" WHERE id = ${r.eventId}::uuid FOR UPDATE`;
+    const event = await tx.tournamentEvent.findUniqueOrThrow({
+      where: { id: r.eventId },
+      select: { maxEntries: true },
+    });
+    const taken = await tx.registration.count({
+      where: { eventId: r.eventId, status: { in: ACTIVE } },
+    });
+    const room = event.maxEntries === null || taken < event.maxEntries;
+    if (!room) {
+      // First in line: shift the waiting list down one place.
+      await tx.registration.updateMany({
+        where: { eventId: r.eventId, status: 'WAITLISTED' },
+        data: { waitlistPosition: { increment: 1 } },
+      });
+    }
+    const next = room ? 'CONFIRMED' : 'WAITLISTED';
+    await tx.registration.update({
+      where: { id: r.id },
+      data: {
+        status: next,
+        cancelledAt: null,
+        cancelReason: null,
+        holdExpiresAt: null,
+        waitlistPosition: room ? null : 1,
+        ...(room ? { confirmedAt: now } : {}),
+      },
+    });
+    await tx.registrationParticipant.updateMany({
+      where: { registrationId: r.id },
+      data: { active: true },
+    });
+    await tx.registrationParticipant.updateMany({
+      where: { registrationId: r.id, paymentStatus: 'REFUNDED' },
+      data: { paymentStatus: 'UNPAID' },
+    });
+    await tx.refund.updateMany({
+      where: { id: { in: refunds.filter((f) => f.status === 'REQUESTED').map((f) => f.id) } },
+      data: { status: 'REJECTED' },
+    });
+    await writeAudit(tx, {
+      actorId: actor.userId,
+      action: 'registration.restore',
+      entityType: 'Registration',
+      entityId: r.id,
+      before: { status: 'CANCELLED' },
+      after: { status: next },
+      meta,
+    });
+    return next;
+  });
+  return { status };
+}
+
 /**
  * Releases places whose payment hold ran out (lazy on entry pages + the housekeeping cron).
  * Entries with a payment in progress (iDEAL can take a moment) are left alone.
