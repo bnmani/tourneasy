@@ -14,6 +14,9 @@ import {
   playerXlsxTemplate,
   listPlayers,
   mergePlayers,
+  mergePreview,
+  recentPlayerImports,
+  undoPlayerImport,
 } from './player-service';
 import { actorFromWebToken, createWebSession, type Actor } from './session-service';
 import {
@@ -365,6 +368,14 @@ describe('players', () => {
     ).rejects.toMatchObject({
       code: 'mergeSelf',
     });
+    // The check shows both side by side before anything changes (D100).
+    const preview = await mergePreview(admin, {
+      sourceId: duplicate.id,
+      targetMemberNumber: target.memberNumber,
+    });
+    expect(preview.source).toMatchObject({ name: 'Tim Dup', hasAccount: false, entries: 0 });
+    expect(preview.target).toMatchObject({ memberNumber: target.memberNumber, hasAccount: true });
+    expect(await prisma.playerProfile.count({ where: { mergedIntoId: { not: null } } })).toBe(0);
     await mergePlayers(
       admin,
       { sourceId: duplicate.id, targetMemberNumber: target.memberNumber.toLowerCase() },
@@ -470,6 +481,41 @@ describe('players', () => {
     expect(playerEligibility(unknownAge, event(senior), on)).toEqual([]);
     expect(playerEligibility(unknownAge, event(null), on)).toEqual([]);
     expect(playerEligibility(unknownAge, event(veterans), on)).toEqual(['birthDateUnknown']);
+  });
+
+  it('undoes an import, keeping players already in use (D100)', async () => {
+    const admin = await newAdmin();
+    const file = toXlsx(
+      'Blad1',
+      ['firstName', 'lastName', 'email', 'gender'],
+      [
+        ['Una', 'One', 'una@example.test', 'FEMALE'],
+        ['Duo', 'Two', 'duo@example.test', 'MALE'],
+        ['Tre', 'Three', 'tre@example.test', 'MALE'],
+      ],
+    );
+    await importPlayersFile(admin, file, meta);
+    // One of them got an account in the meantime: in use, so it stays.
+    const user = await prisma.user.create({ data: { email: 'duo@example.test', name: 'Duo Two' } });
+    await prisma.playerProfile.updateMany({
+      where: { lastName: 'Two' },
+      data: { userId: user.id },
+    });
+
+    const [latest] = await recentPlayerImports(admin);
+    expect(latest).toMatchObject({ created: 3, canUndo: true, removable: 2, undone: false });
+    expect(await undoPlayerImport(admin, latest!.id, meta)).toEqual({ removed: 2, kept: 1 });
+    expect(
+      (
+        await prisma.playerProfile.findMany({
+          where: { lastName: { in: ['One', 'Two', 'Three'] } },
+        })
+      ).map((p) => p.lastName),
+    ).toEqual(['Two']);
+    expect((await recentPlayerImports(admin))[0]).toMatchObject({ undone: true, canUndo: false });
+    await expect(undoPlayerImport(admin, latest!.id, meta)).rejects.toMatchObject({
+      code: 'statusTransition',
+    });
   });
 
   it('rejects files that are not player CSVs', async () => {

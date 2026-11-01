@@ -39,6 +39,7 @@ const SUCCESS = new Set([
   'archived',
   'deleted',
   'merged',
+  'importUndone',
   'organiserAdded',
   'organiserInvited',
   'cancelled',

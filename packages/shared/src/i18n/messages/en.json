@@ -820,7 +820,31 @@
         "inviteLast": "Last invited: {date}",
         "inviteNoEmail": "Add an email address first to send an invitation.",
         "inviteSent": "Invitation sent."
-      }
+      },
+      "mergeCheck": "Check",
+      "mergeCompareTitle": "Check before you merge",
+      "mergeLeft": "{number}: will be archived",
+      "mergeRight": "{number}: stays",
+      "mergeFieldName": "Name",
+      "mergeFieldBorn": "Date of birth",
+      "mergeFieldGender": "Gender",
+      "mergeFieldEmail": "Email",
+      "mergeFieldPhone": "Phone",
+      "mergeFieldClub": "Club",
+      "mergeFieldAccount": "Account",
+      "mergeFieldEntries": "Active entries",
+      "yes": "Yes",
+      "no": "No",
+      "mergeWhatHappens": "{target} stays with its own name and date of birth. The entries, teams and followers of {source} move to it, its phone, club and federation number fill in what {target} doesn't have, and its account moves over if only {source} has one. {source} is then archived. This can't be undone.",
+      "mergeUnderstand": "I've checked that these are the same person, and I understand a merge can't be undone.",
+      "mergeConfirm": "Merge into {number}",
+      "mergeChange": "Change",
+      "recentImports": "Recent imports",
+      "importSummary": "{created} players created, {updated} updated",
+      "importUndoneLabel": "undone",
+      "importNoUndo": "made before undo existed: not undoable",
+      "undoImport": "Undo import",
+      "undoImportConfirm": "Undo this import? {removable} players it created will be removed. {kept} stay because they already have an account, entries or a team. Players updated by the import are not changed back. This can't be undone."
     },
     "audit": {
       "title": "Audit log",
@@ -863,7 +887,8 @@
       "packageRequested": "Request received. You'll get an invoice; the package applies once it is paid.",
       "packagePaid": "Payment received. The package now applies.",
       "refunded": "Done. The order has been refunded or cancelled.",
-      "refundReopened": "Refund request reopened: it waits for a decision again."
+      "refundReopened": "Refund request reopened: it waits for a decision again.",
+      "importUndone": "Import undone: {removed} players removed, {kept} kept because they're already in use."
     },
     "grantShort": "Grant",
     "revokeShort": "Remove",

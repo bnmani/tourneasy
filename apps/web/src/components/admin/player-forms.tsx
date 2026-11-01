@@ -4,7 +4,8 @@ import { disciplinesForGender, type Gender } from '@tourneasy/shared/rules';
 import { DISCIPLINES, GENDERS, PLAYER_CSV_COLUMNS } from '@tourneasy/shared/schemas';
 import type { AppLocale } from '@tourneasy/shared/i18n';
 import { useTranslations } from 'next-intl';
-import { useActionState, useState } from 'react';
+import { useActionState, useState, useTransition } from 'react';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import {
   CheckboxGroup,
@@ -19,6 +20,8 @@ import {
 import { initialFormState } from '@/components/forms/form-state';
 import {
   importPlayersAction,
+  mergePreviewAction,
+  type MergePreview,
   mergePlayerAction,
   savePlayerAction,
   type ImportState,
@@ -223,24 +226,137 @@ export function PlayerForm({
   );
 }
 
+/**
+ * Merging can't be undone (D100): first both profiles side by side, then an explicit
+ * confirmation. Nothing changes until "Merge" is pressed.
+ */
 export function MergePlayerForm({ locale, sourceId }: { locale: AppLocale; sourceId: string }) {
   const t = useTranslations('Admin.players');
+  const tg = useTranslations('Genders');
+  const te = useTranslations('Errors');
   const [state, action] = useActionState(
     mergePlayerAction.bind(null, locale, sourceId),
     initialFormState,
   );
+  const [number, setNumber] = useState('');
+  const [preview, setPreview] = useState<MergePreview | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [understood, setUnderstood] = useState(false);
+  const [checking, startCheck] = useTransition();
+  const check = () =>
+    startCheck(async () => {
+      setError(null);
+      const result = await mergePreviewAction(sourceId, number.trim().toUpperCase());
+      if (result.ok) setPreview(result.preview);
+      else
+        setError(
+          te.has(result.error as 'unexpected')
+            ? te(result.error as 'unexpected')
+            : te('unexpected'),
+        );
+    });
+
+  if (!preview)
+    return (
+      <div className="space-y-3">
+        <p className="text-sm text-muted-foreground">{t('mergeHelp')}</p>
+        <div className="flex flex-wrap items-end gap-2">
+          <label className="space-y-1.5 text-sm font-medium">
+            {t('mergeTarget')}
+            <input
+              value={number}
+              onChange={(e) => setNumber(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  check();
+                }
+              }}
+              maxLength={8}
+              className="block h-10 w-40 rounded-md border border-input bg-background px-3 text-base uppercase sm:text-sm"
+            />
+          </label>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={check}
+            disabled={checking || !number.trim()}
+          >
+            {t('mergeCheck')}
+          </Button>
+        </div>
+        {error && (
+          <p role="alert" className="text-sm text-destructive">
+            {error}
+          </p>
+        )}
+      </div>
+    );
+
+  const rows: [string, (p: MergePreview['source']) => string][] = [
+    [t('mergeFieldName'), (p) => p.name],
+    [t('mergeFieldBorn'), (p) => p.dateOfBirth ?? '—'],
+    [t('mergeFieldGender'), (p) => tg(p.gender)],
+    [t('mergeFieldEmail'), (p) => p.email ?? '—'],
+    [t('mergeFieldPhone'), (p) => p.phone ?? '—'],
+    [t('mergeFieldClub'), (p) => p.club ?? '—'],
+    [t('mergeFieldAccount'), (p) => (p.hasAccount ? t('yes') : t('no'))],
+    [t('mergeFieldEntries'), (p) => String(p.entries)],
+  ];
   return (
-    <form action={action} className="space-y-3" noValidate>
-      <p className="text-sm text-muted-foreground">{t('mergeHelp')}</p>
+    <form action={action} className="space-y-4">
+      <h3 className="font-semibold">{t('mergeCompareTitle')}</h3>
+      <div className="overflow-x-auto rounded-lg border">
+        <table className="w-full text-sm">
+          <thead className="border-b bg-muted/50 text-left text-xs text-muted-foreground uppercase">
+            <tr>
+              <th scope="col" className="px-3 py-2" />
+              <th scope="col" className="px-3 py-2">
+                {t('mergeLeft', { number: preview.source.memberNumber })}
+              </th>
+              <th scope="col" className="px-3 py-2">
+                {t('mergeRight', { number: preview.target.memberNumber })}
+              </th>
+            </tr>
+          </thead>
+          <tbody className="divide-y">
+            {rows.map(([label, value]) => (
+              <tr key={label}>
+                <th scope="row" className="px-3 py-2 text-left font-medium text-muted-foreground">
+                  {label}
+                </th>
+                <td className="px-3 py-2">{value(preview.source)}</td>
+                <td className="px-3 py-2 font-medium">{value(preview.target)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="rounded-md border border-amber-500/60 bg-amber-500/10 px-4 py-3 text-sm">
+        {t('mergeWhatHappens', {
+          source: preview.source.memberNumber,
+          target: preview.target.memberNumber,
+        })}
+      </p>
       <FormError state={state} />
-      <TextField
-        name="targetMemberNumber"
-        label={t('mergeTarget')}
-        state={state}
-        required
-        maxLength={8}
-      />
-      <SubmitButton variant="outline">{t('mergeSubmit')}</SubmitButton>
+      <input type="hidden" name="targetMemberNumber" value={preview.target.memberNumber} />
+      <label className="flex items-start gap-2 text-sm">
+        <input
+          type="checkbox"
+          checked={understood}
+          onChange={(e) => setUnderstood(e.target.checked)}
+          className="mt-0.5 size-4 accent-primary"
+        />
+        {t('mergeUnderstand')}
+      </label>
+      <div className="flex flex-wrap gap-2">
+        <SubmitButton variant="destructive" disabled={!understood}>
+          {t('mergeConfirm', { number: preview.target.memberNumber })}
+        </SubmitButton>
+        <Button type="button" variant="outline" onClick={() => setPreview(null)}>
+          {t('mergeChange')}
+        </Button>
+      </div>
     </form>
   );
 }

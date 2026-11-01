@@ -820,7 +820,31 @@
         "inviteLast": "Laatst uitgenodigd: {date}",
         "inviteNoEmail": "Voeg eerst een e-mailadres toe om een uitnodiging te sturen.",
         "inviteSent": "Uitnodiging verstuurd."
-      }
+      },
+      "mergeCheck": "Controleren",
+      "mergeCompareTitle": "Controleer voordat je samenvoegt",
+      "mergeLeft": "{number}: wordt gearchiveerd",
+      "mergeRight": "{number}: blijft",
+      "mergeFieldName": "Naam",
+      "mergeFieldBorn": "Geboortedatum",
+      "mergeFieldGender": "Geslacht",
+      "mergeFieldEmail": "E-mail",
+      "mergeFieldPhone": "Telefoon",
+      "mergeFieldClub": "Club",
+      "mergeFieldAccount": "Account",
+      "mergeFieldEntries": "Actieve inschrijvingen",
+      "yes": "Ja",
+      "no": "Nee",
+      "mergeWhatHappens": "{target} blijft, met eigen naam en geboortedatum. De inschrijvingen, teams en volgers van {source} gaan naar {target}, telefoon, club en bondsnummer vullen aan wat {target} nog niet heeft, en het account gaat mee als alleen {source} er een heeft. Daarna wordt {source} gearchiveerd. Dit kan niet worden teruggedraaid.",
+      "mergeUnderstand": "Ik heb gecontroleerd dat dit dezelfde persoon is en begrijp dat samenvoegen niet kan worden teruggedraaid.",
+      "mergeConfirm": "Samenvoegen met {number}",
+      "mergeChange": "Wijzigen",
+      "recentImports": "Recente imports",
+      "importSummary": "{created} spelers aangemaakt, {updated} bijgewerkt",
+      "importUndoneLabel": "teruggedraaid",
+      "importNoUndo": "van vóór het terugdraaien: niet terug te draaien",
+      "undoImport": "Import terugdraaien",
+      "undoImportConfirm": "Deze import terugdraaien? {removable} spelers die hij aanmaakte worden verwijderd. {kept} blijven omdat ze al een account, inschrijvingen of een team hebben. Spelers die de import bijwerkte, worden niet teruggezet. Dit kan niet ongedaan worden gemaakt."
     },
     "audit": {
       "title": "Auditlog",
@@ -863,7 +887,8 @@
       "packageRequested": "Aanvraag ontvangen. Je krijgt een factuur; het pakket geldt zodra die betaald is.",
       "packagePaid": "Betaling ontvangen. Het pakket geldt nu.",
       "refunded": "Klaar. De bestelling is terugbetaald of geannuleerd.",
-      "refundReopened": "Terugbetalingsverzoek heropend: er moet opnieuw over beslist worden."
+      "refundReopened": "Terugbetalingsverzoek heropend: er moet opnieuw over beslist worden.",
+      "importUndone": "Import teruggedraaid: {removed} spelers verwijderd, {kept} behouden omdat ze al in gebruik zijn."
     },
     "grantShort": "Toekennen",
     "revokeShort": "Intrekken",

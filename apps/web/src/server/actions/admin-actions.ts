@@ -9,7 +9,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import type { FormState } from '@/components/forms/form-state';
 import { currentRequestMeta, getActor } from '../auth/web';
-import { AppError } from '../lib/errors';
+import { AppError, isAppError } from '../lib/errors';
 import type { RequestMeta } from '../lib/request-meta';
 import { setClubArchived, createClub, updateClub } from '../services/club-service';
 import { createEvent, deleteEvent, updateEvent } from '../services/event-service';
@@ -18,6 +18,8 @@ import { importTournamentEntries, type EntryImportResult } from '../services/ent
 import {
   createPlayer,
   importPlayersFile,
+  mergePreview,
+  undoPlayerImport,
   mergePlayers,
   updatePlayer,
   type ImportResult,
@@ -285,6 +287,23 @@ export async function mergePlayerAction(
   });
 }
 
+export type MergePreview = Awaited<ReturnType<typeof mergePreview>>;
+
+/** Step 1 of a merge (D100): both profiles side by side, nothing changes yet. */
+export async function mergePreviewAction(
+  sourceId: string,
+  targetMemberNumber: string,
+): Promise<{ ok: true; preview: MergePreview } | { ok: false; error: string }> {
+  try {
+    const actor = await getActor();
+    if (!actor) throw new AppError('unauthorized');
+    return { ok: true, preview: await mergePreview(actor, { sourceId, targetMemberNumber }) };
+  } catch (error) {
+    if (!isAppError(error)) console.error('[merge preview] failed', error);
+    return { ok: false, error: isAppError(error) ? error.code : 'unexpected' };
+  }
+}
+
 export type ImportState = FormState & { result?: ImportResult };
 
 export async function importPlayersAction(
@@ -305,6 +324,21 @@ export async function importPlayersAction(
   } catch (error) {
     return toFormState(error, new FormData());
   }
+}
+
+/** Undoes a player import (D100) and reports how many were removed and kept. */
+export async function undoPlayerImportAction(locale: AppLocale, importId: string) {
+  let status = 'importUndone';
+  let params = '';
+  try {
+    const actor = await actorOrThrow();
+    const { removed, kept } = await undoPlayerImport(actor, importId, await currentRequestMeta());
+    params = `&removed=${removed}&kept=${kept}`;
+  } catch (error) {
+    status = isAppError(error) ? error.code : 'unexpected';
+  }
+  revalidatePath('/', 'layout');
+  redirect(`/${locale}/admin/players/import?status=${status}${params}`);
 }
 
 export type EntryImportState = FormState & { result?: EntryImportResult };

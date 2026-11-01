@@ -299,6 +299,49 @@ export async function updatePlayer(actor: Actor, id: string, input: unknown, met
  * memberships, partner requests and followers move; the source is archived. At most one
  * of the two may have an account (that account ends up on the target).
  */
+/** What the owner checks before a merge (D100): both profiles side by side. */
+export async function mergePreview(actor: Actor, input: unknown) {
+  assertOwner(actor);
+  const { sourceId, targetMemberNumber } = parseInput(mergePlayersSchema, input);
+  const select = {
+    id: true,
+    memberNumber: true,
+    firstName: true,
+    lastNamePrefix: true,
+    lastName: true,
+    dateOfBirth: true,
+    gender: true,
+    phone: true,
+    contactEmail: true,
+    deletedAt: true,
+    userId: true,
+    user: { select: { email: true } },
+    club: { select: { name: true } },
+    _count: { select: { participations: { where: { active: true } } } },
+  } as const;
+  const [source, target] = await Promise.all([
+    prisma.playerProfile.findUnique({ where: { id: sourceId }, select }),
+    prisma.playerProfile.findUnique({ where: { memberNumber: targetMemberNumber }, select }),
+  ]);
+  if (!source || source.deletedAt || !target || target.deletedAt) throw new AppError('notFound');
+  if (source.id === target.id) throw new AppError('mergeSelf');
+  if (source.userId && target.userId) throw new AppError('mergeTwoAccounts');
+  for (const userId of [source.userId, target.userId])
+    if (userId) await assertNotHiddenOwner(actor, userId);
+  const summary = (p: typeof source) => ({
+    memberNumber: p.memberNumber,
+    name: [p.firstName, p.lastNamePrefix, p.lastName].filter(Boolean).join(' '),
+    dateOfBirth: p.dateOfBirth?.toISOString().slice(0, 10) ?? null,
+    gender: p.gender,
+    email: p.user?.email ?? p.contactEmail,
+    phone: p.phone,
+    club: p.club?.name ?? null,
+    hasAccount: !!p.userId,
+    entries: p._count.participations,
+  });
+  return { source: summary(source), target: summary(target) };
+}
+
 export async function mergePlayers(actor: Actor, input: unknown, meta: RequestMeta) {
   assertOwner(actor);
   const { sourceId, targetMemberNumber } = parseInput(mergePlayersSchema, input);
@@ -675,10 +718,98 @@ async function importPlayerRows(
     actorId: actor.userId,
     action: 'player.import',
     entityType: 'PlayerProfile',
-    after: { created: result.created, updated: result.updated, skipped: result.skipped },
+    after: {
+      created: result.created,
+      updated: result.updated,
+      skipped: result.skipped,
+      // Which players this import made: what "Undo import" may remove (D100).
+      createdNumbers: result.rows.flatMap((r) =>
+        r.outcome === 'created' && r.memberNumber ? [r.memberNumber] : [],
+      ),
+    },
     meta,
   });
   return result;
+}
+
+/** A player an import made that nothing uses yet: no account, entries or team (D100). */
+const unusedImported = (numbers: string[]) =>
+  ({
+    memberNumber: { in: numbers },
+    deletedAt: null,
+    userId: null,
+    participations: { none: {} },
+    teamMemberships: { none: {} },
+  }) satisfies Prisma.PlayerProfileWhereInput;
+
+/** The latest player imports with what an undo would still remove (D100). */
+export async function recentPlayerImports(actor: Actor) {
+  assertAdmin(actor);
+  const imports = await prisma.auditLog.findMany({
+    where: { action: 'player.import' },
+    orderBy: { createdAt: 'desc' },
+    take: 10,
+    select: { id: true, createdAt: true, after: true, actor: { select: { name: true } } },
+  });
+  const undone = new Set(
+    (
+      await prisma.auditLog.findMany({
+        where: { action: 'player.import.undo', entityId: { in: imports.map((i) => i.id) } },
+        select: { entityId: true },
+      })
+    ).map((u) => u.entityId),
+  );
+  return Promise.all(
+    imports.map(async (i) => {
+      const after = (i.after ?? {}) as {
+        created?: number;
+        updated?: number;
+        createdNumbers?: string[];
+      };
+      const numbers = after.createdNumbers ?? null;
+      return {
+        id: i.id,
+        createdAt: i.createdAt,
+        by: i.actor?.name ?? null,
+        created: after.created ?? 0,
+        updated: after.updated ?? 0,
+        undone: undone.has(i.id),
+        // Older imports didn't record their players: no undo for them.
+        canUndo: numbers !== null && numbers.length > 0 && !undone.has(i.id),
+        removable: numbers
+          ? await prisma.playerProfile.count({ where: unusedImported(numbers) })
+          : 0,
+      };
+    }),
+  );
+}
+
+/**
+ * Undoes a player import (D100): removes the players it made that still have no account,
+ * entries or team. Players already in use stay. Each import can be undone once.
+ */
+export async function undoPlayerImport(actor: Actor, importId: string, meta: RequestMeta) {
+  assertAdmin(actor);
+  const log = await prisma.auditLog.findFirst({
+    where: { id: importId, action: 'player.import' },
+    select: { after: true },
+  });
+  const numbers = ((log?.after ?? {}) as { createdNumbers?: string[] }).createdNumbers;
+  if (!log || !numbers?.length) throw new AppError('notFound');
+  if (await prisma.auditLog.count({ where: { action: 'player.import.undo', entityId: importId } }))
+    throw new AppError('statusTransition');
+  return prisma.$transaction(async (tx) => {
+    const removed = await tx.playerProfile.deleteMany({ where: unusedImported(numbers) });
+    await writeAudit(tx, {
+      actorId: actor.userId,
+      action: 'player.import.undo',
+      entityType: 'PlayerImport',
+      entityId: importId,
+      after: { removed: removed.count, kept: numbers.length - removed.count },
+      meta,
+    });
+    return { removed: removed.count, kept: numbers.length - removed.count };
+  });
 }
 
 const removePlayersSchema = z.object({
