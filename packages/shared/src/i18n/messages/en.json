@@ -868,7 +868,7 @@
       "deleted": "Deleted.",
       "merged": "Players merged.",
       "organiserAdded": "Organiser added. They have received an email.",
-      "organiserInvited": "Invitation ready: the rights apply as soon as an account is created or logged in with this email address.",
+      "organiserInvited": "Invitation sent: the person gets an email with a link to accept.",
       "cancelled": "The entry has been cancelled.",
       "markedPaid": "Marked as paid.",
       "refundApproved": "Refund made.",
@@ -890,7 +890,8 @@
       "packagePaid": "Payment received. The package now applies.",
       "refunded": "Done. The order has been refunded or cancelled.",
       "refundReopened": "Refund request reopened: it waits for a decision again.",
-      "importUndone": "Import undone: {removed} players removed, {kept} kept because they're already in use."
+      "importUndone": "Import undone: {removed} players removed, {kept} kept because they're already in use.",
+      "organiserAccepted": "You're now an organiser. Set up two-step login to open the portal, then find your tournament under Tournaments."
     },
     "grantShort": "Grant",
     "revokeShort": "Remove",
@@ -1718,7 +1719,11 @@
     "scheduleChangedMark": "Changed",
     "scheduleAll": "Full tournament schedule",
     "schedulePdf": "Schedule (PDF)",
-    "scheduleCourt": "Court {number}"
+    "scheduleCourt": "Court {number}",
+    "organiserInviteSubject": "You're invited to organise {tournament} on Tourneasy",
+    "organiserInviteBody": "{inviter} invites you to help organise {tournament} on Tourneasy. With an account you manage its entries, draws, schedule and match desk. Use the button below to create an account or log in with this email address. The link is valid for 14 days.",
+    "organiserInviteButton": "Accept invitation",
+    "organiserInviteFooter": "You receive this email because a Tourneasy administrator invited this address as an organiser."
   },
   "Provinces": {
     "DRENTHE": "Drenthe",
@@ -2431,5 +2436,18 @@
     "title": "Help",
     "contents": "On this page",
     "stuck": "Still stuck? Email {email}. For questions about a tournament, use the contact details on its page."
+  },
+  "OrganiserInvite": {
+    "title": "Organiser invitation",
+    "body": "{inviter} invites you to help organise {tournament} on Tourneasy.",
+    "bodyAnon": "You're invited to help organise {tournament} on Tourneasy.",
+    "loginHint": "Create an account or log in with the email address this invitation was sent to.",
+    "register": "Create an account",
+    "login": "Log in",
+    "accept": "Accept and go to the portal",
+    "notForYou": "This invitation is for another email address. Log in with the account it was sent to.",
+    "expired": "This invitation is invalid, has expired or has already been used. Ask the administrator for a new one.",
+    "done": "You're now an organiser of {tournament}. Set up two-step login when the portal asks, then you'll find the tournament under Tournaments.",
+    "toPortal": "Go to the portal"
   }
 }

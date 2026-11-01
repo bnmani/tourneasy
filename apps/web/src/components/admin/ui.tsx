@@ -42,6 +42,7 @@ const SUCCESS = new Set([
   'importUndone',
   'organiserAdded',
   'organiserInvited',
+  'organiserAccepted',
   'cancelled',
   'markedPaid',
   'refundApproved',

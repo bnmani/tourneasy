@@ -868,7 +868,7 @@
       "deleted": "Verwijderd.",
       "merged": "Spelers samengevoegd.",
       "organiserAdded": "Organisator toegevoegd. Hij of zij heeft een e-mail gekregen.",
-      "organiserInvited": "Uitnodiging klaargezet: de rechten gaan in zodra er met dit e-mailadres een account wordt aangemaakt of ingelogd.",
+      "organiserInvited": "Uitnodiging verstuurd: de persoon krijgt een e-mail met een link om te accepteren.",
       "cancelled": "De inschrijving is geannuleerd.",
       "markedPaid": "Gemarkeerd als betaald.",
       "refundApproved": "Terugbetaling uitgevoerd.",
@@ -890,7 +890,8 @@
       "packagePaid": "Betaling ontvangen. Het pakket geldt nu.",
       "refunded": "Klaar. De bestelling is terugbetaald of geannuleerd.",
       "refundReopened": "Terugbetalingsverzoek heropend: er moet opnieuw over beslist worden.",
-      "importUndone": "Import teruggedraaid: {removed} spelers verwijderd, {kept} behouden omdat ze al in gebruik zijn."
+      "importUndone": "Import teruggedraaid: {removed} spelers verwijderd, {kept} behouden omdat ze al in gebruik zijn.",
+      "organiserAccepted": "Je bent nu organisator. Stel inloggen in twee stappen in om het beheer te openen; je toernooi staat onder Toernooien."
     },
     "grantShort": "Toekennen",
     "revokeShort": "Intrekken",
@@ -1718,7 +1719,11 @@
     "scheduleChangedMark": "Gewijzigd",
     "scheduleAll": "Hele toernooiplanning",
     "schedulePdf": "Speelschema (PDF)",
-    "scheduleCourt": "Baan {number}"
+    "scheduleCourt": "Baan {number}",
+    "organiserInviteSubject": "Je bent uitgenodigd om {tournament} te organiseren op Tourneasy",
+    "organiserInviteBody": "{inviter} nodigt je uit om {tournament} mee te organiseren op Tourneasy. Met een account beheer je de inschrijvingen, schema's, planning en wedstrijdtafel. Maak met de knop hieronder een account aan of log in met dit e-mailadres. De link is 14 dagen geldig.",
+    "organiserInviteButton": "Uitnodiging accepteren",
+    "organiserInviteFooter": "Je ontvangt deze e-mail omdat een beheerder van Tourneasy dit adres als organisator heeft uitgenodigd."
   },
   "Provinces": {
     "DRENTHE": "Drenthe",
@@ -2435,5 +2440,18 @@
     "title": "Help",
     "contents": "Op deze pagina",
     "stuck": "Kom je er niet uit? Mail naar {email}. Voor vragen over een toernooi gebruik je de contactgegevens op de toernooipagina."
+  },
+  "OrganiserInvite": {
+    "title": "Uitnodiging als organisator",
+    "body": "{inviter} nodigt je uit om {tournament} mee te organiseren op Tourneasy.",
+    "bodyAnon": "Je bent uitgenodigd om {tournament} mee te organiseren op Tourneasy.",
+    "loginHint": "Maak een account aan of log in met het e-mailadres waar deze uitnodiging naartoe is gestuurd.",
+    "register": "Account aanmaken",
+    "login": "Inloggen",
+    "accept": "Accepteren en naar het beheer",
+    "notForYou": "Deze uitnodiging is voor een ander e-mailadres. Log in met het account waarvoor hij bedoeld is.",
+    "expired": "Deze uitnodiging is ongeldig, verlopen of al gebruikt. Vraag de beheerder om een nieuwe.",
+    "done": "Je bent nu organisator van {tournament}. Stel inloggen in twee stappen in als het beheer daarom vraagt; daarna vind je het toernooi onder Toernooien.",
+    "toPortal": "Naar het beheer"
   }
 }

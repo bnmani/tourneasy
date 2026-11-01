@@ -1,9 +1,10 @@
 import { playerEligibility } from '@tourneasy/shared/rules';
 import { prisma, Role } from '@tourneasy/db';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { createPlayer, meta, resetDatabase } from '@/test/db';
+import { createPlayer, lastMailTo, meta, resetDatabase } from '@/test/db';
 import { readXlsx, toXlsx } from '../lib/xlsx';
 import { authenticate, signUp } from './auth-service';
+import { invitedEmailFromNext } from './invite-address';
 import { createEvent, deleteEvent, updateEvent } from './event-service';
 import {
   createPlayer as adminCreatePlayer,
@@ -20,12 +21,14 @@ import {
 } from './player-service';
 import { actorFromWebToken, createWebSession, type Actor } from './session-service';
 import {
+  acceptOrganiserInviteByLink,
   addOrganiser,
   changeTournamentStatus,
-  tournamentOver,
   createTournament,
   getTournament,
   listTournaments,
+  organiserInviteByToken,
+  tournamentOver,
   updateTournament,
 } from './tournament-service';
 import { createVenue, setVenueArchived, updateVenue } from './venue-service';
@@ -128,6 +131,10 @@ describe('tournaments', () => {
   it('delegates to an existing account and limits what the organiser sees', async () => {
     const admin = await newAdmin();
     const organiser = await createPlayer({ email: 'org@example.test' });
+    await prisma.user.update({
+      where: { id: organiser.userId },
+      data: { emailVerifiedAt: new Date() },
+    });
     const theirs = await createTournament(
       admin,
       { ...tournamentInput, type: 'THIRD_PARTY', organiserEmail: 'ORG@example.test' },
@@ -155,7 +162,7 @@ describe('tournaments', () => {
     });
   });
 
-  it('turns an invite into organiser rights when that email signs up', async () => {
+  it('emails an invitation link; rights only for the confirmed address (D102)', async () => {
     const admin = await newAdmin();
     const t = await createTournament(
       admin,
@@ -163,17 +170,73 @@ describe('tournaments', () => {
       meta,
     );
     expect(await prisma.organiserInvite.count({ where: { acceptedAt: null } })).toBe(1);
+    const link = lastMailTo('new.org@example.test').link!;
+    expect(link).toContain('/organiser-invites/');
+    const token = link.split('/organiser-invites/')[1]!.split(/[?#\s]/)[0]!;
+    expect(await organiserInviteByToken(token)).toMatchObject({
+      email: 'new.org@example.test',
+      tournament: t.name,
+    });
 
+    // Someone signs up with that address but hasn't confirmed it: no rights yet.
     const { userId } = await createPlayer({ email: 'new.org@example.test' });
+    expect((await actorFor(userId)).roles).not.toContain('ORGANISER');
+    // Another account can't use the link.
+    const stranger = await createPlayer({ email: 'stranger@example.test' });
+    await expect(
+      acceptOrganiserInviteByLink(await actorFor(stranger.userId), token, meta),
+    ).rejects.toMatchObject({ code: 'forbidden' });
+
+    // The link proves the address: confirmed, and the rights apply.
+    expect(await acceptOrganiserInviteByLink(await actorFor(userId), token, meta)).toBe(1);
     const orgActor = await actorFor(userId);
     expect(orgActor.roles).toContain('ORGANISER');
     expect((await getTournament(orgActor, t.id)).id).toBe(t.id);
     expect(await prisma.organiserInvite.count({ where: { acceptedAt: null } })).toBe(0);
+    expect(await organiserInviteByToken(token)).toBeNull();
+  });
+
+  it('signing up through the organiser link confirms the address and gives the rights (D102)', async () => {
+    const admin = await newAdmin();
+    const t = await createTournament(
+      admin,
+      { ...tournamentInput, type: 'THIRD_PARTY', organiserEmail: 'club.org@example.test' },
+      meta,
+    );
+    const token = lastMailTo('club.org@example.test')
+      .link!.split('/organiser-invites/')[1]!
+      .split(/[?#\s]/)[0]!;
+    const invitedEmail = await invitedEmailFromNext(`/en/organiser-invites/${token}`);
+    expect(invitedEmail).toBe('club.org@example.test');
+    const { userId } = await signUp(
+      {
+        firstName: 'Carla',
+        lastName: 'Club',
+        email: 'club.org@example.test',
+        phone: '+31612345678',
+        password: 'Shuttle-Smash-2027',
+        dateOfBirth: '1980-01-01',
+        gender: 'FEMALE',
+        acceptTerms: true,
+        acceptPrivacy: true,
+      },
+      meta,
+      { invitedEmail },
+    );
+    const orgActor = await actorFor(userId);
+    expect(orgActor.emailVerified).toBe(true);
+    expect(await prisma.tournamentOrganiser.count({ where: { tournamentId: t.id, userId } })).toBe(
+      1,
+    );
   });
 
   it('also accepts invites on login for existing accounts invited later', async () => {
     const admin = await newAdmin();
     const player = await createPlayer({ email: 'later@example.test' });
+    await prisma.user.update({
+      where: { id: player.userId },
+      data: { emailVerifiedAt: new Date() },
+    });
     const t = await createTournament(admin, tournamentInput, meta);
     // Simulate an invite created before the account existed (race with sign-up).
     await prisma.organiserInvite.create({

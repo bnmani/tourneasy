@@ -28,6 +28,7 @@ import {
 import type { Actor } from '../services/session-service';
 import { safeRedirectPath } from '../lib/urls';
 import {
+  acceptOrganiserInviteByLink,
   addOrganiser,
   changeTournamentStatus,
   createTournament,
@@ -195,9 +196,27 @@ export async function addOrganiserAction(
   formData: FormData,
 ) {
   return submit(formData, async (actor, meta) => {
-    const { linked } = await addOrganiser(actor, tournamentId, formToObject(formData), meta);
+    const { linked } = await addOrganiser(
+      actor,
+      tournamentId,
+      formToObject(formData),
+      meta,
+      locale,
+    );
     return `/${locale}/admin/tournaments/${tournamentId}/settings?status=${linked ? 'organiserAdded' : 'organiserInvited'}#organisers`;
   });
+}
+
+/** Accepting an organiser invitation through its link (D102); then on to the portal. */
+export async function acceptOrganiserInviteAction(locale: AppLocale, token: string) {
+  let target = `/${locale}/admin?status=organiserAccepted`;
+  try {
+    await acceptOrganiserInviteByLink(await actorOrThrow(), token, await currentRequestMeta());
+  } catch (error) {
+    target = `/${locale}/organiser-invites/${token}?status=${isAppError(error) ? error.code : 'unexpected'}`;
+  }
+  revalidatePath('/', 'layout');
+  redirect(target);
 }
 
 export async function removeOrganiserAction(

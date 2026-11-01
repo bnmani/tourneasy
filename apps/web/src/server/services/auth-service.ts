@@ -257,6 +257,12 @@ export async function verifyEmail(input: unknown): Promise<{ userId: string }> {
     prisma.verificationToken.deleteMany({ where: { identifier: stored.identifier } }),
     prisma.user.update({ where: { id: userId }, data: { emailVerifiedAt: new Date() } }),
   ]);
+  // Organiser invitations for this address wait for the confirmation (D102).
+  const user = await prisma.user.findUniqueOrThrow({
+    where: { id: userId },
+    select: { email: true },
+  });
+  await acceptOrganiserInvites(userId, user.email);
   return { userId };
 }
 

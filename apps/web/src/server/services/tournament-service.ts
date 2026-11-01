@@ -18,9 +18,11 @@ import { messages, type AppLocale } from '@tourneasy/shared/i18n';
 import { sendMailSafely } from '../email/mailer';
 import { renderEmail } from '../email/templates';
 import { writeAudit } from '../lib/audit';
+import { hashToken, randomToken } from '../lib/crypto';
 import { AppError, validationError } from '../lib/errors';
 import type { RequestMeta } from '../lib/request-meta';
 import { localized, uniqueSlug } from '../lib/slug';
+import { appUrl } from '../lib/urls';
 import { pageCount, pageParams, parseInput } from '../lib/validation';
 import { assertAdmin, assertCanManageTournament, assertPortalAccess, isAdmin } from './permissions';
 import { assertPackageToOpen } from './pricing-service';
@@ -340,11 +342,15 @@ async function linkOrganiser(
 }
 
 /** Admin assigns an organiser by email: linked now if the account exists, else invited. */
+const ORGANISER_INVITE_DAYS = 14;
+
 export async function addOrganiser(
   actor: Actor,
   tournamentId: string,
   input: unknown,
   meta: RequestMeta,
+  /** Language of the invitation email for someone without a (confirmed) account. */
+  locale: AppLocale = actor.locale,
 ) {
   assertAdmin(actor);
   const { email } = parseInput(organiserEmailSchema, input);
@@ -356,7 +362,8 @@ export async function addOrganiser(
   const user = await prisma.user.findFirst({
     where: { email, isActive: true, anonymisedAt: null },
   });
-  if (user) {
+  // Rights go to a confirmed address only (D102); otherwise an invitation link proves it.
+  if (user?.emailVerifiedAt) {
     await prisma.$transaction(async (tx) => {
       await linkOrganiser(tx, tournamentId, user.id, actor.userId);
       await writeAudit(tx, {
@@ -380,11 +387,28 @@ export async function addOrganiser(
     return { linked: true };
   }
 
+  const token = randomToken();
+  const expiresAt = new Date(Date.now() + ORGANISER_INVITE_DAYS * 86_400_000);
   await prisma.organiserInvite.upsert({
     where: { tournamentId_email: { tournamentId, email } },
-    create: { tournamentId, email, invitedById: actor.userId },
-    update: {},
+    create: {
+      tournamentId,
+      email,
+      invitedById: actor.userId,
+      tokenHash: hashToken(token),
+      expiresAt,
+    },
+    // Inviting again sends a fresh link; the old one stops working.
+    update: { tokenHash: hashToken(token), expiresAt, acceptedAt: null },
   });
+  await sendMailSafely(
+    await renderEmail(email, locale, {
+      kind: 'organiserInvite',
+      inviter: actor.name,
+      tournament: tournament.name,
+      url: appUrl(locale, `/organiser-invites/${token}`),
+    }),
+  );
   await writeAudit(prisma, {
     actorId: actor.userId,
     action: 'tournament.organiser.invite',
@@ -425,8 +449,16 @@ export async function removeOrganiser(
   });
 }
 
-/** Called after sign-up/login: turns pending invites for this email into organiser rights. */
+/**
+ * Called after sign-up, login and email confirmation: turns pending invites for this email into
+ * organiser rights, once the address is confirmed (D102).
+ */
 export async function acceptOrganiserInvites(userId: string, email: string): Promise<number> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { emailVerifiedAt: true },
+  });
+  if (!user?.emailVerifiedAt) return 0;
   const invites = await prisma.organiserInvite.findMany({
     where: { email, acceptedAt: null, tournament: { deletedAt: null } },
   });
@@ -448,4 +480,67 @@ export async function acceptOrganiserInvites(userId: string, email: string): Pro
     }
   });
   return invites.length;
+}
+
+/** An open organiser invitation link (D102): what the invitation page shows, or null. */
+export async function organiserInviteByToken(token: string, now = new Date()) {
+  const invite = await prisma.organiserInvite.findUnique({
+    where: { tokenHash: hashToken(token) },
+    select: {
+      email: true,
+      acceptedAt: true,
+      expiresAt: true,
+      tournament: { select: { name: true, deletedAt: true } },
+      invitedById: true,
+    },
+  });
+  if (!invite || invite.acceptedAt || !invite.expiresAt || invite.expiresAt <= now) return null;
+  if (invite.tournament.deletedAt) return null;
+  const inviter = invite.invitedById
+    ? await prisma.user.findUnique({ where: { id: invite.invitedById }, select: { name: true } })
+    : null;
+  return {
+    email: invite.email.toLowerCase(),
+    tournament: invite.tournament.name,
+    inviter: inviter?.name ?? null,
+  };
+}
+
+/** The address of an invitation link that has been used already (to greet its new organiser). */
+export async function acceptedOrganiserInvite(token: string) {
+  const invite = await prisma.organiserInvite.findUnique({
+    where: { tokenHash: hashToken(token) },
+    select: { email: true, acceptedAt: true, tournament: { select: { name: true } } },
+  });
+  return invite?.acceptedAt
+    ? { email: invite.email.toLowerCase(), tournament: invite.tournament.name }
+    : null;
+}
+
+/**
+ * Accepting through the invitation link (D102): it was sent to this address, so it confirms an
+ * unconfirmed account with that address, then the organiser rights apply.
+ */
+export async function acceptOrganiserInviteByLink(actor: Actor, token: string, meta: RequestMeta) {
+  const invite = await organiserInviteByToken(token);
+  if (!invite) throw new AppError('inviteInvalid');
+  const user = await prisma.user.findUniqueOrThrow({
+    where: { id: actor.userId },
+    select: { email: true, emailVerifiedAt: true },
+  });
+  if (user.email.toLowerCase() !== invite.email) throw new AppError('forbidden');
+  if (!user.emailVerifiedAt) {
+    await prisma.user.update({
+      where: { id: actor.userId },
+      data: { emailVerifiedAt: new Date() },
+    });
+    await writeAudit(prisma, {
+      actorId: actor.userId,
+      action: 'user.email.verifiedByInvite',
+      entityType: 'User',
+      entityId: actor.userId,
+      meta,
+    });
+  }
+  return acceptOrganiserInvites(actor.userId, user.email);
 }

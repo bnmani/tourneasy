@@ -26,7 +26,7 @@ import {
 } from '../services/auth-service';
 import { checkMfaCode, hasMfa } from '../services/mfa-service';
 import { acceptPlayerInvite } from '../services/player-invite-service';
-import { invitedAddress } from '../services/registration-service';
+import { invitedEmailFromNext } from '../services/invite-address';
 import {
   actorFromWebToken,
   completeMfaSession,
@@ -47,11 +47,8 @@ export async function registerAction(
       booleans: ['acceptTerms', 'acceptPrivacy', 'parentalConsent'],
       arrays: ['preferredDisciplines'],
     });
-    // From an invitation link (?next=/xx/invites/<token>): its address counts as confirmed.
-    const token = /^\/(?:nl|en)\/invites\/([A-Za-z0-9_-]{20,})$/.exec(
-      String(formData.get('next') ?? ''),
-    )?.[1];
-    const invitedEmail = token ? await invitedAddress(token) : null;
+    // From an invitation link (?next=…): its address counts as confirmed.
+    const invitedEmail = await invitedEmailFromNext(String(formData.get('next') ?? ''));
     result = await signUp({ ...input, locale }, meta, { invitedEmail });
     const session = await createWebSession(result.userId, meta, true);
     await setSessionCookie(session.token, session.expiresAt, session.persistent);

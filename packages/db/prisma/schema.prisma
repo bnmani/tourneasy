@@ -805,6 +805,9 @@ model OrganiserInvite {
   email        String    @db.Citext
   invitedById  String?   @db.Uuid
   acceptedAt   DateTime?
+  /// The emailed invitation link (D102): its hash, and until when it works.
+  tokenHash    String?   @unique
+  expiresAt    DateTime?
   createdAt    DateTime  @default(now())
 
   tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)

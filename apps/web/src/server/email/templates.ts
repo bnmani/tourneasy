@@ -19,6 +19,7 @@ type TemplateBody =
   | { kind: 'verifyEmail'; name: string; memberNumber: string; url: string }
   | { kind: 'resetPassword'; name: string; url: string }
   | { kind: 'accountInvite'; name: string; memberNumber: string; url: string }
+  | { kind: 'organiserInvite'; name?: undefined; inviter: string; tournament: string; url: string }
   | { kind: 'passwordChanged'; name: string }
   | { kind: 'roleChanged'; name: string; role: string; granted: boolean }
   | {
@@ -297,7 +298,12 @@ export function renderEmailWith(
   });
   const greeting = template.name ? t('greeting', { name: template.name }) : t('greetingAnon');
   // Invitees have no account yet, so they get their own footer.
-  const footer = template.kind === 'accountInvite' ? t('accountInviteFooter') : t('footer');
+  const footer =
+    template.kind === 'accountInvite'
+      ? t('accountInviteFooter')
+      : template.kind === 'organiserInvite'
+        ? t('organiserInviteFooter')
+        : t('footer');
 
   let subject: string;
   let paragraphs: string[];
@@ -324,6 +330,15 @@ export function renderEmailWith(
         t('ignore'),
       ];
       button = { label: t('accountInviteButton'), url: template.url };
+      break;
+    case 'organiserInvite':
+      subject = t('organiserInviteSubject', { tournament: template.tournament });
+      paragraphs = [
+        greeting,
+        t('organiserInviteBody', { inviter: template.inviter, tournament: template.tournament }),
+        t('ignore'),
+      ];
+      button = { label: t('organiserInviteButton'), url: template.url };
       break;
     case 'passwordChanged':
       subject = t('passwordChangedSubject');
