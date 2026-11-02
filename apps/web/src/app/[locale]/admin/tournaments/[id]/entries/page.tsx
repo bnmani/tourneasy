@@ -71,10 +71,24 @@ export default async function EntriesPage({ params, searchParams }: Props) {
     ...(eventId ? { eventId } : {}),
     ...(status ? { status } : {}),
   });
-  const confirmed = entries.filter(
-    (e) => e.status === 'CONFIRMED' || e.status === 'PENDING',
-  ).length;
-  const waitlisted = entries.filter((e) => e.status === 'WAITLISTED').length;
+  // Teams per event over all events, whatever the event filter (D106).
+  const allLive = eventId && !cancelled ? await listTournamentEntries(actor, id, {}) : entries;
+  const perEvent = tournament.events.map((e) => {
+    const of = allLive.filter((r) => r.event.id === e.id);
+    return {
+      id: e.id,
+      label: eventLabel(e, locale),
+      teams: of.filter((r) => r.status === 'CONFIRMED' || r.status === 'PENDING').length,
+      waiting: of.filter((r) => r.status === 'WAITLISTED').length,
+    };
+  });
+  const totalTeams = perEvent.reduce((n, e) => n + e.teams, 0);
+  const totalWaiting = perEvent.reduce((n, e) => n + e.waiting, 0);
+  const chip = (active: boolean) =>
+    cn(
+      'rounded-full border px-3 py-1 text-sm hover:bg-secondary focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
+      active && 'border-primary bg-primary/5 font-medium',
+    );
 
   return (
     <>
@@ -126,6 +140,7 @@ export default async function EntriesPage({ params, searchParams }: Props) {
           {t('entries.allEvents')}
         </label>
         <select
+          key={eventId ?? ''}
           id="eventId"
           name="eventId"
           defaultValue={eventId ?? ''}
@@ -155,13 +170,45 @@ export default async function EntriesPage({ params, searchParams }: Props) {
         </Button>
       </FilterBar>
 
-      <p className="text-sm text-muted-foreground">
-        {q
-          ? t('entries.found', { count: entries.length, query: q })
-          : cancelled
-            ? t('entries.summary', { count: entries.length })
-            : t('entries.counts', { confirmed, waitlisted })}
-      </p>
+      {q || cancelled ? (
+        <p className="text-sm text-muted-foreground">
+          {q
+            ? t('entries.found', { count: entries.length, query: q })
+            : t('entries.summary', { count: entries.length })}
+        </p>
+      ) : (
+        <nav aria-label={t('entries.perEvent')} className="flex flex-wrap gap-2">
+          {perEvent.map((e) => (
+            <Link
+              key={e.id}
+              href={`/admin/tournaments/${id}/entries?eventId=${e.id}`}
+              aria-current={eventId === e.id ? 'true' : undefined}
+              className={chip(eventId === e.id)}
+            >
+              {e.label} <strong className="tabular-nums">{e.teams}</strong>
+              {e.waiting > 0 && (
+                <span className="text-muted-foreground">
+                  {' '}
+                  {t('entries.plusWaiting', { count: e.waiting })}
+                </span>
+              )}
+            </Link>
+          ))}
+          <Link
+            href={`/admin/tournaments/${id}/entries`}
+            aria-current={!eventId ? 'true' : undefined}
+            className={chip(!eventId)}
+          >
+            {t('entries.totalLabel')} <strong className="tabular-nums">{totalTeams}</strong>
+            {totalWaiting > 0 && (
+              <span className="text-muted-foreground">
+                {' '}
+                {t('entries.plusWaiting', { count: totalWaiting })}
+              </span>
+            )}
+          </Link>
+        </nav>
+      )}
 
       {entries.length === 0 ? (
         <p className="text-muted-foreground">{t('entries.noEntries')}</p>
