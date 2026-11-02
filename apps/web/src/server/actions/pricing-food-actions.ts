@@ -10,8 +10,11 @@ import { currentRequestMeta, getActor } from '../auth/web';
 import { AppError, isAppError, type ErrorCode } from '../lib/errors';
 import { withStatus } from '../lib/urls';
 import {
+  addDeskOrder,
   type FoodCheckout,
   markCollected,
+  undoDeskFoodPaid,
+  updateDeskOrder,
   undoCollected,
   placeFoodOrder,
   refundFoodOrder,
@@ -276,6 +279,73 @@ export async function refundFoodOrderAction(
 ) {
   await act(`${foodPath(locale, tournamentId)}#orders`, async () =>
     refundFoodOrder(await actorOrThrow(), tournamentId, orderId, await currentRequestMeta()),
+  );
+}
+
+// ── Desk orders for people without an account (D107) ───────────────────────────────
+
+/** The quantity fields of the desk form: qty-<itemId>. */
+function deskLines(formData: FormData) {
+  return [...formData.entries()]
+    .filter(([k]) => k.startsWith('qty-'))
+    .map(([k, v]) => ({ itemId: k.slice(4), quantity: Number(v) || 0 }));
+}
+
+export async function addDeskOrderAction(
+  locale: AppLocale,
+  tournamentId: string,
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  try {
+    await addDeskOrder(
+      await actorOrThrow(),
+      tournamentId,
+      {
+        name: formData.get('name'),
+        note: formData.get('note'),
+        lines: deskLines(formData),
+        paid: formData.get('paid') === 'on',
+      },
+      await currentRequestMeta(),
+    );
+  } catch (error) {
+    return toFormState(error, formData);
+  }
+  revalidatePath('/', 'layout');
+  return { ok: true };
+}
+
+export async function updateDeskOrderAction(
+  locale: AppLocale,
+  tournamentId: string,
+  orderId: string,
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  try {
+    await updateDeskOrder(
+      await actorOrThrow(),
+      tournamentId,
+      orderId,
+      { name: formData.get('name'), note: formData.get('note'), lines: deskLines(formData) },
+      await currentRequestMeta(),
+    );
+  } catch (error) {
+    return toFormState(error, formData);
+  }
+  revalidatePath('/', 'layout');
+  return { ok: true };
+}
+
+/** "Paid now" by mistake on a desk order (D107). */
+export async function undoDeskFoodPaidAction(
+  locale: AppLocale,
+  tournamentId: string,
+  orderId: string,
+) {
+  await act(`${foodPath(locale, tournamentId)}#orders`, async () =>
+    undoDeskFoodPaid(await actorOrThrow(), tournamentId, orderId, await currentRequestMeta()),
   );
 }
 

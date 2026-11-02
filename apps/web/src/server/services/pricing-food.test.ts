@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { createPlayer, meta, resetDatabase } from '@/test/db';
 import { FakeGateway, setGatewayForTests } from '../payments/gateway';
 import {
+  addDeskOrder,
   foodAllowed,
   foodOrderingOpen,
   foodMenu,
@@ -14,6 +15,8 @@ import {
   saveFoodItem,
   saveFoodSettings,
   setFoodAccess,
+  undoDeskFoodPaid,
+  updateDeskOrder,
 } from './food-service';
 import { handleWebhook } from './payment-service';
 import {
@@ -383,6 +386,113 @@ describe('food ordering (D87)', () => {
     ).rejects.toMatchObject({
       code: 'foodClosed',
     });
+  });
+
+  it('lets staff order, and the desk add, change, unpay and cancel guest orders (D107)', async () => {
+    const { owner, org, player, other, t } = await setup();
+    const otherOrg = await person(Role.ORGANISER);
+    await setFoodAccess(owner.actor, t.id, true, meta);
+    await saveFoodItem(
+      org.actor,
+      t.id,
+      null,
+      { name: 'Roll', price: '3,50', noAllergens: true, maxQuantity: '3' },
+      meta,
+    );
+    await saveFoodSettings(
+      org.actor,
+      t.id,
+      { on: true, cutoffAt: '2099-01-01T20:00' },
+      meta,
+      toUtc,
+    );
+    const roll = (await foodMenu(player.actor, t.slug))!.items[0]!;
+    const one = { lines: [{ itemId: roll.id, quantity: 1 }] };
+
+    // A: the tournament's organisers and the owner order like players; others still can't.
+    expect((await foodMenu(org.actor, t.slug))!.canOrder).toBe(true);
+    expect((await foodMenu(otherOrg.actor, t.slug))!.canOrder).toBe(false);
+    await placeFoodOrder(org.actor, t.slug, one, meta);
+    await expect(placeFoodOrder(other.actor, t.slug, one, meta)).rejects.toMatchObject({
+      code: 'forbidden',
+    });
+
+    // B: a desk order for a guest, after the deadline too; stock still counts.
+    await prisma.tournament.update({
+      where: { id: t.id },
+      data: { foodCutoffAt: new Date('2020-01-01') },
+    });
+    const two = [{ itemId: roll.id, quantity: 2 }];
+    await expect(
+      addDeskOrder(
+        org.actor,
+        t.id,
+        { name: 'Ref', lines: [{ itemId: roll.id, quantity: 3 }] },
+        meta,
+      ),
+    ).rejects.toMatchObject({ code: 'foodSoldOut' });
+    await expect(
+      addDeskOrder(otherOrg.actor, t.id, { name: 'Ref', lines: two }, meta),
+    ).rejects.toMatchObject({ code: 'notFound' });
+    const deskId = await addDeskOrder(
+      org.actor,
+      t.id,
+      { name: 'Anna (referee)', note: 'court 3', lines: two },
+      meta,
+    );
+    const list = await foodOrders(org.actor, t.id);
+    expect(list.orders.map((o) => [o.name, o.desk, o.staff])).toEqual([
+      [expect.any(String), false, true],
+      ['Anna (referee)', true, false],
+    ]);
+    expect(list.orders[1]).toMatchObject({ note: 'court 3', memberNumber: null });
+    // The organiser's own order list on the menu doesn't include the guest's order.
+    expect((await foodMenu(org.actor, t.slug))!.orders).toHaveLength(1);
+
+    // Change: its own portions are free to it, others' aren't.
+    await updateDeskOrder(org.actor, t.id, deskId, { name: 'Anna', lines: two }, meta);
+    await expect(
+      updateDeskOrder(
+        org.actor,
+        t.id,
+        deskId,
+        { name: 'Anna', lines: [{ itemId: roll.id, quantity: 3 }] },
+        meta,
+      ),
+    ).rejects.toMatchObject({ code: 'foodSoldOut' });
+    expect(await prisma.foodOrder.findUniqueOrThrow({ where: { id: deskId } })).toMatchObject({
+      guestName: 'Anna',
+      guestNote: null,
+      totalCents: 700,
+    });
+
+    // Cancel frees the stock.
+    await refundFoodOrder(org.actor, t.id, deskId, meta);
+    expect((await prisma.foodOrder.findUniqueOrThrow({ where: { id: deskId } })).status).toBe(
+      'CANCELLED',
+    );
+
+    // Paid now, by mistake: undo it; then it can be changed again.
+    const paidId = await addDeskOrder(
+      org.actor,
+      t.id,
+      { name: 'Guest', lines: two, paid: true },
+      meta,
+    );
+    await expect(
+      updateDeskOrder(org.actor, t.id, paidId, { name: 'Guest', lines: two }, meta),
+    ).rejects.toMatchObject({ code: 'notFound' });
+    await undoDeskFoodPaid(org.actor, t.id, paidId, meta);
+    expect(await prisma.foodOrder.findUniqueOrThrow({ where: { id: paidId } })).toMatchObject({
+      status: 'PENDING',
+      paidAt: null,
+    });
+    // Paid at pickup with the hand-out, as other orders.
+    await markCollected(org.actor, t.id, paidId, meta);
+    await expect(undoDeskFoodPaid(org.actor, t.id, paidId, meta)).rejects.toMatchObject({
+      code: 'notFound',
+    });
+    expect(await prisma.auditLog.count({ where: { action: { startsWith: 'food.desk' } } })).toBe(4);
   });
 
   it('switching food off closes ordering, unless Pro still includes it', async () => {

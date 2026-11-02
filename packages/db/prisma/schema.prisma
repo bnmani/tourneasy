@@ -1501,6 +1501,10 @@ model FoodOrder {
   paidAt                DateTime?
   collectedAt           DateTime?
   collectedById         String?         @db.Uuid
+  /// Desk order for someone without an account (D107): their name and a note. userId is then
+  /// the organiser who added it.
+  guestName             String?
+  guestNote             String?
   createdAt             DateTime        @default(now())
   updatedAt             DateTime        @updatedAt
 

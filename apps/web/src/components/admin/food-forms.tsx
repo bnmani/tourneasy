@@ -12,7 +12,12 @@ import {
   TextField,
 } from '@/components/forms/fields';
 import { initialFormState } from '@/components/forms/form-state';
-import { saveFoodItemAction, saveFoodSettingsAction } from '@/server/actions/pricing-food-actions';
+import {
+  addDeskOrderAction,
+  saveFoodItemAction,
+  saveFoodSettingsAction,
+  updateDeskOrderAction,
+} from '@/server/actions/pricing-food-actions';
 
 /** Organiser: ordering on or off, the deadline and where to collect (D87). */
 export function FoodSettingsForm({
@@ -176,6 +181,97 @@ export function FoodItemForm({
         />
       )}
       <SubmitButton>{item ? t('saveItem') : t('addItem')}</SubmitButton>
+    </form>
+  );
+}
+
+export type DeskMenuItem = { id: string; name: string; priceCents: number; left: number | null };
+
+/**
+ * Food desk: an order for someone without an account (D107), or a change to one. Paid at
+ * pickup unless "Paid now" is ticked (new orders only).
+ */
+export function DeskOrderForm({
+  locale,
+  tournamentId,
+  items,
+  order,
+  formatPrice,
+}: {
+  locale: AppLocale;
+  tournamentId: string;
+  items: DeskMenuItem[];
+  order?: {
+    id: string;
+    name: string;
+    note: string | null;
+    lines: { itemId: string; quantity: number }[];
+  };
+  formatPrice: Record<string, string>;
+}) {
+  const t = useTranslations('Food.admin');
+  const [state, action] = useActionState(
+    order
+      ? updateDeskOrderAction.bind(null, locale, tournamentId, order.id)
+      : addDeskOrderAction.bind(null, locale, tournamentId),
+    initialFormState,
+  );
+  const prefix = order ? `desk-${order.id}` : 'desk-new';
+  const qty = (itemId: string) => {
+    const v = state.values?.[`qty-${itemId}`];
+    if (typeof v === 'string') return v;
+    return String(order?.lines.find((l) => l.itemId === itemId)?.quantity ?? 0);
+  };
+  return (
+    <form action={action} className="space-y-4" noValidate>
+      <FormError state={state} />
+      {state.ok && <FormSuccess>{order ? t('deskSaved') : t('deskAdded')}</FormSuccess>}
+      <div className="grid gap-4 sm:grid-cols-2">
+        <TextField
+          name="name"
+          label={t('guestName')}
+          state={state}
+          defaultValue={order?.name}
+          maxLength={80}
+          required
+        />
+        <TextField
+          name="note"
+          label={t('guestNote')}
+          hint={t('guestNoteHint')}
+          state={state}
+          defaultValue={order?.note ?? ''}
+          maxLength={120}
+        />
+      </div>
+      <fieldset className="space-y-2">
+        <legend className="text-sm font-medium">{t('quantity')}</legend>
+        <ul className="divide-y rounded-md border">
+          {items.map((item) => (
+            <li key={item.id} className="flex items-center gap-3 p-2 text-sm">
+              <label htmlFor={`${prefix}-${item.id}`} className="min-w-0 flex-1">
+                <span className="font-medium">{item.name}</span>{' '}
+                <span className="text-muted-foreground tabular-nums">
+                  {formatPrice[item.id]}
+                  {item.left !== null && ` · ${t('left', { count: item.left })}`}
+                </span>
+              </label>
+              <input
+                id={`${prefix}-${item.id}`}
+                name={`qty-${item.id}`}
+                type="number"
+                inputMode="numeric"
+                min={0}
+                max={50}
+                defaultValue={qty(item.id)}
+                className="h-10 w-20 rounded-md border border-input bg-background px-2 text-right text-base sm:text-sm"
+              />
+            </li>
+          ))}
+        </ul>
+      </fieldset>
+      {!order && <CheckboxField name="paid" label={t('paidNow')} state={state} />}
+      <SubmitButton>{order ? t('saveOrder') : t('addOrder')}</SubmitButton>
     </form>
   );
 }

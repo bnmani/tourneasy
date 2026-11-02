@@ -16,7 +16,7 @@ import type { RequestMeta } from '../lib/request-meta';
 import { parseInput } from '../lib/validation';
 import { toXlsxBook } from '../lib/xlsx';
 import { getGateway } from '../payments/gateway';
-import { assertCanManageTournament, assertOwner } from './permissions';
+import { assertCanManageTournament, assertOwner, canManageTournament } from './permissions';
 import { getPricing } from './pricing-service';
 import type { Actor } from './session-service';
 
@@ -276,6 +276,11 @@ async function orderingOpen(
   return t.foodOrderingOn && !!t.foodCutoffAt && t.foodCutoffAt > now && (await foodAllowed(t.id));
 }
 
+/** Players with an entry, and the tournament's own staff (D107). */
+async function mayOrder(actor: Actor, tournamentId: string) {
+  return (await hasEntry(actor.userId, tournamentId)) || canManageTournament(actor, tournamentId);
+}
+
 async function hasEntry(userId: string, tournamentId: string) {
   return (
     (await prisma.registrationParticipant.count({
@@ -316,7 +321,13 @@ export async function foodMenu(viewer: Actor | null, slug: string, now = new Dat
   ]);
   const mine = viewer
     ? await prisma.foodOrder.findMany({
-        where: { tournamentId: t.id, userId: viewer.userId, status: { in: ['PENDING', 'PAID'] } },
+        // Desk orders a staff member added for guests aren't their own orders (D107).
+        where: {
+          tournamentId: t.id,
+          userId: viewer.userId,
+          guestName: null,
+          status: { in: ['PENDING', 'PAID'] },
+        },
         orderBy: { createdAt: 'desc' },
         include: { lines: true },
       })
@@ -325,7 +336,7 @@ export async function foodMenu(viewer: Actor | null, slug: string, now = new Dat
     tournament: t,
     // Access was checked above: open is just the deadline.
     open: !!t.foodCutoffAt && t.foodCutoffAt > now,
-    canOrder: !!viewer && (await hasEntry(viewer.userId, t.id)),
+    canOrder: !!viewer && (await mayOrder(viewer, t.id)),
     items: items.map((i) => ({
       ...i,
       left: i.maxQuantity === null ? null : Math.max(0, i.maxQuantity - (ordered.get(i.id) ?? 0)),
@@ -360,6 +371,57 @@ export type FoodCheckout =
       totalCents: number;
     };
 
+/** The lines with a quantity; at least one. */
+function wantedLines(input: unknown) {
+  const { lines } = parseInput(orderSchema, input);
+  const wanted = lines.filter((l) => l.quantity > 0);
+  if (wanted.length === 0) throw new AppError('emptyOrder');
+  return wanted;
+}
+
+/**
+ * Checks the menu and stock for these lines and prices them. An order being changed doesn't
+ * count against its own stock (exceptOrderId).
+ */
+async function pricedLines(
+  tx: Prisma.TransactionClient,
+  tournamentId: string,
+  wanted: { itemId: string; quantity: number }[],
+  now: Date,
+  exceptOrderId?: string,
+) {
+  const items = await tx.foodItem.findMany({
+    where: { id: { in: wanted.map((l) => l.itemId) }, tournamentId, active: true },
+  });
+  if (items.length !== new Set(wanted.map((l) => l.itemId)).size)
+    throw new AppError('validation', { fields: { lines: 'invalid' } });
+  const counts = await tx.foodOrderLine.groupBy({
+    by: ['foodItemId'],
+    where: {
+      foodItemId: { in: items.map((i) => i.id) },
+      order: liveOrder(now),
+      ...(exceptOrderId ? { NOT: { foodOrderId: exceptOrderId } } : {}),
+    },
+    _sum: { quantity: true },
+  });
+  const taken = new Map(counts.map((c) => [c.foodItemId, c._sum.quantity ?? 0]));
+  for (const l of wanted) {
+    const item = items.find((i) => i.id === l.itemId)!;
+    if (item.maxQuantity !== null && (taken.get(item.id) ?? 0) + l.quantity > item.maxQuantity)
+      throw new AppError('foodSoldOut', { item: item.name });
+  }
+  const lines = wanted.map((l) => {
+    const item = items.find((i) => i.id === l.itemId)!;
+    return {
+      foodItemId: item.id,
+      name: item.name,
+      unitPriceCents: item.priceCents,
+      quantity: l.quantity,
+    };
+  });
+  return { lines, totalCents: lines.reduce((n, l) => n + l.unitPriceCents * l.quantity, 0) };
+}
+
 /**
  * Places an order: checks the deadline, the menu and stock, keeps names and prices, and
  * starts the online payment (or leaves it to pay at pickup when that isn't set up).
@@ -373,50 +435,19 @@ export async function placeFoodOrder(
 ): Promise<FoodCheckout> {
   const t = await publicTournament(slug);
   if (!(await orderingOpen(t, now))) throw new AppError('foodClosed');
-  if (!(await hasEntry(actor.userId, t.id))) throw new AppError('forbidden');
-  const { lines } = parseInput(orderSchema, input);
-  const wanted = lines.filter((l) => l.quantity > 0);
-  if (wanted.length === 0) throw new AppError('emptyOrder');
+  if (!(await mayOrder(actor, t.id))) throw new AppError('forbidden');
+  const wanted = wantedLines(input);
 
   const order = await prisma.$transaction(
     async (tx) => {
-      const items = await tx.foodItem.findMany({
-        where: { id: { in: wanted.map((l) => l.itemId) }, tournamentId: t.id, active: true },
-      });
-      if (items.length !== new Set(wanted.map((l) => l.itemId)).size)
-        throw new AppError('validation', { fields: { lines: 'invalid' } });
-      const counts = await tx.foodOrderLine.groupBy({
-        by: ['foodItemId'],
-        where: { foodItemId: { in: items.map((i) => i.id) }, order: liveOrder(now) },
-        _sum: { quantity: true },
-      });
-      const taken = new Map(counts.map((c) => [c.foodItemId, c._sum.quantity ?? 0]));
-      for (const l of wanted) {
-        const item = items.find((i) => i.id === l.itemId)!;
-        if (item.maxQuantity !== null && (taken.get(item.id) ?? 0) + l.quantity > item.maxQuantity)
-          throw new AppError('foodSoldOut', { item: item.name });
-      }
-      const totalCents = wanted.reduce(
-        (sum, l) => sum + items.find((i) => i.id === l.itemId)!.priceCents * l.quantity,
-        0,
-      );
+      const priced = await pricedLines(tx, t.id, wanted, now);
       return tx.foodOrder.create({
         data: {
           orderNumber: `F-${randomBytes(4).toString('hex').toUpperCase()}`,
           tournamentId: t.id,
           userId: actor.userId,
-          totalCents,
-          lines: {
-            create: wanted.map((l) => {
-              const item = items.find((i) => i.id === l.itemId)!;
-              return {
-                foodItemId: item.id,
-                name: item.name,
-                unitPriceCents: item.priceCents,
-                quantity: l.quantity,
-              };
-            }),
-          },
+          totalCents: priced.totalCents,
+          lines: { create: priced.lines },
         },
       });
     },
@@ -510,6 +541,22 @@ export async function foodOrders(actor: Actor, tournamentId: string, now = new D
       },
     },
   });
+  // Orders by people without an entry: the tournament's staff (D107).
+  const entrants = new Set(
+    (
+      await prisma.registrationParticipant.findMany({
+        where: {
+          active: true,
+          player: { userId: { in: [...new Set(orders.map((o) => o.userId))] } },
+          registration: {
+            status: { in: ['PENDING', 'CONFIRMED', 'WAITLISTED'] },
+            event: { tournamentId },
+          },
+        },
+        select: { player: { select: { userId: true } } },
+      })
+    ).map((r) => r.player.userId),
+  );
   const totals = new Map<string, { name: string; quantity: number; collected: number }>();
   for (const o of orders)
     for (const l of o.lines) {
@@ -526,17 +573,23 @@ export async function foodOrders(actor: Actor, tournamentId: string, now = new D
       online: !!o.stripePaymentIntentId,
       totalCents: o.totalCents,
       collectedAt: o.collectedAt,
-      name: o.user.playerProfile
-        ? [
-            o.user.playerProfile.firstName,
-            o.user.playerProfile.lastNamePrefix,
-            o.user.playerProfile.lastName,
-          ]
-            .filter(Boolean)
-            .join(' ')
-        : o.user.name,
-      memberNumber: o.user.playerProfile?.memberNumber ?? null,
-      lines: o.lines.map((l) => ({ name: l.name, quantity: l.quantity })),
+      desk: o.guestName !== null,
+      staff: o.guestName === null && !entrants.has(o.userId),
+      note: o.guestNote,
+      addedBy: o.guestName !== null ? o.user.name : null,
+      lines: o.lines.map((l) => ({ itemId: l.foodItemId, name: l.name, quantity: l.quantity })),
+      name: o.guestName
+        ? o.guestName
+        : o.user.playerProfile
+          ? [
+              o.user.playerProfile.firstName,
+              o.user.playerProfile.lastNamePrefix,
+              o.user.playerProfile.lastName,
+            ]
+              .filter(Boolean)
+              .join(' ')
+          : o.user.name,
+      memberNumber: o.guestName ? null : (o.user.playerProfile?.memberNumber ?? null),
     })),
     totals: [...totals.values()],
     closed,
@@ -644,6 +697,131 @@ export async function refundFoodOrder(
   });
 }
 
+// ── Desk orders for people without an account (D107) ───────────────────────────────
+
+const deskSchema = z.object({
+  name: z.string().trim().min(1).max(80),
+  note: z.string().trim().max(120).optional(),
+});
+
+/**
+ * An organiser adds an order at the food desk for someone without an account. Paid at pickup,
+ * or straight away ("Paid now"). The player deadline doesn't apply; stock does.
+ */
+export async function addDeskOrder(
+  actor: Actor,
+  tournamentId: string,
+  input: { name?: unknown; note?: unknown; lines?: unknown; paid?: boolean },
+  meta: RequestMeta,
+  now = new Date(),
+) {
+  await assertCanManageTournament(actor, tournamentId);
+  if (!(await foodAllowed(tournamentId))) throw new AppError('foodUnavailable');
+  const guest = parseInput(deskSchema, { name: input.name, note: input.note || undefined });
+  const wanted = wantedLines({ lines: input.lines });
+  const order = await prisma.$transaction(
+    async (tx) => {
+      const priced = await pricedLines(tx, tournamentId, wanted, now);
+      return tx.foodOrder.create({
+        data: {
+          orderNumber: `F-${randomBytes(4).toString('hex').toUpperCase()}`,
+          tournamentId,
+          userId: actor.userId,
+          guestName: guest.name,
+          guestNote: guest.note ?? null,
+          totalCents: priced.totalCents,
+          ...(input.paid ? { status: 'PAID' as FoodOrderStatus, paidAt: now } : {}),
+          lines: { create: priced.lines },
+        },
+      });
+    },
+    { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+  );
+  await writeAudit(prisma, {
+    actorId: actor.userId,
+    action: 'food.deskOrdered',
+    entityType: 'FoodOrder',
+    entityId: order.id,
+    after: { name: guest.name, totalCents: order.totalCents, paid: !!input.paid },
+    meta,
+  });
+  return order.id;
+}
+
+/** Changes a desk order's name, note or items while it is unpaid and not handed out. */
+export async function updateDeskOrder(
+  actor: Actor,
+  tournamentId: string,
+  orderId: string,
+  input: { name?: unknown; note?: unknown; lines?: unknown },
+  meta: RequestMeta,
+  now = new Date(),
+) {
+  await assertCanManageTournament(actor, tournamentId);
+  const o = await prisma.foodOrder.findFirst({
+    where: { id: orderId, tournamentId },
+    include: { lines: true },
+  });
+  if (!o || o.guestName === null || o.status !== 'PENDING' || o.collectedAt)
+    throw new AppError('notFound');
+  const guest = parseInput(deskSchema, { name: input.name, note: input.note || undefined });
+  const wanted = wantedLines({ lines: input.lines });
+  const totalCents = await prisma.$transaction(
+    async (tx) => {
+      const priced = await pricedLines(tx, tournamentId, wanted, now, orderId);
+      await tx.foodOrderLine.deleteMany({ where: { foodOrderId: orderId } });
+      await tx.foodOrder.update({
+        where: { id: orderId },
+        data: {
+          guestName: guest.name,
+          guestNote: guest.note ?? null,
+          totalCents: priced.totalCents,
+          lines: { create: priced.lines },
+        },
+      });
+      return priced.totalCents;
+    },
+    { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+  );
+  await writeAudit(prisma, {
+    actorId: actor.userId,
+    action: 'food.deskChanged',
+    entityType: 'FoodOrder',
+    entityId: orderId,
+    before: {
+      name: o.guestName,
+      lines: o.lines.map((l) => `${l.quantity}x ${l.name}`),
+      totalCents: o.totalCents,
+    },
+    after: { name: guest.name, lines: wanted, totalCents },
+    meta,
+  });
+}
+
+/** "Paid now" by mistake on a desk order not yet handed out: unpaid again. */
+export async function undoDeskFoodPaid(
+  actor: Actor,
+  tournamentId: string,
+  orderId: string,
+  meta: RequestMeta,
+) {
+  await assertCanManageTournament(actor, tournamentId);
+  const o = await prisma.foodOrder.findFirst({ where: { id: orderId, tournamentId } });
+  if (!o || o.guestName === null || o.status !== 'PAID' || o.stripePaymentIntentId || o.collectedAt)
+    throw new AppError('notFound');
+  await prisma.foodOrder.update({
+    where: { id: orderId },
+    data: { status: 'PENDING', paidAt: null },
+  });
+  await writeAudit(prisma, {
+    actorId: actor.userId,
+    action: 'food.deskUnpaid',
+    entityType: 'FoodOrder',
+    entityId: orderId,
+    meta,
+  });
+}
+
 /** Excel for the kitchen: totals per item, and every order with the player. */
 export async function foodOrdersXlsx(actor: Actor, tournamentId: string, locale: 'nl' | 'en') {
   const { orders, totals } = await foodOrders(actor, tournamentId);
@@ -661,8 +839,8 @@ export async function foodOrdersXlsx(actor: Actor, tournamentId: string, locale:
         : ['Order', 'Player', 'Member number', 'Items', 'Amount', 'Paid', 'Collected'],
       rows: orders.map((o) => [
         o.orderNumber,
-        o.name,
-        o.memberNumber ?? '',
+        o.note ? `${o.name} (${o.note})` : o.name,
+        o.memberNumber ?? (o.desk ? (nl ? 'balie' : 'desk') : o.staff ? 'staff' : ''),
         o.lines.map((l) => `${l.quantity}× ${l.name}`).join(', '),
         (o.totalCents / 100).toFixed(2),
         o.status === 'PAID' ? (nl ? 'ja' : 'yes') : nl ? 'bij afhalen' : 'at pickup',

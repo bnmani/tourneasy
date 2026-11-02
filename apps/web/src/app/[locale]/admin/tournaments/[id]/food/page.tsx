@@ -1,7 +1,7 @@
 import { formatEuro, utcToAmsterdamLocal } from '@tourneasy/shared';
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
-import { FoodItemForm, FoodSettingsForm } from '@/components/admin/food-forms';
+import { DeskOrderForm, FoodItemForm, FoodSettingsForm } from '@/components/admin/food-forms';
 import { FoodScanner } from '@/components/admin/food-scanner';
 import { cn } from '@/lib/utils';
 import { Badge, PageHeader, StatusNotice } from '@/components/admin/ui';
@@ -13,6 +13,7 @@ import {
   refundFoodOrderAction,
   removeFoodItemAction,
   undoCollectedAction,
+  undoDeskFoodPaidAction,
 } from '@/server/actions/pricing-food-actions';
 import { requirePortal } from '@/server/auth/web';
 import { ALLERGENS, foodOrders, foodSettings } from '@/server/services/food-service';
@@ -50,12 +51,23 @@ export default async function FoodAdminPage({ params, searchParams }: Props) {
         (o) =>
           o.orderNumber.toLowerCase().includes(q) ||
           o.name.toLowerCase().includes(q) ||
+          (o.note ?? '').toLowerCase().includes(q) ||
           (o.memberNumber ?? '').toLowerCase().includes(q),
       )
     : list.orders;
   const toHandOut = orders.filter((o) => !o.collectedAt);
   const collected = orders.filter((o) => o.collectedAt);
   const euro = (c: number) => formatEuro(c, locale);
+  // The desk form's menu: items on sale, with what is left (D107).
+  const deskItems = settings.items
+    .filter((i) => i.active)
+    .map((i) => ({
+      id: i.id,
+      name: i.name,
+      priceCents: i.priceCents,
+      left: i.maxQuantity === null ? null : Math.max(0, i.maxQuantity - i.ordered),
+    }));
+  const prices = Object.fromEntries(deskItems.map((i) => [i.id, euro(i.priceCents)]));
 
   return (
     <>
@@ -173,6 +185,18 @@ export default async function FoodAdminPage({ params, searchParams }: Props) {
             </span>
           </div>
         )}
+        {deskItems.length > 0 && (
+          <details className="rounded-md border p-3 sm:p-4">
+            <summary className="cursor-pointer font-medium">{t('deskTitle')}</summary>
+            <p className="mt-2 mb-4 text-sm text-muted-foreground">{t('deskIntro')}</p>
+            <DeskOrderForm
+              locale={locale}
+              tournamentId={id}
+              items={deskItems}
+              formatPrice={prices}
+            />
+          </details>
+        )}
         <form className="flex gap-2" action={`/${locale}/admin/tournaments/${id}/food#orders`}>
           <label htmlFor="food-search" className="sr-only">
             {t('search')}
@@ -229,11 +253,49 @@ export default async function FoodAdminPage({ params, searchParams }: Props) {
                                   : t('payAtPickup')}
                             </Badge>
                             {o.collectedAt && <Badge tone="muted">{t('collected')}</Badge>}
+                            {o.desk && <Badge tone="muted">{t('deskBadge')}</Badge>}
+                            {o.staff && <Badge tone="muted">{t('staffBadge')}</Badge>}
                           </div>
+                          {(o.note || o.addedBy) && (
+                            <p className="text-muted-foreground">
+                              {[o.note, o.addedBy && t('addedBy', { name: o.addedBy })]
+                                .filter(Boolean)
+                                .join(' · ')}
+                            </p>
+                          )}
                           <p className="text-muted-foreground">
                             {o.lines.map((l) => `${l.quantity}× ${l.name}`).join(', ')} ·{' '}
                             {euro(o.totalCents)}
                           </p>
+                          {o.desk && o.status === 'PENDING' && !o.collectedAt && (
+                            <details className="mt-2">
+                              <summary className="cursor-pointer text-primary">
+                                {t('changeOrder')}
+                              </summary>
+                              <div className="mt-3">
+                                <DeskOrderForm
+                                  locale={locale}
+                                  tournamentId={id}
+                                  items={deskItems.map((i) => ({
+                                    ...i,
+                                    // This order's own portions are available to it again.
+                                    left:
+                                      i.left === null
+                                        ? null
+                                        : i.left +
+                                          (o.lines.find((l) => l.itemId === i.id)?.quantity ?? 0),
+                                  }))}
+                                  formatPrice={prices}
+                                  order={{
+                                    id: o.id,
+                                    name: o.name,
+                                    note: o.note,
+                                    lines: o.lines,
+                                  }}
+                                />
+                              </div>
+                            </details>
+                          )}
                         </div>
                         <div className="flex shrink-0 gap-2">
                           {o.collectedAt && (
@@ -248,6 +310,14 @@ export default async function FoodAdminPage({ params, searchParams }: Props) {
                             <form action={markCollectedAction.bind(null, locale, id, o.id)}>
                               <Button type="submit" size="sm">
                                 {o.status === 'PAID' ? t('handOut') : t('handOutPaid')}
+                              </Button>
+                            </form>
+                          )}
+                          {o.desk && o.status === 'PAID' && !o.online && !o.collectedAt && (
+                            // "Paid now" by mistake (D107).
+                            <form action={undoDeskFoodPaidAction.bind(null, locale, id, o.id)}>
+                              <Button type="submit" size="sm" variant="ghost">
+                                {t('undoPaid')}
                               </Button>
                             </form>
                           )}
