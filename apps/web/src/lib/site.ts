@@ -45,3 +45,24 @@ export function wwwRedirect(
   const host = requestHost.toLowerCase().replace(/:\d+$/, '');
   return host === `www.${site.hostname}` ? `${site.origin}${pathAndQuery}` : null;
 }
+
+/**
+ * Route to a venue: Google Maps directions, which opens the maps app on phones. Coordinates
+ * when the venue has them, otherwise its name and address (OpenStreetMap search often found
+ * nothing, D108).
+ */
+export function directionsUrl(v: {
+  name: string;
+  street: string;
+  houseNumber: string;
+  postcode: string;
+  city: string;
+  latitude: number | null;
+  longitude: number | null;
+}): string {
+  const destination =
+    v.latitude !== null && v.longitude !== null
+      ? `${v.latitude},${v.longitude}`
+      : `${v.name}, ${v.street} ${v.houseNumber}, ${v.postcode} ${v.city}`;
+  return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destination)}`;
+}

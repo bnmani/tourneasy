@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Link } from '@/i18n/navigation';
 import { pageLocale } from '@/lib/page';
 import { pageMetadata } from '@/lib/seo';
+import { directionsUrl } from '@/lib/site';
 import { isAppError } from '@/server/lib/errors';
 import { getPublicVenue } from '@/server/services/public-service';
 
@@ -48,7 +49,7 @@ export default async function VenuePage({ params }: Props) {
   const tp = await getTranslations('Public');
   const tprov = await getTranslations('Provinces');
   const address = `${v.street} ${v.houseNumber}, ${v.postcode} ${v.city}`;
-  const route = `https://www.openstreetmap.org/search?query=${encodeURIComponent(`${v.name}, ${address}`)}`;
+  const route = directionsUrl(v);
   const texts = [
     { title: t('facilities'), text: pickLocalized(v.facilities, locale) },
     { title: t('parking'), text: pickLocalized(v.parkingInfo, locale) },

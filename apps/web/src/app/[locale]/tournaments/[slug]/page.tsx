@@ -28,6 +28,7 @@ import { Link } from '@/i18n/navigation';
 import { eventLabel } from '@/lib/labels';
 import { pageLocale } from '@/lib/page';
 import { pageMetadata } from '@/lib/seo';
+import { directionsUrl } from '@/lib/site';
 import { getActor } from '@/server/auth/web';
 import { isAppError } from '@/server/lib/errors';
 import { LiveMatches } from '@/components/matches/live-matches';
@@ -77,12 +78,6 @@ function eventName(e: PublicEvent, locale: AppLocale) {
     },
     locale,
   );
-}
-
-function directionsUrl(t: PublicTournament) {
-  const v = t.venue!;
-  const query = `${v.name}, ${v.street} ${v.houseNumber}, ${v.postcode} ${v.city}`;
-  return `https://www.openstreetmap.org/search?query=${encodeURIComponent(query)}`;
 }
 
 /** schema.org SportsEvent so search engines can show dates and place. */
@@ -218,7 +213,7 @@ export default async function TournamentPage({ params }: Props) {
               variant="outline"
               className="border-current bg-transparent text-hero-foreground hover:bg-hero-foreground/10 hover:text-hero-foreground"
             >
-              <a href={directionsUrl(t)} target="_blank" rel="noopener noreferrer">
+              <a href={directionsUrl(t.venue!)} target="_blank" rel="noopener noreferrer">
                 <Navigation aria-hidden="true" />
                 {tp('route')}
               </a>
