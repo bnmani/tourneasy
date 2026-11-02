@@ -12,17 +12,31 @@ export function VerifyForm({
   next,
   remember,
   app = true,
+  passkey = false,
 }: {
   locale: AppLocale;
   next: string;
   remember: boolean;
   /** The authenticator app is on; without it only a recovery code can be typed here. */
   app?: boolean;
+  /** A passkey is on: without the app, the recovery code hides behind a link (D105). */
+  passkey?: boolean;
 }) {
   const t = useTranslations('Auth.mfa');
   const [state, action] = useActionState(verifyLoginAction.bind(null, locale), initialFormState);
   // The app's code is digits: open the number pad. Recovery codes have letters.
   const [recovery, setRecovery] = useState(!app);
+  // Passkey only: nothing to type unless they ask for a recovery code.
+  const [shown, setShown] = useState(app || !passkey);
+  const linkClass =
+    'text-sm text-primary underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none';
+  if (!shown) {
+    return (
+      <button type="button" onClick={() => setShown(true)} className={linkClass}>
+        {t('usePasskeyRecovery')}
+      </button>
+    );
+  }
   return (
     <form action={action} className="space-y-5" noValidate>
       <FormError state={state} />
@@ -39,16 +53,22 @@ export function VerifyForm({
         inputMode={recovery ? 'text' : 'numeric'}
         maxLength={recovery ? 20 : 6}
       />
-      {app && (
+      <SubmitButton size="lg">{t('submit')}</SubmitButton>
+      {app ? (
         <button
           type="button"
           onClick={() => setRecovery((r) => !r)}
-          className="text-sm text-primary underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+          className={`block ${linkClass}`}
         >
           {recovery ? t('useApp') : t('useRecovery')}
         </button>
+      ) : (
+        passkey && (
+          <button type="button" onClick={() => setShown(false)} className={`block ${linkClass}`}>
+            {t('hideRecovery')}
+          </button>
+        )
       )}
-      <SubmitButton size="lg">{t('submit')}</SubmitButton>
     </form>
   );
 }

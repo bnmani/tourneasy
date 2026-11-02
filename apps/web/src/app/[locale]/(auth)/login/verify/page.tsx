@@ -30,19 +30,26 @@ export default async function VerifyLoginPage({
   const next = firstParam(query.next) ?? '';
   const remember = firstParam(query.remember) === '1';
   return (
-    <AuthCard title={t('title')}>
+    <AuthCard title={methods.passkeys > 0 ? t('titlePasskey') : t('title')}>
       <div className="space-y-5">
         <p className="text-muted-foreground">
           {methods.passkeys > 0 ? (methods.app ? t('introBoth') : t('introPasskey')) : t('intro')}
         </p>
-        {/* A passkey first when there is one (D88); the code form stays as the alternative. */}
+        {/* A passkey first when there is one (D88); the app code is the alternative, and a
+            recovery code sits behind a link (D105). */}
         {methods.passkeys > 0 && <PasskeyLogin locale={locale} next={next} remember={remember} />}
-        {methods.passkeys > 0 && (
+        {methods.passkeys > 0 && methods.app && (
           <p className="text-center text-xs tracking-wide text-muted-foreground uppercase">
             {t('or')}
           </p>
         )}
-        <VerifyForm locale={locale} next={next} remember={remember} app={methods.app} />
+        <VerifyForm
+          locale={locale}
+          next={next}
+          remember={remember}
+          app={methods.app}
+          passkey={methods.passkeys > 0}
+        />
         <form action={`/${locale}/logout`} method="post">
           <button type="submit" className="text-sm text-muted-foreground underline">
             {t('cancel')}
