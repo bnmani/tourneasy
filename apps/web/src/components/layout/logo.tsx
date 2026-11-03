@@ -1,4 +1,5 @@
 import { cn } from '@/lib/utils';
+import { TestBadge } from './test-site';
 
 /**
  * Logo A "Shuttle" (D43): a shuttlecock in a round badge with a band in the brand accent.
@@ -37,7 +38,10 @@ export function Logo({
     <span className={cn('flex items-center gap-2.5', className)}>
       <LogoMark className="size-9" />
       <span className="leading-none">
-        <span className="block font-heading text-xl font-bold tracking-tight">Tourneasy</span>
+        <span className="block font-heading text-xl font-bold tracking-tight">
+          Tourneasy
+          <TestBadge />
+        </span>
         {!compact && (
           <span
             className={cn(

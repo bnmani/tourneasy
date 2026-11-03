@@ -66,3 +66,11 @@ export function directionsUrl(v: {
       : `${v.name}, ${v.street} ${v.houseNumber}, ${v.postcode} ${v.city}`;
   return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destination)}`;
 }
+
+/**
+ * The running test site (D110): a production build on any host but the live one. Local
+ * development and automated tests aren't marked.
+ */
+export function isTestSite(appUrl = process.env.APP_URL): boolean {
+  return process.env.NODE_ENV === 'production' && !isProductionSite(appUrl);
+}

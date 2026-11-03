@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { hasLocale, NextIntlClientProvider } from 'next-intl';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { SiteFooter } from '@/components/layout/site-footer';
+import { TestSiteBanner } from '@/components/layout/test-site';
 import { SiteHeader } from '@/components/layout/site-header';
 import { routing } from '@/i18n/routing';
 import { getSiteTheme } from '@/server/services/site-settings-service';
@@ -74,6 +75,7 @@ export default async function LocaleLayout({ children, params }: Props) {
           >
             {t('skipToContent')}
           </a>
+          <TestSiteBanner />
           <SiteHeader />
           <main id="main" className="flex-1">
             {children}

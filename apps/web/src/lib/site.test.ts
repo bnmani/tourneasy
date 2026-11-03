@@ -1,5 +1,11 @@
-import { describe, expect, it } from 'vitest';
-import { directionsUrl, housekeepingMinutes, isProductionSite, wwwRedirect } from './site';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import {
+  directionsUrl,
+  housekeepingMinutes,
+  isProductionSite,
+  isTestSite,
+  wwwRedirect,
+} from './site';
 
 describe('isProductionSite', () => {
   it('is only the live domain', () => {
@@ -59,5 +65,16 @@ describe('directionsUrl (D108)', () => {
     expect(directionsUrl({ ...venue, latitude: 52.39, longitude: 5.28 })).toBe(
       'https://www.google.com/maps/dir/?api=1&destination=52.39%2C5.28',
     );
+  });
+});
+
+describe('isTestSite (D110)', () => {
+  afterEach(() => vi.unstubAllEnvs());
+  it('marks a production build on the test host only', () => {
+    vi.stubEnv('NODE_ENV', 'production');
+    expect(isTestSite('https://test.tourneasy.app')).toBe(true);
+    expect(isTestSite('https://tourneasy.com')).toBe(false);
+    vi.stubEnv('NODE_ENV', 'test');
+    expect(isTestSite('https://test.tourneasy.app')).toBe(false);
   });
 });

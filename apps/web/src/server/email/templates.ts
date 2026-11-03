@@ -8,6 +8,7 @@ import { messages, type AppLocale } from '@tourneasy/shared/i18n';
 import { createTranslator } from 'next-intl';
 import type { OutgoingMail } from './mailer';
 import { siteUrl } from '../lib/urls';
+import { isTestSite } from '@/lib/site';
 import { emailTextOverrides } from './text-overrides';
 
 /** A tournament's own logo at the top of its emails (D67). */
@@ -541,7 +542,7 @@ export function renderEmailWith(
     }
   }
 
-  const text = [
+  let text = [
     ...paragraphs,
     ...(extraText ? [extraText] : []),
     ...(button ? [`${button.label}: ${button.url}`] : []),
@@ -552,6 +553,12 @@ export function renderEmailWith(
     ...(options.unsubscribeUrl ? [{ label: t('unsubscribe'), url: options.unsubscribeUrl }] : []),
     ...(options.preferencesUrl ? [{ label: t('preferences'), url: options.preferencesUrl }] : []),
   ];
+  // The test site marks its mail, as real people can receive it (D110).
+  if (isTestSite()) {
+    subject = `[TEST] ${subject}`;
+    paragraphs = [t('testSiteNotice'), ...paragraphs];
+    text = `${t('testSiteNotice')}\n\n${text}`;
+  }
   const mail: OutgoingMail = {
     to,
     subject,
