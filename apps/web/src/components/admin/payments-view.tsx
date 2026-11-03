@@ -4,6 +4,7 @@ import { getFormatter, getTranslations } from 'next-intl/server';
 import { Pagination } from '@/components/admin/ui';
 import { Button } from '@/components/ui/button';
 import { ScrollRegion } from '@/components/ui/scroll-region';
+import { eventLabel, personName } from '@/lib/labels';
 import { cn } from '@/lib/utils';
 import { refundDecisionAction, reopenRefundAction } from '@/server/actions/payment-actions';
 import type { paymentsOverview } from '@/server/services/payment-service';
@@ -31,6 +32,20 @@ export async function PaymentsView({
   const tm = await getTranslations('PaymentMethods');
   const format = await getFormatter();
   const euro = (cents: number) => formatEuro(cents, locale);
+  const short = (d: Date) => format.dateTime(d, { dateStyle: 'short', timeStyle: 'short' });
+  // Refund lines: the player and the event, in the reader's language (D109).
+  type RefundLine = {
+    payment: { order: { user: { name: string } } };
+    orderItem: {
+      description: string;
+      participant: { player: Parameters<typeof personName>[0] };
+      registration: { event: Parameters<typeof eventLabel>[0] };
+    } | null;
+  };
+  const refundWho = (r: RefundLine) =>
+    r.orderItem ? personName(r.orderItem.participant.player) : r.payment.order.user.name;
+  const refundWhat = (r: RefundLine) =>
+    r.orderItem ? eventLabel(r.orderItem.registration.event, locale) : '';
   return (
     <>
       <dl className="grid gap-3 sm:grid-cols-3">
@@ -62,11 +77,15 @@ export async function PaymentsView({
               >
                 <div className="text-sm">
                   <p className="font-medium">
-                    {euro(r.amountCents)} · {r.payment.order.user.name}
+                    {euro(r.amountCents)} · {refundWho(r)}
                   </p>
                   <p className="text-muted-foreground">
-                    {r.payment.order.tournament.name} · {r.orderItem?.description} ·{' '}
+                    {r.payment.order.tournament.name} · {refundWhat(r)} ·{' '}
                     {r.payment.order.orderNumber}
+                    {r.orderItem && r.amountCents < r.orderItem.amountCents && (
+                      // A multi-category price kept part of it (D109).
+                      <> · {tp('ofPaid', { paid: euro(r.orderItem.amountCents) })}</>
+                    )}
                     {r.payment.method === 'MANUAL' && <> · {tp('manualRefund')}</>}
                   </p>
                 </div>
@@ -106,10 +125,10 @@ export async function PaymentsView({
               >
                 <div>
                   <p className="font-medium">
-                    {euro(r.amountCents)} · {r.payment.order.user.name}
+                    {euro(r.amountCents)} · {refundWho(r)}
                   </p>
                   <p className="text-muted-foreground">
-                    {r.payment.order.tournament.name} · {r.orderItem?.description} ·{' '}
+                    {r.payment.order.tournament.name} · {refundWhat(r)} ·{' '}
                     {r.payment.order.orderNumber}
                     {r.processedAt && (
                       <>
@@ -135,9 +154,9 @@ export async function PaymentsView({
 
       <section aria-labelledby="orders-title" className="space-y-3">
         <h2 id="orders-title" className="text-lg font-semibold">
-          {tp('orders', { count: overview.total })}
+          {tp('players', { count: overview.total })}
         </h2>
-        {overview.orders.length === 0 ? (
+        {overview.players.length === 0 ? (
           <p className="text-muted-foreground">{tp('none')}</p>
         ) : (
           <ScrollRegion label={tp('title')} className="rounded-lg border bg-card">
@@ -145,10 +164,7 @@ export async function PaymentsView({
               <thead className="border-b bg-muted/50 text-xs text-muted-foreground uppercase">
                 <tr>
                   <th scope="col" className="px-3 py-2">
-                    {tp('order')}
-                  </th>
-                  <th scope="col" className="px-3 py-2">
-                    {tp('payer')}
+                    {tp('player')}
                   </th>
                   <th scope="col" className="px-3 py-2">
                     {tp('items')}
@@ -162,37 +178,57 @@ export async function PaymentsView({
                 </tr>
               </thead>
               <tbody className="divide-y">
-                {overview.orders.map((o) => (
-                  <tr key={o.id} className="align-top">
+                {overview.players.map((g) => (
+                  <tr key={g.key} className="align-top">
                     <td className="px-3 py-3">
-                      <span className="font-medium">{o.orderNumber}</span>
-                      <span className="block text-xs text-muted-foreground">
-                        {format.dateTime(o.paidAt ?? o.createdAt, {
-                          dateStyle: 'short',
-                          timeStyle: 'short',
-                        })}
-                      </span>
-                    </td>
-                    <td className="px-3 py-3">
-                      {o.user.name}
-                      <span className="block text-xs text-muted-foreground">{o.user.email}</span>
+                      <span className="font-medium">{personName(g.player)}</span>{' '}
+                      <span className="text-xs text-muted-foreground">{g.player.memberNumber}</span>
+                      {g.email && (
+                        <span className="block text-xs text-muted-foreground">{g.email}</span>
+                      )}
+                      {g.recordedBy.length > 0 && (
+                        <span className="block text-xs text-muted-foreground">
+                          {tp('recordedBy', { names: g.recordedBy.join(', ') })}
+                        </span>
+                      )}
                     </td>
                     <td className="px-3 py-3 text-xs">
-                      <span className="block font-medium">{o.tournament.name}</span>
-                      {o.items.map((i) => (
-                        <span key={i.description} className="block text-muted-foreground">
-                          {i.description}
-                          {i.refundedCents > 0 && (
-                            <> ({tp('refundedShort', { amount: euro(i.refundedCents) })})</>
-                          )}
-                        </span>
-                      ))}
+                      <span className="block font-medium">{g.tournament.name}</span>
+                      <span className="block text-muted-foreground">
+                        {[...new Set(g.lines.map((l) => eventLabel(l.event, locale)))].join(', ')}
+                      </span>
+                      <details className="mt-1">
+                        <summary className="cursor-pointer text-primary">
+                          {tp('details', { count: g.lines.length })}
+                        </summary>
+                        <ul className="mt-2 space-y-1 text-muted-foreground">
+                          {g.lines.map((l) => (
+                            <li key={l.id}>
+                              {eventLabel(l.event, locale)} · {euro(l.amountCents)}
+                              {l.refundedCents > 0 && (
+                                <> ({tp('refundedShort', { amount: euro(l.refundedCents) })})</>
+                              )}{' '}
+                              · {l.status === 'PAID' && l.method ? tm(l.method) : to(l.status)} ·{' '}
+                              {l.orderNumber} · {short(l.at)}
+                            </li>
+                          ))}
+                        </ul>
+                      </details>
                     </td>
                     <td className="px-3 py-3 text-right font-medium whitespace-nowrap">
-                      {euro(o.totalCents)}
-                      {o.payments[0]?.method && (
+                      {g.paidCents || g.pendingCents ? (
+                        euro(g.paidCents || g.pendingCents)
+                      ) : (
+                        <s className="text-muted-foreground">{euro(g.voidCents)}</s>
+                      )}
+                      {g.refundedCents > 0 && (
                         <span className="block text-xs font-normal text-muted-foreground">
-                          {tm(o.payments[0].method)}
+                          {tp('refundedShort', { amount: euro(g.refundedCents) })}
+                        </span>
+                      )}
+                      {g.methods.length > 0 && (
+                        <span className="block text-xs font-normal text-muted-foreground">
+                          {g.methods.map((m) => tm(m)).join(', ')}
                         </span>
                       )}
                     </td>
@@ -200,12 +236,12 @@ export async function PaymentsView({
                       <span
                         className={cn(
                           'rounded-full px-2 py-0.5 text-xs font-bold whitespace-nowrap',
-                          o.status === 'PAID'
+                          g.status === 'PAID'
                             ? 'bg-primary text-primary-foreground'
                             : 'bg-muted text-muted-foreground',
                         )}
                       >
-                        {to(o.status)}
+                        {to(g.status)}
                       </span>
                     </td>
                   </tr>

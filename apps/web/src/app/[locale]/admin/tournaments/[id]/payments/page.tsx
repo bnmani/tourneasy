@@ -39,7 +39,7 @@ export default async function TournamentPaymentsPage({ params, searchParams }: P
         intro={tp('tournamentIntro')}
         actions={
           <Button asChild>
-            <a href={`/api/v1/admin/payments/export?tournamentId=${id}`} download>
+            <a href={`/api/v1/admin/payments/export?tournamentId=${id}&lang=${locale}`} download>
               {tp('export')}
             </a>
           </Button>

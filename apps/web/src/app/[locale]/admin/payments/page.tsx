@@ -63,7 +63,7 @@ export default async function PaymentsPage({ params, searchParams }: Props) {
             )}
             {actor.roles.includes('OWNER') && (
               <Button asChild>
-                <a href={`/api/v1/admin/payments/export?${exportQuery}`} download>
+                <a href={`/api/v1/admin/payments/export?${exportQuery}&lang=${locale}`} download>
                   {tp('export')}
                 </a>
               </Button>

@@ -4,6 +4,7 @@ import { createPlayer, lastMailTo, meta, resetDatabase } from '@/test/db';
 import { FakeGateway, setGatewayForTests, type GatewayEvent } from '../payments/gateway';
 import {
   createCheckout,
+  exportPayments,
   handleWebhook,
   markShareAsPaid,
   paymentsOverview,
@@ -253,6 +254,90 @@ describe('multi-category discount (D52)', () => {
     const admin = await player({}, Role.ADMIN);
     const overview = await paymentsOverview(admin.actor, { tournamentId: t.id });
     expect(overview.totals).toMatchObject({ outstandingCents: 2000, outstandingShares: 2 });
+  });
+});
+
+describe('withdrawing with a multi-category price (D109)', () => {
+  it('charges the kept category at its list price, and returns the rest later', async () => {
+    const t = await tournament({
+      bundlePricesCents: [1500, 2500],
+      refundPolicy: 'AUTOMATIC_BEFORE_DEADLINE',
+      refundPercent: 100,
+    });
+    const de = await event(t.id, 'DE');
+    const dd = await event(t.id, 'DD');
+    const anna = await player({ gender: 'FEMALE' });
+    const entered = await enter(anna.actor, [
+      { eventId: de.id },
+      { eventId: dd.id, lookingForPartner: true },
+    ]);
+    const checkout = await createCheckout(
+      anna.actor,
+      { participantIds: entered.registrations.map((r) => r.participantId!) },
+      NOW,
+    );
+    gateway.pay([...gateway.intents.keys()][0]!);
+    await reconcileOrder(checkout.orderId!, anna.actor);
+
+    // Paid €25 for two; keeping one costs €15: €10 back, not €12.50.
+    await withdrawMyRegistration(anna.actor, entered.registrations[1]!.id, {}, meta, NOW);
+    expect(gateway.refunds.map((r) => r.amountCents)).toEqual([1000]);
+    // Withdrawing from the last one too: its €12.50 and the €2.50 kept back come back.
+    await withdrawMyRegistration(anna.actor, entered.registrations[0]!.id, {}, meta, NOW);
+    expect(gateway.refunds.map((r) => r.amountCents).sort()).toEqual([1000, 1250, 250].sort());
+    expect(
+      await prisma.order.findUniqueOrThrow({ where: { id: checkout.orderId! } }),
+    ).toMatchObject({ status: 'REFUNDED' });
+  });
+
+  it('without a price list refunds the category fee, as before', async () => {
+    const t = await tournament({ refundPolicy: 'AUTOMATIC_BEFORE_DEADLINE', refundPercent: 100 });
+    const de = await event(t.id, 'DE');
+    const dd = await event(t.id, 'DD');
+    const anna = await player({ gender: 'FEMALE' });
+    const entered = await enter(anna.actor, [
+      { eventId: de.id },
+      { eventId: dd.id, lookingForPartner: true },
+    ]);
+    const checkout = await createCheckout(
+      anna.actor,
+      { participantIds: entered.registrations.map((r) => r.participantId!) },
+      NOW,
+    );
+    gateway.pay([...gateway.intents.keys()][0]!);
+    await reconcileOrder(checkout.orderId!, anna.actor);
+    await withdrawMyRegistration(anna.actor, entered.registrations[1]!.id, {}, meta, NOW);
+    expect(gateway.refunds.map((r) => r.amountCents)).toEqual([1500]);
+  });
+});
+
+describe('payments per player (D109)', () => {
+  it('shows one row per player with the total, and the events below', async () => {
+    setGatewayForTests(null);
+    const t = await tournament({ bundlePricesCents: [1500, 2500] });
+    const de = await event(t.id, 'DE');
+    const dd = await event(t.id, 'DD');
+    const anna = await player({ gender: 'FEMALE' });
+    const entered = await enter(anna.actor, [
+      { eventId: de.id },
+      { eventId: dd.id, lookingForPartner: true },
+    ]);
+    const admin = await player({}, Role.ADMIN);
+    for (const r of entered.registrations)
+      await markShareAsPaid(admin.actor, { participantId: r.participantId! }, meta, NOW);
+    const overview = await paymentsOverview(admin.actor, { tournamentId: t.id });
+    expect(overview.total).toBe(1);
+    expect(overview.players[0]).toMatchObject({
+      paidCents: 2500,
+      refundedCents: 0,
+      status: 'PAID',
+      methods: ['MANUAL'],
+      recordedBy: [],
+    });
+    expect(overview.players[0]!.lines.map((l) => l.amountCents)).toEqual([1250, 1250]);
+    const { rows } = await exportPayments(admin.actor, { tournamentId: t.id }, 'en');
+    expect(rows).toHaveLength(1);
+    expect(rows[0]![6]).toBe(25);
   });
 });
 

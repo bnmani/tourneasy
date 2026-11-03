@@ -10,10 +10,14 @@ export const GET = apiHandler(async (request) => {
   const actor = await requireApiActor(request);
   const p = new URL(request.url).searchParams;
   const status = p.get('status');
-  const { header, rows } = await exportPayments(actor, {
-    tournamentId: p.get('tournamentId') || undefined,
-    status: status && STATUSES.includes(status) ? (status as OrderStatus) : undefined,
-  });
+  const { header, rows } = await exportPayments(
+    actor,
+    {
+      tournamentId: p.get('tournamentId') || undefined,
+      status: status && STATUSES.includes(status) ? (status as OrderStatus) : undefined,
+    },
+    p.get('lang') === 'en' ? 'en' : 'nl',
+  );
   const date = new Date().toISOString().slice(0, 10);
   return new Response(Buffer.from(toXlsx('Betalingen', header, rows)), {
     headers: {

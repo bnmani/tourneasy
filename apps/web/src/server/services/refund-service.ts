@@ -14,6 +14,7 @@ import { AppError } from '../lib/errors';
 import type { RequestMeta } from '../lib/request-meta';
 import { appUrl } from '../lib/urls';
 import { getGateway } from '../payments/gateway';
+import { refundPlan } from '../payments/pricing';
 import { assertAdmin } from './permissions';
 import type { Actor } from './session-service';
 
@@ -62,6 +63,7 @@ export async function refundsForCancelledRegistration(
         where: { order: { status: { in: ['PAID', 'PARTIALLY_REFUNDED'] } } },
         select: {
           id: true,
+          participantId: true,
           amountCents: true,
           refundedCents: true,
           refunds: {
@@ -81,9 +83,35 @@ export async function refundsForCancelledRegistration(
   const created: string[] = [];
   for (const item of registration.orderItems) {
     const payment = item.order.payments[0];
-    const open = item.amountCents - item.refundedCents;
-    if (!payment || open <= 0 || item.refunds.length > 0) continue;
-    const amountCents = Math.round((open * percent) / 100);
+    if (!payment || item.amountCents - item.refundedCents <= 0 || item.refunds.length > 0) continue;
+    // A multi-category price: the categories kept are charged at their list price (D109).
+    const plan = await refundPlan(item.participantId, item.amountCents - item.refundedCents);
+    const { kept } = plan;
+    // Kept back at an earlier withdrawal and now due as well: refunded from those shares.
+    for (const e of plan.earlier) {
+      const cents = Math.round((e.cents * percent) / 100);
+      if (cents <= 0) continue;
+      const earlier = await prisma.refund.create({
+        data: {
+          paymentId: e.paymentId,
+          orderItemId: e.orderItemId,
+          amountCents: cents,
+          status: 'REQUESTED',
+          reason: mode === 'full' ? 'cancelledByOrganiser' : 'withdrawn',
+          requestedById,
+        },
+      });
+      created.push(earlier.id);
+      await writeAudit(prisma, {
+        actorId: requestedById,
+        action: 'refund.request',
+        entityType: 'Refund',
+        entityId: earlier.id,
+        after: { amountCents: cents, registrationId, keptBackEarlier: true },
+        meta,
+      });
+    }
+    const amountCents = Math.round((plan.selfCents * percent) / 100);
     if (amountCents <= 0) continue;
     const refund = await prisma.refund.create({
       data: {
@@ -101,7 +129,7 @@ export async function refundsForCancelledRegistration(
       action: 'refund.request',
       entityType: 'Refund',
       entityId: refund.id,
-      after: { amountCents, registrationId },
+      after: { amountCents, registrationId, ...(kept ? { kept } : {}) },
       meta,
     });
   }

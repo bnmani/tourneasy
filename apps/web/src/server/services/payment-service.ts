@@ -611,6 +611,169 @@ export async function undoDeskPaymentsForPlayer(
 
 // ── Admin overview ─────────────────────────────────────────────────────────────────
 
+const eventLabelSelect = {
+  discipline: true,
+  name: true,
+  ageCategory: { select: { code: true, name: true } },
+  levelClass: { select: { code: true } },
+} satisfies Prisma.TournamentEventSelect;
+
+const payerPlayerSelect = {
+  id: true,
+  firstName: true,
+  lastNamePrefix: true,
+  lastName: true,
+  memberNumber: true,
+  userId: true,
+  contactEmail: true,
+  user: { select: { email: true } },
+} satisfies Prisma.PlayerProfileSelect;
+
+/** A refund line names the player and the event, in the reader's language (D109). */
+const refundItemSelect = {
+  description: true,
+  amountCents: true,
+  participant: { select: { player: { select: payerPlayerSelect } } },
+  registration: { select: { event: { select: eventLabelSelect } } },
+} satisfies Prisma.OrderItemSelect;
+
+const overviewOrderSelect = {
+  id: true,
+  orderNumber: true,
+  status: true,
+  createdAt: true,
+  paidAt: true,
+  userId: true,
+  user: { select: { name: true, email: true } },
+  tournament: { select: { id: true, name: true } },
+  payments: {
+    orderBy: { createdAt: 'desc' },
+    take: 1,
+    select: { method: true, status: true },
+  },
+  items: {
+    select: {
+      id: true,
+      amountCents: true,
+      refundedCents: true,
+      participant: { select: { player: { select: payerPlayerSelect } } },
+      registration: { select: { event: { select: eventLabelSelect } } },
+    },
+  },
+} satisfies Prisma.OrderSelect;
+
+type OverviewOrder = {
+  id: string;
+  orderNumber: string;
+  status: OrderStatus;
+  createdAt: Date;
+  paidAt: Date | null;
+  userId: string;
+  user: { name: string; email: string };
+  tournament: { id: string; name: string };
+  payments: { method: PaymentMethod | null; status: string }[];
+  items: {
+    id: string;
+    amountCents: number;
+    refundedCents: number;
+    participant: {
+      player: Prisma.PlayerProfileGetPayload<{ select: typeof payerPlayerSelect }>;
+    };
+    registration: {
+      event: Prisma.TournamentEventGetPayload<{ select: typeof eventLabelSelect }>;
+    };
+  }[];
+};
+
+const MONEY_IN: OrderStatus[] = ['PAID', 'PARTIALLY_REFUNDED', 'REFUNDED'];
+
+/**
+ * Orders regrouped per player per tournament (D109): the player the shares belong to (not
+ * who clicked Paid at the desk), every event with its order, and the totals.
+ */
+function groupByPlayer(orders: OverviewOrder[]) {
+  const groups = new Map<
+    string,
+    {
+      key: string;
+      player: OverviewOrder['items'][number]['participant']['player'];
+      email: string | null;
+      tournament: { id: string; name: string };
+      recordedBy: Set<string>;
+      paidCents: number;
+      pendingCents: number;
+      /** Cancelled or expired (e.g. a desk payment undone): not money in. */
+      voidCents: number;
+      refundedCents: number;
+      latest: Date;
+      statuses: Set<OrderStatus>;
+      lines: {
+        id: string;
+        orderNumber: string;
+        at: Date;
+        status: OrderStatus;
+        method: PaymentMethod | null;
+        event: OverviewOrder['items'][number]['registration']['event'];
+        amountCents: number;
+        refundedCents: number;
+      }[];
+    }
+  >();
+  for (const o of orders)
+    for (const i of o.items) {
+      const player = i.participant.player;
+      const key = `${o.tournament.id}:${player.id}`;
+      const at = o.paidAt ?? o.createdAt;
+      const g = groups.get(key) ?? {
+        key,
+        player,
+        email: player.user?.email ?? player.contactEmail,
+        tournament: o.tournament,
+        recordedBy: new Set<string>(),
+        paidCents: 0,
+        pendingCents: 0,
+        voidCents: 0,
+        refundedCents: 0,
+        latest: at,
+        statuses: new Set<OrderStatus>(),
+        lines: [],
+      };
+      if (o.userId !== player.userId) g.recordedBy.add(o.user.name);
+      if (MONEY_IN.includes(o.status)) g.paidCents += i.amountCents;
+      else if (o.status === 'PENDING') g.pendingCents += i.amountCents;
+      else g.voidCents += i.amountCents;
+      g.refundedCents += i.refundedCents;
+      if (at > g.latest) g.latest = at;
+      g.statuses.add(o.status);
+      g.lines.push({
+        id: i.id,
+        orderNumber: o.orderNumber,
+        at,
+        status: o.status,
+        method: o.payments[0]?.method ?? null,
+        event: i.registration.event,
+        amountCents: i.amountCents,
+        refundedCents: i.refundedCents,
+      });
+      groups.set(key, g);
+    }
+  return [...groups.values()]
+    .sort((a, b) => b.latest.getTime() - a.latest.getTime())
+    .map(({ recordedBy, statuses, ...g }) => ({
+      ...g,
+      recordedBy: [...recordedBy],
+      status: (g.paidCents > 0 && g.refundedCents >= g.paidCents
+        ? 'REFUNDED'
+        : g.refundedCents > 0
+          ? 'PARTIALLY_REFUNDED'
+          : g.paidCents > 0
+            ? 'PAID'
+            : [...statuses][0]!) as OrderStatus,
+      methods: [...new Set(g.lines.map((l) => l.method).filter((m): m is PaymentMethod => !!m))],
+      lines: g.lines.sort((a, b) => a.at.getTime() - b.at.getTime()),
+    }));
+}
+
 export type PaymentFilters = { tournamentId?: string; status?: OrderStatus; page?: number };
 
 export async function paymentsOverview(actor: Actor, filters: PaymentFilters = {}) {
@@ -623,30 +786,13 @@ export async function paymentsOverview(actor: Actor, filters: PaymentFilters = {
     ...(filters.status ? { status: filters.status } : { status: { not: 'EXPIRED' } }),
   };
   const tournamentWhere = filters.tournamentId ? { tournamentId: filters.tournamentId } : {};
-  const [orders, total, paid, refunded, outstanding, refundRequests] = await Promise.all([
+  const [orderRows, paid, refunded, outstanding, refundRequests] = await Promise.all([
     prisma.order.findMany({
       where,
       orderBy: { createdAt: 'desc' },
-      skip: (page - 1) * 25,
-      take: 25,
-      select: {
-        id: true,
-        orderNumber: true,
-        status: true,
-        totalCents: true,
-        createdAt: true,
-        paidAt: true,
-        user: { select: { name: true, email: true } },
-        tournament: { select: { id: true, name: true } },
-        payments: {
-          orderBy: { createdAt: 'desc' },
-          take: 1,
-          select: { method: true, status: true },
-        },
-        items: { select: { description: true, amountCents: true, refundedCents: true } },
-      },
+      take: 5000,
+      select: overviewOrderSelect,
     }),
-    prisma.order.count({ where }),
     prisma.payment.aggregate({
       where: { status: 'SUCCEEDED', order: tournamentWhere },
       _sum: { amountCents: true },
@@ -689,12 +835,15 @@ export async function paymentsOverview(actor: Actor, filters: PaymentFilters = {
             },
           },
         },
-        orderItem: { select: { description: true } },
+        orderItem: { select: refundItemSelect },
       },
     }),
   ]);
+  // One row per player per tournament: what they paid in total, per event below (D109).
+  const groups = groupByPlayer(orderRows);
+  const total = groups.length;
   return {
-    orders,
+    players: groups.slice((page - 1) * 25, page * 25),
     total,
     page,
     pages: Math.max(1, Math.ceil(total / 25)),
@@ -725,60 +874,62 @@ export async function paymentsOverview(actor: Actor, filters: PaymentFilters = {
             },
           },
         },
-        orderItem: { select: { description: true } },
+        orderItem: { select: refundItemSelect },
       },
     }),
   };
 }
 
-/** Paid and refunded orders as a table for the Excel export. */
-export async function exportPayments(actor: Actor, filters: PaymentFilters) {
+/** Paid and refunded money as a table for the Excel export: one row per player (D109). */
+export async function exportPayments(
+  actor: Actor,
+  filters: PaymentFilters,
+  locale: AppLocale = 'nl',
+) {
   if (filters.tournamentId) await assertCanManageTournament(actor, filters.tournamentId);
   // All tournaments' money in one file: owners only (D80).
   else assertOwner(actor);
   const orders = await prisma.order.findMany({
     where: {
       ...(filters.tournamentId ? { tournamentId: filters.tournamentId } : {}),
-      status: filters.status ?? { in: ['PAID', 'PARTIALLY_REFUNDED', 'REFUNDED'] },
+      status: filters.status ?? { in: MONEY_IN },
     },
     orderBy: { createdAt: 'asc' },
     take: 20_000,
-    select: {
-      orderNumber: true,
-      status: true,
-      paidAt: true,
-      user: { select: { name: true, email: true } },
-      tournament: { select: { name: true } },
-      payments: { where: { status: 'SUCCEEDED' }, take: 1, select: { method: true } },
-      items: { select: { description: true, amountCents: true, refundedCents: true } },
-    },
+    select: overviewOrderSelect,
   });
   const header = [
-    'orderNumber',
     'tournament',
-    'paidAt',
-    'payer',
+    'player',
+    'memberNumber',
     'email',
-    'method',
-    'item',
-    'amount',
+    'recordedBy',
+    'categories',
+    'paid',
     'refunded',
-    'orderStatus',
+    'method',
+    'orders',
+    'lastPaidAt',
+    'status',
   ];
-  const rows = orders.flatMap((o) =>
-    o.items.map((i) => [
-      o.orderNumber,
-      o.tournament.name,
-      o.paidAt ? o.paidAt.toISOString().slice(0, 16).replace('T', ' ') : '',
-      o.user.name,
-      o.user.email,
-      o.payments[0]?.method ?? '',
-      i.description,
-      i.amountCents / 100,
-      i.refundedCents / 100,
-      o.status,
-    ]),
-  );
+  const rows = groupByPlayer(orders)
+    .reverse()
+    .map((g) => [
+      g.tournament.name,
+      fullName(g.player),
+      g.player.memberNumber,
+      g.email ?? '',
+      g.recordedBy.join(', '),
+      g.lines
+        .map((l) => `${eventText(l.event, locale)} ${(l.amountCents / 100).toFixed(2)}`)
+        .join('; '),
+      g.paidCents / 100,
+      g.refundedCents / 100,
+      g.methods.join(', '),
+      [...new Set(g.lines.map((l) => l.orderNumber))].join(', '),
+      g.latest.toISOString().slice(0, 16).replace('T', ' '),
+      g.status,
+    ]);
   return { header, rows };
 }
 
