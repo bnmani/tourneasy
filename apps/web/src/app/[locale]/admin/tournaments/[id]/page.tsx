@@ -8,10 +8,11 @@ import { Button } from '@/components/ui/button';
 import { Link } from '@/i18n/navigation';
 import { ArrowDown, ArrowUp } from 'lucide-react';
 import { eventLabel } from '@/lib/labels';
+import { QuickButton } from '@/components/desk/quick-buttons';
+import { quickMoveEventAction } from '@/server/actions/match-actions';
 import { firstParam, pageLocale, type SearchParams } from '@/lib/page';
 import {
   deleteEventAction,
-  moveEventAction,
   publishTournamentAction,
   tournamentStatusAction,
 } from '@/server/actions/admin-actions';
@@ -196,28 +197,25 @@ export default async function AdminTournamentPage({
                 </div>
                 <div className="flex gap-2">
                   {/* The order is the schedule's priority (D111). */}
-                  <form action={moveEventAction.bind(null, locale, tournament.id, e.id, 'up')}>
-                    <Button
-                      type="submit"
-                      size="sm"
-                      variant="ghost"
-                      disabled={i === 0}
-                      aria-label={t('events.moveUp', { name: eventLabel(e, locale) })}
-                    >
-                      <ArrowUp aria-hidden="true" className="size-4" />
-                    </Button>
-                  </form>
-                  <form action={moveEventAction.bind(null, locale, tournament.id, e.id, 'down')}>
-                    <Button
-                      type="submit"
-                      size="sm"
-                      variant="ghost"
-                      disabled={i === tournament.events.length - 1}
-                      aria-label={t('events.moveDown', { name: eventLabel(e, locale) })}
-                    >
-                      <ArrowDown aria-hidden="true" className="size-4" />
-                    </Button>
-                  </form>
+                  {/* In place, so the page keeps its scroll position (D113). */}
+                  <QuickButton
+                    size="sm"
+                    variant="ghost"
+                    disabled={i === 0}
+                    aria-label={t('events.moveUp', { name: eventLabel(e, locale) })}
+                    action={quickMoveEventAction.bind(null, tournament.id, e.id, 'up')}
+                  >
+                    <ArrowUp aria-hidden="true" className="size-4" />
+                  </QuickButton>
+                  <QuickButton
+                    size="sm"
+                    variant="ghost"
+                    disabled={i === tournament.events.length - 1}
+                    aria-label={t('events.moveDown', { name: eventLabel(e, locale) })}
+                    action={quickMoveEventAction.bind(null, tournament.id, e.id, 'down')}
+                  >
+                    <ArrowDown aria-hidden="true" className="size-4" />
+                  </QuickButton>
                   {!e.isOpen && <Badge tone="muted">{t('events.closed')}</Badge>}
                   <Button asChild size="sm" variant="outline">
                     <Link href={`/admin/tournaments/${tournament.id}/events/${e.id}`}>

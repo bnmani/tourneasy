@@ -32,6 +32,7 @@ import {
   undoWaiveShare,
   waiveShare,
 } from '../services/payment-service';
+import { moveEvent } from '../services/event-service';
 import { cancelEntryAsOrganiser, restoreRegistration } from '../services/registration-service';
 
 async function actorOrThrow() {
@@ -326,6 +327,17 @@ export async function quickWaiveAction(participantId: string, undo: boolean) {
       ? undoWaiveShare(actor, { participantId }, meta)
       : waiveShare(actor, { participantId }, meta);
   });
+}
+
+/** Event order on the tournament overview, in place (D113). */
+export async function quickMoveEventAction(
+  tournamentId: string,
+  eventId: string,
+  direction: 'up' | 'down',
+) {
+  return quick(async () =>
+    moveEvent(await actorOrThrow(), tournamentId, eventId, direction, await currentRequestMeta()),
+  );
 }
 
 export async function quickCancelEntryAction(registrationId: string, reason?: string) {

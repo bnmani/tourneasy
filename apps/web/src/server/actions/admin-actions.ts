@@ -12,7 +12,7 @@ import { currentRequestMeta, getActor } from '../auth/web';
 import { AppError, isAppError } from '../lib/errors';
 import type { RequestMeta } from '../lib/request-meta';
 import { setClubArchived, createClub, updateClub } from '../services/club-service';
-import { createEvent, deleteEvent, moveEvent, updateEvent } from '../services/event-service';
+import { createEvent, deleteEvent, updateEvent } from '../services/event-service';
 import { LOGO_MAX_BYTES, removeTournamentLogo, setTournamentLogo } from '../services/logo-service';
 import { importTournamentEntries, type EntryImportResult } from '../services/entry-import-service';
 import {
@@ -254,20 +254,6 @@ export async function saveEventAction(
     else await createEvent(actor, tournamentId, input, meta);
     return `/${locale}/admin/tournaments/${tournamentId}?status=saved#events`;
   });
-}
-
-/** Event order = schedule priority (D111). */
-export async function moveEventAction(
-  locale: AppLocale,
-  tournamentId: string,
-  eventId: string,
-  direction: 'up' | 'down',
-) {
-  await act(
-    `/${locale}/admin/tournaments/${tournamentId}`,
-    (actor, meta) => moveEvent(actor, tournamentId, eventId, direction, meta),
-    'saved',
-  );
 }
 
 export async function deleteEventAction(locale: AppLocale, tournamentId: string, eventId: string) {
