@@ -6,12 +6,7 @@ import { redirect } from 'next/navigation';
 import { currentRequestMeta, getActor } from '../auth/web';
 import { AppError, isAppError, type ErrorCode } from '../lib/errors';
 import { createDiscountCode, setDiscountCodeActive } from '../services/entry-discount-service';
-import {
-  createCheckout,
-  markShareAsPaid,
-  undoWaiveShare,
-  waiveShare,
-} from '../services/payment-service';
+import { createCheckout } from '../services/payment-service';
 import {
   clearPaymentSettings,
   lockSettings,
@@ -64,53 +59,6 @@ async function act(target: string, okStatus: string, work: () => Promise<unknown
   }
   revalidatePath('/', 'layout');
   redirect(`${target}${target.includes('?') ? '&' : '?'}status=${status}`);
-}
-
-/** Organiser: a share was paid at the desk (cash / transfer). */
-export async function markPaidAction(
-  locale: AppLocale,
-  tournamentId: string,
-  participantId: string,
-) {
-  await act(`/${locale}/admin/tournaments/${tournamentId}/entries`, 'markedPaid', async () =>
-    markShareAsPaid(await actorOrThrow(), { participantId }, await currentRequestMeta()),
-  );
-}
-
-/** Organiser: paid at the desk with a discount code (D111). */
-export async function markPaidWithCodeAction(
-  locale: AppLocale,
-  tournamentId: string,
-  participantId: string,
-  formData: FormData,
-) {
-  await act(`/${locale}/admin/tournaments/${tournamentId}/entries`, 'markedPaid', async () =>
-    markShareAsPaid(
-      await actorOrThrow(),
-      { participantId, code: String(formData.get('code') ?? '') },
-      await currentRequestMeta(),
-    ),
-  );
-}
-
-/** Owner: waive a share's fee, or undo that (D111). */
-export async function waiveShareAction(
-  locale: AppLocale,
-  tournamentId: string,
-  participantId: string,
-  undo: boolean,
-) {
-  await act(
-    `/${locale}/admin/tournaments/${tournamentId}/entries`,
-    undo ? 'waiveUndone' : 'feeWaived',
-    async () => {
-      const actor = await actorOrThrow();
-      const meta = await currentRequestMeta();
-      return undo
-        ? undoWaiveShare(actor, { participantId }, meta)
-        : waiveShare(actor, { participantId }, meta);
-    },
-  );
 }
 
 /** Owner: entry discount codes (D111). */

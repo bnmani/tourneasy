@@ -123,3 +123,55 @@ export function QuickButton({
     </span>
   );
 }
+
+/**
+ * A desk action that takes one short text (a discount code, a cancel reason) and updates the
+ * page in place like the other quick buttons (D113).
+ */
+export function QuickTextAction({
+  action,
+  label,
+  placeholder,
+  maxLength,
+  required = false,
+  uppercase = false,
+  variant = 'outline',
+  className,
+}: {
+  action: (value: string) => Promise<QuickResult>;
+  label: string;
+  placeholder: string;
+  maxLength: number;
+  required?: boolean;
+  uppercase?: boolean;
+  variant?: ButtonProps['variant'];
+  className?: string;
+}) {
+  const [value, setValue] = useState('');
+  const { error, pending, run } = useQuick();
+  return (
+    <form
+      className={cn('space-y-1', className)}
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (required && !value.trim()) return;
+        run(() => action(value.trim()));
+      }}
+    >
+      <div className="flex flex-wrap items-center gap-1">
+        <input
+          value={value}
+          onChange={(e) => setValue(uppercase ? e.target.value.toUpperCase() : e.target.value)}
+          maxLength={maxLength}
+          aria-label={placeholder}
+          placeholder={placeholder}
+          className="h-8 min-w-0 flex-1 rounded-md border border-input bg-background px-2 text-base sm:text-xs"
+        />
+        <Button type="submit" size="sm" variant={variant} className="h-8" disabled={pending}>
+          {label}
+        </Button>
+      </div>
+      <ErrorLine error={error} />
+    </form>
+  );
+}

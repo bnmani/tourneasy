@@ -25,8 +25,14 @@ import {
   unscheduleMatch,
 } from '../services/schedule-service';
 import { payAtDesk, setPlayerCheckIn } from '../services/checkin-service';
-import { undoDeskPayment, undoDeskPaymentsForPlayer } from '../services/payment-service';
-import { restoreRegistration } from '../services/registration-service';
+import {
+  markShareAsPaid,
+  undoDeskPayment,
+  undoDeskPaymentsForPlayer,
+  undoWaiveShare,
+  waiveShare,
+} from '../services/payment-service';
+import { cancelEntryAsOrganiser, restoreRegistration } from '../services/registration-service';
 
 async function actorOrThrow() {
   const actor = await getActor();
@@ -300,6 +306,39 @@ export async function restoreEntryAction(registrationId: string) {
 }
 
 /** Undoes one share's desk payment from the participants list (D96). */
+// ── Participants page: in place, so filters, sort and scroll stay (D113) ───────────
+
+export async function quickMarkPaidAction(participantId: string, code?: string) {
+  return quick(async () =>
+    markShareAsPaid(
+      await actorOrThrow(),
+      { participantId, ...(code ? { code } : {}) },
+      await currentRequestMeta(),
+    ),
+  );
+}
+
+export async function quickWaiveAction(participantId: string, undo: boolean) {
+  return quick(async () => {
+    const actor = await actorOrThrow();
+    const meta = await currentRequestMeta();
+    return undo
+      ? undoWaiveShare(actor, { participantId }, meta)
+      : waiveShare(actor, { participantId }, meta);
+  });
+}
+
+export async function quickCancelEntryAction(registrationId: string, reason?: string) {
+  return quick(async () =>
+    cancelEntryAsOrganiser(
+      await actorOrThrow(),
+      registrationId,
+      { reason: reason || undefined },
+      await currentRequestMeta(),
+    ),
+  );
+}
+
 export async function undoSharePaymentAction(participantId: string) {
   return quick(async () =>
     undoDeskPayment(await actorOrThrow(), { participantId }, await currentRequestMeta()),

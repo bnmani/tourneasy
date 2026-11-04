@@ -18,17 +18,16 @@ import { Link } from '@/i18n/navigation';
 import { eventLabel, personName } from '@/lib/labels';
 import { firstParam, pageLocale, type SearchParams } from '@/lib/page';
 import { cn } from '@/lib/utils';
-import { QuickButton } from '@/components/desk/quick-buttons';
-import { QuickFormButton } from '@/components/admin/quick-form-button';
+import { QuickButton, QuickTextAction } from '@/components/desk/quick-buttons';
 import { SortHeader } from '@/components/admin/sort-header';
-import { restoreEntryAction, undoSharePaymentAction } from '@/server/actions/match-actions';
 import {
-  markPaidAction,
-  markPaidWithCodeAction,
-  waiveShareAction,
-} from '@/server/actions/payment-actions';
+  quickCancelEntryAction,
+  quickMarkPaidAction,
+  quickWaiveAction,
+  restoreEntryAction,
+  undoSharePaymentAction,
+} from '@/server/actions/match-actions';
 import { formatEuro } from '@tourneasy/shared';
-import { cancelEntryAction } from '@/server/actions/registration-actions';
 import { requirePortal } from '@/server/auth/web';
 import { isAppError } from '@/server/lib/errors';
 import {
@@ -371,18 +370,17 @@ export default async function EntriesPage({ params, searchParams }: Props) {
                         <span key={p.player.memberNumber} className="block whitespace-nowrap">
                           {tpay(p.paymentStatus)}
                           {p.paymentStatus === 'UNPAID' && r.status !== 'CANCELLED' && (
-                            <form
-                              action={markPaidAction.bind(null, locale, id, p.id)}
-                              className="inline"
-                            >
+                            <>
                               {' '}
-                              <button
-                                type="submit"
-                                className="font-medium text-primary underline-offset-4 hover:underline"
+                              <QuickButton
+                                size="sm"
+                                variant="link"
+                                className="h-auto p-0 text-xs font-medium"
+                                action={quickMarkPaidAction.bind(null, p.id, undefined)}
                               >
                                 {t('entries.markPaid')}
-                              </button>
-                            </form>
+                              </QuickButton>
+                            </>
                           )}
                           {p.paymentStatus === 'UNPAID' && r.status !== 'CANCELLED' && (
                             // Paid at the desk with a discount code; the owner can waive (D111).
@@ -390,29 +388,25 @@ export default async function EntriesPage({ params, searchParams }: Props) {
                               <summary className="cursor-pointer text-muted-foreground">
                                 {t('entries.moreOptions')}
                               </summary>
-                              <form
-                                action={markPaidWithCodeAction.bind(null, locale, id, p.id)}
-                                className="mt-1 flex items-center gap-1"
-                              >
-                                <input
-                                  name="code"
-                                  required
-                                  maxLength={30}
-                                  aria-label={t('entries.discountCode')}
-                                  placeholder={t('entries.discountCode')}
-                                  className="h-8 w-28 rounded-md border border-input bg-background px-2 text-base uppercase sm:text-xs"
-                                />
-                                <Button type="submit" size="sm" variant="outline" className="h-8">
-                                  {t('entries.paidWithCode')}
-                                </Button>
-                              </form>
+                              <QuickTextAction
+                                className="mt-1 w-56"
+                                action={quickMarkPaidAction.bind(null, p.id)}
+                                label={t('entries.paidWithCode')}
+                                placeholder={t('entries.discountCode')}
+                                maxLength={30}
+                                required
+                                uppercase
+                              />
                               {isOwner && (
-                                <QuickFormButton
-                                  action={waiveShareAction.bind(null, locale, id, p.id, false)}
+                                <QuickButton
+                                  size="sm"
+                                  variant="link"
+                                  className="h-auto p-0 text-xs"
+                                  action={quickWaiveAction.bind(null, p.id, false)}
                                   confirm={t('entries.waiveConfirm')}
                                 >
                                   {t('entries.waive')}
-                                </QuickFormButton>
+                                </QuickButton>
                               )}
                             </details>
                           )}
@@ -423,12 +417,18 @@ export default async function EntriesPage({ params, searchParams }: Props) {
                                 {formatEuro(p.waivedCents, locale)}
                               </span>
                               {isOwner && (
-                                <QuickFormButton
-                                  action={waiveShareAction.bind(null, locale, id, p.id, true)}
-                                  confirm={t('entries.undoWaiveConfirm')}
-                                >
-                                  {t('entries.undoWaive')}
-                                </QuickFormButton>
+                                <>
+                                  {' '}
+                                  <QuickButton
+                                    size="sm"
+                                    variant="link"
+                                    className="h-auto p-0 text-xs"
+                                    action={quickWaiveAction.bind(null, p.id, true)}
+                                    confirm={t('entries.undoWaiveConfirm')}
+                                  >
+                                    {t('entries.undoWaive')}
+                                  </QuickButton>
+                                </>
                               )}
                             </>
                           )}
@@ -459,21 +459,14 @@ export default async function EntriesPage({ params, searchParams }: Props) {
                           <summary className="cursor-pointer text-xs font-medium text-destructive">
                             {t('entries.cancel')}
                           </summary>
-                          <form
-                            action={cancelEntryAction.bind(null, locale, id, r.id)}
-                            className="mt-2 w-56 space-y-2"
-                          >
-                            <input
-                              name="reason"
-                              aria-label={t('entries.cancelReason')}
-                              placeholder={t('entries.cancelReason')}
-                              maxLength={500}
-                              className={cn(filterInputClass, 'sm:w-full sm:min-w-0')}
-                            />
-                            <Button type="submit" size="sm" variant="destructive">
-                              {t('entries.cancelConfirm')}
-                            </Button>
-                          </form>
+                          <QuickTextAction
+                            className="mt-2 w-56"
+                            action={quickCancelEntryAction.bind(null, r.id)}
+                            label={t('entries.cancelConfirm')}
+                            placeholder={t('entries.cancelReason')}
+                            maxLength={500}
+                            variant="destructive"
+                          />
                         </details>
                       )}
                     </td>

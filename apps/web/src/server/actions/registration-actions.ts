@@ -7,7 +7,6 @@ import type { FormState } from '@/components/forms/form-state';
 import { currentRequestMeta, getActor } from '../auth/web';
 import { AppError, isAppError } from '../lib/errors';
 import {
-  cancelEntryAsOrganiser,
   enterTournament,
   invitePartner,
   respondToInvite,
@@ -101,22 +100,6 @@ export async function respondInviteAction(locale: AppLocale, ref: InviteRef, acc
     `/${locale}/account?tab=upcoming`,
     accept ? 'inviteAccepted' : 'inviteDeclined',
     async () => respondToInvite(await actorOrThrow(), ref, accept, await currentRequestMeta()),
-  );
-}
-
-export async function cancelEntryAction(
-  locale: AppLocale,
-  tournamentId: string,
-  registrationId: string,
-  formData: FormData,
-) {
-  await act(`/${locale}/admin/tournaments/${tournamentId}/entries`, 'cancelled', async () =>
-    cancelEntryAsOrganiser(
-      await actorOrThrow(),
-      registrationId,
-      { reason: formData.get('reason') ?? undefined },
-      await currentRequestMeta(),
-    ),
   );
 }
 
