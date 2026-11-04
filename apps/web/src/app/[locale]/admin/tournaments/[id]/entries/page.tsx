@@ -150,7 +150,7 @@ export default async function EntriesPage({ params, searchParams }: Props) {
   const totalWaiting = perEvent.reduce((n, e) => n + e.waiting, 0);
   const chip = (active: boolean) =>
     cn(
-      'rounded-full border px-3 py-1 text-sm hover:bg-secondary focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
+      'rounded-full border px-3 py-1 text-sm text-foreground hover:bg-secondary focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
       active && 'border-primary bg-primary/5 font-medium',
     );
 
@@ -234,47 +234,54 @@ export default async function EntriesPage({ params, searchParams }: Props) {
         </Button>
         {perPage !== PAGE_SIZE && <input type="hidden" name="perPage" value={perPage} />}
       </FilterBar>
-      <PerPage current={perPage} href={sizeHref} className="justify-end" />
 
-      {q || cancelled ? (
-        <p className="text-sm text-muted-foreground">
-          {q
-            ? t('entries.found', { count: sorted.length, query: q })
-            : t('entries.summary', { count: sorted.length })}
-        </p>
-      ) : (
-        <nav aria-label={t('entries.perEvent')} className="flex flex-wrap gap-2">
-          {perEvent.map((e) => (
-            <Link
-              key={e.id}
-              href={`/admin/tournaments/${id}/entries?eventId=${e.id}`}
-              aria-current={eventId === e.id ? 'true' : undefined}
-              className={chip(eventId === e.id)}
-            >
-              {e.label} <strong className="tabular-nums">{e.teams}</strong>
-              {e.waiting > 0 && (
-                <span className="text-muted-foreground">
-                  {' '}
-                  {t('entries.plusWaiting', { count: e.waiting })}
-                </span>
-              )}
-            </Link>
-          ))}
-          <Link
-            href={`/admin/tournaments/${id}/entries`}
-            aria-current={!eventId ? 'true' : undefined}
-            className={chip(!eventId)}
-          >
-            {t('entries.totalLabel')} <strong className="tabular-nums">{totalTeams}</strong>
-            {totalWaiting > 0 && (
-              <span className="text-muted-foreground">
-                {' '}
-                {t('entries.plusWaiting', { count: totalWaiting })}
-              </span>
+      <PerPage
+        current={perPage}
+        href={sizeHref}
+        summary={
+          <>
+            {q || cancelled ? (
+              <p className="text-sm text-muted-foreground">
+                {q
+                  ? t('entries.found', { count: sorted.length, query: q })
+                  : t('entries.summary', { count: sorted.length })}
+              </p>
+            ) : (
+              <nav aria-label={t('entries.perEvent')} className="flex flex-wrap gap-2">
+                {perEvent.map((e) => (
+                  <Link
+                    key={e.id}
+                    href={`/admin/tournaments/${id}/entries?eventId=${e.id}`}
+                    aria-current={eventId === e.id ? 'true' : undefined}
+                    className={chip(eventId === e.id)}
+                  >
+                    {e.label} <strong className="tabular-nums">{e.teams}</strong>
+                    {e.waiting > 0 && (
+                      <span className="text-muted-foreground">
+                        {' '}
+                        {t('entries.plusWaiting', { count: e.waiting })}
+                      </span>
+                    )}
+                  </Link>
+                ))}
+                <Link
+                  href={`/admin/tournaments/${id}/entries`}
+                  aria-current={!eventId ? 'true' : undefined}
+                  className={chip(!eventId)}
+                >
+                  {t('entries.totalLabel')} <strong className="tabular-nums">{totalTeams}</strong>
+                  {totalWaiting > 0 && (
+                    <span className="text-muted-foreground">
+                      {' '}
+                      {t('entries.plusWaiting', { count: totalWaiting })}
+                    </span>
+                  )}
+                </Link>
+              </nav>
             )}
-          </Link>
-        </nav>
-      )}
+          </>
+        }
+      />
 
       {entries.length === 0 ? (
         <p className="text-muted-foreground">{t('entries.noEntries')}</p>

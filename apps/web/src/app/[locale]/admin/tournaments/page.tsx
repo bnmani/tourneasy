@@ -85,9 +85,8 @@ export default async function AdminTournamentsPage({
         </Button>
         {perPage !== PAGE_SIZE && <input type="hidden" name="perPage" value={perPage} />}
       </FilterBar>
-      <PerPage current={perPage} href={sizeHref} className="justify-end" />
 
-      <p className="text-sm text-muted-foreground">{t('total', { count: result.total })}</p>
+      <PerPage current={perPage} href={sizeHref} summary={t('total', { count: result.total })} />
       {result.tournaments.length === 0 ? (
         <p className="text-muted-foreground">{t('tournaments.empty')}</p>
       ) : (

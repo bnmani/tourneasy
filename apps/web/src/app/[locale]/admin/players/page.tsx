@@ -214,7 +214,6 @@ export default async function AdminPlayersPage({
           {t('filter')}
         </Button>
       </FilterBar>
-      <PerPage current={perPage} href={sizeHref} className="justify-end" />
 
       {status === 'removed' && (
         <FormSuccess>
@@ -233,7 +232,7 @@ export default async function AdminPlayersPage({
         <FormError state={{ error: status }} />
       )}
 
-      <p className="text-sm text-muted-foreground">{t('total', { count: result.total })}</p>
+      <PerPage current={perPage} href={sizeHref} summary={t('total', { count: result.total })} />
       {result.players.length > 0 && (
         <BulkRemove
           formId="bulk-remove-players"

@@ -80,7 +80,7 @@ export default async function AdminClubsPage({
         </Button>
         {perPage !== PAGE_SIZE && <input type="hidden" name="perPage" value={perPage} />}
       </FilterBar>
-      <PerPage current={perPage} href={sizeHref} className="justify-end" />
+      <PerPage current={perPage} href={sizeHref} summary={t('total', { count: result.total })} />
       {result.clubs.length === 0 ? (
         <p className="text-muted-foreground">{t('clubs.empty')}</p>
       ) : (

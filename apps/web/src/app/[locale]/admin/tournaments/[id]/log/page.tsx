@@ -35,6 +35,7 @@ export default async function TournamentLogPage({ params, searchParams }: Props)
   if (!tournament) notFound();
   const result = await listTournamentAudit(actor, id, { page, perPage });
   const t = await getTranslations('Admin.audit');
+  const tAdmin = await getTranslations('Admin');
   return (
     <>
       <PageHeader
@@ -44,7 +45,7 @@ export default async function TournamentLogPage({ params, searchParams }: Props)
       <PerPage
         current={perPage}
         href={(n) => `/admin/tournaments/${id}/log?page=1${sized(n)}`}
-        className="justify-end"
+        summary={tAdmin('total', { count: result.total })}
       />
       <AuditTable entries={result.entries} />
       <Pagination

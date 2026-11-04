@@ -104,9 +104,8 @@ export default async function AdminUsersPage({
         </Button>
         {perPage !== PAGE_SIZE && <input type="hidden" name="perPage" value={perPage} />}
       </FilterBar>
-      <PerPage current={perPage} href={sizeHref} className="justify-end" />
 
-      <p className="text-sm text-muted-foreground">{t('total', { count: result.total })}</p>
+      <PerPage current={perPage} href={sizeHref} summary={t('total', { count: result.total })} />
       {/* Removing accounts is for owners (D80). */}
       {isOwnerViewer && result.users.length > 0 && (
         <BulkRemove
