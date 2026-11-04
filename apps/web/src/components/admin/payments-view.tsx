@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { ScrollRegion } from '@/components/ui/scroll-region';
 import { eventLabel, personName } from '@/lib/labels';
 import { cn } from '@/lib/utils';
+import { Link } from '@/i18n/navigation';
+import { PAGE_SIZES } from '@/server/lib/validation';
 import { refundDecisionAction, reopenRefundAction } from '@/server/actions/payment-actions';
 import type { paymentsOverview } from '@/server/services/payment-service';
 
@@ -16,17 +18,33 @@ import type { paymentsOverview } from '@/server/services/payment-service';
 export async function PaymentsView({
   locale,
   overview,
-  href,
+  basePath,
+  query,
   canDecide,
   backPath,
 }: {
   locale: AppLocale;
   overview: Awaited<ReturnType<typeof paymentsOverview>>;
-  href: (page: number) => string;
+  /** This page without the locale, e.g. /admin/payments. */
+  basePath: string;
+  /** The page's other filters (tournament, status), kept in every link. */
+  query: [string, string][];
   canDecide: boolean;
   /** Where to come back after a reopen (the page this view is on). */
   backPath: string;
 }) {
+  const link = (extra: Record<string, string | null>) => {
+    const params = new URLSearchParams(query);
+    if (overview.view) params.set('view', overview.view);
+    if (overview.perPage !== 25) params.set('perPage', String(overview.perPage));
+    for (const [k, v] of Object.entries(extra)) {
+      if (v === null) params.delete(k);
+      else params.set(k, v);
+    }
+    const qs = params.toString();
+    return qs ? `${basePath}?${qs}` : basePath;
+  };
+  const href = (p: number) => link({ page: String(p) });
   const tp = await getTranslations('Admin.payments');
   const to = await getTranslations('OrderStatuses');
   const tm = await getTranslations('PaymentMethods');
@@ -48,21 +66,48 @@ export async function PaymentsView({
     r.orderItem ? eventLabel(r.orderItem.registration.event, locale) : '';
   return (
     <>
-      <dl className="grid gap-3 sm:grid-cols-3">
-        {[
-          { label: tp('received'), value: euro(overview.totals.paidCents) },
-          { label: tp('refunded'), value: euro(overview.totals.refundedCents) },
-          {
-            label: tp('outstanding', { count: overview.totals.outstandingShares }),
-            value: euro(overview.totals.outstandingCents),
-          },
-        ].map((card) => (
-          <div key={card.label} className="rounded-lg border bg-card p-4">
-            <dt className="text-sm text-muted-foreground">{card.label}</dt>
-            <dd className="mt-1 font-heading text-2xl font-bold">{card.value}</dd>
-          </div>
-        ))}
-      </dl>
+      {/* Four boxes; a click shows only what that box counts, again to show all (D111). */}
+      <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {(
+          [
+            { view: 'paid', label: tp('received'), value: overview.totals.paidCents },
+            { view: 'refunded', label: tp('refunded'), value: overview.totals.refundedCents },
+            { view: 'waived', label: tp('waived'), value: overview.totals.waivedCents },
+            {
+              view: 'outstanding',
+              label: tp('outstanding', { count: overview.totals.outstandingShares }),
+              value: overview.totals.outstandingCents,
+            },
+          ] as const
+        ).map((card) => {
+          const active = overview.view === card.view;
+          return (
+            <li key={card.view}>
+              <Link
+                href={link({ view: active ? null : card.view, page: null })}
+                aria-current={active ? 'true' : undefined}
+                className={cn(
+                  'block rounded-lg border bg-card p-4 hover:border-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
+                  active && 'border-primary bg-primary/5',
+                )}
+              >
+                <span className="block text-sm text-muted-foreground">{card.label}</span>
+                <span className="mt-1 block font-heading text-2xl font-bold">
+                  {euro(card.value)}
+                </span>
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+      {overview.view && (
+        <p className="text-sm text-muted-foreground">
+          {tp(`showing.${overview.view}`)}{' '}
+          <Link href={link({ view: null, page: null })} className="text-primary underline">
+            {tp('showAll')}
+          </Link>
+        </p>
+      )}
 
       {overview.refundRequests.length > 0 && (
         <section aria-labelledby="refunds-title" className="space-y-3">
@@ -152,10 +197,87 @@ export async function PaymentsView({
         </section>
       )}
 
+      {overview.view === 'outstanding' && (
+        <section aria-labelledby="outstanding-title" className="space-y-3">
+          <h2 id="outstanding-title" className="text-lg font-semibold">
+            {tp('outstandingTitle', { count: overview.outstandingPlayers.length })}
+          </h2>
+          {overview.outstandingPlayers.length === 0 ? (
+            <p className="text-muted-foreground">{tp('nothingOutstanding')}</p>
+          ) : (
+            <ul className="divide-y rounded-lg border bg-card">
+              {overview.outstandingPlayers.map((o) => (
+                <li
+                  key={o.key}
+                  className="flex flex-col gap-1 p-3 text-sm sm:flex-row sm:justify-between"
+                >
+                  <div>
+                    <p className="font-medium">{personName(o.player)}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {o.tournament.name} ·{' '}
+                      {o.lines
+                        .map((l) => `${eventLabel(l.event, locale)} ${euro(l.amountCents)}`)
+                        .join(', ')}
+                    </p>
+                  </div>
+                  <p className="font-medium whitespace-nowrap">{euro(o.dueCents)}</p>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
+
+      {overview.view === 'waived' && overview.waivedShares.length > 0 && (
+        <section aria-labelledby="waived-title" className="space-y-3">
+          <h2 id="waived-title" className="text-lg font-semibold">
+            {tp('waivedTitle', { count: overview.waivedShares.length })}
+          </h2>
+          <ul className="divide-y rounded-lg border bg-card">
+            {overview.waivedShares.map((w) => (
+              <li
+                key={w.id}
+                className="flex flex-col gap-1 p-3 text-sm sm:flex-row sm:justify-between"
+              >
+                <div>
+                  <p className="font-medium">{personName(w.player)}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {w.registration.event.tournament.name} ·{' '}
+                    {eventLabel(w.registration.event, locale)}
+                    {w.waivedBy && <> · {tp('waivedBy', { name: w.waivedBy })}</>}
+                    {w.waivedAt && <> · {short(w.waivedAt)}</>}
+                  </p>
+                </div>
+                <p className="font-medium whitespace-nowrap">{euro(w.waivedCents)}</p>
+              </li>
+            ))}
+          </ul>
+          <p className="text-xs text-muted-foreground">{tp('waivedUndoHint')}</p>
+        </section>
+      )}
+
       <section aria-labelledby="orders-title" className="space-y-3">
-        <h2 id="orders-title" className="text-lg font-semibold">
-          {tp('players', { count: overview.total })}
-        </h2>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 id="orders-title" className="text-lg font-semibold">
+            {tp('players', { count: overview.total })}
+          </h2>
+          <nav aria-label={tp('perPageLabel')} className="flex gap-1 text-sm">
+            {PAGE_SIZES.map((n) => (
+              <Link
+                key={n}
+                href={link({ perPage: n === 25 ? null : String(n), page: null })}
+                aria-current={overview.perPage === n ? 'true' : undefined}
+                className={cn(
+                  'rounded-md border px-2 py-1 hover:bg-secondary',
+                  overview.perPage === n && 'border-primary bg-primary/5 font-medium',
+                )}
+              >
+                {n}
+              </Link>
+            ))}
+            <span className="self-center pl-1 text-muted-foreground">{tp('perPage')}</span>
+          </nav>
+        </div>
         {overview.players.length === 0 ? (
           <p className="text-muted-foreground">{tp('none')}</p>
         ) : (
@@ -224,6 +346,11 @@ export async function PaymentsView({
                       {g.refundedCents > 0 && (
                         <span className="block text-xs font-normal text-muted-foreground">
                           {tp('refundedShort', { amount: euro(g.refundedCents) })}
+                        </span>
+                      )}
+                      {g.discountCents > 0 && (
+                        <span className="block text-xs font-normal text-muted-foreground">
+                          {tp('discountShort', { amount: euro(g.discountCents) })}
                         </span>
                       )}
                       {g.methods.length > 0 && (

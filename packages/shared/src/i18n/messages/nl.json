@@ -112,6 +112,8 @@
   "Errors": {
     "required": "Dit veld is verplicht.",
     "tooLong": "Deze invoer is te lang.",
+    "taken": "Dit is al in gebruik.",
+    "tooShort": "Dit is te kort.",
     "invalid": "Deze invoer is ongeldig.",
     "emailInvalid": "Vul een geldig e-mailadres in.",
     "phoneInvalid": "Vul een geldig telefoonnummer in, bijvoorbeeld 06 12345678 of +31 6 12345678.",
@@ -217,6 +219,8 @@
     "foodUnavailable": "Eten bestellen is niet beschikbaar voor dit toernooi.",
     "foodClosed": "Bestellen is gesloten.",
     "foodSoldOut": "Van een van de items is niet genoeg meer. Verlaag het aantal en probeer opnieuw.",
+    "codeInvalid": "Deze kortingscode geldt niet voor dit toernooi, is verlopen of is al opgebruikt.",
+    "codeUsed": "Je hebt deze kortingscode al gebruikt.",
     "emptyOrder": "Kies minstens één item.",
     "allergensRequired": "Vink de allergenen aan, of vink \"Bevat geen van deze allergenen\" aan.",
     "codeTaken": "Deze code wordt al gebruikt voor een andere club.",
@@ -226,7 +230,8 @@
     "purchasePending": "Hier staat al een open aankoop voor. Wacht tot die betaald is, of vraag de eigenaar van de site om die te annuleren.",
     "mfaAppRequired": "Stel de authenticator-app in op de website om in de mobiele app in te loggen. Passkeys werken alleen op de website.",
     "enteredAgain": "Deze speler staat al opnieuw ingeschreven voor dit onderdeel. Annuleer die inschrijving eerst als je deze terug wilt.",
-    "refundInProgress": "Er loopt nog een terugbetaling voor deze inschrijving. Probeer het opnieuw zodra die klaar is."
+    "refundInProgress": "Er loopt nog een terugbetaling voor deze inschrijving. Probeer het opnieuw zodra die klaar is.",
+    "whatsappUrl": "Gebruik een WhatsApp-uitnodigingslink die begint met https://chat.whatsapp.com/"
   },
   "Auth": {
     "login": {
@@ -624,7 +629,7 @@
       "removeOrganiser": "Verwijderen",
       "noOrganisers": "Alleen beheerders kunnen dit toernooi beheren.",
       "events": "Onderdelen",
-      "eventsIntro": "Stel per onderdeel het inschrijfgeld, het maximum aantal deelnemers en het speelsysteem in.",
+      "eventsIntro": "Stel per onderdeel het inschrijfgeld, het maximum aantal deelnemers en het speelsysteem in. De volgorde is de voorrang in het schema: zet met de pijlen een onderdeel eerder op de baan.",
       "addEvent": "Onderdeel toevoegen",
       "noEvents": "Nog geen onderdelen.",
       "members": "Deelnemers",
@@ -675,7 +680,9 @@
       "settingsTitle": "Instellingen · {tournament}",
       "settingsIntro": "Gegevens, logo en organisatoren van het toernooi. De voortgang en categorieën staan in het overzicht.",
       "details": "Toernooigegevens",
-      "archiveAfter": "Archiveren kan vanaf {date}, de dag na het toernooi."
+      "archiveAfter": "Archiveren kan vanaf {date}, de dag na het toernooi.",
+      "whatsappUrl": "WhatsApp-groepslink",
+      "whatsappHint": "Optioneel. De uitnodigingslink van de groep of community (https://chat.whatsapp.com/…). Alleen spelers met een inschrijving zien hem. Maak het veld leeg om de knop weg te halen; om een oude link te laten stoppen, stel je de link opnieuw in WhatsApp in."
     },
     "events": {
       "new": "Nieuw onderdeel",
@@ -720,7 +727,9 @@
       "prizePlaces": "Prijzen",
       "prizePlacesHint": "Hoeveel plaatsen een prijs krijgen; bepaalt het podium op de site en in de uitslagmail.",
       "prizePlaces_3": "Top 3 (winnaar, tweede en derde plaats)",
-      "prizePlaces_2": "Top 2 (alleen winnaar en tweede plaats)"
+      "prizePlaces_2": "Top 2 (alleen winnaar en tweede plaats)",
+      "moveUp": "{name} omhoog",
+      "moveDown": "{name} omlaag"
     },
     "venues": {
       "title": "Locaties",
@@ -879,6 +888,11 @@
       "organiserInvited": "Uitnodiging verstuurd: de persoon krijgt een e-mail met een link om te accepteren.",
       "cancelled": "De inschrijving is geannuleerd.",
       "markedPaid": "Gemarkeerd als betaald.",
+      "feeWaived": "Inschrijfgeld kwijtgescholden.",
+      "waiveUndone": "Kwijtschelding teruggedraaid: het inschrijfgeld staat weer open.",
+      "codeCreated": "Kortingscode aangemaakt.",
+      "codeOff": "Kortingscode uitgezet.",
+      "codeOn": "Kortingscode aangezet.",
       "refundApproved": "Terugbetaling uitgevoerd.",
       "refundRejected": "Terugbetaalverzoek afgewezen.",
       "locked": "Vergrendeld.",
@@ -927,6 +941,13 @@
       "export": "Exporteren (Excel)",
       "counts": "{confirmed} bevestigd · {waitlisted} op de wachtlijst",
       "perEvent": "Teams per onderdeel",
+      "moreOptions": "Meer",
+      "discountCode": "Kortingscode",
+      "paidWithCode": "Betaald met code",
+      "waive": "Kwijtschelden",
+      "waiveConfirm": "Dit inschrijfgeld kwijtschelden? Het bedrag wordt als kwijtgescholden vastgelegd. Dit kun je terugdraaien.",
+      "undoWaive": "Kwijtschelding terugdraaien",
+      "undoWaiveConfirm": "Kwijtschelding terugdraaien? Het inschrijfgeld staat dan weer open.",
       "plusWaiting": "(+{count} wachtend)",
       "totalLabel": "Totaal",
       "event": "Onderdeel",
@@ -998,6 +1019,23 @@
       "items": "Onderdelen",
       "amount": "Bedrag",
       "refundedShort": "{amount} terug",
+      "waived": "Kwijtgescholden en korting",
+      "showing": {
+        "paid": "Spelers die betaald hebben.",
+        "refunded": "Spelers met een terugbetaling.",
+        "waived": "Kwijtgescholden inschrijfgeld en betalingen met een kortingscode.",
+        "outstanding": "Wie nog moet betalen."
+      },
+      "showAll": "Alles tonen",
+      "outstandingTitle": "Nog te betalen ({count})",
+      "nothingOutstanding": "Niemand hoeft nog iets te betalen.",
+      "waivedTitle": "Kwijtgescholden inschrijfgeld ({count})",
+      "waivedBy": "kwijtgescholden door {name}",
+      "waivedUndoHint": "Een kwijtschelding draai je terug via Kwijtschelding terugdraaien op de pagina Deelnemers van het toernooi.",
+      "perPageLabel": "Spelers per pagina",
+      "perPage": "per pagina",
+      "discountShort": "{amount} korting",
+      "codes": "Kortingscodes",
       "players": "Betalingen per speler ({count})",
       "player": "Speler",
       "recordedBy": "Vastgelegd door {names}",
@@ -1638,6 +1676,36 @@
       "given": "Pakket toegekend.",
       "infoOnly": "De organisator kiest en betaalt het pakket hier. Je ziet dit ter informatie.",
       "requested": "Aanvraag ontvangen. Je krijgt een factuur; het pakket geldt zodra die betaald is."
+    },
+    "codes": {
+      "title": "Kortingscodes",
+      "intro": "Codes voor inschrijfgeld: een percentage korting (100% = gratis), voor één toernooi of alle. Elke speler kan een code één keer gebruiken, online of aan de balie. Zet een code uit om nieuw gebruik te stoppen; betalingen die al gedaan zijn blijven zoals ze zijn.",
+      "back": "Terug naar betalingen",
+      "new": "Nieuwe code",
+      "list": "Codes ({count})",
+      "none": "Nog geen kortingscodes.",
+      "code": "Code",
+      "codeHint": "Letters, cijfers en streepjes, bijv. VRIJWILLIGER-2026.",
+      "percent": "Korting (%)",
+      "percentHint": "100 maakt de inschrijving gratis.",
+      "tournament": "Toernooi",
+      "allTournaments": "Alle toernooien",
+      "maxUses": "Maximaal aantal keer",
+      "maxUsesHint": "Leeg: geen limiet.",
+      "validUntil": "Geldig tot",
+      "note": "Notitie",
+      "noteHint": "Voor jezelf, bijv. voor wie hij is.",
+      "create": "Code aanmaken",
+      "created": "Code aangemaakt.",
+      "percentOff": "{percent}% korting",
+      "on": "Aan",
+      "off": "Uit",
+      "usesNoLimit": "{count}× gebruikt",
+      "uses": "{count} van {max} gebruikt",
+      "given": "{amount} korting gegeven",
+      "until": "geldig tot {date}",
+      "switchOff": "Uitzetten",
+      "switchOn": "Aanzetten"
     }
   },
   "Legal": {
@@ -1745,7 +1813,8 @@
     "organiserInviteSubject": "Je bent uitgenodigd om {tournament} te organiseren op Tourneasy",
     "organiserInviteBody": "{inviter} nodigt je uit om {tournament} mee te organiseren op Tourneasy. Met een account beheer je de inschrijvingen, schema's, planning en wedstrijdtafel. Maak met de knop hieronder een account aan of log in met dit e-mailadres. De link is 14 dagen geldig.",
     "organiserInviteButton": "Uitnodiging accepteren",
-    "organiserInviteFooter": "Je ontvangt deze e-mail omdat een beheerder van Tourneasy dit adres als organisator heeft uitgenodigd."
+    "organiserInviteFooter": "Je ontvangt deze e-mail omdat een beheerder van Tourneasy dit adres als organisator heeft uitgenodigd.",
+    "entryWhatsapp": "Word lid van de WhatsApp-groep van het toernooi voor nieuws op de dag zelf: {url}"
   },
   "Provinces": {
     "DRENTHE": "Drenthe",
@@ -1824,7 +1893,9 @@
     "route": "Route",
     "website": "Website",
     "viewAll": "Bekijk alles",
-    "back": "Terug"
+    "back": "Terug",
+    "whatsappJoin": "Word lid van de WhatsApp-groep",
+    "whatsappIntro": "Je bent ingeschreven: word lid van de WhatsApp-groep van het toernooi voor nieuws op de dag zelf."
   },
   "Tournaments": {
     "title": "Toernooien",
@@ -2043,6 +2114,9 @@
     "close": "Sluiten",
     "loading": "Betaalscherm laden…",
     "orderLine": "Bestelling {orderNumber} · {amount}",
+    "haveCode": "Heb je een kortingscode?",
+    "codeLabel": "Kortingscode",
+    "applyCode": "Toepassen",
     "payNow": "Nu betalen {amount}",
     "processing": "Bezig…",
     "failed": "De betaling kon niet worden gestart. Probeer het opnieuw.",

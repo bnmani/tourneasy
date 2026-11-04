@@ -177,6 +177,7 @@ export default async function TournamentSettingsPage({ params, searchParams }: P
           contactName: tournament.contactName ?? '',
           contactEmail: tournament.contactEmail ?? '',
           contactPhone: tournament.contactPhone ?? '',
+          whatsappUrl: tournament.whatsappUrl ?? '',
           descriptionNl: description?.nl ?? '',
           descriptionEn: description?.en ?? '',
           partnerPaymentMode:

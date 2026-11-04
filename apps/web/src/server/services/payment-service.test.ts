@@ -11,7 +11,14 @@ import {
   reconcileOrder,
   undoDeskPayment,
   undoDeskPaymentsForPlayer,
+  undoWaiveShare,
+  waiveShare,
 } from './payment-service';
+import {
+  createDiscountCode,
+  listDiscountCodes,
+  setDiscountCodeActive,
+} from './entry-discount-service';
 import { approveRefund, rejectRefund, reopenRefund } from './refund-service';
 import {
   cancelEntryAsOrganiser,
@@ -23,7 +30,9 @@ import {
   restoreRegistration,
   withdrawMyRegistration,
 } from './registration-service';
+import { moveEvent } from './event-service';
 import { actorFromWebToken, createWebSession } from './session-service';
+import { whatsappLinkFor } from './tournament-service';
 
 let gateway: FakeGateway;
 beforeEach(async () => {
@@ -338,6 +347,138 @@ describe('payments per player (D109)', () => {
     const { rows } = await exportPayments(admin.actor, { tournamentId: t.id }, 'en');
     expect(rows).toHaveLength(1);
     expect(rows[0]![6]).toBe(25);
+  });
+});
+
+describe('waivers and discount codes (D111)', () => {
+  it('lets the owner waive and undo; counts it under Waived', async () => {
+    setGatewayForTests(null);
+    const t = await tournament();
+    const de = await event(t.id, 'DE');
+    const anna = await player({ gender: 'FEMALE' });
+    const entered = await enter(anna.actor, [{ eventId: de.id }]);
+    const share = { participantId: entered.registrations[0]!.participantId! };
+    const admin = await player({}, Role.ADMIN);
+    const owner = await player({}, Role.OWNER);
+    await expect(waiveShare(admin.actor, share, meta)).rejects.toMatchObject({ code: 'notFound' });
+    await waiveShare(owner.actor, share, meta, NOW);
+    expect(
+      await prisma.registrationParticipant.findUniqueOrThrow({
+        where: { id: share.participantId },
+      }),
+    ).toMatchObject({ paymentStatus: 'WAIVED', waivedCents: 1500, waivedById: owner.userId });
+    let overview = await paymentsOverview(owner.actor, { tournamentId: t.id, view: 'waived' });
+    expect(overview.totals).toMatchObject({ waivedCents: 1500, outstandingCents: 0 });
+    expect(overview.waivedShares).toHaveLength(1);
+    await undoWaiveShare(owner.actor, share, meta);
+    overview = await paymentsOverview(owner.actor, { tournamentId: t.id, view: 'outstanding' });
+    expect(overview.totals).toMatchObject({ waivedCents: 0, outstandingCents: 1500 });
+    expect(overview.outstandingPlayers.map((o) => o.dueCents)).toEqual([1500]);
+  });
+
+  it('takes a code off online and at the desk, once per player', async () => {
+    const t = await tournament();
+    const de = await event(t.id, 'DE');
+    const dd = await event(t.id, 'DD');
+    const owner = await player({}, Role.OWNER);
+    await createDiscountCode(owner.actor, { code: 'half', percent: '50' }, meta);
+    await createDiscountCode(
+      owner.actor,
+      { code: 'free', percent: '100', tournamentId: t.id },
+      meta,
+    );
+    await expect(
+      createDiscountCode(owner.actor, { code: 'HALF', percent: '10' }, meta),
+    ).rejects.toMatchObject({ details: { fields: { code: 'taken' } } });
+
+    // Online: half price.
+    const anna = await player({ gender: 'FEMALE' });
+    const a = await enter(anna.actor, [{ eventId: de.id }]);
+    const checkout = await createCheckout(
+      anna.actor,
+      { participantIds: [a.registrations[0]!.participantId!], code: 'half' },
+      NOW,
+    );
+    expect(checkout.amountCents).toBe(750);
+    gateway.pay([...gateway.intents.keys()][0]!);
+    await reconcileOrder(checkout.orderId!, anna.actor);
+    expect(
+      await prisma.order.findUniqueOrThrow({ where: { id: checkout.orderId! } }),
+    ).toMatchObject({
+      discountCents: 750,
+      totalCents: 750,
+    });
+    // The same player can't use it again.
+    const b = await enter(anna.actor, [{ eventId: dd.id, lookingForPartner: true }]);
+    await expect(
+      createCheckout(
+        anna.actor,
+        { participantIds: [b.registrations[0]!.participantId!], code: 'HALF' },
+        NOW,
+      ),
+    ).rejects.toMatchObject({ code: 'codeUsed' });
+    await expect(
+      createCheckout(
+        anna.actor,
+        { participantIds: [b.registrations[0]!.participantId!], code: 'nope' },
+        NOW,
+      ),
+    ).rejects.toMatchObject({ code: 'codeInvalid' });
+
+    // At the desk: a 100% code for another player.
+    const bram = await player({ gender: 'MALE' });
+    const he = await event(t.id, 'HE');
+    const c = await enter(bram.actor, [{ eventId: he.id }]);
+    await markShareAsPaid(
+      owner.actor,
+      { participantId: c.registrations[0]!.participantId!, code: 'free' },
+      meta,
+      NOW,
+    );
+    const overview = await paymentsOverview(owner.actor, { tournamentId: t.id });
+    expect(overview.totals.waivedCents).toBe(750 + 1500);
+    // Switched off: no new uses.
+    const codes = await listDiscountCodes(owner.actor);
+    expect(codes.find((x) => x.code === 'HALF')).toMatchObject({ uses: 1, discountCents: 750 });
+    await setDiscountCodeActive(owner.actor, codes.find((x) => x.code === 'FREE')!.id, false, meta);
+    await expect(
+      createCheckout(
+        anna.actor,
+        { participantIds: [b.registrations[0]!.participantId!], code: 'free' },
+        NOW,
+      ),
+    ).rejects.toMatchObject({ code: 'codeInvalid' });
+  });
+});
+
+describe('category order and WhatsApp group (D111)', () => {
+  it('moves categories up and down', async () => {
+    const t = await tournament();
+    const de = await event(t.id, 'DE');
+    const dd = await event(t.id, 'DD');
+    const gd = await event(t.id, 'GD');
+    const admin = await player({}, Role.ADMIN);
+    await moveEvent(admin.actor, t.id, gd.id, 'up', meta);
+    await moveEvent(admin.actor, t.id, gd.id, 'up', meta);
+    await moveEvent(admin.actor, t.id, gd.id, 'up', meta); // already first: no change
+    const order = await prisma.tournamentEvent.findMany({
+      where: { tournamentId: t.id },
+      orderBy: { sortOrder: 'asc' },
+      select: { id: true },
+    });
+    expect(order.map((e) => e.id)).toEqual([gd.id, de.id, dd.id]);
+  });
+
+  it('shows the WhatsApp link to entered players only', async () => {
+    const t = await tournament({ whatsappUrl: 'https://chat.whatsapp.com/AbC123' });
+    const de = await event(t.id, 'DE');
+    const anna = await player({ gender: 'FEMALE' });
+    const other = await player();
+    expect(await whatsappLinkFor(null, t.slug)).toBeNull();
+    expect(await whatsappLinkFor(anna.actor, t.slug)).toBeNull();
+    await enter(anna.actor, [{ eventId: de.id }]);
+    expect(await whatsappLinkFor(anna.actor, t.slug)).toBe('https://chat.whatsapp.com/AbC123');
+    expect(await whatsappLinkFor(other.actor, t.slug)).toBeNull();
   });
 });
 

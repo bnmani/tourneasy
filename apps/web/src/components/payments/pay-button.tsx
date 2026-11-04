@@ -3,6 +3,8 @@
 import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js';
 import { loadStripe, type Stripe } from '@stripe/stripe-js';
 import { X } from 'lucide-react';
+import { formatEuro } from '@tourneasy/shared';
+import type { AppLocale } from '@tourneasy/shared/i18n';
 import { useLocale, useTranslations } from 'next-intl';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Button } from '@/components/ui/button';
@@ -40,12 +42,14 @@ export function PayButton({
   const [checkout, setCheckout] = useState<Ready | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [code, setCode] = useState('');
 
-  async function open() {
-    dialog.current?.showModal();
+  async function open(withCode?: string) {
+    if (!dialog.current?.open) dialog.current?.showModal();
     setError(null);
     setLoading(true);
-    const result = await startCheckoutAction(participantIds);
+    setCheckout(null);
+    const result = await startCheckoutAction(participantIds, withCode || undefined);
     setLoading(false);
     if (!result.ok) {
       setError(te((result.error === 'validation' ? 'invalid' : result.error) as 'unexpected'));
@@ -70,7 +74,7 @@ export function PayButton({
 
   return (
     <>
-      <Button type="button" onClick={() => void open()}>
+      <Button type="button" onClick={() => void open(code)}>
         {t('payButton', { amount: amountLabel })}
       </Button>
       <dialog
@@ -98,12 +102,39 @@ export function PayButton({
               {error}
             </p>
           )}
+          {/* An entry discount code (D111): a new order with the lower amount. */}
+          <details className="text-sm" open={!!code}>
+            <summary className="cursor-pointer text-primary">{t('haveCode')}</summary>
+            <form
+              className="mt-2 flex gap-2"
+              onSubmit={(e) => {
+                e.preventDefault();
+                void open(code);
+              }}
+            >
+              <input
+                value={code}
+                onChange={(e) => setCode(e.target.value.toUpperCase())}
+                maxLength={30}
+                aria-label={t('codeLabel')}
+                placeholder={t('codeLabel')}
+                className="h-10 flex-1 rounded-md border border-input bg-background px-3 text-base sm:text-sm"
+              />
+              <Button type="submit" variant="outline" disabled={loading || !code.trim()}>
+                {t('applyCode')}
+              </Button>
+            </form>
+          </details>
           {checkout?.clientSecret && (
             <>
               <p className="text-sm text-muted-foreground">
-                {t('orderLine', { orderNumber: checkout.orderNumber ?? '', amount: amountLabel })}
+                {t('orderLine', {
+                  orderNumber: checkout.orderNumber ?? '',
+                  amount: formatEuro(checkout.amountCents, locale as AppLocale),
+                })}
               </p>
               <Elements
+                key={checkout.clientSecret}
                 stripe={stripeFor(checkout.publishableKey)}
                 options={{
                   clientSecret: checkout.clientSecret,
@@ -116,7 +147,7 @@ export function PayButton({
               >
                 <CheckoutForm
                   returnUrl={`${window.location.origin}/${locale}/payments/${checkout.orderId!}`}
-                  amountLabel={amountLabel}
+                  amountLabel={formatEuro(checkout.amountCents, locale as AppLocale)}
                 />
               </Elements>
             </>

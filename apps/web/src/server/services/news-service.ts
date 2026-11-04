@@ -16,10 +16,11 @@ import { assertCanManageTournament } from './permissions';
 import type { Actor } from './session-service';
 import { emailLogo } from './logo-service';
 
-type Localized = { nl: string; en?: string };
+type Localized = { nl?: string; en?: string };
 const pick = (v: unknown, locale: AppLocale) => {
   const o = (v ?? {}) as Localized;
-  return (locale === 'en' && o.en) || o.nl || '';
+  // Either language may be missing: the other one is shown (D111).
+  return (locale === 'en' && o.en) || o.nl || o.en || '';
 };
 
 export async function listNews(actor: Actor, tournamentId: string) {
@@ -54,8 +55,8 @@ export async function createNews(
     data: {
       tournamentId,
       slug: `${t.slug}-${randomToken(6).toLowerCase()}`,
-      title: { nl: data.titleNl, ...(data.titleEn ? { en: data.titleEn } : {}) },
-      body: { nl: data.bodyNl, ...(data.bodyEn ? { en: data.bodyEn } : {}) },
+      title: { en: data.titleEn, ...(data.titleNl ? { nl: data.titleNl } : {}) },
+      body: { en: data.bodyEn, ...(data.bodyNl ? { nl: data.bodyNl } : {}) },
       publishedAt: data.publish ? new Date() : null,
       authorId: actor.userId,
     },

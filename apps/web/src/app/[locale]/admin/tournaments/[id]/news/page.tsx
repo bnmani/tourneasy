@@ -39,7 +39,7 @@ export default async function NewsPage({ params, searchParams }: Props) {
   const when = (d: Date) => format.dateTime(d, { dateStyle: 'medium', timeStyle: 'short' });
   const text = (v: unknown) => {
     const o = (v ?? {}) as { nl?: string; en?: string };
-    return (locale === 'en' && o.en) || o.nl || '';
+    return (locale === 'en' && o.en) || o.nl || o.en || '';
   };
 
   return (

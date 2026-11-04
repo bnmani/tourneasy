@@ -199,7 +199,14 @@ describe('notifications (D62)', () => {
     await createNews(
       actor,
       t.id,
-      { titleNl: 'Parkeren', bodyNl: 'Parkeer bij de achteringang.', publish: true, email: true },
+      {
+        titleEn: 'Parking',
+        bodyEn: 'Park at the back entrance.',
+        titleNl: 'Parkeren',
+        bodyNl: 'Parkeer bij de achteringang.',
+        publish: true,
+        email: true,
+      },
       meta,
     );
     await deliverQueued();
@@ -306,7 +313,14 @@ describe('tournament logo (D67)', () => {
     await createNews(
       actor,
       t.id,
-      { titleNl: 'Parkeren', bodyNl: 'Parkeer achter.', publish: true, email: true },
+      {
+        titleEn: 'Parking',
+        bodyEn: 'Park at the back.',
+        titleNl: 'Parkeren',
+        bodyNl: 'Parkeer achter.',
+        publish: true,
+        email: true,
+      },
       meta,
     );
     await deliverQueued();

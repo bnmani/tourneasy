@@ -6,10 +6,12 @@ import { Badge, PageHeader, StatusNotice } from '@/components/admin/ui';
 import { FormSection } from '@/components/forms/fields';
 import { Button } from '@/components/ui/button';
 import { Link } from '@/i18n/navigation';
+import { ArrowDown, ArrowUp } from 'lucide-react';
 import { eventLabel } from '@/lib/labels';
 import { firstParam, pageLocale, type SearchParams } from '@/lib/page';
 import {
   deleteEventAction,
+  moveEventAction,
   publishTournamentAction,
   tournamentStatusAction,
 } from '@/server/actions/admin-actions';
@@ -171,7 +173,7 @@ export default async function AdminTournamentPage({
           <p className="text-sm text-muted-foreground">{t('tournaments.noEvents')}</p>
         ) : (
           <ul className="divide-y rounded-md border">
-            {tournament.events.map((e) => (
+            {tournament.events.map((e, i) => (
               <li
                 key={e.id}
                 className="flex flex-col gap-2 p-3 sm:flex-row sm:items-center sm:justify-between"
@@ -193,6 +195,29 @@ export default async function AdminTournamentPage({
                   </p>
                 </div>
                 <div className="flex gap-2">
+                  {/* The order is the schedule's priority (D111). */}
+                  <form action={moveEventAction.bind(null, locale, tournament.id, e.id, 'up')}>
+                    <Button
+                      type="submit"
+                      size="sm"
+                      variant="ghost"
+                      disabled={i === 0}
+                      aria-label={t('events.moveUp', { name: eventLabel(e, locale) })}
+                    >
+                      <ArrowUp aria-hidden="true" className="size-4" />
+                    </Button>
+                  </form>
+                  <form action={moveEventAction.bind(null, locale, tournament.id, e.id, 'down')}>
+                    <Button
+                      type="submit"
+                      size="sm"
+                      variant="ghost"
+                      disabled={i === tournament.events.length - 1}
+                      aria-label={t('events.moveDown', { name: eventLabel(e, locale) })}
+                    >
+                      <ArrowDown aria-hidden="true" className="size-4" />
+                    </Button>
+                  </form>
                   {!e.isOpen && <Badge tone="muted">{t('events.closed')}</Badge>}
                   <Button asChild size="sm" variant="outline">
                     <Link href={`/admin/tournaments/${tournament.id}/events/${e.id}`}>

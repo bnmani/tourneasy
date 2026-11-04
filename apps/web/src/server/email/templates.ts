@@ -31,6 +31,8 @@ type TemplateBody =
       url: string;
       /** Minutes left to pay when online payment is on; otherwise the "payment follows" note. */
       payWithinMinutes?: number;
+      /** The tournament's WhatsApp group (D111). */
+      whatsappUrl?: string;
     }
   | {
       kind: 'partnerInvite';
@@ -363,6 +365,7 @@ export function renderEmailWith(
         template.payWithinMinutes
           ? t('entryPayNow', { minutes: template.payWithinMinutes })
           : t('entryPay'),
+        ...(template.whatsappUrl ? [t('entryWhatsapp', { url: template.whatsappUrl })] : []),
       ];
       button = { label: t('entryButton'), url: template.url };
       break;

@@ -14,6 +14,7 @@ import {
   Utensils,
   Mail,
   MapPin,
+  MessageCircle,
   Navigation,
   Phone,
 } from 'lucide-react';
@@ -30,6 +31,7 @@ import { pageLocale } from '@/lib/page';
 import { pageMetadata } from '@/lib/seo';
 import { directionsUrl } from '@/lib/site';
 import { getActor } from '@/server/auth/web';
+import { whatsappLinkFor } from '@/server/services/tournament-service';
 import { isAppError } from '@/server/lib/errors';
 import { LiveMatches } from '@/components/matches/live-matches';
 import { TournamentNews } from '@/components/public/tournament-news';
@@ -128,7 +130,10 @@ export default async function TournamentPage({ params }: Props) {
   if (!t) notFound();
 
   const tt = await getTranslations('Tournament');
-  const signedIn = !!(await getActor());
+  const actor = await getActor();
+  const signedIn = !!actor;
+  // Entered players (and staff) see the tournament's WhatsApp group (D111).
+  const whatsapp = await whatsappLinkFor(actor, slug);
   const tp = await getTranslations('Public');
   const tdt = await getTranslations('DrawTypes');
   const description = pickLocalized(t.description, locale);
@@ -205,6 +210,18 @@ export default async function TournamentPage({ params }: Props) {
                 <Utensils aria-hidden="true" />
                 {tt('food')}
               </Link>
+            </Button>
+          )}
+          {whatsapp && (
+            <Button
+              asChild
+              variant="outline"
+              className="border-current bg-transparent text-hero-foreground hover:bg-hero-foreground/10 hover:text-hero-foreground"
+            >
+              <a href={whatsapp} target="_blank" rel="noopener noreferrer">
+                <MessageCircle aria-hidden="true" />
+                {tp('whatsappJoin')}
+              </a>
             </Button>
           )}
           {t.venue && (

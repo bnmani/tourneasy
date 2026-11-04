@@ -24,7 +24,13 @@ import type { RequestMeta } from '../lib/request-meta';
 import { localized, uniqueSlug } from '../lib/slug';
 import { appUrl } from '../lib/urls';
 import { pageCount, pageParams, parseInput } from '../lib/validation';
-import { assertAdmin, assertCanManageTournament, assertPortalAccess, isAdmin } from './permissions';
+import {
+  assertAdmin,
+  assertCanManageTournament,
+  assertPortalAccess,
+  canManageTournament,
+  isAdmin,
+} from './permissions';
 import { assertPackageToOpen } from './pricing-service';
 import type { Actor } from './session-service';
 import { createVenue } from './venue-service';
@@ -167,6 +173,7 @@ function toData(input: ReturnType<typeof tournamentSchema.parse>) {
     contactName: input.contactName ?? null,
     contactEmail: input.contactEmail ?? null,
     contactPhone: input.contactPhone ?? null,
+    whatsappUrl: input.whatsappUrl ?? null,
     description: localized(input.descriptionNl, input.descriptionEn) ?? Prisma.DbNull,
     partnerPaymentMode: input.partnerPaymentMode,
     refundPolicy: input.refundPolicy,
@@ -543,4 +550,29 @@ export async function acceptOrganiserInviteByLink(actor: Actor, token: string, m
     });
   }
   return acceptOrganiserInvites(actor.userId, user.email);
+}
+
+/**
+ * The tournament's WhatsApp group link for this viewer (D111): only for players with an
+ * entry and the tournament's own staff, so it doesn't reach strangers or spammers.
+ */
+export async function whatsappLinkFor(actor: Actor | null, slug: string): Promise<string | null> {
+  if (!actor) return null;
+  const t = await prisma.tournament.findFirst({
+    where: { slug, deletedAt: null },
+    select: { id: true, whatsappUrl: true },
+  });
+  if (!t?.whatsappUrl) return null;
+  if (await canManageTournament(actor, t.id)) return t.whatsappUrl;
+  const entered = await prisma.registrationParticipant.count({
+    where: {
+      active: true,
+      player: { userId: actor.userId },
+      registration: {
+        status: { in: ['PENDING', 'CONFIRMED', 'WAITLISTED'] },
+        event: { tournamentId: t.id },
+      },
+    },
+  });
+  return entered > 0 ? t.whatsappUrl : null;
 }

@@ -756,6 +756,8 @@ model Tournament {
   foodOrderingOn       Boolean            @default(false)
   foodCutoffAt         DateTime?
   foodPickupInfo       String?
+  /// WhatsApp group or community invite link, shown to entered players only (D111).
+  whatsappUrl          String?
   deletedAt            DateTime?
   createdAt            DateTime           @default(now())
   updatedAt            DateTime           @updatedAt
@@ -771,6 +773,7 @@ model Tournament {
   logo             TournamentLogo?
   packagePurchase  PackagePurchase?      @relation("TournamentPackage", fields: [packagePurchaseId], references: [id], onDelete: SetNull)
   purchases        PackagePurchase[]     @relation("PurchaseFor")
+  discountCodes    EntryDiscountCode[]
   foodItems        FoodItem[]
   foodOrders       FoodOrder[]
 
@@ -975,6 +978,10 @@ model RegistrationParticipant {
   checkInToken   String                   @unique
   checkedInAt    DateTime?
   checkedInById  String?                  @db.Uuid
+  /// Fee waived by the owner (D111): the amount, when and by whom. Undo clears it.
+  waivedCents    Int                      @default(0)
+  waivedAt       DateTime?
+  waivedById     String?                  @db.Uuid
   createdAt      DateTime                 @default(now())
   updatedAt      DateTime                 @updatedAt
 
@@ -1046,14 +1053,18 @@ model Order {
   expiresAt      DateTime // 30 min after creation while PENDING
   idempotencyKey String      @unique
   paidAt         DateTime?
+  /// Taken off by an entry discount code (D111); the items hold the amounts after it.
+  discountCents  Int         @default(0)
+  discountCodeId String?     @db.Uuid
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
 
-  user       User        @relation(fields: [userId], references: [id], onDelete: Restrict)
-  tournament Tournament  @relation(fields: [tournamentId], references: [id], onDelete: Restrict)
-  items      OrderItem[]
-  payments   Payment[]
-  invoice    Invoice?
+  user         User               @relation(fields: [userId], references: [id], onDelete: Restrict)
+  discountCode EntryDiscountCode? @relation(fields: [discountCodeId], references: [id], onDelete: SetNull)
+  tournament   Tournament         @relation(fields: [tournamentId], references: [id], onDelete: Restrict)
+  items        OrderItem[]
+  payments     Payment[]
+  invoice      Invoice?
 
   @@index([userId, createdAt])
   @@index([status, expiresAt])
@@ -1412,6 +1423,25 @@ enum PurchaseStatus {
 }
 
 /// A discount on packages for organisers who are members of a club, or who use its code.
+/// Entry fee discount code made by the owner (D111): a percentage (100 = free), for one
+/// tournament or all, once per player, optionally limited in uses and time.
+model EntryDiscountCode {
+  id           String    @id @default(uuid()) @db.Uuid
+  code         String    @unique @db.Citext
+  percent      Int
+  tournamentId String?   @db.Uuid
+  maxUses      Int?
+  validUntil   DateTime? @db.Date
+  active       Boolean   @default(true)
+  note         String?
+  createdById  String?   @db.Uuid
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  tournament Tournament? @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  orders     Order[]
+}
+
 model ClubDiscount {
   id          String    @id @default(uuid()) @db.Uuid
   clubId      String    @unique @db.Uuid

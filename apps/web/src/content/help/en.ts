@@ -94,7 +94,7 @@ export const en: Record<HelpGuideKey, HelpGuide> = {
             ],
           },
           {
-            p: 'Some tournaments give a discount when you play more than one event; the entry form shows it. You get a confirmation and a receipt by email.',
+            p: 'Some tournaments give a discount when you play more than one event; the entry form shows it. Got a discount code from the organisers? Open **Have a discount code?** in the payment window and apply it before you pay. You get a confirmation and a receipt by email. If the tournament has a WhatsApp group, the confirmation and the tournament page show **Join the WhatsApp group** once you have an entry.',
           },
           {
             img: {
@@ -287,7 +287,7 @@ export const en: Record<HelpGuideKey, HelpGuide> = {
         title: 'Settings and logo',
         blocks: [
           {
-            p: '**Settings** holds the tournament’s details: dates, deadlines, capacity, match timing, contact details and the refund rule. Choose the refund rule carefully, because players see it on the tournament page before they enter:',
+            p: '**Settings** holds the tournament’s details: dates, deadlines, capacity, match timing, contact details, an optional **WhatsApp group link** (shown only to players with an entry) and the refund rule. Choose the refund rule carefully, because players see it on the tournament page before they enter:',
           },
           {
             ul: [
@@ -321,6 +321,8 @@ export const en: Record<HelpGuideKey, HelpGuide> = {
               '**Import** entries from Excel, or **Export (Excel)** for your own lists',
               'Mark an entry **Paid at the desk** when someone pays in cash',
               '**Cancel** an entry to free its place; it moves to **Cancelled entries** at the bottom, where **Undo** puts it back',
+              'Under **More**: mark it **Paid with code** when a player has a discount code; the owner can also **Waive fee** (for a volunteer who plays, say) and **Undo waive**',
+              'Click a column heading (Event, Players, Status, Payment, Entered) to sort; click again to reverse',
             ],
           },
           {
@@ -365,7 +367,7 @@ export const en: Record<HelpGuideKey, HelpGuide> = {
         title: 'Plan the schedule',
         blocks: [
           {
-            p: 'With the draws published, open **Schedule** and click **Propose schedule**. Tourneasy spreads the matches over the courts and days, using your match length and rest time, so no player is on two courts at once.',
+            p: 'With the draws published, open **Schedule** and click **Propose schedule**. Tourneasy spreads the matches over the courts and days, using your match length and rest time, so no player is on two courts at once. Categories higher in the event list on the tournament **Overview** go on court first: use the ↑ and ↓ arrows there to give a category priority, then propose the schedule again.',
           },
           {
             p: 'Adjust any match by hand, then publish. Players get an email with their times and courts, and later changes are marked for them. Use **Export** for a PDF or Excel copy per day or per court, for the noticeboard at the venue.',
@@ -413,7 +415,7 @@ export const en: Record<HelpGuideKey, HelpGuide> = {
         title: 'Payments and refunds',
         blocks: [
           {
-            p: '**Payments** shows what was received, refunded and still outstanding for your tournament, with every order underneath. When a player withdraws and your rule is **After approval by the organisers**, the refund waits here for you to approve or reject.',
+            p: '**Payments** shows four totals for your tournament: received, refunded, waived and discounts, and outstanding. Click a box to see only the players it counts (Outstanding lists who still has to pay); click it again to see everyone. Below is one row per player with what they paid in total, 25 to 100 per page. When a player withdraws and your rule is **After approval by the organisers**, the refund waits here for you to approve or reject.',
           },
           {
             p: 'Online refunds go back to the player’s bank automatically. If the player paid at the desk, you pay the money back yourself; the line says so.',
@@ -437,7 +439,8 @@ export const en: Record<HelpGuideKey, HelpGuide> = {
           {
             ol: [
               'Tick **Ordering open for players**, set an order deadline and say where to collect.',
-              'Build the menu with prices and allergens. Players see the allergens before they order.',
+              'Build the menu with prices and allergens under **Add an item**. Players see the allergens before they order.',
+              'Volunteers, referees or guests without an account? **Add an order at the desk** takes their order by name, paid at pickup or straight away. The tournament’s own staff can also order on the player food page.',
               'On the day, click **Scan pickup code** and scan each player’s code. The screen confirms the order and marks it handed out, and warns you if it was already collected.',
             ],
           },
@@ -455,12 +458,12 @@ export const en: Record<HelpGuideKey, HelpGuide> = {
         title: 'Send news',
         blocks: [
           {
-            p: 'Use **News** for anything players should know: parking, a change of start time, a reminder to bring shuttles. Write the message in Dutch (and English if you like), then choose whether it goes on the tournament page, by email to all participants, or both.',
+            p: 'Use **News** for anything players should know: parking, a change of start time, a reminder to bring shuttles. Write the message in English (and Dutch if you like; Dutch readers see the English text otherwise), then choose whether it goes on the tournament page, by email to all participants, or both.',
           },
           {
             img: {
               src: 'o-news',
-              alt: 'News form with Dutch and English fields and email option',
+              alt: 'News form with English and Dutch fields and email option',
               caption:
                 'News. Players who switched off organiser news in their email preferences won’t get the email.',
             },
@@ -672,7 +675,7 @@ export const en: Record<HelpGuideKey, HelpGuide> = {
         title: 'Follow the money',
         blocks: [
           {
-            p: '**Payments** shows every order across all tournaments: what came in, what went back and what is still outstanding. Filter by tournament or status to answer questions from organisers or players.',
+            p: '**Payments** shows every tournament’s money in four boxes: received, refunded, waived and discounts, and outstanding. Click a box to filter. Below, each player has one row with their total. Filter by tournament or status to answer questions from organisers or players.',
           },
           {
             p: 'Online payments arrive through Stripe, mostly by iDEAL. Payments taken at the desk appear as **At the desk**. Refunds through iDEAL go back by bank transfer, so they can stay pending for one to five business days before they show as refunded.',
@@ -707,6 +710,10 @@ export const en: Record<HelpGuideKey, HelpGuide> = {
                 [
                   'Pricing',
                   'Paid packages for organisers, club discounts and invoices. Off until the owner switches it on.',
+                ],
+                [
+                  'Discount codes',
+                  'Codes for entry fees under Payments → Discount codes: a percentage (100% is free), one tournament or all, once per player, optional limit and end date. Switch a code off to stop it. Waiving a single fee is on the tournament’s Participants page.',
                 ],
                 [
                   'Food access',

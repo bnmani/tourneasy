@@ -37,10 +37,15 @@ export const ENTRY_TERMS_VERSION = '2026-10';
 /** Paying one or more of my unpaid entry shares in one tournament. */
 export const checkoutSchema = z.object({
   participantIds: z.array(z.string().uuid('invalid')).min(1, 'chooseEvent').max(20),
+  /** Entry discount code (D111). */
+  code: z.preprocess(emptyToUndefined, z.string().trim().max(30, 'tooLong').optional()),
 });
 
-/** Organiser records a share as paid at the desk (cash / bank transfer). */
-export const manualPaymentSchema = z.object({ participantId: z.string().uuid('invalid') });
+/** Organiser records a share as paid at the desk (cash / bank transfer), maybe with a code. */
+export const manualPaymentSchema = z.object({
+  participantId: z.string().uuid('invalid'),
+  code: z.preprocess(emptyToUndefined, z.string().trim().max(30, 'tooLong').optional()),
+});
 
 export const refundDecisionSchema = z.object({
   refundId: z.string().uuid('invalid'),
@@ -91,12 +96,12 @@ export const emailSettingsSchema = z.object({
     ),
 });
 
-/** Organiser news for a tournament (D62). English is optional (Dutch is shown instead). */
+/** Organiser news for a tournament (D62). Dutch is optional (English is shown instead, D111). */
 export const newsSchema = z.object({
-  titleNl: z.string().trim().min(1, 'required').max(140, 'tooLong'),
-  titleEn: z.preprocess(emptyToUndefined, z.string().trim().max(140, 'tooLong').optional()),
-  bodyNl: z.string().trim().min(1, 'required').max(5000, 'tooLong'),
-  bodyEn: z.preprocess(emptyToUndefined, z.string().trim().max(5000, 'tooLong').optional()),
+  titleEn: z.string().trim().min(1, 'required').max(140, 'tooLong'),
+  titleNl: z.preprocess(emptyToUndefined, z.string().trim().max(140, 'tooLong').optional()),
+  bodyEn: z.string().trim().min(1, 'required').max(5000, 'tooLong'),
+  bodyNl: z.preprocess(emptyToUndefined, z.string().trim().max(5000, 'tooLong').optional()),
   publish: z.boolean().default(true),
   email: z.boolean().default(false),
 });

@@ -167,3 +167,40 @@ export async function eventOptions() {
   ]);
   return { ageCategories, levels };
 }
+
+/**
+ * Moves an event one place up or down (D111). The order is the tournament's priority: the
+ * scheduler puts earlier events on court first when it has a choice. Schedules already made
+ * don't change until they are made again.
+ */
+export async function moveEvent(
+  actor: Actor,
+  tournamentId: string,
+  eventId: string,
+  direction: 'up' | 'down',
+  meta: RequestMeta,
+) {
+  await assertCanManageTournament(actor, tournamentId);
+  const events = await prisma.tournamentEvent.findMany({
+    where: { tournamentId, deletedAt: null },
+    orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+    select: { id: true },
+  });
+  const from = events.findIndex((e) => e.id === eventId);
+  if (from < 0) throw new AppError('notFound');
+  const to = direction === 'up' ? from - 1 : from + 1;
+  if (to < 0 || to >= events.length) return;
+  const order = events.map((e) => e.id);
+  [order[from], order[to]] = [order[to]!, order[from]!];
+  await prisma.$transaction(
+    order.map((id, i) => prisma.tournamentEvent.update({ where: { id }, data: { sortOrder: i } })),
+  );
+  await writeAudit(prisma, {
+    actorId: actor.userId,
+    action: 'event.move',
+    entityType: 'TournamentEvent',
+    entityId: eventId,
+    after: { direction, position: to + 1 },
+    meta,
+  });
+}

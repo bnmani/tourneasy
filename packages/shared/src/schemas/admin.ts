@@ -251,6 +251,11 @@ export const tournamentSchema = z
     contactName: optionalPersonNameSchema(120),
     contactEmail: optionalEmail,
     contactPhone: optionalPhone,
+    /** WhatsApp group or community invite link, for entered players only (D111). */
+    whatsappUrl: optionalUrl.refine(
+      (v) => !v || /^https:\/\/(chat\.whatsapp\.com|whatsapp\.com\/channel)\//i.test(v),
+      'whatsappUrl',
+    ),
     descriptionNl: optionalText(5000),
     descriptionEn: optionalText(5000),
     partnerPaymentMode: z.enum(PARTNER_PAYMENT_MODES).default('EACH_PAYS_OWN_SHARE'),

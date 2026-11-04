@@ -94,7 +94,7 @@ export const nl: Record<HelpGuideKey, HelpGuide> = {
             ],
           },
           {
-            p: 'Sommige toernooien geven korting als je meer dan één onderdeel speelt; het formulier laat dat zien. Je krijgt een bevestiging en een betaalbewijs per e-mail.',
+            p: 'Sommige toernooien geven korting als je meer dan één onderdeel speelt; het formulier laat dat zien. Kreeg je een kortingscode van de organisatie? Open **Heb je een kortingscode?** in het betaalvenster en pas hem toe voordat je betaalt. Je krijgt een bevestiging en een betaalbewijs per e-mail. Heeft het toernooi een WhatsApp-groep, dan staat **Word lid van de WhatsApp-groep** in de bevestiging en op de toernooipagina zodra je ingeschreven bent.',
           },
           {
             img: {
@@ -295,7 +295,7 @@ export const nl: Record<HelpGuideKey, HelpGuide> = {
         title: 'Instellingen en logo',
         blocks: [
           {
-            p: 'Onder **Instellingen** staan de gegevens van het toernooi: data, deadlines, capaciteit, wedstrijdduur, contactgegevens en de terugbetalingsregel. Kies die regel bewust, want spelers zien hem op de toernooipagina voordat ze zich inschrijven:',
+            p: 'Onder **Instellingen** staan de gegevens van het toernooi: data, deadlines, capaciteit, wedstrijdduur, contactgegevens, een optionele **WhatsApp-groepslink** (alleen zichtbaar voor spelers met een inschrijving) en de terugbetalingsregel. Kies die regel bewust, want spelers zien hem op de toernooipagina voordat ze zich inschrijven:',
           },
           {
             ul: [
@@ -330,6 +330,8 @@ export const nl: Record<HelpGuideKey, HelpGuide> = {
               'Inschrijvingen **Importeren** uit Excel, of **Exporteren (Excel)** voor je eigen lijsten',
               'Een inschrijving markeren als **Betaald aan de balie** bij contante betaling',
               'Een inschrijving **Annuleren** om de plek vrij te maken; die komt onderaan bij **Geannuleerde inschrijvingen**, waar **Terugdraaien** hem terugzet',
+              'Onder **Meer**: **Betaald met code** als een speler een kortingscode heeft; de eigenaar kan ook **Kwijtschelden** (bijv. voor een vrijwilliger die meespeelt) en **Kwijtschelding terugdraaien**',
+              'Klik op een kolomkop (Onderdeel, Spelers, Status, Betaling, Ingeschreven) om te sorteren; nog een keer klikken draait de volgorde om',
             ],
           },
           {
@@ -374,7 +376,7 @@ export const nl: Record<HelpGuideKey, HelpGuide> = {
         title: 'De planning maken',
         blocks: [
           {
-            p: 'Open met gepubliceerde schema’s de **Planning** en klik op **Planning voorstellen**. Tourneasy verdeelt de wedstrijden over de banen en dagen, met jouw wedstrijdduur en rusttijd, zodat niemand op twee banen tegelijk staat.',
+            p: 'Open met gepubliceerde schema’s de **Planning** en klik op **Planning voorstellen**. Tourneasy verdeelt de wedstrijden over de banen en dagen, met jouw wedstrijdduur en rusttijd, zodat niemand op twee banen tegelijk staat. Onderdelen die hoger in de lijst op het **Overzicht** van het toernooi staan, gaan eerst de baan op: geef een onderdeel voorrang met de pijlen ↑ en ↓ en stel de planning opnieuw voor.',
           },
           {
             p: 'Pas wedstrijden met de hand aan en publiceer. Spelers krijgen een e-mail met hun tijden en banen, en latere wijzigingen worden voor hen gemarkeerd. Met **Exporteren** maak je een pdf of Excel per dag of per baan, voor het mededelingenbord in de hal.',
@@ -422,7 +424,7 @@ export const nl: Record<HelpGuideKey, HelpGuide> = {
         title: 'Betalingen en terugbetalingen',
         blocks: [
           {
-            p: '**Betalingen** toont wat er voor je toernooi is ontvangen, terugbetaald en nog openstaat, met alle bestellingen eronder. Meldt een speler zich af en is je regel **Na goedkeuring door de organisatie**, dan wacht de terugbetaling hier op jouw goedkeuring of afwijzing.',
+            p: '**Betalingen** toont vier totalen voor je toernooi: ontvangen, terugbetaald, kwijtgescholden en korting, en openstaand. Klik op een vak om alleen de spelers te zien die het telt (Openstaand toont wie nog moet betalen); nog een keer klikken toont iedereen. Daaronder één regel per speler met het totaal, 25 tot 100 per pagina. Meldt een speler zich af en is je regel **Na goedkeuring door de organisatie**, dan wacht de terugbetaling hier op jouw goedkeuring of afwijzing.',
           },
           {
             p: 'Online terugbetalingen gaan automatisch terug naar de bank van de speler. Betaalde de speler aan de balie, dan betaal je zelf terug; dat staat bij de regel.',
@@ -447,7 +449,8 @@ export const nl: Record<HelpGuideKey, HelpGuide> = {
           {
             ol: [
               'Vink **Bestellen open voor spelers** aan, stel een besteldeadline in en vermeld waar spelers het ophalen.',
-              'Stel het menu samen met prijzen en allergenen. Spelers zien de allergenen voordat ze bestellen.',
+              'Stel het menu samen met prijzen en allergenen onder **Item toevoegen**. Spelers zien de allergenen voordat ze bestellen.',
+              'Vrijwilligers, scheidsrechters of gasten zonder account? Met **Bestelling toevoegen aan de balie** neem je hun bestelling op naam op, te betalen bij afhalen of meteen. De eigen staf van het toernooi kan ook bestellen via de etenpagina voor spelers.',
               'Klik op de dag op **Ophaalcode scannen** en scan de code van elke speler. Het scherm bevestigt de bestelling, markeert hem als uitgegeven en waarschuwt als hij al is opgehaald.',
             ],
           },
@@ -465,12 +468,12 @@ export const nl: Record<HelpGuideKey, HelpGuide> = {
         title: 'Nieuws versturen',
         blocks: [
           {
-            p: 'Gebruik **Nieuws** voor alles wat spelers moeten weten: parkeren, een andere begintijd, een herinnering om shuttles mee te nemen. Schrijf het bericht in het Nederlands (en eventueel in het Engels) en kies of het op de toernooipagina komt, per e-mail naar alle deelnemers gaat, of allebei.',
+            p: 'Gebruik **Nieuws** voor alles wat spelers moeten weten: parkeren, een andere begintijd, een herinnering om shuttles mee te nemen. Schrijf het bericht in het Engels (en eventueel in het Nederlands; anders zien Nederlandse lezers de Engelse tekst) en kies of het op de toernooipagina komt, per e-mail naar alle deelnemers gaat, of allebei.',
           },
           {
             img: {
               src: 'o-news',
-              alt: 'Nieuwsformulier met Nederlandse en Engelse velden en e-mailoptie',
+              alt: 'Nieuwsformulier met Engelse en Nederlandse velden en e-mailoptie',
               caption:
                 'Nieuws. Spelers die nieuws van organisatoren hebben uitgezet in hun e-mailvoorkeuren krijgen geen e-mail.',
             },
@@ -686,7 +689,7 @@ export const nl: Record<HelpGuideKey, HelpGuide> = {
         title: 'Het geld volgen',
         blocks: [
           {
-            p: '**Betalingen** toont alle bestellingen van alle toernooien: wat er binnenkwam, wat terugging en wat nog openstaat. Filter op toernooi of status om vragen van organisatoren of spelers te beantwoorden.',
+            p: '**Betalingen** toont het geld van alle toernooien in vier vakken: ontvangen, terugbetaald, kwijtgescholden en korting, en openstaand. Klik op een vak om te filteren. Daaronder heeft elke speler één regel met het totaal. Filter op toernooi of status om vragen van organisatoren of spelers te beantwoorden.',
           },
           {
             p: 'Online betalingen komen binnen via Stripe, meestal met iDEAL. Betalingen aan de balie staan er als **Aan de balie**. Een iDEAL-terugbetaling gaat via een bankoverschrijving en kan één tot vijf werkdagen in behandeling blijven voordat hij als terugbetaald verschijnt.',
@@ -725,6 +728,10 @@ export const nl: Record<HelpGuideKey, HelpGuide> = {
                 [
                   'Prijzen',
                   'Betaalde pakketten voor organisatoren, clubkortingen en facturen. Uit tot de eigenaar het aanzet.',
+                ],
+                [
+                  'Kortingscodes',
+                  'Codes voor inschrijfgeld onder Betalingen → Kortingscodes: een percentage (100% is gratis), één toernooi of alle, één keer per speler, optioneel een limiet en einddatum. Zet een code uit om hem te stoppen. Eén inschrijfgeld kwijtschelden doe je op de pagina Deelnemers van het toernooi.',
                 ],
                 [
                   'Eten toestaan',

@@ -43,6 +43,7 @@ export type TournamentFormValues = {
   contactName: string;
   contactEmail: string;
   contactPhone: string;
+  whatsappUrl: string;
   descriptionNl: string;
   descriptionEn: string;
   partnerPaymentMode: (typeof PARTNER_PAYMENT_MODES)[number];
@@ -454,6 +455,15 @@ export function TournamentForm({
             defaultValue={values.contactPhone}
           />
         </div>
+        <TextField
+          name="whatsappUrl"
+          type="url"
+          label={t('whatsappUrl')}
+          hint={t('whatsappHint')}
+          state={state}
+          defaultValue={values.whatsappUrl}
+          maxLength={300}
+        />
       </FormSection>
 
       <FormSection title={t('sectionDescription')}>

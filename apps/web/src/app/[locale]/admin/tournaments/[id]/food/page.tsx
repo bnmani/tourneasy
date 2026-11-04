@@ -149,10 +149,13 @@ export default async function FoodAdminPage({ params, searchParams }: Props) {
             ))}
           </ul>
         )}
-        <div className="space-y-4 rounded-md border p-3 sm:p-4">
-          <h3 className="font-medium">{t('addItem')}</h3>
-          <FoodItemForm locale={locale} tournamentId={id} allergens={ALLERGENS} />
-        </div>
+        {/* Closed until needed; open when the menu is still empty (D111). */}
+        <details className="rounded-md border p-3 sm:p-4" open={settings.items.length === 0}>
+          <summary className="cursor-pointer font-medium">{t('addItem')}</summary>
+          <div className="mt-4">
+            <FoodItemForm locale={locale} tournamentId={id} allergens={ALLERGENS} />
+          </div>
+        </details>
       </section>
 
       <section id="orders" className="space-y-4 rounded-lg border bg-card p-4 sm:p-6">

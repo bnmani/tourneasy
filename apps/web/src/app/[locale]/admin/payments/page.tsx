@@ -7,7 +7,11 @@ import { Button } from '@/components/ui/button';
 import { Link } from '@/i18n/navigation';
 import { firstParam, pageLocale, type SearchParams } from '@/lib/page';
 import { requireRole } from '@/server/auth/web';
-import { paymentsOverview, paymentTournamentOptions } from '@/server/services/payment-service';
+import {
+  PAYMENT_VIEWS,
+  paymentsOverview,
+  paymentTournamentOptions,
+} from '@/server/services/payment-service';
 
 type Props = { params: Promise<{ locale: string }>; searchParams: SearchParams };
 
@@ -30,8 +34,11 @@ export default async function PaymentsPage({ params, searchParams }: Props) {
     ? (statusParam as OrderStatus)
     : undefined;
   const page = Number(firstParam(query.page) ?? '1') || 1;
+  const perPage = Number(firstParam(query.perPage)) || undefined;
+  const viewParam = firstParam(query.view);
+  const view = PAYMENT_VIEWS.find((v) => v === viewParam);
   const [overview, tournaments] = await Promise.all([
-    paymentsOverview(actor, { tournamentId, status, page }),
+    paymentsOverview(actor, { tournamentId, status, page, perPage, view }),
     paymentTournamentOptions(actor),
   ]);
 
@@ -42,8 +49,6 @@ export default async function PaymentsPage({ params, searchParams }: Props) {
     ...(tournamentId ? [['tournamentId', tournamentId]] : []),
     ...(status ? [['state', status]] : []),
   ];
-  const href = (p: number) =>
-    `/admin/payments?${new URLSearchParams([...filterQuery, ['page', String(p)]])}`;
   const exportQuery = new URLSearchParams([
     ...(tournamentId ? [['tournamentId', tournamentId]] : []),
     ...(status ? [['status', status]] : []),
@@ -56,6 +61,11 @@ export default async function PaymentsPage({ params, searchParams }: Props) {
         intro={tp('intro')}
         actions={
           <>
+            {actor.roles.includes('OWNER') && (
+              <Button asChild variant="outline">
+                <Link href="/admin/payments/codes">{tp('codes')}</Link>
+              </Button>
+            )}
             {actor.roles.includes('OWNER') && (
               <Button asChild variant="outline">
                 <Link href="/admin/payments/settings">{tp('settings')}</Link>
@@ -109,7 +119,8 @@ export default async function PaymentsPage({ params, searchParams }: Props) {
       <PaymentsView
         locale={locale}
         overview={overview}
-        href={href}
+        basePath="/admin/payments"
+        query={filterQuery as [string, string][]}
         canDecide
         backPath={`/${locale}/admin/payments`}
       />

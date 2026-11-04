@@ -112,6 +112,8 @@
   "Errors": {
     "required": "This field is required.",
     "tooLong": "This is too long.",
+    "taken": "This is already in use.",
+    "tooShort": "This is too short.",
     "invalid": "This value is not valid.",
     "emailInvalid": "Enter a valid email address.",
     "phoneInvalid": "Enter a valid phone number, for example +31 6 12345678.",
@@ -217,6 +219,8 @@
     "foodUnavailable": "Food ordering isn't available for this tournament.",
     "foodClosed": "Ordering has closed.",
     "foodSoldOut": "Not enough left of one of the items. Lower the quantity and try again.",
+    "codeInvalid": "This discount code is not valid for this tournament, has expired or has been used up.",
+    "codeUsed": "You have already used this discount code.",
     "emptyOrder": "Choose at least one item.",
     "allergensRequired": "Tick the allergens, or tick \"Contains none of these allergens\".",
     "codeTaken": "This code is already used for another club.",
@@ -226,7 +230,8 @@
     "purchasePending": "There is already an open purchase for this. Wait until it is paid, or ask the site owner to cancel it.",
     "mfaAppRequired": "Set up the authenticator app on the website to log in to the mobile app. Passkeys only work on the website.",
     "enteredAgain": "This player is already entered in this event again. Cancel that entry first if you want this one back.",
-    "refundInProgress": "A refund for this entry is still on its way. Try again once it has completed."
+    "refundInProgress": "A refund for this entry is still on its way. Try again once it has completed.",
+    "whatsappUrl": "Use a WhatsApp invite link that starts with https://chat.whatsapp.com/"
   },
   "Auth": {
     "login": {
@@ -624,7 +629,7 @@
       "removeOrganiser": "Remove",
       "noOrganisers": "Only administrators can manage this tournament.",
       "events": "Events",
-      "eventsIntro": "Set the entry fee, maximum number of entries and match format per event.",
+      "eventsIntro": "Set the entry fee, maximum number of entries and match format per event. The order is the schedule's priority: use the arrows to put a category on court first.",
       "addEvent": "Add event",
       "noEvents": "No events yet.",
       "members": "Participants",
@@ -675,7 +680,9 @@
       "settingsTitle": "Settings · {tournament}",
       "settingsIntro": "The tournament's details, logo and organisers. Progress and categories are on the overview.",
       "details": "Tournament details",
-      "archiveAfter": "Archiving is possible from {date}, the day after the tournament."
+      "archiveAfter": "Archiving is possible from {date}, the day after the tournament.",
+      "whatsappUrl": "WhatsApp group link",
+      "whatsappHint": "Optional. The group or community invite link (https://chat.whatsapp.com/…). Only players with an entry see it. Clear it to remove the button; to stop an old link working, reset the link in WhatsApp."
     },
     "events": {
       "new": "New event",
@@ -720,7 +727,9 @@
       "prizePlaces": "Prizes",
       "prizePlacesHint": "How many places win a prize; sets the podium on the site and in the results email.",
       "prizePlaces_3": "Top 3 (winner, runner-up and third place)",
-      "prizePlaces_2": "Top 2 (winner and runner-up only)"
+      "prizePlaces_2": "Top 2 (winner and runner-up only)",
+      "moveUp": "Move {name} up",
+      "moveDown": "Move {name} down"
     },
     "venues": {
       "title": "Venues",
@@ -879,6 +888,11 @@
       "organiserInvited": "Invitation sent: the person gets an email with a link to accept.",
       "cancelled": "The entry has been cancelled.",
       "markedPaid": "Marked as paid.",
+      "feeWaived": "Fee waived.",
+      "waiveUndone": "Waiver undone: the fee is unpaid again.",
+      "codeCreated": "Discount code created.",
+      "codeOff": "Discount code switched off.",
+      "codeOn": "Discount code switched on.",
       "refundApproved": "Refund made.",
       "refundRejected": "Refund request declined.",
       "locked": "Locked.",
@@ -927,6 +941,13 @@
       "export": "Export (Excel)",
       "counts": "{confirmed} confirmed · {waitlisted} on the waiting list",
       "perEvent": "Teams per event",
+      "moreOptions": "More",
+      "discountCode": "Discount code",
+      "paidWithCode": "Paid with code",
+      "waive": "Waive fee",
+      "waiveConfirm": "Waive this fee? The amount is recorded as waived. You can undo this.",
+      "undoWaive": "Undo waive",
+      "undoWaiveConfirm": "Undo the waiver? The fee will be unpaid again.",
       "plusWaiting": "(+{count} waiting)",
       "totalLabel": "Total",
       "event": "Event",
@@ -998,6 +1019,23 @@
       "items": "Categories",
       "amount": "Amount",
       "refundedShort": "{amount} back",
+      "waived": "Waived and discounts",
+      "showing": {
+        "paid": "Showing players who paid.",
+        "refunded": "Showing players with a refund.",
+        "waived": "Showing waived fees and payments with a discount code.",
+        "outstanding": "Showing who still has to pay."
+      },
+      "showAll": "Show all",
+      "outstandingTitle": "Still to pay ({count})",
+      "nothingOutstanding": "Nobody has anything left to pay.",
+      "waivedTitle": "Waived fees ({count})",
+      "waivedBy": "waived by {name}",
+      "waivedUndoHint": "To undo a waiver, use Undo waive on the tournament's Participants page.",
+      "perPageLabel": "Players per page",
+      "perPage": "per page",
+      "discountShort": "{amount} discount",
+      "codes": "Discount codes",
       "players": "Payments per player ({count})",
       "player": "Player",
       "recordedBy": "Recorded by {names}",
@@ -1638,6 +1676,36 @@
       "given": "Package given.",
       "infoOnly": "The organiser chooses and pays for the package here. You see this for information.",
       "requested": "Request received. You'll get an invoice; the package applies once it is paid."
+    },
+    "codes": {
+      "title": "Discount codes",
+      "intro": "Codes for entry fees: a percentage off (100% = free), for one tournament or all. Each player can use a code once, online or at the desk. Switch a code off to stop new uses; payments already made stay as they are.",
+      "back": "Back to payments",
+      "new": "New code",
+      "list": "Codes ({count})",
+      "none": "No discount codes yet.",
+      "code": "Code",
+      "codeHint": "Letters, numbers and dashes, e.g. VOLUNTEER-2026.",
+      "percent": "Discount (%)",
+      "percentHint": "100 makes the entry free.",
+      "tournament": "Tournament",
+      "allTournaments": "All tournaments",
+      "maxUses": "Maximum uses",
+      "maxUsesHint": "Empty: no limit.",
+      "validUntil": "Valid until",
+      "note": "Note",
+      "noteHint": "For yourself, e.g. who it is for.",
+      "create": "Create code",
+      "created": "Code created.",
+      "percentOff": "{percent}% off",
+      "on": "On",
+      "off": "Off",
+      "usesNoLimit": "used {count}×",
+      "uses": "used {count} of {max}",
+      "given": "{amount} discount given",
+      "until": "valid until {date}",
+      "switchOff": "Switch off",
+      "switchOn": "Switch on"
     }
   },
   "Legal": {
@@ -1745,7 +1813,8 @@
     "organiserInviteSubject": "You're invited to organise {tournament} on Tourneasy",
     "organiserInviteBody": "{inviter} invites you to help organise {tournament} on Tourneasy. With an account you manage its entries, draws, schedule and match desk. Use the button below to create an account or log in with this email address. The link is valid for 14 days.",
     "organiserInviteButton": "Accept invitation",
-    "organiserInviteFooter": "You receive this email because a Tourneasy administrator invited this address as an organiser."
+    "organiserInviteFooter": "You receive this email because a Tourneasy administrator invited this address as an organiser.",
+    "entryWhatsapp": "Join the tournament's WhatsApp group for updates on the day: {url}"
   },
   "Provinces": {
     "DRENTHE": "Drenthe",
@@ -1824,7 +1893,9 @@
     "route": "Directions",
     "website": "Website",
     "viewAll": "View all",
-    "back": "Back"
+    "back": "Back",
+    "whatsappJoin": "Join the WhatsApp group",
+    "whatsappIntro": "You have an entry: join the tournament's WhatsApp group for updates on the day."
   },
   "Tournaments": {
     "title": "Tournaments",
@@ -2043,6 +2114,9 @@
     "close": "Close",
     "loading": "Loading the payment form…",
     "orderLine": "Order {orderNumber} · {amount}",
+    "haveCode": "Have a discount code?",
+    "codeLabel": "Discount code",
+    "applyCode": "Apply",
     "payNow": "Pay {amount} now",
     "processing": "Working…",
     "failed": "The payment could not be started. Please try again.",

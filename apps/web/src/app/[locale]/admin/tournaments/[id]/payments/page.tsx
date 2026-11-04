@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { firstParam, pageLocale, type SearchParams } from '@/lib/page';
 import { requirePortal } from '@/server/auth/web';
 import { isAppError } from '@/server/lib/errors';
-import { paymentsOverview } from '@/server/services/payment-service';
+import { PAYMENT_VIEWS, paymentsOverview } from '@/server/services/payment-service';
 import { getTournament } from '@/server/services/tournament-service';
 
 type Props = { params: Promise<{ locale: string; id: string }>; searchParams: SearchParams };
@@ -30,7 +30,10 @@ export default async function TournamentPaymentsPage({ params, searchParams }: P
     throw e;
   });
   if (!tournament) notFound();
-  const overview = await paymentsOverview(actor, { tournamentId: id, page });
+  const perPage = Number(firstParam(query.perPage)) || undefined;
+  const viewParam = firstParam(query.view);
+  const view = PAYMENT_VIEWS.find((v) => v === viewParam);
+  const overview = await paymentsOverview(actor, { tournamentId: id, page, perPage, view });
   const tp = await getTranslations('Admin.payments');
   return (
     <>
@@ -50,7 +53,8 @@ export default async function TournamentPaymentsPage({ params, searchParams }: P
         backPath={`/${locale}/admin/tournaments/${id}/payments`}
         locale={locale}
         overview={overview}
-        href={(p) => `/admin/tournaments/${id}/payments?page=${p}`}
+        basePath={`/admin/tournaments/${id}/payments`}
+        query={[]}
         canDecide={actor.roles.includes('ADMIN')}
       />
     </>

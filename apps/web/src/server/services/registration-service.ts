@@ -154,6 +154,7 @@ async function loadTournament(slug: string) {
       registrationClosesAt: true,
       withdrawalDeadline: true,
       maxEventsPerPlayer: true,
+      whatsappUrl: true,
       type: true,
       maxParticipants: true,
       packageKey: true,
@@ -543,6 +544,7 @@ export async function enterTournament(
           : messages[locale].Email.entryLine.replace('{event}', label(c.eventId, locale)),
       ),
       url: appUrl(locale, '/account?tab=upcoming'),
+      whatsappUrl: t.whatsappUrl ?? undefined,
       payWithinMinutes: created.some((c) => c.status === 'PENDING') ? HOLD_MINUTES : undefined,
     }),
   );
@@ -1358,6 +1360,8 @@ export async function listTournamentEntries(
           role: true,
           active: true,
           paymentStatus: true,
+          waivedCents: true,
+          waivedById: true,
           // Paid at the desk and not refunded: the organiser can undo it (D96).
           orderItems: {
             where: {

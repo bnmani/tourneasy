@@ -11,8 +11,14 @@ import { eventLabel, personName } from '@/lib/labels';
 import { firstParam, pageLocale, type SearchParams } from '@/lib/page';
 import { cn } from '@/lib/utils';
 import { QuickButton } from '@/components/desk/quick-buttons';
+import { QuickFormButton } from '@/components/admin/quick-form-button';
+import { SortHeader } from '@/components/admin/sort-header';
 import { restoreEntryAction, undoSharePaymentAction } from '@/server/actions/match-actions';
-import { markPaidAction } from '@/server/actions/payment-actions';
+import {
+  markPaidAction,
+  markPaidWithCodeAction,
+  waiveShareAction,
+} from '@/server/actions/payment-actions';
 import { formatEuro } from '@tourneasy/shared';
 import { cancelEntryAction } from '@/server/actions/registration-actions';
 import { requirePortal } from '@/server/auth/web';
@@ -35,6 +41,7 @@ export default async function EntriesPage({ params, searchParams }: Props) {
   const locale = await pageLocale(params);
   const { id } = await params;
   const actor = await requirePortal(locale);
+  const isOwner = actor.roles.includes('OWNER');
   const query = await searchParams;
   const tournament = await getTournament(actor, id).catch((e) => {
     if (isAppError(e) && e.code === 'notFound') return null;
@@ -46,10 +53,42 @@ export default async function EntriesPage({ params, searchParams }: Props) {
   const cancelled = firstParam(query.state) === 'cancelled';
   const q = firstParam(query.q)?.trim().slice(0, 80) || undefined;
   const status: RegistrationStatus | undefined = cancelled ? 'CANCELLED' : undefined;
-  const [entries, allCancelled] = await Promise.all([
+  const [listed, allCancelled] = await Promise.all([
     listTournamentEntries(actor, id, { eventId, status, q }),
     listCancelledEntries(actor, id),
   ]);
+  // Sorting by a column heading (D111); the tournament's event order otherwise.
+  const SORTS = ['event', 'player', 'status', 'payment', 'entered'] as const;
+  type Sort = (typeof SORTS)[number];
+  const sortParam = firstParam(query.sort);
+  const sort: Sort | null = (SORTS as readonly string[]).includes(sortParam ?? '')
+    ? (sortParam as Sort)
+    : null;
+  const dir = firstParam(query.dir) === 'desc' ? 'desc' : 'asc';
+  const sortKey = (r: (typeof listed)[number]): string | number => {
+    const first = r.participants[0];
+    if (sort === 'event') return eventLabel(r.event, locale).toLowerCase();
+    if (sort === 'player') return first ? personName(first.player).toLowerCase() : '';
+    if (sort === 'status') return r.status;
+    if (sort === 'payment') return first?.paymentStatus ?? '';
+    return r.createdAt.getTime();
+  };
+  const entries = sort
+    ? [...listed].sort((a, b) => {
+        const x = sortKey(a);
+        const y = sortKey(b);
+        const c = x < y ? -1 : x > y ? 1 : 0;
+        return dir === 'asc' ? c : -c;
+      })
+    : listed;
+  const sortHref = (column: string, d: 'asc' | 'desc') =>
+    `/admin/tournaments/${id}/entries?${new URLSearchParams([
+      ...(eventId ? [['eventId', eventId]] : []),
+      ...(q ? [['q', q]] : []),
+      ...(cancelled ? [['state', 'cancelled']] : []),
+      ['sort', column],
+      ['dir', d],
+    ])}`;
   const words = (q ?? '').toLowerCase().split(/\s+/).filter(Boolean);
   const cancelledEntries = allCancelled.filter(
     (c) =>
@@ -220,21 +259,24 @@ export default async function EntriesPage({ params, searchParams }: Props) {
           <table className="w-full min-w-[48rem] text-left text-sm">
             <thead className="border-b bg-muted/50 text-xs text-muted-foreground uppercase">
               <tr>
-                <th scope="col" className="px-3 py-2">
-                  {t('entries.event')}
-                </th>
-                <th scope="col" className="px-3 py-2">
-                  {t('entries.players')}
-                </th>
-                <th scope="col" className="px-3 py-2">
-                  {t('entries.status')}
-                </th>
-                <th scope="col" className="px-3 py-2">
-                  {t('entries.payment')}
-                </th>
-                <th scope="col" className="px-3 py-2">
-                  {t('entries.enteredOn')}
-                </th>
+                {(
+                  [
+                    ['event', t('entries.event')],
+                    ['player', t('entries.players')],
+                    ['status', t('entries.status')],
+                    ['payment', t('entries.payment')],
+                    ['entered', t('entries.enteredOn')],
+                  ] as const
+                ).map(([column, label]) => (
+                  <SortHeader
+                    key={column}
+                    column={column}
+                    label={label}
+                    current={sort ?? ''}
+                    dir={dir}
+                    href={sortHref}
+                  />
+                ))}
                 <th scope="col" className="px-3 py-2">
                   <span className="sr-only">{t('actions')}</span>
                 </th>
@@ -307,6 +349,54 @@ export default async function EntriesPage({ params, searchParams }: Props) {
                                 {t('entries.markPaid')}
                               </button>
                             </form>
+                          )}
+                          {p.paymentStatus === 'UNPAID' && r.status !== 'CANCELLED' && (
+                            // Paid at the desk with a discount code; the owner can waive (D111).
+                            <details className="mt-1 whitespace-normal">
+                              <summary className="cursor-pointer text-muted-foreground">
+                                {t('entries.moreOptions')}
+                              </summary>
+                              <form
+                                action={markPaidWithCodeAction.bind(null, locale, id, p.id)}
+                                className="mt-1 flex items-center gap-1"
+                              >
+                                <input
+                                  name="code"
+                                  required
+                                  maxLength={30}
+                                  aria-label={t('entries.discountCode')}
+                                  placeholder={t('entries.discountCode')}
+                                  className="h-8 w-28 rounded-md border border-input bg-background px-2 text-base uppercase sm:text-xs"
+                                />
+                                <Button type="submit" size="sm" variant="outline" className="h-8">
+                                  {t('entries.paidWithCode')}
+                                </Button>
+                              </form>
+                              {isOwner && (
+                                <QuickFormButton
+                                  action={waiveShareAction.bind(null, locale, id, p.id, false)}
+                                  confirm={t('entries.waiveConfirm')}
+                                >
+                                  {t('entries.waive')}
+                                </QuickFormButton>
+                              )}
+                            </details>
+                          )}
+                          {p.paymentStatus === 'WAIVED' && p.waivedById && (
+                            <>
+                              {' '}
+                              <span className="text-muted-foreground">
+                                {formatEuro(p.waivedCents, locale)}
+                              </span>
+                              {isOwner && (
+                                <QuickFormButton
+                                  action={waiveShareAction.bind(null, locale, id, p.id, true)}
+                                  confirm={t('entries.undoWaiveConfirm')}
+                                >
+                                  {t('entries.undoWaive')}
+                                </QuickFormButton>
+                              )}
+                            </>
                           )}
                           {p.paymentStatus === 'PAID' && p.orderItems.length > 0 && (
                             // Paid at the desk by mistake: undo it, after a confirmation (D96).

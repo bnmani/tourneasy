@@ -13,7 +13,7 @@ import { writeAudit } from '../lib/audit';
 import { AppError } from '../lib/errors';
 import type { RequestMeta } from '../lib/request-meta';
 import { appUrl } from '../lib/urls';
-import { parseInput } from '../lib/validation';
+import { PAGE_SIZES, parseInput } from '../lib/validation';
 import {
   getGateway,
   type GatewayEvent,
@@ -24,6 +24,7 @@ import { amountsDue, HOLD_MINUTES } from '../payments/pricing';
 import { applyFoodIntent } from './food-service';
 import { assertAdmin, assertCanManageTournament, assertOwner } from './permissions';
 import { applyPackageIntent } from './pricing-service';
+import { discounted, resolveCode } from './entry-discount-service';
 import { refundsForCancelledRegistration, applyRefundUpdate } from './refund-service';
 import { eventText, fullName } from './registration-service';
 import type { Actor } from './session-service';
@@ -71,7 +72,7 @@ type ShareRow = Prisma.RegistrationParticipantGetPayload<{ select: typeof shareS
 
 export async function createCheckout(actor: Actor, input: unknown, now = new Date()) {
   const gateway = await requireGateway();
-  const { participantIds } = parseInput(checkoutSchema, input);
+  const { participantIds, code } = parseInput(checkoutSchema, input);
   const me = await prisma.playerProfile.findFirst({
     where: { userId: actor.userId, deletedAt: null },
     select: { id: true, user: { select: { email: true, locale: true } } },
@@ -115,7 +116,13 @@ export async function createCheckout(actor: Actor, input: unknown, now = new Dat
     },
     orderBy: { createdAt: 'desc' },
   });
-  if (open && open.items.length === shares.length && open.payments[0]?.stripePaymentIntentId) {
+  // A code changes the amount: then a new order instead of the open one.
+  if (
+    !code &&
+    open &&
+    open.items.length === shares.length &&
+    open.payments[0]?.stripePaymentIntentId
+  ) {
     const intent = await gateway.retrieveIntent(open.payments[0].stripePaymentIntentId);
     if (intent.status === 'requires_payment' && intent.clientSecret) {
       return {
@@ -128,15 +135,56 @@ export async function createCheckout(actor: Actor, input: unknown, now = new Dat
     }
   }
 
-  // Amounts include the multi-category discount (D52).
+  // Amounts include the multi-category discount (D52), then a discount code (D111).
   const due = await amountsDue(me.id, tournament.id);
-  const lines = shares.map((s) => ({
+  const discount = code ? await resolveCode(code, tournament.id, me.id, now) : null;
+  const full = shares.map((s) => due.get(s.id) ?? s.registration.event.feeCents);
+  const lines = shares.map((s, i) => ({
     participantId: s.id,
     registrationId: s.registration.id,
-    amountCents: due.get(s.id) ?? s.registration.event.feeCents,
+    amountCents: discount ? discounted(full[i]!, discount.percent) : full[i]!,
     description: `${eventText(s.registration.event, actor.locale)} · ${fullName(s.player)}`,
   }));
   const total = lines.reduce((n, l) => n + l.amountCents, 0);
+  const discountCents = full.reduce((n, a) => n + a, 0) - total;
+  if (total === 0 && discount) {
+    // A 100% code: paid with nothing to pay, the discount kept for the accounts.
+    await prisma.$transaction(async (tx) => {
+      await tx.order.create({
+        data: {
+          orderNumber: await nextOrderNumber(tx, now),
+          userId: actor.userId,
+          tournamentId: tournament.id,
+          status: 'PAID',
+          paidAt: now,
+          subtotalCents: 0,
+          totalCents: 0,
+          discountCents,
+          discountCodeId: discount.id,
+          expiresAt: now,
+          idempotencyKey: crypto.randomUUID(),
+          items: { create: lines },
+        },
+      });
+      for (const l of lines) {
+        await tx.registrationParticipant.update({
+          where: { id: l.participantId },
+          data: { paymentStatus: 'PAID' },
+        });
+        await tx.registration.updateMany({
+          where: { id: l.registrationId, status: 'PENDING' },
+          data: { status: 'CONFIRMED', confirmedAt: now, holdExpiresAt: null },
+        });
+      }
+    });
+    return {
+      orderId: null,
+      orderNumber: null,
+      amountCents: 0,
+      clientSecret: null,
+      publishableKey: gateway.publishableKey,
+    };
+  }
   if (total === 0) {
     // Fully covered by the discount: nothing to pay online.
     await settleWithoutPayment(lines, now);
@@ -164,6 +212,8 @@ export async function createCheckout(actor: Actor, input: unknown, now = new Dat
         tournamentId: tournament.id,
         subtotalCents: total,
         totalCents: total,
+        discountCents,
+        discountCodeId: discount?.id ?? null,
         expiresAt,
         idempotencyKey: crypto.randomUUID(),
         items: { create: lines },
@@ -228,6 +278,38 @@ async function outstandingTotal(shares: ShareRow[]) {
     for (const id of g.ids) total += due.get(id) ?? 0;
   }
   return total;
+}
+
+/** Unpaid shares per player and tournament, with what each still owes (D111). */
+async function outstandingByPlayer(shares: ShareRow[]) {
+  const groups = new Map<
+    string,
+    { key: string; playerId: string; tournament: { id: string; name: string }; shares: ShareRow[] }
+  >();
+  for (const s of shares) {
+    const t = s.registration.event.tournament;
+    const key = `${t.id}:${s.playerId}`;
+    const g = groups.get(key) ?? { key, playerId: s.playerId, tournament: t, shares: [] };
+    g.shares.push(s);
+    groups.set(key, g);
+  }
+  const rows = [];
+  for (const g of groups.values()) {
+    const due = await amountsDue(g.playerId, g.tournament.id);
+    rows.push({
+      key: g.key,
+      player: g.shares[0]!.player,
+      tournament: { id: g.tournament.id, name: g.tournament.name },
+      lines: g.shares.map((s) => ({
+        participantId: s.id,
+        event: s.registration.event,
+        amountCents: due.get(s.id) ?? s.registration.event.feeCents,
+      })),
+    });
+  }
+  return rows
+    .map((r) => ({ ...r, dueCents: r.lines.reduce((n, l) => n + l.amountCents, 0) }))
+    .sort((a, b) => fullName(a.player).localeCompare(fullName(b.player)));
 }
 
 // ── Applying payment results ───────────────────────────────────────────────────────
@@ -463,7 +545,7 @@ export async function markShareAsPaid(
   meta: RequestMeta,
   now = new Date(),
 ) {
-  const { participantId } = parseInput(manualPaymentSchema, input);
+  const { participantId, code } = parseInput(manualPaymentSchema, input);
   const share = await prisma.registrationParticipant.findUnique({
     where: { id: participantId },
     select: shareSelect,
@@ -472,9 +554,12 @@ export async function markShareAsPaid(
   const tournament = share.registration.event.tournament;
   await assertCanManageTournament(actor, tournament.id);
   if (share.paymentStatus !== 'UNPAID' || !share.active) throw new AppError('statusTransition');
-  const amount =
+  const full =
     (await amountsDue(share.playerId, tournament.id)).get(share.id) ??
     share.registration.event.feeCents;
+  // A discount code given at the desk (D111).
+  const discount = code ? await resolveCode(code, tournament.id, share.playerId, now) : null;
+  const amount = discount ? discounted(full, discount.percent) : full;
   const payer = share.player.userId ?? actor.userId;
   await prisma.$transaction(async (tx) => {
     const order = await tx.order.create({
@@ -486,6 +571,8 @@ export async function markShareAsPaid(
         paidAt: now,
         subtotalCents: amount,
         totalCents: amount,
+        discountCents: full - amount,
+        discountCodeId: discount?.id ?? null,
         expiresAt: now,
         idempotencyKey: crypto.randomUUID(),
         items: {
@@ -523,7 +610,85 @@ export async function markShareAsPaid(
       action: 'payment.manual',
       entityType: 'Order',
       entityId: order.id,
-      after: { participantId: share.id, amountCents: amount },
+      after: {
+        participantId: share.id,
+        amountCents: amount,
+        ...(discount ? { discountCents: full - amount, code } : {}),
+      },
+      meta,
+    });
+  });
+}
+
+// ── Waived fees (owner, D111) ──────────────────────────────────────────────────────
+
+/** The owner waives an unpaid share's fee, e.g. for a volunteer who plays; the amount is kept. */
+export async function waiveShare(
+  actor: Actor,
+  input: unknown,
+  meta: RequestMeta,
+  now = new Date(),
+) {
+  assertOwner(actor);
+  const { participantId } = parseInput(manualPaymentSchema, input);
+  const share = await prisma.registrationParticipant.findUnique({
+    where: { id: participantId },
+    select: shareSelect,
+  });
+  if (!share) throw new AppError('notFound');
+  if (share.paymentStatus !== 'UNPAID' || !share.active) throw new AppError('statusTransition');
+  const tournament = share.registration.event.tournament;
+  const amount =
+    (await amountsDue(share.playerId, tournament.id)).get(share.id) ??
+    share.registration.event.feeCents;
+  await prisma.$transaction(async (tx) => {
+    const changed = await tx.registrationParticipant.updateMany({
+      where: { id: share.id, paymentStatus: 'UNPAID' },
+      data: {
+        paymentStatus: 'WAIVED',
+        waivedCents: amount,
+        waivedAt: now,
+        waivedById: actor.userId,
+      },
+    });
+    if (changed.count !== 1) throw new AppError('statusTransition');
+    if (share.registration.status === 'PENDING')
+      await tx.registration.update({
+        where: { id: share.registration.id },
+        data: { status: 'CONFIRMED', confirmedAt: now, holdExpiresAt: null },
+      });
+    await writeAudit(tx, {
+      actorId: actor.userId,
+      action: 'payment.waived',
+      entityType: 'RegistrationParticipant',
+      entityId: share.id,
+      after: { amountCents: amount, tournamentId: tournament.id },
+      meta,
+    });
+  });
+}
+
+/** Undoes an owner's waiver: the share is unpaid again (the entry stays confirmed). */
+export async function undoWaiveShare(actor: Actor, input: unknown, meta: RequestMeta) {
+  assertOwner(actor);
+  const { participantId } = parseInput(manualPaymentSchema, input);
+  const share = await prisma.registrationParticipant.findUnique({
+    where: { id: participantId },
+    select: { id: true, paymentStatus: true, waivedById: true, waivedCents: true },
+  });
+  if (!share || share.paymentStatus !== 'WAIVED' || !share.waivedById)
+    throw new AppError('statusTransition');
+  await prisma.$transaction(async (tx) => {
+    await tx.registrationParticipant.update({
+      where: { id: share.id },
+      data: { paymentStatus: 'UNPAID', waivedCents: 0, waivedAt: null, waivedById: null },
+    });
+    await writeAudit(tx, {
+      actorId: actor.userId,
+      action: 'payment.unwaived',
+      entityType: 'RegistrationParticipant',
+      entityId: share.id,
+      before: { amountCents: share.waivedCents },
       meta,
     });
   });
@@ -644,6 +809,7 @@ const overviewOrderSelect = {
   createdAt: true,
   paidAt: true,
   userId: true,
+  discountCents: true,
   user: { select: { name: true, email: true } },
   tournament: { select: { id: true, name: true } },
   payments: {
@@ -669,6 +835,7 @@ type OverviewOrder = {
   createdAt: Date;
   paidAt: Date | null;
   userId: string;
+  discountCents: number;
   user: { name: string; email: string };
   tournament: { id: string; name: string };
   payments: { method: PaymentMethod | null; status: string }[];
@@ -705,6 +872,8 @@ function groupByPlayer(orders: OverviewOrder[]) {
       /** Cancelled or expired (e.g. a desk payment undone): not money in. */
       voidCents: number;
       refundedCents: number;
+      discountCents: number;
+      orderIds: Set<string>;
       latest: Date;
       statuses: Set<OrderStatus>;
       lines: {
@@ -734,6 +903,8 @@ function groupByPlayer(orders: OverviewOrder[]) {
         pendingCents: 0,
         voidCents: 0,
         refundedCents: 0,
+        discountCents: 0,
+        orderIds: new Set<string>(),
         latest: at,
         statuses: new Set<OrderStatus>(),
         lines: [],
@@ -743,6 +914,9 @@ function groupByPlayer(orders: OverviewOrder[]) {
       else if (o.status === 'PENDING') g.pendingCents += i.amountCents;
       else g.voidCents += i.amountCents;
       g.refundedCents += i.refundedCents;
+      // A code's discount is per order: counted once.
+      if (!g.orderIds.has(o.id) && MONEY_IN.includes(o.status)) g.discountCents += o.discountCents;
+      g.orderIds.add(o.id);
       if (at > g.latest) g.latest = at;
       g.statuses.add(o.status);
       g.lines.push({
@@ -759,8 +933,9 @@ function groupByPlayer(orders: OverviewOrder[]) {
     }
   return [...groups.values()]
     .sort((a, b) => b.latest.getTime() - a.latest.getTime())
-    .map(({ recordedBy, statuses, ...g }) => ({
+    .map(({ recordedBy, statuses, orderIds, ...g }) => ({
       ...g,
+      orderCount: orderIds.size,
       recordedBy: [...recordedBy],
       status: (g.paidCents > 0 && g.refundedCents >= g.paidCents
         ? 'REFUNDED'
@@ -774,13 +949,27 @@ function groupByPlayer(orders: OverviewOrder[]) {
     }));
 }
 
-export type PaymentFilters = { tournamentId?: string; status?: OrderStatus; page?: number };
+/** Which box was clicked (D111): only the players it counts. */
+export const PAYMENT_VIEWS = ['paid', 'refunded', 'waived', 'outstanding'] as const;
+export type PaymentView = (typeof PAYMENT_VIEWS)[number];
+
+export type PaymentFilters = {
+  tournamentId?: string;
+  status?: OrderStatus;
+  page?: number;
+  /** 25, 50, 75 or 100 (D111). */
+  perPage?: number;
+  view?: PaymentView;
+};
 
 export async function paymentsOverview(actor: Actor, filters: PaymentFilters = {}) {
   // One tournament: its organisers too (D75); all tournaments: admins only.
   if (filters.tournamentId) await assertCanManageTournament(actor, filters.tournamentId);
   else assertAdmin(actor);
   const page = Math.max(1, filters.page ?? 1);
+  const size = (PAGE_SIZES as readonly number[]).includes(filters.perPage ?? 0)
+    ? filters.perPage!
+    : 25;
   const where: Prisma.OrderWhereInput = {
     ...(filters.tournamentId ? { tournamentId: filters.tournamentId } : {}),
     ...(filters.status ? { status: filters.status } : { status: { not: 'EXPIRED' } }),
@@ -839,20 +1028,78 @@ export async function paymentsOverview(actor: Actor, filters: PaymentFilters = {
       },
     }),
   ]);
+  const [discounts, waivedShares] = await Promise.all([
+    prisma.order.aggregate({
+      where: { ...tournamentWhere, status: { in: MONEY_IN }, discountCents: { gt: 0 } },
+      _sum: { discountCents: true },
+    }),
+    prisma.registrationParticipant.findMany({
+      where: {
+        waivedCents: { gt: 0 },
+        paymentStatus: 'WAIVED',
+        ...(filters.tournamentId
+          ? { registration: { event: { tournamentId: filters.tournamentId } } }
+          : {}),
+      },
+      orderBy: { waivedAt: 'desc' },
+      select: {
+        id: true,
+        waivedCents: true,
+        waivedAt: true,
+        waivedById: true,
+        player: { select: payerPlayerSelect },
+        registration: {
+          select: {
+            event: {
+              select: { ...eventLabelSelect, tournament: { select: { id: true, name: true } } },
+            },
+          },
+        },
+      },
+    }),
+  ]);
+  const waivers = await prisma.user.findMany({
+    where: { id: { in: [...new Set(waivedShares.map((w) => w.waivedById!))] } },
+    select: { id: true, name: true },
+  });
+  const waiverName = new Map(waivers.map((u) => [u.id, u.name]));
   // One row per player per tournament: what they paid in total, per event below (D109).
-  const groups = groupByPlayer(orderRows);
+  // A clicked box narrows it to the players that box counts (D111).
+  const all = groupByPlayer(orderRows);
+  const groups =
+    filters.view === 'paid'
+      ? all.filter((g) => g.paidCents > g.refundedCents)
+      : filters.view === 'refunded'
+        ? all.filter((g) => g.refundedCents > 0)
+        : filters.view === 'waived'
+          ? all.filter((g) => g.discountCents > 0)
+          : filters.view === 'outstanding'
+            ? []
+            : all;
   const total = groups.length;
   return {
-    players: groups.slice((page - 1) * 25, page * 25),
+    players: groups.slice((page - 1) * size, page * size),
     total,
     page,
-    pages: Math.max(1, Math.ceil(total / 25)),
+    perPage: size,
+    view: filters.view ?? null,
+    pages: Math.max(1, Math.ceil(total / size)),
     totals: {
       paidCents: paid._sum.amountCents ?? 0,
       refundedCents: refunded._sum.amountCents ?? 0,
+      waivedCents:
+        (discounts._sum.discountCents ?? 0) + waivedShares.reduce((n, w) => n + w.waivedCents, 0),
       outstandingCents: await outstandingTotal(outstanding),
       outstandingShares: outstanding.length,
     },
+    // The owner's waivers, for the Waived box (D111).
+    waivedShares: waivedShares.map((w) => ({
+      ...w,
+      waivedBy: waiverName.get(w.waivedById!) ?? null,
+    })),
+    // Who still has to pay, per player, for the Outstanding box (D111).
+    outstandingPlayers:
+      filters.view === 'outstanding' ? await outstandingByPlayer(outstanding) : [],
     refundRequests,
     // Declined requests, newest first: a decline made by mistake can be reopened (D99).
     declinedRefunds: await prisma.refund.findMany({

@@ -5,7 +5,13 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { currentRequestMeta, getActor } from '../auth/web';
 import { AppError, isAppError, type ErrorCode } from '../lib/errors';
-import { createCheckout, markShareAsPaid } from '../services/payment-service';
+import { createDiscountCode, setDiscountCodeActive } from '../services/entry-discount-service';
+import {
+  createCheckout,
+  markShareAsPaid,
+  undoWaiveShare,
+  waiveShare,
+} from '../services/payment-service';
 import {
   clearPaymentSettings,
   lockSettings,
@@ -34,9 +40,12 @@ export type CheckoutResult =
   | { ok: false; error: ErrorCode };
 
 /** Opens (or reuses) the order for my unpaid shares; the dialog then shows Stripe's form. */
-export async function startCheckoutAction(participantIds: string[]): Promise<CheckoutResult> {
+export async function startCheckoutAction(
+  participantIds: string[],
+  code?: string,
+): Promise<CheckoutResult> {
   try {
-    const result = await createCheckout(await actorOrThrow(), { participantIds });
+    const result = await createCheckout(await actorOrThrow(), { participantIds, code });
     if (!result.clientSecret) revalidatePath('/', 'layout'); // fully covered by a discount
     return { ok: true, ...result };
   } catch (error) {
@@ -65,6 +74,67 @@ export async function markPaidAction(
 ) {
   await act(`/${locale}/admin/tournaments/${tournamentId}/entries`, 'markedPaid', async () =>
     markShareAsPaid(await actorOrThrow(), { participantId }, await currentRequestMeta()),
+  );
+}
+
+/** Organiser: paid at the desk with a discount code (D111). */
+export async function markPaidWithCodeAction(
+  locale: AppLocale,
+  tournamentId: string,
+  participantId: string,
+  formData: FormData,
+) {
+  await act(`/${locale}/admin/tournaments/${tournamentId}/entries`, 'markedPaid', async () =>
+    markShareAsPaid(
+      await actorOrThrow(),
+      { participantId, code: String(formData.get('code') ?? '') },
+      await currentRequestMeta(),
+    ),
+  );
+}
+
+/** Owner: waive a share's fee, or undo that (D111). */
+export async function waiveShareAction(
+  locale: AppLocale,
+  tournamentId: string,
+  participantId: string,
+  undo: boolean,
+) {
+  await act(
+    `/${locale}/admin/tournaments/${tournamentId}/entries`,
+    undo ? 'waiveUndone' : 'feeWaived',
+    async () => {
+      const actor = await actorOrThrow();
+      const meta = await currentRequestMeta();
+      return undo
+        ? undoWaiveShare(actor, { participantId }, meta)
+        : waiveShare(actor, { participantId }, meta);
+    },
+  );
+}
+
+/** Owner: entry discount codes (D111). */
+export async function createDiscountCodeAction(
+  locale: AppLocale,
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  try {
+    await createDiscountCode(
+      await actorOrThrow(),
+      Object.fromEntries(formData.entries()),
+      await currentRequestMeta(),
+    );
+  } catch (error) {
+    return toFormState(error, formData);
+  }
+  revalidatePath('/', 'layout');
+  return { ok: true };
+}
+
+export async function setDiscountCodeActiveAction(locale: AppLocale, id: string, active: boolean) {
+  await act(`/${locale}/admin/payments/codes`, active ? 'codeOn' : 'codeOff', async () =>
+    setDiscountCodeActive(await actorOrThrow(), id, active, await currentRequestMeta()),
   );
 }
 
