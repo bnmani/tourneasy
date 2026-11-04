@@ -47,7 +47,7 @@ Hostinger → Websites → Web Apps → the app → Deployments → Redeploy (Se
 | ---------------- | ------------------------------------- |
 | Framework preset | **Other**                             |
 | Branch           | `main`                                |
-| Node version     | 22.x                                  |
+| Node version     | 24.x                                  |
 | Root directory   | `apps/web`                            |
 | Build command    | `pnpm run build`                      |
 | Package manager  | pnpm                                  |

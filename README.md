@@ -10,7 +10,7 @@ Badminton tournament management and registration platform for the Netherlands (n
 
 | Tool    | Version             | Install (macOS)                                           |
 | ------- | ------------------- | --------------------------------------------------------- |
-| Node.js | 22 LTS              | <https://nodejs.org> installer, or `brew install node@22` |
+| Node.js | 24 LTS              | <https://nodejs.org> installer, or `brew install node@24` |
 | pnpm    | 11                  | `corepack enable` (ships with Node)                       |
 | Docker  | Desktop or OrbStack | <https://www.docker.com/products/docker-desktop>          |
 | Git     | any                 | `xcode-select --install`                                  |
