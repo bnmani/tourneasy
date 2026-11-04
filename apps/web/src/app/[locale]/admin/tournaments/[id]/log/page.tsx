@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+import { PerPage } from '@/components/admin/per-page';
+import { PAGE_SIZE, pageSize } from '@/server/lib/validation';
 import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { AuditTable } from '@/components/admin/audit-table';
@@ -22,13 +24,16 @@ export default async function TournamentLogPage({ params, searchParams }: Props)
   const locale = await pageLocale(params);
   const { id } = await params;
   const actor = await requirePortal(locale);
-  const page = Number(firstParam((await searchParams).page) ?? '1') || 1;
+  const query = await searchParams;
+  const page = Number(firstParam(query.page) ?? '1') || 1;
+  const perPage = pageSize(Number(firstParam(query.perPage)) || undefined);
+  const sized = (n: number) => (n === PAGE_SIZE ? '' : `&perPage=${n}`);
   const tournament = await getTournament(actor, id).catch((e) => {
     if (isAppError(e) && e.code === 'notFound') return null;
     throw e;
   });
   if (!tournament) notFound();
-  const result = await listTournamentAudit(actor, id, { page });
+  const result = await listTournamentAudit(actor, id, { page, perPage });
   const t = await getTranslations('Admin.audit');
   return (
     <>
@@ -36,11 +41,16 @@ export default async function TournamentLogPage({ params, searchParams }: Props)
         title={t('tournamentTitle', { tournament: tournament.name })}
         intro={t('tournamentIntro')}
       />
+      <PerPage
+        current={perPage}
+        href={(n) => `/admin/tournaments/${id}/log?page=1${sized(n)}`}
+        className="justify-end"
+      />
       <AuditTable entries={result.entries} />
       <Pagination
         page={result.page}
         pages={result.pages}
-        href={(p) => `/admin/tournaments/${id}/log?page=${p}`}
+        href={(p) => `/admin/tournaments/${id}/log?page=${p}${sized(perPage)}`}
       />
     </>
   );

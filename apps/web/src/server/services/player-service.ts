@@ -18,7 +18,7 @@ import { writeAudit } from '../lib/audit';
 import { excelSerialToIsoDate, looksLikeXlsx, readXlsx, toXlsx } from '../lib/xlsx';
 import { AppError } from '../lib/errors';
 import type { RequestMeta } from '../lib/request-meta';
-import { PAGE_SIZE, PAGE_SIZES, pageCount, pageParams, parseInput } from '../lib/validation';
+import { pageCount, pageParams, pageSize, parseInput } from '../lib/validation';
 import { verifyPassword } from '../lib/password';
 import { anonymiseProfile, anonymiseUser } from './gdpr-service';
 import { assertAdmin, assertNotHiddenOwner, assertOwner } from './permissions';
@@ -131,9 +131,7 @@ export function playerName(p: {
 
 export async function listPlayers(actor: Actor, filters: PlayerFilters = {}) {
   assertAdmin(actor);
-  const size = (PAGE_SIZES as readonly number[]).includes(filters.perPage ?? 0)
-    ? filters.perPage!
-    : PAGE_SIZE;
+  const size = pageSize(filters.perPage);
   const { page, skip, take } = pageParams(filters.page, size);
   const where = whereFor(filters);
   const [total, players] = await Promise.all([

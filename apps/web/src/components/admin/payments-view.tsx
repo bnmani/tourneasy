@@ -7,7 +7,7 @@ import { ScrollRegion } from '@/components/ui/scroll-region';
 import { eventLabel, personName } from '@/lib/labels';
 import { cn } from '@/lib/utils';
 import { Link } from '@/i18n/navigation';
-import { PAGE_SIZES } from '@/server/lib/validation';
+import { PerPage } from '@/components/admin/per-page';
 import { refundDecisionAction, reopenRefundAction } from '@/server/actions/payment-actions';
 import type { paymentsOverview } from '@/server/services/payment-service';
 
@@ -261,22 +261,10 @@ export async function PaymentsView({
           <h2 id="orders-title" className="text-lg font-semibold">
             {tp('players', { count: overview.total })}
           </h2>
-          <nav aria-label={tp('perPageLabel')} className="flex gap-1 text-sm">
-            {PAGE_SIZES.map((n) => (
-              <Link
-                key={n}
-                href={link({ perPage: n === 25 ? null : String(n), page: null })}
-                aria-current={overview.perPage === n ? 'true' : undefined}
-                className={cn(
-                  'rounded-md border px-2 py-1 hover:bg-secondary',
-                  overview.perPage === n && 'border-primary bg-primary/5 font-medium',
-                )}
-              >
-                {n}
-              </Link>
-            ))}
-            <span className="self-center pl-1 text-muted-foreground">{tp('perPage')}</span>
-          </nav>
+          <PerPage
+            current={overview.perPage}
+            href={(n) => link({ perPage: n === 25 ? null : String(n), page: null })}
+          />
         </div>
         {overview.players.length === 0 ? (
           <p className="text-muted-foreground">{tp('none')}</p>

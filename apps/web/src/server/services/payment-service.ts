@@ -13,7 +13,7 @@ import { writeAudit } from '../lib/audit';
 import { AppError } from '../lib/errors';
 import type { RequestMeta } from '../lib/request-meta';
 import { appUrl } from '../lib/urls';
-import { PAGE_SIZES, parseInput } from '../lib/validation';
+import { pageSize, parseInput } from '../lib/validation';
 import {
   getGateway,
   type GatewayEvent,
@@ -967,9 +967,7 @@ export async function paymentsOverview(actor: Actor, filters: PaymentFilters = {
   if (filters.tournamentId) await assertCanManageTournament(actor, filters.tournamentId);
   else assertAdmin(actor);
   const page = Math.max(1, filters.page ?? 1);
-  const size = (PAGE_SIZES as readonly number[]).includes(filters.perPage ?? 0)
-    ? filters.perPage!
-    : 25;
+  const size = pageSize(filters.perPage);
   const where: Prisma.OrderWhereInput = {
     ...(filters.tournamentId ? { tournamentId: filters.tournamentId } : {}),
     ...(filters.status ? { status: filters.status } : { status: { not: 'EXPIRED' } }),

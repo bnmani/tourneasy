@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+import { PerPage } from '@/components/admin/per-page';
+import { PAGE_SIZE, pageSize } from '@/server/lib/validation';
 import { adminMetadata } from '@/lib/seo';
 import { getTranslations } from 'next-intl/server';
 import { AuditTable } from '@/components/admin/audit-table';
@@ -24,10 +26,20 @@ export default async function AuditLogPage({
   const actor = await requireRole(locale, 'OWNER');
   const query = await searchParams;
   const action = firstParam(query.action) ?? '';
-  const result = await listAuditLog(actor, { action, page: Number(firstParam(query.page) ?? 1) });
+  const perPage = pageSize(Number(firstParam(query.perPage)) || undefined);
+  const result = await listAuditLog(actor, {
+    action,
+    page: Number(firstParam(query.page) ?? 1),
+    perPage,
+  });
   const t = await getTranslations('Admin');
+  const filters = { ...(action ? { action } : {}) };
+  const sized = (n: number): Record<string, string> =>
+    n === PAGE_SIZE ? {} : { perPage: String(n) };
   const href = (p: number) =>
-    `/admin/audit?${new URLSearchParams({ ...(action ? { action } : {}), page: String(p) })}`;
+    `/admin/audit?${new URLSearchParams({ ...filters, ...sized(perPage), page: String(p) })}`;
+  const sizeHref = (n: number) =>
+    `/admin/audit?${new URLSearchParams({ ...filters, ...sized(n) })}`;
 
   return (
     <>
@@ -46,7 +58,9 @@ export default async function AuditLogPage({
         <Button type="submit" variant="outline">
           {t('filter')}
         </Button>
+        {perPage !== PAGE_SIZE && <input type="hidden" name="perPage" value={perPage} />}
       </FilterBar>
+      <PerPage current={perPage} href={sizeHref} className="justify-end" />
       <AuditTable entries={result.entries} />
       <Pagination page={result.page} pages={result.pages} href={href} />
     </>

@@ -13,7 +13,7 @@ import { writeAudit } from '../lib/audit';
 import { AppError, validationError } from '../lib/errors';
 import { verifyPassword } from '../lib/password';
 import type { RequestMeta } from '../lib/request-meta';
-import { parseInput } from '../lib/validation';
+import { pageSize, parseInput } from '../lib/validation';
 import { anonymiseUser } from './gdpr-service';
 import {
   assertAdmin,
@@ -28,8 +28,6 @@ import { type Actor, revokeAllSessions } from './session-service';
 export function hasRole(actor: Actor | null, role: Role): boolean {
   return !!actor && actor.roles.includes(role);
 }
-
-const PAGE_SIZE = 20;
 
 export const USER_SORTS = ['name', 'member', 'email', 'roles', 'created'] as const;
 export type UserSort = (typeof USER_SORTS)[number];
@@ -52,11 +50,13 @@ function userOrder(sort: UserSort, dir: 'asc' | 'desc'): Prisma.UserOrderByWithR
 
 export async function listUsers(
   actor: Actor,
-  params: { q?: string; page?: number; sort?: UserSort; dir?: 'asc' | 'desc' },
+  params: { q?: string; page?: number; perPage?: number; sort?: UserSort; dir?: 'asc' | 'desc' },
 ) {
   assertAdmin(actor);
   const q = params.q?.trim().slice(0, 100);
   const page = Math.max(1, Math.floor(params.page ?? 1));
+  // 25, 50, 75 or 100 per page, as on the other lists (D112).
+  const PAGE_SIZE = pageSize(params.perPage);
   const where: Prisma.UserWhereInput = {
     anonymisedAt: null,
     deletedAt: null,

@@ -828,7 +828,6 @@
       "saveAndAddAnother": "Save and add another",
       "playerAdded": "Player {name} added ({number}).",
       "addAnother": "Add another player",
-      "perPage": "{count} per page",
       "invitedBadge": "Invited {date}",
       "invite": {
         "inviteTitle": "Let them activate an account",
@@ -1032,8 +1031,6 @@
       "waivedTitle": "Waived fees ({count})",
       "waivedBy": "waived by {name}",
       "waivedUndoHint": "To undo a waiver, use Undo waive on the tournament's Participants page.",
-      "perPageLabel": "Players per page",
-      "perPage": "per page",
       "discountShort": "{amount} discount",
       "codes": "Discount codes",
       "players": "Payments per player ({count})",
@@ -1706,7 +1703,9 @@
       "until": "valid until {date}",
       "switchOff": "Switch off",
       "switchOn": "Switch on"
-    }
+    },
+    "perPage": "per page",
+    "perPageLabel": "Rows per page"
   },
   "Legal": {
     "updated": "Last updated: 31 October 2026",

@@ -8,16 +8,16 @@ import { writeAudit } from '../lib/audit';
 import { AppError } from '../lib/errors';
 import type { RequestMeta } from '../lib/request-meta';
 import { localized, uniqueSlug } from '../lib/slug';
-import { pageCount, pageParams, parseInput } from '../lib/validation';
+import { pageCount, pageParams, pageSize, parseInput } from '../lib/validation';
 import { assertAdmin, assertPortalAccess, isAdmin } from './permissions';
 import type { Actor } from './session-service';
 
 export async function listVenues(
   actor: Actor,
-  params: { q?: string; archived?: boolean; page?: number } = {},
+  params: { q?: string; archived?: boolean; page?: number; perPage?: number } = {},
 ) {
   assertPortalAccess(actor);
-  const { page, skip, take } = pageParams(params.page);
+  const { page, skip, take } = pageParams(params.page, pageSize(params.perPage));
   const q = params.q?.trim();
   const where: Prisma.VenueWhereInput = {
     deletedAt: params.archived ? { not: null } : null,
@@ -47,7 +47,7 @@ export async function listVenues(
       },
     }),
   ]);
-  return { venues, total, page, pages: pageCount(total) };
+  return { venues, total, page, pages: pageCount(total, pageSize(params.perPage)) };
 }
 
 /** All active venues, for select boxes. */

@@ -23,7 +23,7 @@ import { AppError, validationError } from '../lib/errors';
 import type { RequestMeta } from '../lib/request-meta';
 import { localized, uniqueSlug } from '../lib/slug';
 import { appUrl } from '../lib/urls';
-import { pageCount, pageParams, parseInput } from '../lib/validation';
+import { pageCount, pageParams, pageSize, parseInput } from '../lib/validation';
 import {
   assertAdmin,
   assertCanManageTournament,
@@ -39,10 +39,10 @@ import { createVenue } from './venue-service';
 
 export async function listTournaments(
   actor: Actor,
-  params: { q?: string; status?: TournamentStatusCode; page?: number } = {},
+  params: { q?: string; status?: TournamentStatusCode; page?: number; perPage?: number } = {},
 ) {
   assertPortalAccess(actor);
-  const { page, skip, take } = pageParams(params.page);
+  const { page, skip, take } = pageParams(params.page, pageSize(params.perPage));
   const q = params.q?.trim();
   const where: Prisma.TournamentWhereInput = {
     deletedAt: null,
@@ -94,7 +94,7 @@ export async function listTournaments(
     })),
     total,
     page,
-    pages: pageCount(total),
+    pages: pageCount(total, pageSize(params.perPage)),
   };
 }
 

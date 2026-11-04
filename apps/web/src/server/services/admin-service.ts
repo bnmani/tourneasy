@@ -1,6 +1,6 @@
 /** Admin dashboard figures and the audit log viewer. */
 import { prisma, type Prisma } from '@tourneasy/db';
-import { pageCount, pageParams } from '../lib/validation';
+import { pageCount, pageParams, pageSize } from '../lib/validation';
 import {
   assertCanManageTournament,
   assertOwner,
@@ -111,9 +111,12 @@ export function maskOwners<
   );
 }
 
-export async function listAuditLog(actor: Actor, params: { action?: string; page?: number } = {}) {
+export async function listAuditLog(
+  actor: Actor,
+  params: { action?: string; page?: number; perPage?: number } = {},
+) {
   assertOwner(actor);
-  const { page, skip, take } = pageParams(params.page);
+  const { page, skip, take } = pageParams(params.page, pageSize(params.perPage));
   const action = params.action?.trim();
   const privacy = await ownerPrivacy(actor);
   const where: Prisma.AuditLogWhereInput = {
@@ -139,7 +142,12 @@ export async function listAuditLog(actor: Actor, params: { action?: string; page
       },
     }),
   ]);
-  return { entries: maskOwners(entries, privacy.owners), total, page, pages: pageCount(total) };
+  return {
+    entries: maskOwners(entries, privacy.owners),
+    total,
+    page,
+    pages: pageCount(total, pageSize(params.perPage)),
+  };
 }
 
 /** Every logged entity that belongs to one tournament: itself, its events, entries, matches… */
@@ -183,10 +191,10 @@ async function tournamentAuditScope(tournamentId: string): Promise<Prisma.AuditL
 export async function listTournamentAudit(
   actor: Actor,
   tournamentId: string,
-  params: { page?: number } = {},
+  params: { page?: number; perPage?: number } = {},
 ) {
   await assertCanManageTournament(actor, tournamentId);
-  const { page, skip, take } = pageParams(params.page);
+  const { page, skip, take } = pageParams(params.page, pageSize(params.perPage));
   const privacy = await ownerPrivacy(actor);
   const where = { AND: [await tournamentAuditScope(tournamentId), privacy.where] };
   const [total, entries] = await Promise.all([
@@ -209,5 +217,10 @@ export async function listTournamentAudit(
       },
     }),
   ]);
-  return { entries: maskOwners(entries, privacy.owners), total, page, pages: pageCount(total) };
+  return {
+    entries: maskOwners(entries, privacy.owners),
+    total,
+    page,
+    pages: pageCount(total, pageSize(params.perPage)),
+  };
 }

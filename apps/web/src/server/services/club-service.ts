@@ -5,16 +5,16 @@ import { writeAudit } from '../lib/audit';
 import { AppError, validationError } from '../lib/errors';
 import type { RequestMeta } from '../lib/request-meta';
 import { uniqueSlug } from '../lib/slug';
-import { pageCount, pageParams, parseInput } from '../lib/validation';
+import { pageCount, pageParams, pageSize, parseInput } from '../lib/validation';
 import { assertAdmin, assertPortalAccess } from './permissions';
 import type { Actor } from './session-service';
 
 export async function listClubs(
   actor: Actor,
-  params: { q?: string; archived?: boolean; page?: number } = {},
+  params: { q?: string; archived?: boolean; page?: number; perPage?: number } = {},
 ) {
   assertPortalAccess(actor);
-  const { page, skip, take } = pageParams(params.page);
+  const { page, skip, take } = pageParams(params.page, pageSize(params.perPage));
   const q = params.q?.trim();
   const where: Prisma.ClubWhereInput = {
     deletedAt: params.archived ? { not: null } : null,
@@ -44,7 +44,7 @@ export async function listClubs(
       },
     }),
   ]);
-  return { clubs, total, page, pages: pageCount(total) };
+  return { clubs, total, page, pages: pageCount(total, pageSize(params.perPage)) };
 }
 
 export async function getClub(actor: Actor, id: string) {

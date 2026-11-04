@@ -1,4 +1,6 @@
 import { ASSIGNABLE_ROLES } from '@tourneasy/shared/schemas';
+import { PerPage } from '@/components/admin/per-page';
+import { PAGE_SIZE, pageSize } from '@/server/lib/validation';
 import type { Metadata } from 'next';
 import { getFormatter, getTranslations } from 'next-intl/server';
 import { FormError, FormSuccess } from '@/components/forms/fields';
@@ -37,7 +39,8 @@ export default async function AdminUsersPage({
     ? (sortParam as UserSort)
     : 'name';
   const dir = firstParam(query.dir) === 'desc' ? 'desc' : 'asc';
-  const result = await listUsers(actor, { q, page, sort, dir });
+  const perPage = pageSize(Number(firstParam(query.perPage)) || undefined);
+  const result = await listUsers(actor, { q, page, perPage, sort, dir });
 
   const t = await getTranslations('Admin');
   const tr = await getTranslations('Roles');
@@ -47,7 +50,11 @@ export default async function AdminUsersPage({
   const roles = ASSIGNABLE_ROLES.filter((r) => r === 'ORGANISER' || isOwnerViewer);
   const tb = await getTranslations('Admin.usersBulk');
   // Search, sort and page survive role changes, removals and paging.
-  const listQuery = new URLSearchParams({ ...(q ? { q } : {}), sort, dir });
+  const sized = (n: number): Record<string, string> =>
+    n === PAGE_SIZE ? {} : { perPage: String(n) };
+  const listQuery = new URLSearchParams({ ...(q ? { q } : {}), sort, dir, ...sized(perPage) });
+  const sizeHref = (n: number) =>
+    `/admin/users?${new URLSearchParams({ ...(q ? { q } : {}), sort, dir, ...sized(n) })}`;
   const returnTo = `/${locale}/admin/users?${listQuery}`;
   const pageHref = (p: number) => `/admin/users?${listQuery}&page=${p}`;
   const format = await getFormatter();
@@ -55,7 +62,7 @@ export default async function AdminUsersPage({
     current: sort,
     dir,
     href: (column: string, d: 'asc' | 'desc') =>
-      `/admin/users?${new URLSearchParams({ ...(q ? { q } : {}), sort: column, dir: d })}`,
+      `/admin/users?${new URLSearchParams({ ...(q ? { q } : {}), sort: column, dir: d, ...sized(perPage) })}`,
   } as const;
 
   return (
@@ -95,7 +102,9 @@ export default async function AdminUsersPage({
         <Button type="submit" variant="outline">
           {t('search')}
         </Button>
+        {perPage !== PAGE_SIZE && <input type="hidden" name="perPage" value={perPage} />}
       </FilterBar>
+      <PerPage current={perPage} href={sizeHref} className="justify-end" />
 
       <p className="text-sm text-muted-foreground">{t('total', { count: result.total })}</p>
       {/* Removing accounts is for owners (D80). */}

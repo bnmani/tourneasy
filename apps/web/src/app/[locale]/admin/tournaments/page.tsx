@@ -1,4 +1,6 @@
 import { TOURNAMENT_STATUSES, type TournamentStatusCode } from '@tourneasy/shared/schemas';
+import { PerPage } from '@/components/admin/per-page';
+import { PAGE_SIZE, pageSize } from '@/server/lib/validation';
 import type { Metadata } from 'next';
 import { getFormatter, getTranslations } from 'next-intl/server';
 import { Badge, FilterBar, filterInputClass, PageHeader, Pagination } from '@/components/admin/ui';
@@ -28,14 +30,20 @@ export default async function AdminTournamentsPage({
     ? (statusParam as TournamentStatusCode)
     : undefined;
   const page = Number(firstParam(query.page) ?? 1);
-  const result = await listTournaments(actor, { q, status, page });
+  const perPage = pageSize(Number(firstParam(query.perPage)) || undefined);
+  const result = await listTournaments(actor, { q, status, page, perPage });
 
   const t = await getTranslations('Admin');
   const ts = await getTranslations('TournamentStatuses');
   const tt = await getTranslations('TournamentTypes');
   const format = await getFormatter();
+  const filters = { ...(q ? { q } : {}), ...(status ? { status } : {}) };
+  const sized = (n: number): Record<string, string> =>
+    n === PAGE_SIZE ? {} : { perPage: String(n) };
   const href = (p: number) =>
-    `/admin/tournaments?${new URLSearchParams({ ...(q ? { q } : {}), ...(status ? { status } : {}), page: String(p) })}`;
+    `/admin/tournaments?${new URLSearchParams({ ...filters, ...sized(perPage), page: String(p) })}`;
+  const sizeHref = (n: number) =>
+    `/admin/tournaments?${new URLSearchParams({ ...filters, ...sized(n) })}`;
 
   return (
     <>
@@ -75,7 +83,9 @@ export default async function AdminTournamentsPage({
         <Button type="submit" variant="outline">
           {t('filter')}
         </Button>
+        {perPage !== PAGE_SIZE && <input type="hidden" name="perPage" value={perPage} />}
       </FilterBar>
+      <PerPage current={perPage} href={sizeHref} className="justify-end" />
 
       <p className="text-sm text-muted-foreground">{t('total', { count: result.total })}</p>
       {result.tournaments.length === 0 ? (

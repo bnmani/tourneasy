@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+import { PerPage } from '@/components/admin/per-page';
+import { PAGE_SIZE, pageSize } from '@/server/lib/validation';
 import { adminMetadata } from '@/lib/seo';
 import { getTranslations } from 'next-intl/server';
 import { Badge, FilterBar, filterInputClass, PageHeader, Pagination } from '@/components/admin/ui';
@@ -25,10 +27,21 @@ export default async function AdminClubsPage({
   const query = await searchParams;
   const q = firstParam(query.q) ?? '';
   const archived = firstParam(query.archived) === '1';
-  const result = await listClubs(actor, { q, archived, page: Number(firstParam(query.page) ?? 1) });
+  const perPage = pageSize(Number(firstParam(query.perPage)) || undefined);
+  const result = await listClubs(actor, {
+    q,
+    archived,
+    page: Number(firstParam(query.page) ?? 1),
+    perPage,
+  });
   const t = await getTranslations('Admin');
+  const filters = { ...(q ? { q } : {}), ...(archived ? { archived: '1' } : {}) };
+  const sized = (n: number): Record<string, string> =>
+    n === PAGE_SIZE ? {} : { perPage: String(n) };
   const href = (p: number) =>
-    `/admin/clubs?${new URLSearchParams({ ...(q ? { q } : {}), ...(archived ? { archived: '1' } : {}), page: String(p) })}`;
+    `/admin/clubs?${new URLSearchParams({ ...filters, ...sized(perPage), page: String(p) })}`;
+  const sizeHref = (n: number) =>
+    `/admin/clubs?${new URLSearchParams({ ...filters, ...sized(n) })}`;
 
   return (
     <>
@@ -65,7 +78,9 @@ export default async function AdminClubsPage({
         <Button type="submit" variant="outline">
           {t('filter')}
         </Button>
+        {perPage !== PAGE_SIZE && <input type="hidden" name="perPage" value={perPage} />}
       </FilterBar>
+      <PerPage current={perPage} href={sizeHref} className="justify-end" />
       {result.clubs.length === 0 ? (
         <p className="text-muted-foreground">{t('clubs.empty')}</p>
       ) : (

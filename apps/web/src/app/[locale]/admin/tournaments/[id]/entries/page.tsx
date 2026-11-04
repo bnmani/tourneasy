@@ -3,7 +3,15 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getFormatter, getTranslations } from 'next-intl/server';
 import { AddEntryForm } from '@/components/admin/add-entry-form';
-import { FilterBar, filterInputClass, PageHeader, StatusNotice } from '@/components/admin/ui';
+import {
+  FilterBar,
+  filterInputClass,
+  PageHeader,
+  Pagination,
+  StatusNotice,
+} from '@/components/admin/ui';
+import { PerPage } from '@/components/admin/per-page';
+import { PAGE_SIZE, pageSize } from '@/server/lib/validation';
 import { Button } from '@/components/ui/button';
 import { ScrollRegion } from '@/components/ui/scroll-region';
 import { Link } from '@/i18n/navigation';
@@ -73,7 +81,7 @@ export default async function EntriesPage({ params, searchParams }: Props) {
     if (sort === 'payment') return first?.paymentStatus ?? '';
     return r.createdAt.getTime();
   };
-  const entries = sort
+  const sorted = sort
     ? [...listed].sort((a, b) => {
         const x = sortKey(a);
         const y = sortKey(b);
@@ -81,14 +89,31 @@ export default async function EntriesPage({ params, searchParams }: Props) {
         return dir === 'asc' ? c : -c;
       })
     : listed;
-  const sortHref = (column: string, d: 'asc' | 'desc') =>
+  // 25, 50, 75 or 100 entries per page, as on the other lists (D112).
+  const perPage = pageSize(Number(firstParam(query.perPage)) || undefined);
+  const pages = Math.max(1, Math.ceil(sorted.length / perPage));
+  const page = Math.min(pages, Math.max(1, Number(firstParam(query.page) ?? 1) || 1));
+  const entries = sorted.slice((page - 1) * perPage, page * perPage);
+  const listParams = (extra: [string, string][]) =>
     `/admin/tournaments/${id}/entries?${new URLSearchParams([
       ...(eventId ? [['eventId', eventId]] : []),
       ...(q ? [['q', q]] : []),
       ...(cancelled ? [['state', 'cancelled']] : []),
-      ['sort', column],
-      ['dir', d],
+      ...extra,
     ])}`;
+  const sizeParam = (n: number): [string, string][] =>
+    n === PAGE_SIZE ? [] : [['perPage', String(n)]];
+  const sortParams: [string, string][] = sort
+    ? [
+        ['sort', sort],
+        ['dir', dir],
+      ]
+    : [];
+  const sortHref = (column: string, d: 'asc' | 'desc') =>
+    listParams([['sort', column], ['dir', d], ...sizeParam(perPage)]);
+  const pageHref = (p: number) =>
+    listParams([...sortParams, ...sizeParam(perPage), ['page', String(p)]]);
+  const sizeHref = (n: number) => listParams([...sortParams, ...sizeParam(n)]);
   const words = (q ?? '').toLowerCase().split(/\s+/).filter(Boolean);
   const cancelledEntries = allCancelled.filter(
     (c) =>
@@ -111,7 +136,7 @@ export default async function EntriesPage({ params, searchParams }: Props) {
     ...(status ? { status } : {}),
   });
   // Teams per event over all events, whatever the event filter (D106).
-  const allLive = eventId && !cancelled ? await listTournamentEntries(actor, id, {}) : entries;
+  const allLive = eventId && !cancelled ? await listTournamentEntries(actor, id, {}) : listed;
   const perEvent = tournament.events.map((e) => {
     const of = allLive.filter((r) => r.event.id === e.id);
     return {
@@ -149,7 +174,7 @@ export default async function EntriesPage({ params, searchParams }: Props) {
       />
       <StatusNotice status={firstParam(query.status)} />
 
-      <details className="rounded-lg border bg-card p-4 sm:p-6" open={entries.length === 0}>
+      <details className="rounded-lg border bg-card p-4 sm:p-6" open={sorted.length === 0}>
         <summary className="cursor-pointer text-lg font-semibold">{t('addEntry.title')}</summary>
         <p className="mt-2 mb-4 text-sm text-muted-foreground">{t('addEntry.intro')}</p>
         <AddEntryForm
@@ -207,13 +232,15 @@ export default async function EntriesPage({ params, searchParams }: Props) {
         <Button type="submit" variant="outline">
           {t('filter')}
         </Button>
+        {perPage !== PAGE_SIZE && <input type="hidden" name="perPage" value={perPage} />}
       </FilterBar>
+      <PerPage current={perPage} href={sizeHref} className="justify-end" />
 
       {q || cancelled ? (
         <p className="text-sm text-muted-foreground">
           {q
-            ? t('entries.found', { count: entries.length, query: q })
-            : t('entries.summary', { count: entries.length })}
+            ? t('entries.found', { count: sorted.length, query: q })
+            : t('entries.summary', { count: sorted.length })}
         </p>
       ) : (
         <nav aria-label={t('entries.perEvent')} className="flex flex-wrap gap-2">
@@ -450,6 +477,7 @@ export default async function EntriesPage({ params, searchParams }: Props) {
           </table>
         </ScrollRegion>
       )}
+      <Pagination page={page} pages={pages} href={pageHref} />
 
       {/* Every cancellation with its undo, like the desk's check-in and food lists (D98). */}
       <section id="cancelled" aria-labelledby="cancelled-title" className="space-y-3">

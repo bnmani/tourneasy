@@ -828,7 +828,6 @@
       "saveAndAddAnother": "Opslaan en nog een toevoegen",
       "playerAdded": "Speler {name} toegevoegd ({number}).",
       "addAnother": "Nog een speler toevoegen",
-      "perPage": "{count} per pagina",
       "invitedBadge": "Uitgenodigd {date}",
       "invite": {
         "inviteTitle": "Account laten activeren",
@@ -1032,8 +1031,6 @@
       "waivedTitle": "Kwijtgescholden inschrijfgeld ({count})",
       "waivedBy": "kwijtgescholden door {name}",
       "waivedUndoHint": "Een kwijtschelding draai je terug via Kwijtschelding terugdraaien op de pagina Deelnemers van het toernooi.",
-      "perPageLabel": "Spelers per pagina",
-      "perPage": "per pagina",
       "discountShort": "{amount} korting",
       "codes": "Kortingscodes",
       "players": "Betalingen per speler ({count})",
@@ -1706,7 +1703,9 @@
       "until": "geldig tot {date}",
       "switchOff": "Uitzetten",
       "switchOn": "Aanzetten"
-    }
+    },
+    "perPage": "per pagina",
+    "perPageLabel": "Regels per pagina"
   },
   "Legal": {
     "updated": "Laatst bijgewerkt: 31 oktober 2026",
