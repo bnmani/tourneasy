@@ -318,14 +318,20 @@ function PlayerChooser({
               <option value="MALE">{tg('MALE')}</option>
               <option value="FEMALE">{tg('FEMALE')}</option>
             </select>
-            <input
-              type="date"
-              name={`${prefix}.new.dateOfBirth`}
-              defaultValue={typed('dateOfBirth')}
-              aria-label={t('dateOfBirth')}
-              className={inputClass}
-              required
-            />
+            {/* iPhone shows an empty date box wider than its column: keep it in the column, and
+                name it above the box on phones (D114). */}
+            <label className="block min-w-0">
+              <span className="mb-0.5 block text-xs text-muted-foreground sm:sr-only">
+                {t('dateOfBirth')}
+              </span>
+              <input
+                type="date"
+                name={`${prefix}.new.dateOfBirth`}
+                defaultValue={typed('dateOfBirth')}
+                className={cn(inputClass, 'block')}
+                required
+              />
+            </label>
             <input
               type="email"
               name={`${prefix}.new.email`}

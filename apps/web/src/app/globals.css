@@ -201,6 +201,18 @@
   * {
     @apply border-border;
   }
+  /* iPhone Safari gives date fields a fixed minimum width, so they stick out of narrow
+     columns, and centres the value: keep them inside their box, aligned left (D114). */
+  input[type='date'],
+  input[type='datetime-local'] {
+    min-width: 0;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  input[type='date']::-webkit-date-and-time-value,
+  input[type='datetime-local']::-webkit-date-and-time-value {
+    text-align: left;
+  }
   html {
     -webkit-text-size-adjust: 100%;
     /* In-page anchors land below the sticky header. */
