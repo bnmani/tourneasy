@@ -1019,7 +1019,8 @@
       "leftBehindRefund": "{amount} refunded",
       "notifyPlayers": "Email the players about the change",
       "partnerChanged": "Partner changed: {name} – {event}.",
-      "changeBlocked": "Not possible after the draw or check-in."
+      "changeBlocked": "Not possible after the draw or check-in.",
+      "replaceWho": "Who is replaced?"
     },
     "navPayments": "Payments",
     "payments": {

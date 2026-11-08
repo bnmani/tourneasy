@@ -215,6 +215,33 @@ describe('changing a doubles partner (D115)', () => {
     expect(await fields(other.profile.memberNumber)).toEqual({ partner: 'checkedIn' });
   });
 
+  it('can replace player 1 instead; player 2 then leads the entry', async () => {
+    const { t, gd, admin } = await setup();
+    const [man1, man2] = [await player({ gender: 'MALE' }), await player({ gender: 'MALE' })];
+    const woman = await player();
+    const a = await pair(admin, t.id, gd.id, man1.profile.memberNumber, woman.profile.memberNumber);
+    await changePartner(
+      admin,
+      a.id,
+      {
+        partner: { memberNumber: man2.profile.memberNumber },
+        replace: a.man.id,
+        notify: false,
+        confirm: true,
+      },
+      meta,
+    );
+    expect((await liveShares(a.id)).map((s) => [s.player.memberNumber, s.role])).toEqual([
+      [woman.profile.memberNumber, 'PRIMARY'],
+      [man2.profile.memberNumber, 'PARTNER'],
+    ]);
+    expect(
+      await prisma.registration.count({
+        where: { status: 'CANCELLED', participants: { some: { playerId: man1.profile.id } } },
+      }),
+    ).toBe(1);
+  });
+
   it('is for the organisers only', async () => {
     const { t, gd, admin } = await setup();
     const [man, woman, nosy] = [await player({ gender: 'MALE' }), await player(), await player()];

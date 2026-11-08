@@ -1019,7 +1019,8 @@
       "leftBehindRefund": "{amount} terugbetaald",
       "notifyPlayers": "De spelers mailen over de wijziging",
       "partnerChanged": "Partner gewijzigd: {name} – {event}.",
-      "changeBlocked": "Niet mogelijk na de loting of het inchecken."
+      "changeBlocked": "Niet mogelijk na de loting of het inchecken.",
+      "replaceWho": "Wie wordt vervangen?"
     },
     "navPayments": "Betalingen",
     "payments": {

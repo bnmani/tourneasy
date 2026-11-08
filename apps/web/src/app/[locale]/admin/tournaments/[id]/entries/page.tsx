@@ -466,12 +466,11 @@ export default async function EntriesPage({ params, searchParams }: Props) {
                             tournamentId={id}
                             eventId={r.event.id}
                             registrationId={r.id}
-                            playerNumber={
-                              (
-                                r.participants.find((p) => p.role === 'PRIMARY') ??
-                                r.participants[0]
-                              )?.player.memberNumber
-                            }
+                            players={r.participants.map((p) => ({
+                              id: p.id,
+                              name: personName(p.player),
+                              memberNumber: p.player.memberNumber,
+                            }))}
                           />
                         </details>
                       )}

@@ -19,14 +19,14 @@ export function ChangePartnerForm({
   tournamentId,
   eventId,
   registrationId,
-  playerNumber,
+  players,
 }: {
   locale: AppLocale;
   tournamentId: string;
   eventId: string;
   registrationId: string;
-  /** The player who stays, so the search only offers partners who may play with them. */
-  playerNumber?: string;
+  /** The entry's players (player 1 first): the organiser picks who is replaced. */
+  players: { id: string; name: string; memberNumber: string }[];
 }) {
   const t = useTranslations('Admin.entries');
   const ta = useTranslations('Admin.addEntry');
@@ -53,6 +53,12 @@ export function ChangePartnerForm({
     return code ? te(code as 'invalid') : null;
   };
   const allowNew = state.values?.allowNew === '1';
+  // Player 2 is replaced unless the organiser picks player 1; the search then offers partners
+  // who may play with the player who stays.
+  const [replace, setReplace] = useState(
+    (state.values?.replace as string | undefined) ?? players[1]?.id ?? '',
+  );
+  const stays = players.find((p) => p.id !== replace);
 
   if (state.done)
     return (
@@ -65,12 +71,32 @@ export function ChangePartnerForm({
     <form action={action} className="mt-2 w-80 max-w-full space-y-3 whitespace-normal" noValidate>
       <FormError state={state} />
       {allowNew && <input type="hidden" name="allowNew" value="1" />}
+      {players.length > 1 ? (
+        <fieldset className="space-y-1 text-sm">
+          <legend className="font-medium">{t('replaceWho')}</legend>
+          {players.map((p) => (
+            <label key={p.id} className="flex items-center gap-2">
+              <input
+                type="radio"
+                name="replace"
+                value={p.id}
+                checked={replace === p.id}
+                onChange={() => {
+                  setReplace(p.id);
+                  setStale(true);
+                }}
+              />
+              {p.name}
+            </label>
+          ))}
+        </fieldset>
+      ) : null}
       <PlayerChooser
         prefix="partner"
         label={t('changePartnerNew')}
         tournamentId={tournamentId}
         eventId={eventId}
-        partnerOf={playerNumber}
+        partnerOf={stays?.memberNumber}
         includeEntered
         onChoose={() => setStale(true)}
         error={fieldError('partner')}

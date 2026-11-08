@@ -50,6 +50,8 @@ const changeSchema = z.object({
   leftBehind: z.enum(['keep', 'cancel']).optional(),
   notify: z.boolean().default(true),
   confirm: z.boolean().default(false),
+  /** Which player leaves (a share of this entry); by default the partner (player 2). */
+  replace: z.string().uuid().optional(),
 });
 
 const shareSelect = {
@@ -140,9 +142,15 @@ export async function changePartner(
   if (entry._count.drawEntries > 0) throw validationError({ partner: 'drawMade' });
   if (entry.participants.some((p) => p.checkedInAt))
     throw validationError({ partner: 'checkedIn' });
-  const primary = entry.participants.find((p) => p.role === 'PRIMARY') ?? entry.participants[0];
-  if (!primary) throw new AppError('notFound');
-  const oldPartner = entry.participants.find((p) => p.id !== primary.id) ?? null;
+  // The player who stays ("primary" below) and the one who leaves: player 2 unless the
+  // organiser chose to replace player 1.
+  const target = data.replace ? entry.participants.find((p) => p.id === data.replace) : undefined;
+  if (data.replace && !target) throw validationError({ replace: 'invalid' });
+  const primary = target
+    ? entry.participants.find((p) => p.id !== target.id)
+    : (entry.participants.find((p) => p.role === 'PRIMARY') ?? entry.participants[0]);
+  if (!primary) throw validationError({ replace: 'invalid' });
+  const oldPartner = target ?? entry.participants.find((p) => p.id !== primary.id) ?? null;
 
   // The new partner: picked by member number, or new (ask first about namesakes, D82).
   if (!data.allowNew && 'new' in data.partner) {
@@ -258,6 +266,12 @@ export async function changePartner(
   const shellId = await prisma.$transaction(async (tx) => {
     await tx.$queryRaw`SELECT id FROM "TournamentEvent" WHERE id = ${event.id}::uuid FOR UPDATE`;
     let shell: string | null = null;
+    // The player who stays leads the entry (when player 1 is replaced, player 2 moves up).
+    if (primary.role !== 'PRIMARY')
+      await tx.registrationParticipant.update({
+        where: { id: primary.id },
+        data: { role: 'PRIMARY' },
+      });
     // The old partner leaves as a cancelled entry of their own, with their payment.
     if (oldPartner) {
       const r = await tx.registration.create({

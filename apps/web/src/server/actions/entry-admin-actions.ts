@@ -133,6 +133,7 @@ export async function changePartnerAction(
         leftBehind: leftBehind === 'keep' || leftBehind === 'cancel' ? leftBehind : undefined,
         notify: formData.get('notify') === 'on',
         confirm: formData.get('confirm') === '1',
+        replace: formData.get('replace') || undefined,
       },
       await currentRequestMeta(),
       locale,
