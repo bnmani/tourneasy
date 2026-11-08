@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getFormatter, getTranslations } from 'next-intl/server';
 import { AddEntryForm } from '@/components/admin/add-entry-form';
+import { ChangePartnerForm } from '@/components/admin/change-partner-form';
 import {
   FilterBar,
   filterInputClass,
@@ -27,7 +28,7 @@ import {
   restoreEntryAction,
   undoSharePaymentAction,
 } from '@/server/actions/match-actions';
-import { formatEuro } from '@tourneasy/shared';
+import { formatEuro, isDoubles } from '@tourneasy/shared';
 import { requirePortal } from '@/server/auth/web';
 import { isAppError } from '@/server/lib/errors';
 import {
@@ -453,7 +454,27 @@ export default async function EntriesPage({ params, searchParams }: Props) {
                     <td className="px-3 py-3 text-xs whitespace-nowrap text-muted-foreground">
                       {format.dateTime(r.createdAt, { dateStyle: 'short', timeStyle: 'short' })}
                     </td>
-                    <td className="px-3 py-3">
+                    <td className="space-y-2 px-3 py-3">
+                      {r.status !== 'CANCELLED' && isDoubles(r.event.discipline) && (
+                        // Swap the partner without cancelling the entry (D115).
+                        <details>
+                          <summary className="cursor-pointer text-xs font-medium whitespace-nowrap text-primary">
+                            {t('entries.changePartner')}
+                          </summary>
+                          <ChangePartnerForm
+                            locale={locale}
+                            tournamentId={id}
+                            eventId={r.event.id}
+                            registrationId={r.id}
+                            playerNumber={
+                              (
+                                r.participants.find((p) => p.role === 'PRIMARY') ??
+                                r.participants[0]
+                              )?.player.memberNumber
+                            }
+                          />
+                        </details>
+                      )}
                       {r.status !== 'CANCELLED' && (
                         <details>
                           <summary className="cursor-pointer text-xs font-medium text-destructive">

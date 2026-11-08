@@ -192,7 +192,7 @@ export function AddEntryForm({
   );
 }
 
-function PlayerChooser({
+export function PlayerChooser({
   prefix,
   label,
   tournamentId,
@@ -203,7 +203,10 @@ function PlayerChooser({
   preset,
   values,
   version,
+  includeEntered = false,
 }: {
+  /** Change partner (D115): also list players already in this category. */
+  includeEntered?: boolean;
   preset?: EntryPlayerOption;
   /** What was submitted last, to fill the new-player fields again after a reset. */
   values?: Record<string, string | string[]>;
@@ -253,7 +256,15 @@ function PlayerChooser({
     }
     timer.current = setTimeout(() => {
       startTransition(async () => {
-        setResults(await searchPlayersForEntryAction(tournamentId, eventId, value, partnerOf));
+        setResults(
+          await searchPlayersForEntryAction(
+            tournamentId,
+            eventId,
+            value,
+            partnerOf,
+            includeEntered,
+          ),
+        );
         setOpen(true);
       });
     }, 250);
@@ -271,6 +282,13 @@ function PlayerChooser({
             <span className="block text-xs text-muted-foreground">
               {[chosen.club, chosen.memberNumber, chosen.born].filter(Boolean).join(' · ')}
             </span>
+            {chosen.entered && (
+              <span className="block text-xs font-medium text-primary">
+                {chosen.entered.with
+                  ? t('alreadyWith', { name: chosen.entered.with })
+                  : t('alreadyAlone')}
+              </span>
+            )}
           </span>
           <Button type="button" size="sm" variant="ghost" onClick={() => choose(null)}>
             <X aria-hidden="true" />
@@ -403,6 +421,13 @@ function PlayerChooser({
                       <span className="block text-xs text-muted-foreground">
                         {[p.club, p.memberNumber, p.born].filter(Boolean).join(' · ')}
                       </span>
+                      {p.entered && (
+                        <span className="block text-xs font-medium text-primary">
+                          {p.entered.with
+                            ? t('alreadyWith', { name: p.entered.with })
+                            : t('alreadyAlone')}
+                        </span>
+                      )}
                     </li>
                   ))}
                 </ul>

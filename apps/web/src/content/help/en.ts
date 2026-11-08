@@ -321,6 +321,7 @@ export const en: Record<HelpGuideKey, HelpGuide> = {
               '**Import** entries from Excel, or **Export (Excel)** for your own lists',
               'Mark an entry **Paid at the desk** when someone pays in cash',
               '**Cancel** an entry to free its place; it moves to **Cancelled entries** at the bottom, where **Undo** puts it back',
+              '**Change partner** on a doubles entry: search the new partner and click **Check** to see who leaves, who joins and any money that goes back, then **Confirm change**. A partner who already plays the category moves over with their payment; you choose whether the player left behind keeps their entry. An old partner who paid gets a full refund. Not possible after the draw or check-in; to undo, change the partner back',
               'Under **More**: mark it **Paid with code** when a player has a discount code; the owner can also **Waive fee** (for a volunteer who plays, say) and **Undo waive**',
               'Click a column heading (Event, Players, Status, Payment, Entered) to sort; click again to reverse',
             ],

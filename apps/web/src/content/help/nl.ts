@@ -330,6 +330,7 @@ export const nl: Record<HelpGuideKey, HelpGuide> = {
               'Inschrijvingen **Importeren** uit Excel, of **Exporteren (Excel)** voor je eigen lijsten',
               'Een inschrijving markeren als **Betaald aan de balie** bij contante betaling',
               'Een inschrijving **Annuleren** om de plek vrij te maken; die komt onderaan bij **Geannuleerde inschrijvingen**, waar **Terugdraaien** hem terugzet',
+              '**Partner wijzigen** bij een dubbel: zoek de nieuwe partner en klik op **Controleren** om te zien wie eruit gaat, wie erbij komt en welk geld terug gaat, en dan op **Wijziging bevestigen**. Een partner die de categorie al speelt, komt over met zijn of haar betaling; jij kiest of de speler die achterblijft de inschrijving houdt. Een oude partner die betaald heeft, krijgt alles terug. Niet mogelijk na de loting of het inchecken; terugdraaien doe je door de partner terug te wijzigen',
               'Onder **Meer**: **Betaald met code** als een speler een kortingscode heeft; de eigenaar kan ook **Kwijtschelden** (bijv. voor een vrijwilliger die meespeelt) en **Kwijtschelding terugdraaien**',
               'Klik op een kolomkop (Onderdeel, Spelers, Status, Betaling, Ingeschreven) om te sorteren; nog een keer klikken draait de volgorde om',
             ],

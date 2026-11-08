@@ -87,7 +87,7 @@ function readRows(bytes: Uint8Array): Record<string, string>[] {
   return body.map((cells) => Object.fromEntries(keys.map((k, i) => [k, (cells[i] ?? '').trim()])));
 }
 
-async function loadTournament(tournamentId: string) {
+export async function loadTournament(tournamentId: string) {
   const t = await prisma.tournament.findFirst({
     where: { id: tournamentId, deletedAt: null },
     select: {
@@ -447,10 +447,15 @@ const newPlayerSchema = z.object({
   dateOfBirth: z.string().max(10),
   email: z.string().max(254).optional(),
 });
-const pickSchema = z.union([
+export const pickSchema = z.union([
   z.object({ memberNumber: z.string().regex(/^TE\d{6}$/i) }),
   z.object({ new: newPlayerSchema }),
 ]);
+/** The player details behind a pick: a member number, or a new player's details. */
+export const pickSpec = (p: z.infer<typeof pickSchema>): PlayerSpec =>
+  'memberNumber' in p ? { memberNumber: p.memberNumber } : { ...p.new };
+const spec = pickSpec;
+
 const addEntrySchema = z.object({
   eventId: z.string().uuid(),
   player: pickSchema,
@@ -475,8 +480,6 @@ export async function addEntryAsOrganiser(
   if (!event) throw validationError({ eventId: 'eventNotFound' });
   if (isDoubles(event.discipline) && !data.partner)
     throw validationError({ partner: 'partnerRequired' });
-  const spec = (p: z.infer<typeof pickSchema>): PlayerSpec =>
-    'memberNumber' in p ? { memberNumber: p.memberNumber } : { ...p.new };
   // A new player with the name of an existing one: ask first (D82).
   if (!data.allowNew) {
     const duplicates = {
@@ -523,6 +526,8 @@ export async function searchPlayersForEntry(
   eventId: string,
   query: string,
   partnerOf?: string,
+  /** Change partner (D115): also players already in this category, with who they play with. */
+  includeEntered = false,
 ) {
   await assertCanManageTournament(actor, tournamentId);
   const q = query.trim().replace(/\s+/g, ' ').slice(0, 60);
@@ -569,23 +574,43 @@ export async function searchPlayersForEntry(
     take: 40,
     select: { ...eventPlayerSelect, club: { select: { name: true, shortName: true } } },
   });
-  const entered = new Set(
-    (
-      await prisma.registrationParticipant.findMany({
-        where: {
-          eventId,
-          active: true,
-          playerId: { in: candidates.map((c) => c.id) },
-          registration: { status: { in: ['PENDING', 'CONFIRMED', 'WAITLISTED'] } },
+  const enteredRows = await prisma.registrationParticipant.findMany({
+    where: {
+      eventId,
+      active: true,
+      playerId: { in: candidates.map((c) => c.id) },
+      registration: { status: { in: ['PENDING', 'CONFIRMED', 'WAITLISTED'] } },
+    },
+    select: {
+      playerId: true,
+      registration: {
+        select: {
+          participants: {
+            where: { active: true },
+            select: {
+              playerId: true,
+              paymentStatus: true,
+              player: { select: { firstName: true, lastNamePrefix: true, lastName: true } },
+            },
+          },
         },
-        select: { playerId: true },
-      })
-    ).map((r) => r.playerId),
+      },
+    },
+  });
+  // Already in this category: who they play with now (null = no partner yet).
+  const entered = new Map(
+    enteredRows.map((r) => {
+      const other = r.registration.participants.find((x) => x.playerId !== r.playerId);
+      return [
+        r.playerId,
+        other ? { with: fullName(other.player), withPaid: other.paymentStatus === 'PAID' } : null,
+      ];
+    }),
   );
   return candidates
     .filter(
       (p) =>
-        !entered.has(p.id) &&
+        (includeEntered || !entered.has(p.id)) &&
         eligibility(p as PlayerRow, event, t.startsOn).length === 0 &&
         (!first || pairEligibility(event.discipline, first as never, p as never).length === 0),
     )
@@ -595,6 +620,9 @@ export async function searchPlayersForEntry(
       name: fullName(p),
       club: p.club?.shortName ?? p.club?.name ?? null,
       born: p.dateOfBirth?.getUTCFullYear() ?? null,
+      ...(entered.has(p.id)
+        ? { entered: entered.get(p.id) ?? { with: null, withPaid: false } }
+        : {}),
     }));
 }
 

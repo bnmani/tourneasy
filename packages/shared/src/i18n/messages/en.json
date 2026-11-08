@@ -231,7 +231,10 @@
     "mfaAppRequired": "Set up the authenticator app on the website to log in to the mobile app. Passkeys only work on the website.",
     "enteredAgain": "This player is already entered in this event again. Cancel that entry first if you want this one back.",
     "refundInProgress": "A refund for this entry is still on its way. Try again once it has completed.",
-    "whatsappUrl": "Use a WhatsApp invite link that starts with https://chat.whatsapp.com/"
+    "whatsappUrl": "Use a WhatsApp invite link that starts with https://chat.whatsapp.com/",
+    "drawMade": "The draw for this category has been made. Remove the draw first to change a partner.",
+    "checkedIn": "A player in this entry is already checked in.",
+    "partnerSame": "This player is already the partner in this entry."
   },
   "Auth": {
     "login": {
@@ -994,7 +997,29 @@
       "undoCancelConfirm": "Put this entry back? It is confirmed when there is room, otherwise first on the waiting list. Refunded money is not taken back: the entry is unpaid again. No email is sent.",
       "undoCancelDraw": "This event already has a draw without this entry: redo or adjust the draw afterwards.",
       "search": "Name, member number, club or email",
-      "found": "{count, plural, =0 {No entries found} one {# entry found} other {# entries found}} for “{query}”"
+      "found": "{count, plural, =0 {No entries found} one {# entry found} other {# entries found}} for “{query}”",
+      "changePartner": "Change partner",
+      "changePartnerNew": "New partner",
+      "changePartnerCheck": "Check",
+      "changePartnerConfirm": "Confirm change",
+      "changePartnerBack": "Back",
+      "changePartnerSummary": "Before you confirm:",
+      "previewOld": "{name} leaves this entry; it shows under cancelled entries.",
+      "previewNoOld": "This entry has no partner yet.",
+      "previewRefund": "{amount} is refunded to {name}.",
+      "previewNoRefund": "Nothing to refund to {name}.",
+      "previewNew": "{name} joins as partner.",
+      "previewNewPlayer": "{name} is created as a new player when you confirm.",
+      "previewPaidMoves": "{name}'s payment moves along with them.",
+      "previewUnpaid": "{name}'s share starts as unpaid.",
+      "previewFromAlone": "{name}'s current entry in this category has no partner; it is cancelled.",
+      "leftBehindQuestion": "{name} now plays this category with {other}. What happens to {other}'s entry?",
+      "leftBehindKeep": "Keep it ({other} needs a new partner)",
+      "leftBehindCancel": "Cancel it",
+      "leftBehindRefund": "{amount} refunded",
+      "notifyPlayers": "Email the players about the change",
+      "partnerChanged": "Partner changed: {name} – {event}.",
+      "changeBlocked": "Not possible after the draw or check-in."
     },
     "navPayments": "Payments",
     "payments": {
@@ -1334,7 +1359,9 @@
       "bornIn": "born {year}",
       "useExisting": "Use this player",
       "duplicateHint": "Really someone else with the same name? Then add a new player anyway.",
-      "addAnyway": "Add as new player anyway"
+      "addAnyway": "Add as new player anyway",
+      "alreadyWith": "Already in this category, with {name}",
+      "alreadyAlone": "Already in this category, no partner"
     },
     "emailTemplates": {
       "title": "Email texts",
@@ -1387,7 +1414,8 @@
         "deadlineReminder": "Entry reminder",
         "results": "Results",
         "news": "Tournament news",
-        "settingsTest": "Email settings test"
+        "settingsTest": "Email settings test",
+        "partnerChange": "Partner changed"
       },
       "when": {
         "common": "Greeting, footer and unsubscribe links.",
@@ -1409,7 +1437,8 @@
         "deadlineReminder": "Three days before closing, when something is open.",
         "results": "In the days after the tournament.",
         "news": "When the organisers email news (title and text come from the post).",
-        "settingsTest": "From the email settings page."
+        "settingsTest": "From the email settings page.",
+        "partnerChange": "When the organisers change a doubles partner: to the pair, the old partner and anyone left without a partner."
       },
       "keys": {
         "greeting": "Greeting",
@@ -1488,7 +1517,12 @@
         "scheduleNew": "Label: new",
         "scheduleChangedMark": "Label: changed",
         "scheduleAll": "Link: full schedule",
-        "schedulePdf": "Link: PDF"
+        "schedulePdf": "Link: PDF",
+        "partnerChangeSubject": "Subject",
+        "partnerChangedBody": "Text: the new pair",
+        "partnerRemovedBody": "Text: the old partner",
+        "partnerLeftBody": "Text: partner left, entry kept",
+        "partnerLeftCancelledBody": "Text: partner left, entry cancelled"
       },
       "previewWith": "Preview and test email with tournament",
       "previewExample": "Example data (Utrecht Open)",
@@ -1813,7 +1847,12 @@
     "organiserInviteBody": "{inviter} invites you to help organise {tournament} on Tourneasy. With an account you manage its entries, draws, schedule and match desk. Use the button below to create an account or log in with this email address. The link is valid for 14 days.",
     "organiserInviteButton": "Accept invitation",
     "organiserInviteFooter": "You receive this email because a Tourneasy administrator invited this address as an organiser.",
-    "entryWhatsapp": "Join the tournament's WhatsApp group for updates on the day: {url}"
+    "entryWhatsapp": "Join the tournament's WhatsApp group for updates on the day: {url}",
+    "partnerChangeSubject": "Doubles partner changed: {tournament}",
+    "partnerChangedBody": "The organisers have changed the pairs for {event} ({tournament}). You now play with {partner}.",
+    "partnerRemovedBody": "The organisers have changed the pairs for {event} ({tournament}). You no longer play with {partner}, and your entry in this category has been cancelled. If you paid for it, the money comes back to you.",
+    "partnerLeftBody": "The organisers have moved your partner {partner} to another pair for {event} ({tournament}). Your entry stays; you need a new partner, and the organisers can help you find one.",
+    "partnerLeftCancelledBody": "The organisers have moved your partner {partner} to another pair for {event} ({tournament}), and your entry in this category has been cancelled. If you paid for it, the money comes back to you."
   },
   "Provinces": {
     "DRENTHE": "Drenthe",

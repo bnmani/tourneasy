@@ -53,6 +53,16 @@ type TemplateBody =
   | { kind: 'waitlistPromoted'; name: string; tournament: string; event: string; url: string }
   | { kind: 'entryWithdrawn'; name: string; tournament: string; event: string; byPartner: boolean }
   | {
+      /** Organisers changed a doubles partner (D115), from the point of view of the reader. */
+      kind: 'partnerChange';
+      variant: 'changed' | 'removed' | 'left' | 'leftCancelled';
+      name: string;
+      partner: string;
+      tournament: string;
+      event: string;
+      url: string;
+    }
+  | {
       kind: 'paymentReceipt';
       name: string;
       tournament: string;
@@ -412,6 +422,23 @@ export function renderEmailWith(
         greeting,
         template.byPartner ? t('withdrawnByPartnerBody', params) : t('withdrawnBody', params),
       ];
+      break;
+    }
+    case 'partnerChange': {
+      const params = {
+        partner: template.partner,
+        event: template.event,
+        tournament: template.tournament,
+      };
+      const body = {
+        changed: 'partnerChangedBody',
+        removed: 'partnerRemovedBody',
+        left: 'partnerLeftBody',
+        leftCancelled: 'partnerLeftCancelledBody',
+      } as const;
+      subject = t('partnerChangeSubject', params);
+      paragraphs = [greeting, t(body[template.variant], params)];
+      button = { label: t('entryButton'), url: template.url };
       break;
     }
     case 'paymentReceipt': {

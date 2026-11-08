@@ -19,6 +19,7 @@ export const EMAIL_TEMPLATE_KINDS = [
   'inviteDeclined',
   'waitlistPromoted',
   'entryWithdrawn',
+  'partnerChange',
   'paymentReceipt',
   'refund',
   'schedule',
@@ -49,6 +50,14 @@ export const EMAIL_TEMPLATE_KEYS: Record<EmailTemplateKind, readonly string[]> =
   inviteDeclined: ['inviteDeclinedSubject', 'inviteDeclinedBody', 'entryButton'],
   waitlistPromoted: ['promotedSubject', 'promotedBody', 'entryButton'],
   entryWithdrawn: ['withdrawnSubject', 'withdrawnBody', 'withdrawnByPartnerBody'],
+  partnerChange: [
+    'partnerChangeSubject',
+    'partnerChangedBody',
+    'partnerRemovedBody',
+    'partnerLeftBody',
+    'partnerLeftCancelledBody',
+    'entryButton',
+  ],
   paymentReceipt: ['receiptSubject', 'receiptIntro', 'receiptTotal', 'receiptOrder', 'entryButton'],
   refund: [
     'refundSubject',
@@ -138,6 +147,8 @@ export function sampleTemplate(kind: EmailTemplateKind, locale: AppLocale, url: 
       return { kind, name, tournament, event, url };
     case 'entryWithdrawn':
       return { kind, name, tournament, event, byPartner: false };
+    case 'partnerChange':
+      return { kind, variant: 'changed', name, partner: 'Emma Mulder', tournament, event, url };
     case 'paymentReceipt':
       return {
         kind,

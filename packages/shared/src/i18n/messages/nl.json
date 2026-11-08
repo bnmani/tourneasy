@@ -231,7 +231,10 @@
     "mfaAppRequired": "Stel de authenticator-app in op de website om in de mobiele app in te loggen. Passkeys werken alleen op de website.",
     "enteredAgain": "Deze speler staat al opnieuw ingeschreven voor dit onderdeel. Annuleer die inschrijving eerst als je deze terug wilt.",
     "refundInProgress": "Er loopt nog een terugbetaling voor deze inschrijving. Probeer het opnieuw zodra die klaar is.",
-    "whatsappUrl": "Gebruik een WhatsApp-uitnodigingslink die begint met https://chat.whatsapp.com/"
+    "whatsappUrl": "Gebruik een WhatsApp-uitnodigingslink die begint met https://chat.whatsapp.com/",
+    "drawMade": "De loting voor deze categorie is al gemaakt. Verwijder eerst de loting om een partner te wijzigen.",
+    "checkedIn": "Een speler in deze inschrijving is al ingecheckt.",
+    "partnerSame": "Deze speler is al de partner in deze inschrijving."
   },
   "Auth": {
     "login": {
@@ -994,7 +997,29 @@
       "undoCancelConfirm": "Deze inschrijving terugzetten? Bevestigd als er plek is, anders als eerste op de wachtlijst. Terugbetaald geld wordt niet teruggevorderd: de inschrijving is weer onbetaald. Er gaat geen e-mail uit.",
       "undoCancelDraw": "Dit onderdeel heeft al een schema zonder deze inschrijving: maak of pas het schema daarna aan.",
       "search": "Naam, lidnummer, club of e-mail",
-      "found": "{count, plural, =0 {Geen inschrijvingen gevonden} one {# inschrijving gevonden} other {# inschrijvingen gevonden}} voor “{query}”"
+      "found": "{count, plural, =0 {Geen inschrijvingen gevonden} one {# inschrijving gevonden} other {# inschrijvingen gevonden}} voor “{query}”",
+      "changePartner": "Partner wijzigen",
+      "changePartnerNew": "Nieuwe partner",
+      "changePartnerCheck": "Controleren",
+      "changePartnerConfirm": "Wijziging bevestigen",
+      "changePartnerBack": "Terug",
+      "changePartnerSummary": "Voordat je bevestigt:",
+      "previewOld": "{name} gaat uit deze inschrijving; die staat dan bij de geannuleerde inschrijvingen.",
+      "previewNoOld": "Deze inschrijving heeft nog geen partner.",
+      "previewRefund": "{name} krijgt {amount} terug.",
+      "previewNoRefund": "Niets terug te betalen aan {name}.",
+      "previewNew": "{name} komt erbij als partner.",
+      "previewNewPlayer": "{name} wordt bij bevestigen als nieuwe speler aangemaakt.",
+      "previewPaidMoves": "De betaling van {name} gaat mee.",
+      "previewUnpaid": "Het deel van {name} staat eerst op onbetaald.",
+      "previewFromAlone": "De huidige inschrijving van {name} in deze categorie heeft geen partner; die wordt geannuleerd.",
+      "leftBehindQuestion": "{name} speelt deze categorie nu met {other}. Wat gebeurt er met de inschrijving van {other}?",
+      "leftBehindKeep": "Laten staan ({other} heeft een nieuwe partner nodig)",
+      "leftBehindCancel": "Annuleren",
+      "leftBehindRefund": "{amount} terugbetaald",
+      "notifyPlayers": "De spelers mailen over de wijziging",
+      "partnerChanged": "Partner gewijzigd: {name} – {event}.",
+      "changeBlocked": "Niet mogelijk na de loting of het inchecken."
     },
     "navPayments": "Betalingen",
     "payments": {
@@ -1334,7 +1359,9 @@
       "bornIn": "geboren {year}",
       "useExisting": "Deze speler gebruiken",
       "duplicateHint": "Is het echt iemand anders (een naamgenoot)? Voeg dan toch een nieuwe speler toe.",
-      "addAnyway": "Toch als nieuwe speler toevoegen"
+      "addAnyway": "Toch als nieuwe speler toevoegen",
+      "alreadyWith": "Speelt al in deze categorie, met {name}",
+      "alreadyAlone": "Speelt al in deze categorie, zonder partner"
     },
     "emailTemplates": {
       "title": "E-mailteksten",
@@ -1387,7 +1414,8 @@
         "deadlineReminder": "Herinnering inschrijving",
         "results": "Uitslagen",
         "news": "Toernooinieuws",
-        "settingsTest": "Testmail e-mailinstellingen"
+        "settingsTest": "Testmail e-mailinstellingen",
+        "partnerChange": "Partner gewijzigd"
       },
       "when": {
         "common": "Aanhef, voettekst en afmeldlinks.",
@@ -1409,7 +1437,8 @@
         "deadlineReminder": "Drie dagen voor sluiting, als er iets openstaat.",
         "results": "In de dagen na het toernooi.",
         "news": "Als de organisatie nieuws mailt (titel en tekst komen uit het bericht).",
-        "settingsTest": "Vanaf de pagina E-mailinstellingen."
+        "settingsTest": "Vanaf de pagina E-mailinstellingen.",
+        "partnerChange": "Als de organisatie een dubbelpartner wijzigt: naar het koppel, de oude partner en wie zonder partner achterblijft."
       },
       "keys": {
         "greeting": "Aanhef",
@@ -1488,7 +1517,12 @@
         "scheduleNew": "Label: nieuw",
         "scheduleChangedMark": "Label: gewijzigd",
         "scheduleAll": "Link: hele planning",
-        "schedulePdf": "Link: PDF"
+        "schedulePdf": "Link: PDF",
+        "partnerChangeSubject": "Onderwerp",
+        "partnerChangedBody": "Tekst: het nieuwe koppel",
+        "partnerRemovedBody": "Tekst: de oude partner",
+        "partnerLeftBody": "Tekst: partner weg, inschrijving blijft",
+        "partnerLeftCancelledBody": "Tekst: partner weg, inschrijving geannuleerd"
       },
       "previewWith": "Voorbeeld en testmail met toernooi",
       "previewExample": "Voorbeeldgegevens (Utrecht Open)",
@@ -1813,7 +1847,12 @@
     "organiserInviteBody": "{inviter} nodigt je uit om {tournament} mee te organiseren op Tourneasy. Met een account beheer je de inschrijvingen, schema's, planning en wedstrijdtafel. Maak met de knop hieronder een account aan of log in met dit e-mailadres. De link is 14 dagen geldig.",
     "organiserInviteButton": "Uitnodiging accepteren",
     "organiserInviteFooter": "Je ontvangt deze e-mail omdat een beheerder van Tourneasy dit adres als organisator heeft uitgenodigd.",
-    "entryWhatsapp": "Word lid van de WhatsApp-groep van het toernooi voor nieuws op de dag zelf: {url}"
+    "entryWhatsapp": "Word lid van de WhatsApp-groep van het toernooi voor nieuws op de dag zelf: {url}",
+    "partnerChangeSubject": "Dubbelpartner gewijzigd: {tournament}",
+    "partnerChangedBody": "De organisatie heeft de koppels voor {event} ({tournament}) gewijzigd. Je speelt nu met {partner}.",
+    "partnerRemovedBody": "De organisatie heeft de koppels voor {event} ({tournament}) gewijzigd. Je speelt niet meer met {partner} en je inschrijving in deze categorie is geannuleerd. Als je ervoor betaald hebt, krijg je het geld terug.",
+    "partnerLeftBody": "De organisatie heeft je partner {partner} naar een ander koppel verplaatst voor {event} ({tournament}). Je inschrijving blijft staan; je hebt een nieuwe partner nodig, en de organisatie kan je daarbij helpen.",
+    "partnerLeftCancelledBody": "De organisatie heeft je partner {partner} naar een ander koppel verplaatst voor {event} ({tournament}) en je inschrijving in deze categorie is geannuleerd. Als je ervoor betaald hebt, krijg je het geld terug."
   },
   "Provinces": {
     "DRENTHE": "Drenthe",
