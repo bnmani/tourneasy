@@ -234,7 +234,9 @@
     "whatsappUrl": "Gebruik een WhatsApp-uitnodigingslink die begint met https://chat.whatsapp.com/",
     "drawMade": "De loting voor deze categorie is al gemaakt. Verwijder eerst de loting om een partner te wijzigen.",
     "checkedIn": "Een speler in deze inschrijving is al ingecheckt.",
-    "partnerSame": "Deze speler is al de partner in deze inschrijving."
+    "partnerSame": "Deze speler is al de partner in deze inschrijving.",
+    "playerOnCourt": "Een speler van deze wedstrijd staat nog op de baan. Vul eerst de uitslag van die wedstrijd in.",
+    "courtInUse": "Deze baan is nog bezet. Vul eerst de uitslag van de wedstrijd op die baan in."
   },
   "Auth": {
     "login": {
@@ -1242,7 +1244,10 @@
       "removeKnockout": "Knock-outfase verwijderen",
       "removeKnockoutConfirm": "De knock-outfase van {event} verwijderen? De wedstrijden en baantijden verdwijnen; je kunt hem opnieuw maken uit de pouleuitslagen.",
       "removeRound": "Laatste ronde verwijderen",
-      "removeRoundConfirm": "De laatste ronde van {event} verwijderen? De indeling en baantijden verdwijnen; je kunt opnieuw indelen."
+      "removeRoundConfirm": "De laatste ronde van {event} verwijderen? De indeling en baantijden verdwijnen; je kunt opnieuw indelen.",
+      "playerOnCourt": "Nu op baan {court}",
+      "playerPlaying": "Speelt nu een andere wedstrijd",
+      "courtInUse": "Baan {court} is nog bezet (wedstrijd #{match})"
     },
     "navEmail": "E-mail",
     "emailSettings": {

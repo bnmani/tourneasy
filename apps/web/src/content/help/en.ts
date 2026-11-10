@@ -394,6 +394,7 @@ export const en: Record<HelpGuideKey, HelpGuide> = {
             ol: [
               '**Check-in**: tick players off as they arrive and take desk payments.',
               '**Next**: matches ready to start. Click **On court** when they begin.',
+              "A player who is still on court shows **On court 3 now** on their other matches, and those matches can't go on court until the result of the first one is in. The same goes for a court that is still in use. Put on court by mistake? **Back to waiting** frees the player and the court.",
               'Enter the game scores and click **Save result**. The draw and standings update by themselves.',
               'Use **Walkover or retirement** when a match isn’t played out.',
             ],

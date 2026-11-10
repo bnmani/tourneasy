@@ -250,19 +250,38 @@ export default async function DeskPage({ params, searchParams }: Props) {
                     <div className="grid gap-2 sm:grid-cols-2">
                       {item.checkIn.map((side, s) => (
                         <div key={s} className="space-y-1">
-                          {side.map((p) => (
-                            <CheckInToggle
-                              key={p.id}
-                              name={p.name}
-                              checkedIn={p.checkedIn}
-                              toggle={quickCheckInAction.bind(null, p.id, !p.checkedIn)}
-                              labels={{ present: td('present'), checkIn: td('checkIn') }}
-                            />
-                          ))}
+                          {side.map((p) => {
+                            const busy = item.busy?.players.find((b) => b.id === p.id);
+                            return (
+                              <div key={p.id}>
+                                <CheckInToggle
+                                  name={p.name}
+                                  checkedIn={p.checkedIn}
+                                  toggle={quickCheckInAction.bind(null, p.id, !p.checkedIn)}
+                                  labels={{ present: td('present'), checkIn: td('checkIn') }}
+                                />
+                                {busy && (
+                                  <p className="text-xs font-medium text-amber-700">
+                                    {busy.court
+                                      ? td('playerOnCourt', { court: busy.court })
+                                      : td('playerPlaying')}
+                                  </p>
+                                )}
+                              </div>
+                            );
+                          })}
                         </div>
                       ))}
                     </div>
 
+                    {item.busy?.courtMatch && item.court && (
+                      <p className="text-xs font-medium text-amber-700">
+                        {td('courtInUse', {
+                          court: item.court.number,
+                          match: item.busy.courtMatch,
+                        })}
+                      </p>
+                    )}
                     {item.status === 'SCHEDULED' && (
                       <QuickButton
                         size="sm"

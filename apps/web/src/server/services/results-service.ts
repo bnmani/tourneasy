@@ -218,11 +218,45 @@ export async function recordRetirement(
   );
 }
 
-/** "On court": the match has been called and is being played (for the live view). */
+const ON_COURT = ['IN_PROGRESS', 'CALLED'] as const;
+
+/**
+ * "On court": the match has been called and is being played (for the live view). Refused
+ * while one of its players, or its court, is still in a match on court (D116): entering
+ * that match's result (or Back to waiting) frees them.
+ */
 export async function startMatch(actor: Actor, matchId: string, meta: RequestMeta) {
   const m = await authorise(actor, matchId);
   if (m.status !== 'SCHEDULED' && m.status !== 'CALLED') throw new AppError('statusTransition');
+  const tournamentId = m.draw.event.tournamentId;
   await prisma.$transaction(async (tx) => {
+    // One start at a time per tournament, so two desks can't start a clash together.
+    await tx.$queryRaw`SELECT id FROM "Tournament" WHERE id = ${tournamentId}::uuid FOR UPDATE`;
+    const [players, slot] = await Promise.all([
+      tx.registrationParticipant.findMany({
+        where: {
+          active: true,
+          registrationId: { in: [m.entryA!.registrationId!, m.entryB!.registrationId!] },
+        },
+        select: { playerId: true },
+      }),
+      tx.courtSlot.findUnique({ where: { matchId: m.id }, select: { courtId: true } }),
+    ]);
+    const playerIds = players.map((p) => p.playerId);
+    const onCourt = {
+      id: { not: m.id },
+      status: { in: [...ON_COURT] },
+      draw: { event: { tournamentId } },
+    } satisfies Prisma.MatchWhereInput;
+    const inEntry = (side: 'entryA' | 'entryB') => ({
+      [side]: {
+        registration: { participants: { some: { active: true, playerId: { in: playerIds } } } },
+      },
+    });
+    if (await tx.match.count({ where: { ...onCourt, OR: [inEntry('entryA'), inEntry('entryB')] } }))
+      throw new AppError('playerOnCourt');
+    if (slot && (await tx.match.count({ where: { ...onCourt, slot: { courtId: slot.courtId } } })))
+      throw new AppError('courtInUse');
     await tx.match.update({
       where: { id: m.id },
       data: { status: 'IN_PROGRESS', startedAt: new Date() },

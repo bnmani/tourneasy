@@ -234,7 +234,9 @@
     "whatsappUrl": "Use a WhatsApp invite link that starts with https://chat.whatsapp.com/",
     "drawMade": "The draw for this category has been made. Remove the draw first to change a partner.",
     "checkedIn": "A player in this entry is already checked in.",
-    "partnerSame": "This player is already the partner in this entry."
+    "partnerSame": "This player is already the partner in this entry.",
+    "playerOnCourt": "A player in this match is still on court. Enter the result of that match first.",
+    "courtInUse": "This court is still in use. Enter the result of the match on it first."
   },
   "Auth": {
     "login": {
@@ -1242,7 +1244,10 @@
       "removeKnockout": "Remove knockout stage",
       "removeKnockoutConfirm": "Remove the knockout stage of {event}? Its matches and court times are removed; you can make it again from the group results.",
       "removeRound": "Remove last round",
-      "removeRoundConfirm": "Remove the latest round of {event}? Its pairings and court times are removed; you can pair it again."
+      "removeRoundConfirm": "Remove the latest round of {event}? Its pairings and court times are removed; you can pair it again.",
+      "playerOnCourt": "On court {court} now",
+      "playerPlaying": "Playing another match now",
+      "courtInUse": "Court {court} is still in use (match #{match})"
     },
     "navEmail": "Email",
     "emailSettings": {

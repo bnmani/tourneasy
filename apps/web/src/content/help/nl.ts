@@ -403,6 +403,7 @@ export const nl: Record<HelpGuideKey, HelpGuide> = {
             ol: [
               '**Aanmelden**: vink spelers af als ze binnenkomen en ontvang betalingen aan de balie.',
               '**Volgende**: wedstrijden die kunnen beginnen. Klik op **Op de baan** zodra ze starten.',
+              'Een speler die nog op de baan staat, ziet bij de andere wedstrijden van die speler **Nu op baan 3**; die wedstrijden kunnen pas de baan op als de uitslag van de eerste is ingevuld. Hetzelfde geldt voor een baan die nog bezet is. Per ongeluk op de baan gezet? **Terug naar wachten** maakt speler en baan weer vrij.',
               'Vul de gamescores in en klik op **Uitslag opslaan**. Schema en standen werken zichzelf bij.',
               'Gebruik **Walk-over of opgave** als een wedstrijd niet wordt uitgespeeld.',
             ],

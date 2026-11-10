@@ -656,3 +656,65 @@ describe('desk check-in (D74)', () => {
     ).toBe(true);
   });
 });
+
+describe('on court (D116)', () => {
+  it('keeps a busy player and a busy court off court until the result is in', async () => {
+    const actor = await admin();
+    const { t, event } = await setup('ROUND_ROBIN', 4);
+    await generateDraw(actor, event.id, meta, seededRng(1));
+    await publishDraws(actor, event.id, true, meta);
+    await proposeTournamentSchedule(actor, t.id, {}, meta);
+    const matches = await prisma.match.findMany({
+      where: { draw: { eventId: event.id } },
+      include: {
+        slot: true,
+        entryA: { include: { registration: { include: { participants: true } } } },
+        entryB: { include: { registration: { include: { participants: true } } } },
+      },
+      orderBy: [{ slot: { startsAt: 'asc' } }, { matchNumber: 'asc' }],
+    });
+    const playersOf = (m: (typeof matches)[number]) =>
+      [m.entryA, m.entryB].flatMap((e) => e!.registration!.participants.map((p) => p.playerId));
+    const [first, other] = matches as [(typeof matches)[number], (typeof matches)[number]];
+    const sharing = matches.find(
+      (m) => m.id !== first.id && playersOf(m).some((p) => playersOf(first).includes(p)),
+    )!;
+    await startMatch(actor, first.id, meta);
+
+    // A player of the first match is still on court: refused, and the desk says where.
+    await expect(startMatch(actor, sharing.id, meta)).rejects.toMatchObject({
+      code: 'playerOnCourt',
+    });
+    const court = (await prisma.court.findUniqueOrThrow({ where: { id: first.slot!.courtId } }))
+      .number;
+    const desk = await deskMatches(actor, t.id, 'open');
+    const waiting = desk.items.find((i) => i.id === sharing.id)!;
+    expect(waiting.busy?.players.map((p) => p.court)).toEqual([court]);
+    expect(desk.items.find((i) => i.id === first.id)?.busy).toBeNull();
+
+    // The other pair moved later onto the busy court: that court is still in use.
+    await prisma.courtSlot.update({
+      where: { matchId: other.id },
+      data: {
+        courtId: first.slot!.courtId,
+        startsAt: new Date(first.slot!.endsAt.getTime() + 60 * 60_000),
+        endsAt: new Date(first.slot!.endsAt.getTime() + 90 * 60_000),
+      },
+    });
+    expect(
+      (await deskMatches(actor, t.id, 'open')).items.find((i) => i.id === other.id)?.busy,
+    ).toMatchObject({ players: [], courtMatch: expect.any(Number) });
+    await expect(startMatch(actor, other.id, meta)).rejects.toMatchObject({ code: 'courtInUse' });
+
+    // The result frees both.
+    await recordResult(actor, first.id, win, meta);
+    expect((await deskMatches(actor, t.id, 'open')).items.every((i) => !i.busy)).toBe(true);
+    await startMatch(actor, other.id, meta);
+    // In a round robin every later match has a player of the pair now on court.
+    await expect(startMatch(actor, sharing.id, meta)).rejects.toMatchObject({
+      code: 'playerOnCourt',
+    });
+    await recordResult(actor, other.id, win, meta);
+    await startMatch(actor, sharing.id, meta);
+  });
+});

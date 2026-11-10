@@ -747,6 +747,7 @@ function toItem(
       (e) =>
         e?.registration?.participants.map((p) => ({
           id: p.id,
+          playerId: p.player.id,
           name: fullName(p.player),
           // Checked in for this match's day (D74): later tournament days start fresh.
           checkedIn: firstDay
@@ -985,15 +986,33 @@ export async function deskMatches(
     bestOf: rulesForMatch(m.draw.event, { ...m.draw, round: m.round, bracket: m.bracket }).bestOf,
     ready: !!m.entryA?.registration && !!m.entryB?.registration,
   }));
+  // Who and which courts are on court now (D116): waiting matches show it per player and
+  // can't go on court until that match's result is in.
+  const playing = items.filter((i) => i.status === 'IN_PROGRESS' || i.status === 'CALLED');
+  const playerCourt = new Map<string, number | null>();
+  for (const i of playing)
+    for (const p of i.checkIn.flat()) playerCourt.set(p.playerId, i.court?.number ?? null);
+  const courtMatch = new Map(
+    playing.filter((i) => i.court).map((i) => [i.court!.id, i.number] as const),
+  );
+  const withBusy = items.map((i) => {
+    if (i.status !== 'SCHEDULED' && i.status !== 'CALLED') return { ...i, busy: null };
+    const players = i.checkIn
+      .flat()
+      .filter((p) => playerCourt.has(p.playerId))
+      .map((p) => ({ id: p.id, name: p.name, court: playerCourt.get(p.playerId) ?? null }));
+    const courtBusy = i.court ? (courtMatch.get(i.court.id) ?? null) : null;
+    return { ...i, busy: players.length || courtBusy ? { players, courtMatch: courtBusy } : null };
+  });
   const done = (s: string) => s === 'COMPLETED' || s === 'WALKOVER' || s === 'RETIRED';
   const filtered =
     view === 'now'
-      ? items.filter((i) => i.status === 'IN_PROGRESS' || i.status === 'CALLED')
+      ? withBusy.filter((i) => i.status === 'IN_PROGRESS' || i.status === 'CALLED')
       : view === 'next'
-        ? items.filter((i) => i.status === 'SCHEDULED' && i.ready).slice(0, 30)
+        ? withBusy.filter((i) => i.status === 'SCHEDULED' && i.ready).slice(0, 30)
         : view === 'open'
-          ? items.filter((i) => !done(i.status))
-          : items.filter((i) => done(i.status)).reverse();
+          ? withBusy.filter((i) => !done(i.status))
+          : withBusy.filter((i) => done(i.status)).reverse();
   return { tournament: t, items: filtered };
 }
 
