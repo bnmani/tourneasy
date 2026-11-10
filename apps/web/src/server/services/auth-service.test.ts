@@ -146,10 +146,10 @@ describe('email verification', () => {
 });
 
 describe('password reset', () => {
-  it('is silent for unknown emails', async () => {
-    await expect(
-      requestPasswordReset({ email: 'ghost@example.test' }, meta),
-    ).resolves.toBeUndefined();
+  it('says when no account uses the email (D117)', async () => {
+    await expect(requestPasswordReset({ email: 'ghost@example.test' }, meta)).rejects.toMatchObject(
+      { code: 'validation', details: { fields: { email: 'accountNotFound' } } },
+    );
     expect(lastMailTo('ghost@example.test').mail).toBeUndefined();
   });
 

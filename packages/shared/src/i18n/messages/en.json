@@ -236,7 +236,8 @@
     "checkedIn": "A player in this entry is already checked in.",
     "partnerSame": "This player is already the partner in this entry.",
     "playerOnCourt": "A player in this match is still on court. Enter the result of that match first.",
-    "courtInUse": "This court is still in use. Enter the result of the match on it first."
+    "courtInUse": "This court is still in use. Enter the result of the match on it first.",
+    "accountNotFound": "Account not found with the email address you provided. Enter the correct email address to receive the password reset link."
   },
   "Auth": {
     "login": {
@@ -299,10 +300,10 @@
     },
     "forgot": {
       "title": "Forgot password",
-      "text": "Enter your email address. If it belongs to an account, we will send you a link to choose a new password.",
+      "text": "Enter the email address of your account. We will send you a link to choose a new password.",
       "email": "Email address",
       "submit": "Send link",
-      "sent": "If this email address is known to us, you will receive an email within a few minutes. The link is valid for 1 hour.",
+      "sent": "The password reset email is on its way. Check your inbox (and your spam folder). The link is valid for 1 hour.",
       "backToLogin": "Back to log in"
     },
     "reset": {

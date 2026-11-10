@@ -268,7 +268,11 @@ export async function verifyEmail(input: unknown): Promise<{ userId: string }> {
 
 // ── Passwords ──────────────────────────────────────────────────────────────────────
 
-/** Always succeeds from the caller's view, so it can't be used to discover accounts. */
+/**
+ * Sends the reset link, or says no account uses this email (D117: sign-up already tells which
+ * emails have an account, so hiding it here only confused players). Rate limits come first,
+ * so it can't be used to test many addresses.
+ */
 export async function requestPasswordReset(input: unknown, meta: RequestMeta): Promise<void> {
   const { email } = parse(forgotPasswordSchema, input);
   await enforce(`reset:ip:${meta.ip ?? 'unknown'}`, LIMITS.passwordResetPerIp);
@@ -278,7 +282,8 @@ export async function requestPasswordReset(input: unknown, meta: RequestMeta): P
     where: { email },
     include: { playerProfile: { select: { firstName: true } } },
   });
-  if (!user || !user.isActive || user.deletedAt || user.anonymisedAt) return;
+  if (!user || !user.isActive || user.deletedAt || user.anonymisedAt)
+    throw validationError({ email: 'accountNotFound' });
 
   const token = randomToken();
   await prisma.$transaction([

@@ -236,7 +236,8 @@
     "checkedIn": "Een speler in deze inschrijving is al ingecheckt.",
     "partnerSame": "Deze speler is al de partner in deze inschrijving.",
     "playerOnCourt": "Een speler van deze wedstrijd staat nog op de baan. Vul eerst de uitslag van die wedstrijd in.",
-    "courtInUse": "Deze baan is nog bezet. Vul eerst de uitslag van de wedstrijd op die baan in."
+    "courtInUse": "Deze baan is nog bezet. Vul eerst de uitslag van de wedstrijd op die baan in.",
+    "accountNotFound": "Er is geen account gevonden met dit e-mailadres. Vul het juiste e-mailadres in om de link voor een nieuw wachtwoord te ontvangen."
   },
   "Auth": {
     "login": {
@@ -299,10 +300,10 @@
     },
     "forgot": {
       "title": "Wachtwoord vergeten",
-      "text": "Vul je e-mailadres in. Als er een account bij hoort, sturen we je een link om een nieuw wachtwoord te kiezen.",
+      "text": "Vul het e-mailadres van je account in. We sturen je een link om een nieuw wachtwoord te kiezen.",
       "email": "E-mailadres",
       "submit": "Verstuur link",
-      "sent": "Als dit e-mailadres bij ons bekend is, ontvang je binnen enkele minuten een e-mail. De link is 1 uur geldig.",
+      "sent": "De e-mail om je wachtwoord opnieuw in te stellen is onderweg. Kijk in je inbox (en je spammap). De link is 1 uur geldig.",
       "backToLogin": "Terug naar inloggen"
     },
     "reset": {
