@@ -236,6 +236,15 @@ const minutesFor = (m: MatchRow, t: Pick<TournamentRow, 'matchMinutes' | 'single
     t,
   );
 
+/**
+ * Court times whose match is gone (a draw was made again or removed: the link is set to null,
+ * the time stays). They mean nothing, but they block the court, so planning and moving a match
+ * would hit the "court taken" rule on a time nobody sees (D118).
+ */
+async function clearOrphanSlots(tx: Tx, tournamentId: string) {
+  await tx.courtSlot.deleteMany({ where: { tournamentId, matchId: null } });
+}
+
 const proposeSchema = z.object({ mode: z.enum(['all', 'remaining']).default('all') });
 
 /**
@@ -315,6 +324,7 @@ export async function proposeTournamentSchedule(
   );
   await prisma.$transaction(
     async (tx) => {
+      await clearOrphanSlots(tx, tournamentId);
       await tx.courtSlot.deleteMany({
         where: { tournamentId, matchId: { in: plan.map((p) => p.id) } },
       });
@@ -387,6 +397,7 @@ export async function moveMatch(actor: Actor, matchId: string, input: unknown, m
   const end = new Date(start.getTime() + minutesFor(row, t) * 60_000);
   try {
     await prisma.$transaction(async (tx) => {
+      await clearOrphanSlots(tx, t.id);
       // Update in place, so a moved match counts as "changed" rather than "new".
       await tx.courtSlot.upsert({
         where: { matchId },

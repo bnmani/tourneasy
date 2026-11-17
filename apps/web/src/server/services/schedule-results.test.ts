@@ -718,3 +718,44 @@ describe('on court (D116)', () => {
     await startMatch(actor, sharing.id, meta);
   });
 });
+
+describe('court times left behind by a removed draw (D118)', () => {
+  it('plans the remaining matches although old court times without a match are still there', async () => {
+    const actor = await admin();
+    const { t, event } = await setup('ROUND_ROBIN', 4);
+    await generateDraw(actor, event.id, meta, seededRng(1));
+    await publishDraws(actor, event.id, true, meta);
+    await proposeTournamentSchedule(actor, t.id, {}, meta);
+    // The draw was made again: its matches are gone, their court times stay without a match.
+    const slots = await prisma.courtSlot.findMany({ where: { tournamentId: t.id } });
+    await prisma.courtSlot.updateMany({ where: { tournamentId: t.id }, data: { matchId: null } });
+    expect(await prisma.courtSlot.count({ where: { tournamentId: t.id, matchId: null } })).toBe(
+      slots.length,
+    );
+
+    expect(await proposeTournamentSchedule(actor, t.id, { mode: 'remaining' }, meta)).toEqual({
+      scheduled: 6,
+      unscheduled: 0,
+    });
+    expect(await prisma.courtSlot.count({ where: { tournamentId: t.id, matchId: null } })).toBe(0);
+
+    // Moving a match by hand isn't blocked by such a time either.
+    const [match] = await prisma.match.findMany({
+      where: { draw: { eventId: event.id } },
+      take: 1,
+    });
+    const court = await prisma.court.findFirstOrThrow({
+      where: { venue: { tournaments: { some: { id: t.id } } } },
+    });
+    await prisma.courtSlot.create({
+      data: {
+        tournamentId: t.id,
+        courtId: court.id,
+        startsAt: new Date('2027-03-13T16:00:00Z'),
+        endsAt: new Date('2027-03-13T16:30:00Z'),
+      },
+    });
+    await moveMatch(actor, match!.id, { courtId: court.id, startsAt: '2027-03-13T17:00' }, meta);
+    expect(await prisma.courtSlot.count({ where: { tournamentId: t.id, matchId: null } })).toBe(0);
+  });
+});
