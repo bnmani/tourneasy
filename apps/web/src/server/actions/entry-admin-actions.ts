@@ -132,6 +132,7 @@ export async function changePartnerAction(
         allowNew: formData.get('allowNew') === '1',
         leftBehind: leftBehind === 'keep' || leftBehind === 'cancel' ? leftBehind : undefined,
         notify: formData.get('notify') === 'on',
+        holdRefund: formData.get('holdRefund') === 'on',
         confirm: formData.get('confirm') === '1',
         replace: formData.get('replace') || undefined,
       },

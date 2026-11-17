@@ -191,6 +191,12 @@ export function ChangePartnerForm({
             <input type="checkbox" name="notify" defaultChecked />
             {t('notifyPlayers')}
           </label>
+          {(preview.oldPartner?.refundCents ?? 0) + (preview.from?.refundCents ?? 0) > 0 && (
+            <label className="flex items-start gap-2">
+              <input type="checkbox" name="holdRefund" defaultChecked className="mt-1" />
+              {t('holdRefund')}
+            </label>
+          )}
         </div>
       )}
       {preview ? (

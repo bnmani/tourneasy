@@ -137,8 +137,10 @@ export function QuickTextAction({
   uppercase = false,
   variant = 'outline',
   className,
+  option,
 }: {
-  action: (value: string) => Promise<QuickResult>;
+  /** `checked` is the option's state (false when there is no option). */
+  action: (value: string, checked: boolean) => Promise<QuickResult>;
   label: string;
   placeholder: string;
   maxLength: number;
@@ -146,8 +148,11 @@ export function QuickTextAction({
   uppercase?: boolean;
   variant?: ButtonProps['variant'];
   className?: string;
+  /** A tick box under the field, e.g. "Hold the refund until an admin approves it". */
+  option?: { label: string; defaultChecked: boolean };
 }) {
   const [value, setValue] = useState('');
+  const [checked, setChecked] = useState(option?.defaultChecked ?? false);
   const { error, pending, run } = useQuick();
   return (
     <form
@@ -155,7 +160,7 @@ export function QuickTextAction({
       onSubmit={(e) => {
         e.preventDefault();
         if (required && !value.trim()) return;
-        run(() => action(value.trim()));
+        run(() => action(value.trim(), checked));
       }}
     >
       <div className="flex flex-wrap items-center gap-1">
@@ -171,6 +176,17 @@ export function QuickTextAction({
           {label}
         </Button>
       </div>
+      {option && (
+        <label className="flex items-start gap-2 text-xs">
+          <input
+            type="checkbox"
+            checked={checked}
+            onChange={(e) => setChecked(e.target.checked)}
+            className="mt-0.5"
+          />
+          {option.label}
+        </label>
+      )}
       <ErrorLine error={error} />
     </form>
   );

@@ -49,6 +49,8 @@ const changeSchema = z.object({
   /** The new partner's old entry in this category: keep it for the player left behind, or cancel. */
   leftBehind: z.enum(['keep', 'cancel']).optional(),
   notify: z.boolean().default(true),
+  /** D119: leave the refunds "requested" until an admin approves them. */
+  holdRefund: z.boolean().default(false),
   confirm: z.boolean().default(false),
   /** Which player leaves (a share of this entry); by default the partner (player 2). */
   replace: z.string().uuid().optional(),
@@ -360,9 +362,15 @@ export async function changePartner(
 
   // Money and the entry left behind, as with any cancellation by the organisers.
   if (shellId && oldPartner && openCents(oldPartner) > 0)
-    await refundsForCancelledRegistration(shellId, 'full', actor.userId, meta);
+    await refundsForCancelledRegistration(shellId, 'full', actor.userId, meta, data.holdRefund);
   if (theirs && (!leftBehind || choice === 'cancel'))
-    await cancelEntryAsOrganiser(actor, theirs.registration.id, { reason }, meta, now);
+    await cancelEntryAsOrganiser(
+      actor,
+      theirs.registration.id,
+      { reason, holdRefund: data.holdRefund },
+      meta,
+      now,
+    );
 
   if (data.notify)
     await notifyChange({ t, event, primary, partner, oldPartner, leftBehind, choice });

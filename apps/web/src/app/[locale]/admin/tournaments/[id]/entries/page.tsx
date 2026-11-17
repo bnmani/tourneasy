@@ -486,6 +486,11 @@ export default async function EntriesPage({ params, searchParams }: Props) {
                             placeholder={t('entries.cancelReason')}
                             maxLength={500}
                             variant="destructive"
+                            option={
+                              r.participants.some((p) => p.paymentStatus === 'PAID')
+                                ? { label: t('entries.holdRefund'), defaultChecked: true }
+                                : undefined
+                            }
                           />
                         </details>
                       )}

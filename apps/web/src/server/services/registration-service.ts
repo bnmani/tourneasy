@@ -1424,6 +1424,7 @@ export async function cancelEntryAsOrganiser(
   now = new Date(),
 ) {
   const { reason } = parseInput(withdrawSchema, input ?? {});
+  const holdRefund = (input as { holdRefund?: unknown } | null)?.holdRefund === true;
   const r = await prisma.registration.findFirst({
     where: { id: registrationId, status: { in: LIVE } },
     select: { id: true, event: { select: { tournamentId: true } } },
@@ -1431,8 +1432,9 @@ export async function cancelEntryAsOrganiser(
   if (!r) throw new AppError('notFound');
   await assertCanManageTournament(actor, r.event.tournamentId);
   await cancelRegistration(r.id, actor.userId, reason, meta, 'registration.cancelByOrganiser', now);
-  // Cancelled by the organisers: whatever was paid goes back in full.
-  await refundsForCancelledRegistration(r.id, 'full', actor.userId, meta);
+  // Cancelled by the organisers: whatever was paid goes back in full, at once, or (D119) as a
+  // request an admin approves first.
+  await refundsForCancelledRegistration(r.id, 'full', actor.userId, meta, holdRefund);
 }
 
 const CANCEL_ACTIONS = [

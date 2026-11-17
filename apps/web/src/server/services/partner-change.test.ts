@@ -195,6 +195,28 @@ describe('changing a doubles partner (D115)', () => {
     ]);
   });
 
+  it("can hold the old partner's refund for approval (D119)", async () => {
+    const { t, gd, admin } = await setup();
+    const man = await player({ gender: 'MALE' });
+    const [woman, newWoman] = [await player(), await player()];
+    const a = await pair(admin, t.id, gd.id, man.profile.memberNumber, woman.profile.memberNumber);
+    await markShareAsPaid(admin, { participantId: a.woman.id }, meta);
+    await changePartner(
+      admin,
+      a.id,
+      {
+        partner: { memberNumber: newWoman.profile.memberNumber },
+        notify: false,
+        holdRefund: true,
+        confirm: true,
+      },
+      meta,
+    );
+    // The swap is done; the old partner's €12.50 waits for an admin instead of being sent.
+    const refunds = await prisma.refund.findMany();
+    expect(refunds.map((r) => [r.status, r.amountCents])).toEqual([['REQUESTED', 1250]]);
+  });
+
   it('refuses the same partner, an ineligible one, and checked-in entries', async () => {
     const { t, gd, admin } = await setup();
     const [man, man2] = [await player({ gender: 'MALE' }), await player({ gender: 'MALE' })];

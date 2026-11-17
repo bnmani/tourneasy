@@ -340,12 +340,16 @@ export async function quickMoveEventAction(
   );
 }
 
-export async function quickCancelEntryAction(registrationId: string, reason?: string) {
+export async function quickCancelEntryAction(
+  registrationId: string,
+  reason?: string,
+  holdRefund?: boolean,
+) {
   return quick(async () =>
     cancelEntryAsOrganiser(
       await actorOrThrow(),
       registrationId,
-      { reason: reason || undefined },
+      { reason: reason || undefined, holdRefund: holdRefund === true },
       await currentRequestMeta(),
     ),
   );

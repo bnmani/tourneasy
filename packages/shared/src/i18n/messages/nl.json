@@ -1023,7 +1023,8 @@
       "notifyPlayers": "De spelers mailen over de wijziging",
       "partnerChanged": "Partner gewijzigd: {name} – {event}.",
       "changeBlocked": "Niet mogelijk na de loting of het inchecken.",
-      "replaceWho": "Wie wordt vervangen?"
+      "replaceWho": "Wie wordt vervangen?",
+      "holdRefund": "Houd de terugbetaling vast tot een beheerder die goedkeurt (pagina Betalingen)"
     },
     "navPayments": "Betalingen",
     "payments": {

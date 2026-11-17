@@ -586,6 +586,32 @@ describe('refunds and desk payments', () => {
     expect(gateway.refunds).toMatchObject([{ amountCents: 1500 }]);
   });
 
+  it('holds the refund for an admin when the organiser asks to (D119)', async () => {
+    const { registrationId } = await paidEntry({ refundPolicy: 'NO_REFUNDS' });
+    const admin = await player({}, Role.ADMIN);
+    await cancelEntryAsOrganiser(
+      admin.actor,
+      registrationId,
+      { reason: 'Changing player', holdRefund: true },
+      meta,
+      NOW,
+    );
+    // Cancelled at once, but nothing is sent to Stripe: the refund waits as a request.
+    expect(gateway.refunds).toHaveLength(0);
+    expect(
+      await prisma.registration.findUniqueOrThrow({ where: { id: registrationId } }),
+    ).toMatchObject({ status: 'CANCELLED' });
+    const request = await prisma.refund.findFirstOrThrow();
+    expect(request).toMatchObject({
+      status: 'REQUESTED',
+      amountCents: 1500,
+      reason: 'cancelledByOrganiser',
+    });
+    // The admin approves it later and the money goes back.
+    expect(await approveRefund(admin.actor, request.id, meta)).toBe('SUCCEEDED');
+    expect(gateway.refunds).toMatchObject([{ amountCents: 1500 }]);
+  });
+
   it('lets an organiser record a desk payment, audited', async () => {
     setGatewayForTests(null);
     const t = await tournament();

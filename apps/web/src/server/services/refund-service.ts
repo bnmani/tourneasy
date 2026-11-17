@@ -52,6 +52,8 @@ export async function refundsForCancelledRegistration(
   mode: 'policy' | 'full',
   requestedById: string | null,
   meta?: RequestMeta,
+  /** Organiser cancellations (D119): leave the refund "requested" until an admin approves it. */
+  hold = false,
 ) {
   const registration = await prisma.registration.findUniqueOrThrow({
     where: { id: registrationId },
@@ -133,7 +135,10 @@ export async function refundsForCancelledRegistration(
       meta,
     });
   }
-  if (mode === 'full' || refundPolicy === 'AUTOMATIC_BEFORE_DEADLINE') {
+  if (
+    (mode === 'full' && !hold) ||
+    (mode === 'policy' && refundPolicy === 'AUTOMATIC_BEFORE_DEADLINE')
+  ) {
     for (const id of created) await executeRefund(id, requestedById, meta);
   } else {
     for (const id of created) await notifyRefund(id, 'requested');
