@@ -2273,7 +2273,8 @@
     "expectedRunnerUp": "runner-up",
     "expectedMineTitle": "Expected knockout rounds",
     "expectedRoundFrom": "{name} expected from {time}",
-    "expectedMineHint": "Only if you qualify from the group stage. Times can move if the groups run late."
+    "expectedMineHint": "Only if you qualify from the group stage. Times can move if the groups run late.",
+    "vs": "vs"
   },
   "Notifications": {
     "title": "Email preferences",

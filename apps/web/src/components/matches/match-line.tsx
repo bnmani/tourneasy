@@ -76,6 +76,7 @@ export async function MatchLine({
         item.aEntryId,
         item.sets.map((s) => s.scoreA),
       )}
+      <p className="-my-0.5 text-xs leading-none text-muted-foreground">{t('vs')}</p>
       {side(
         item.b,
         item.bEntryId,

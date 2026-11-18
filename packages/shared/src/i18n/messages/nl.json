@@ -2273,7 +2273,8 @@
     "expectedRunnerUp": "nummer twee",
     "expectedMineTitle": "Verwachte knock-outrondes",
     "expectedRoundFrom": "{name} verwacht vanaf {time}",
-    "expectedMineHint": "Alleen als je je plaatst via de poulefase. Tijden kunnen opschuiven als de poules uitlopen."
+    "expectedMineHint": "Alleen als je je plaatst via de poulefase. Tijden kunnen opschuiven als de poules uitlopen.",
+    "vs": "tegen"
   },
   "Notifications": {
     "title": "E-mailvoorkeuren",
