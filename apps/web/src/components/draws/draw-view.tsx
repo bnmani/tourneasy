@@ -7,34 +7,37 @@ import { fullName, publicName } from '@/server/services/registration-service';
 
 /**
  * Public draws (D83): under-16s by first name and initial. Their surname is replaced by the
- * initial before rendering, so every part of the view shows the short name.
+ * initial before rendering, so every part of the view shows the short name. Seeds are for the
+ * organisers only (D120): they are removed here, so no part of the public view can show them.
  */
 function withPublicNames(draws: EventDraw[]): EventDraw[] {
   return draws.map((d) => ({
     ...d,
-    entries: d.entries.map((e) =>
-      e.registration
-        ? {
-            ...e,
-            registration: {
-              ...e.registration,
-              participants: e.registration.participants.map((p) => {
-                const short = publicName(p.player);
-                return short === fullName(p.player)
-                  ? p
-                  : {
-                      ...p,
-                      player: {
-                        ...p.player,
-                        lastNamePrefix: null,
-                        lastName: short.slice(p.player.firstName.length + 1),
-                      },
-                    };
-              }),
-            },
-          }
-        : e,
-    ),
+    entries: d.entries
+      .map((entry) => ({ ...entry, seed: null }))
+      .map((e) =>
+        e.registration
+          ? {
+              ...e,
+              registration: {
+                ...e.registration,
+                participants: e.registration.participants.map((p) => {
+                  const short = publicName(p.player);
+                  return short === fullName(p.player)
+                    ? p
+                    : {
+                        ...p,
+                        player: {
+                          ...p.player,
+                          lastNamePrefix: null,
+                          lastName: short.slice(p.player.firstName.length + 1),
+                        },
+                      };
+                }),
+              },
+            }
+          : e,
+      ),
   }));
 }
 import { knockoutRoundName } from '@/server/services/schedule-service';

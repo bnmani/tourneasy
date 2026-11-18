@@ -4,7 +4,11 @@ import { getTranslations } from 'next-intl/server';
 import { cn } from '@/lib/utils';
 import type { ScheduleItem } from '@/server/services/schedule-service';
 
-/** One match in a list: time, court, category and round, both sides and the score. */
+/**
+ * One match in a list: time, court, category and round, both sides and the score. `min-w-0`
+ * and wrapping names keep a card inside its grid column on a phone (D120): a long unbroken
+ * name must not widen the column past the screen.
+ */
 export async function MatchLine({
   item,
   locale,
@@ -24,7 +28,7 @@ export async function MatchLine({
         item.winnerEntryId && item.winnerEntryId === entryId && 'font-semibold',
       )}
     >
-      <span className="min-w-0 truncate">{name ?? '—'}</span>
+      <span className="min-w-0 break-words">{name ?? '—'}</span>
       {scores.length > 0 && (
         <span className="flex shrink-0 gap-1.5 tabular-nums">
           {scores.map((n, i) => (
@@ -39,7 +43,7 @@ export async function MatchLine({
   return (
     <article
       id={`m-${item.id}`}
-      className="scroll-mt-24 space-y-2 rounded-md border bg-card p-3 text-sm"
+      className="min-w-0 scroll-mt-24 space-y-2 rounded-md border bg-card p-3 text-sm"
     >
       <header className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
         {showTime && item.startsAt && (
