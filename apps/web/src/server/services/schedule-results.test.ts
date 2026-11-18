@@ -781,10 +781,10 @@ describe('expected knockout rounds (D121)', () => {
     const [category] = await expectedKnockout(t.id, 'en');
     expect(category).toMatchObject({ eventId: event.id });
     expect(category!.rounds.map((r) => r.name)).toEqual(['Semi-final', 'Final']);
-    // Seeds 1 and 2 are fixed; the 3rd and 4th qualifier are drawn against them.
+    // Paired by ranking (D123): 1 vs 4 and 2 vs 3, with 1 and 2 on opposite sides.
     expect(category!.rounds[0]!.matches).toEqual([
-      { a: '1st', b: '3rd–4th' },
-      { a: '2nd', b: '3rd–4th' },
+      { a: '1st', b: '4th' },
+      { a: '2nd', b: '3rd' },
     ]);
     expect(category!.rounds[1]!.matches).toEqual([{ a: 'Winners of the round before', b: null }]);
     // Not before the last group match is over, and the final after the semi-finals.
@@ -847,5 +847,36 @@ describe('expected knockout rounds (D121)', () => {
       where: { userId: other.userId },
     });
     expect(await expectedKnockoutOfPlayers([profile.id], 'en')).toEqual([]);
+  });
+
+  it('pairs the real knockout by ranking: 1 vs 8, 4 vs 5, 2 vs 7, 3 vs 6 (D123)', async () => {
+    const actor = await admin();
+    const { t, event } = await setup('HYBRID_ROUND_ROBIN_KNOCKOUT', 8, { knockoutSize: 8 });
+    await generateDraw(actor, event.id, meta, seededRng(5));
+    await publishDraws(actor, event.id, true, meta);
+    await proposeTournamentSchedule(actor, t.id, {}, meta);
+    // Eight qualifiers: the expected rows already say who meets whom.
+    const [category] = await expectedKnockout(t.id, 'en');
+    expect(category!.rounds.map((r) => r.name)).toEqual(['Quarter-final', 'Semi-final', 'Final']);
+    expect(category!.rounds[0]!.matches).toEqual([
+      { a: '1st', b: '8th' },
+      { a: '4th', b: '5th' },
+      { a: '2nd', b: '7th' },
+      { a: '3rd', b: '6th' },
+    ]);
+    await playAll(actor, event.id);
+    await createKnockoutFromGroups(actor, event.id, meta);
+    // The real quarter-finals are those pairs: the seeds are the ranks.
+    const first = await prisma.match.findMany({
+      where: { draw: { eventId: event.id, stage: 'KNOCKOUT' }, round: 1 },
+      orderBy: { matchNumber: 'asc' },
+      include: { entryA: true, entryB: true },
+    });
+    expect(first.map((m) => [m.entryA!.seed, m.entryB!.seed])).toEqual([
+      [1, 8],
+      [4, 5],
+      [2, 7],
+      [3, 6],
+    ]);
   });
 });

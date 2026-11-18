@@ -7,6 +7,7 @@
  */
 import { prisma, type Prisma } from '@tourneasy/db';
 import {
+  bracketOrder,
   checkMatchScore,
   rulesForMatch,
   nextPowerOfTwo,
@@ -384,12 +385,17 @@ async function eventForStage(actor: Actor, eventId: string) {
   return event;
 }
 
-/** Creates a published knockout stage from qualifiers in order (best first = top seeds). */
+/**
+ * Creates a published knockout stage from qualifiers in order (best first = top seeds). With
+ * `byRank` (D123, after a single ranking) every qualifier goes to the place of its rank: 1 vs
+ * last, 2 vs second-last and so on, with 1 and 2 on opposite sides, and no draw by lot.
+ */
 async function createKnockoutStage(
   tx: Tx,
   eventId: string,
   qualifiers: { registrationId: string; group: string }[],
   seedCount: number,
+  byRank = false,
 ) {
   const candidates: DrawCandidate[] = qualifiers.map((q) => ({
     id: q.registrationId,
@@ -398,8 +404,15 @@ async function createKnockoutStage(
     clubs: [q.group],
     enteredAt: new Date(0),
   }));
-  const seeds = qualifiers.slice(0, seedCount).map((q) => q.registrationId);
-  const slots = placeKnockout(candidates, seeds, Math.random);
+  const seeds = qualifiers
+    .slice(0, byRank ? qualifiers.length : seedCount)
+    .map((q) => q.registrationId);
+  const slots = byRank
+    ? bracketOrder(nextPowerOfTwo(qualifiers.length)).map(
+        // A rank above the qualifiers is a bye, facing the top seeds.
+        (rank) => qualifiers[rank - 1]?.registrationId ?? null,
+      )
+    : placeKnockout(candidates, seeds, Math.random);
   const size = slots.length;
   const draw = await tx.draw.create({
     data: {
@@ -498,7 +511,13 @@ export async function createKnockoutFromGroups(actor: Actor, eventId: string, me
   }
   await prisma.$transaction(
     async (tx) => {
-      await createKnockoutStage(tx, eventId, qualifiers, seedCount);
+      await createKnockoutStage(
+        tx,
+        eventId,
+        qualifiers,
+        seedCount,
+        event.drawType === 'HYBRID_ROUND_ROBIN_KNOCKOUT',
+      );
       await writeAudit(tx, {
         actorId: actor.userId,
         action: 'draw.knockoutStage',

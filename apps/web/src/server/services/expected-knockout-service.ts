@@ -71,7 +71,7 @@ export type ExpectedRound = {
   /** First start and last end of the round (UTC). */
   from: Date;
   until: Date;
-  /** One line per match: "1st vs 5th–8th"; later rounds: one line, "Winners of the round before" (b is null). */
+  /** One line per match: "1st vs 8th"; later rounds: one line, "Winners of the round before" (b is null). */
   matches: { a: string; b: string | null }[];
 };
 
@@ -84,30 +84,12 @@ export type ExpectedCategory = {
 
 type Locale = 'nl' | 'en';
 
-const ordinal = (n: number, locale: Locale) => (locale === 'nl' ? `${n}e` : `${n}`);
-
-/** "1st", "2nd", "3rd–4th": the places a bracket position can hold. */
-function rankLabel(from: number, to: number, locale: Locale) {
-  const one = (n: number) => {
-    if (locale === 'nl') return ordinal(n, locale);
-    const s = ['th', 'st', 'nd', 'rd'];
-    const v = n % 100;
-    return `${n}${s[(v - 20) % 10] ?? s[v] ?? s[0]}`;
-  };
-  return from === to ? one(from) : `${one(from)}–${one(to)}`;
-}
-
-/**
- * Band of a bracket rank: seeds are drawn by lot within [1], [2], [3–4], [5–8], [9–16] …, so a
- * position of rank 3 holds the 3rd or 4th qualifier. Positions above the seeded ranks hold
- * the unseeded qualifiers.
- */
-function bandOf(rank: number, seeds: number, size: number): [number, number] {
-  if (rank > seeds) return [seeds + 1, size];
-  if (rank <= 2) return [rank, rank];
-  let lo = 3; // bands start at 3, 5, 9, 17 …
-  while (2 * lo - 1 <= rank) lo = 2 * lo - 1;
-  return [lo, Math.min(2 * lo - 2, seeds)];
+/** "1st", "2nd", "3rd", "4th" (NL: "1e", "2e"): the place in the group-stage ranking. */
+function rankLabel(n: number, locale: Locale) {
+  if (locale === 'nl') return `${n}e`;
+  const s = ['th', 'st', 'nd', 'rd'];
+  const v = n % 100;
+  return `${n}${s[(v - 20) % 10] ?? s[v] ?? s[0]}`;
 }
 
 /**
@@ -241,9 +223,10 @@ export async function expectedKnockout(
     let seeds: number;
     if (e.drawType === 'HYBRID_ROUND_ROBIN_KNOCKOUT') {
       if (entered < 2) continue;
-      size = Math.min(e.knockoutSize ?? 16, 2 ** Math.floor(Math.log2(Math.max(2, entered))));
-      qualifiers = size;
-      seeds = Math.min(size, nextPowerOfTwo(size) >= 16 ? 8 : size / 2);
+      // The same count the real knockout takes; every qualifier goes to its ranked place (D123).
+      qualifiers = Math.min(e.knockoutSize ?? 16, 2 ** Math.floor(Math.log2(Math.max(2, entered))));
+      size = nextPowerOfTwo(qualifiers);
+      seeds = qualifiers;
     } else {
       const groups = e.draws.filter((d) => d.stage === 'GROUP');
       const per = e.advancePerGroup ?? 2;
@@ -344,8 +327,7 @@ export async function expectedKnockout(
           return rank <= seeds
             ? (messages[locale].Matches.expectedGroupWinner as string)
             : (messages[locale].Matches.expectedRunnerUp as string);
-        const [lo, hi] = bandOf(rank, seeds, shape.size);
-        return rankLabel(lo, hi, locale);
+        return rankLabel(rank, locale);
       };
       rounds.push({
         name: knockoutRoundName(shape.rounds - round, round, fill),

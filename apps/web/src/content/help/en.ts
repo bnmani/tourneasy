@@ -374,7 +374,7 @@ export const en: Record<HelpGuideKey, HelpGuide> = {
             p: 'Adjust any match by hand, then publish. Players get an email with their times and courts, and later changes are marked for them. Use **Export** for a PDF or Excel copy per day or per court, for the noticeboard at the venue.',
           },
           {
-            p: 'For categories with a group stage and a knockout, the knockout matches only exist once the groups are done. Until then the schedule shows **Expected knockout rounds**: when the quarter-finals, semi-finals and final are expected, after each category’s last group match, with who meets whom (for example 1st vs 5th–8th). Players see them on the public schedule and on **My schedule**. When the groups finish, make the knockout and click **Schedule remaining matches**: the real matches replace these rows. Use **Hide expected knockout rounds** at the bottom of the schedule to switch them off.',
+            p: 'For categories with a group stage and a knockout, the knockout matches only exist once the groups are done. Until then the schedule shows **Expected knockout rounds**: when the quarter-finals, semi-finals and final are expected, after each category’s last group match, with who meets whom (1st vs 8th, 2nd vs 7th and so on, by the group-stage ranking). Players see them on the public schedule and on **My schedule**. When the groups finish, make the knockout and click **Schedule remaining matches**: the real matches replace these rows. Use **Hide expected knockout rounds** at the bottom of the schedule to switch them off.',
           },
           {
             img: {

@@ -383,7 +383,7 @@ export const nl: Record<HelpGuideKey, HelpGuide> = {
             p: 'Pas wedstrijden met de hand aan en publiceer. Spelers krijgen een e-mail met hun tijden en banen, en latere wijzigingen worden voor hen gemarkeerd. Met **Exporteren** maak je een pdf of Excel per dag of per baan, voor het mededelingenbord in de hal.',
           },
           {
-            p: 'Bij categorieën met een poulefase en een knock-out bestaan de knock-outwedstrijden pas als de poules klaar zijn. Tot dan toont het schema **Verwachte knock-outrondes**: wanneer de kwartfinales, halve finales en finale verwacht worden, na de laatste poulewedstrijd van elke categorie, met wie tegen wie speelt (bijvoorbeeld 1e tegen 5e–8e). Spelers zien ze op het openbare schema en bij **Mijn planning**. Zodra de poules klaar zijn, maak je de knock-out en klik je op **Overige wedstrijden inplannen**: de echte wedstrijden vervangen deze regels. Met **Verwachte knock-outrondes verbergen** onderaan het schema zet je ze uit.',
+            p: 'Bij categorieën met een poulefase en een knock-out bestaan de knock-outwedstrijden pas als de poules klaar zijn. Tot dan toont het schema **Verwachte knock-outrondes**: wanneer de kwartfinales, halve finales en finale verwacht worden, na de laatste poulewedstrijd van elke categorie, met wie tegen wie speelt (1e tegen 8e, 2e tegen 7e enzovoort, volgens de ranglijst na de poulefase). Spelers zien ze op het openbare schema en bij **Mijn planning**. Zodra de poules klaar zijn, maak je de knock-out en klik je op **Overige wedstrijden inplannen**: de echte wedstrijden vervangen deze regels. Met **Verwachte knock-outrondes verbergen** onderaan het schema zet je ze uit.',
           },
           {
             img: {
