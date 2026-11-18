@@ -18,6 +18,13 @@ import {
 } from '@/server/actions/match-actions';
 import { requirePortal } from '@/server/auth/web';
 import { isAppError } from '@/server/lib/errors';
+import { ExpectedKnockoutList } from '@/components/matches/expected-knockout';
+import { QuickButton } from '@/components/desk/quick-buttons';
+import { quickExpectedKnockoutAction } from '@/server/actions/match-actions';
+import {
+  expectedKnockout,
+  isExpectedKnockoutOn,
+} from '@/server/services/expected-knockout-service';
 import { getSchedule } from '@/server/services/schedule-service';
 
 type Props = { params: Promise<{ locale: string; id: string }>; searchParams: SearchParams };
@@ -43,6 +50,10 @@ export default async function SchedulePage({ params, searchParams }: Props) {
   const { tournament, courts, days, scheduled, unscheduled, playedUnplanned, conflictIds } =
     schedule;
   const published = !!tournament.schedulePublishedAt;
+  const [expectedOn, expected] = await Promise.all([
+    isExpectedKnockoutOn(id),
+    expectedKnockout(id, locale),
+  ]);
   const byDay = days.map((d) => ({
     ...d,
     items: scheduled.filter((s) => utcToAmsterdamLocal(s.startsAt!).slice(0, 10) === d.date),
@@ -287,6 +298,23 @@ export default async function SchedulePage({ params, searchParams }: Props) {
           </div>
         </section>
       )}
+      <section className="space-y-2">
+        <p className="text-sm text-muted-foreground">
+          {expectedOn ? ts('expectedOn') : ts('expectedOff')} {ts('expectedHint')}
+        </p>
+        <QuickButton
+          size="sm"
+          variant="outline"
+          action={quickExpectedKnockoutAction.bind(null, id, !expectedOn)}
+        >
+          {expectedOn ? ts('expectedHide') : ts('expectedShow')}
+        </QuickButton>
+      </section>
+      <ExpectedKnockoutList
+        categories={expected}
+        locale={locale}
+        showDay={tournament.startsOn.getTime() !== tournament.endsOn.getTime()}
+      />
       {allItems.length === 0 && <p className="text-muted-foreground">{ts('empty')}</p>}
     </>
   );

@@ -29,6 +29,12 @@ import {
   unscheduleMatch,
 } from './schedule-service';
 import { followedMatches, upcomingMatchesOf } from './public-service';
+import {
+  expectedKnockout,
+  expectedKnockoutOfPlayers,
+  publicExpectedKnockout,
+  setExpectedKnockout,
+} from './expected-knockout-service';
 import { PDFDocument } from 'pdf-lib';
 import { buildSchedulePdf, pdfSafe } from '../pdf/schedule-pdf';
 import { checkInList, checkInPdf, payAtDesk, setPlayerCheckIn } from './checkin-service';
@@ -757,5 +763,89 @@ describe('court times left behind by a removed draw (D118)', () => {
     });
     await moveMatch(actor, match!.id, { courtId: court.id, startsAt: '2027-03-13T17:00' }, meta);
     expect(await prisma.courtSlot.count({ where: { tournamentId: t.id, matchId: null } })).toBe(0);
+  });
+});
+
+describe('expected knockout rounds (D121)', () => {
+  async function hybrid(extra: Record<string, unknown> = {}) {
+    const actor = await admin();
+    const made = await setup('HYBRID_ROUND_ROBIN_KNOCKOUT', 8, { knockoutSize: 4, ...extra });
+    await generateDraw(actor, made.event.id, meta, seededRng(2));
+    await publishDraws(actor, made.event.id, true, meta);
+    await proposeTournamentSchedule(actor, made.t.id, {}, meta);
+    return { actor, ...made };
+  }
+
+  it('places the semi-finals and final after the group stage, with who meets whom', async () => {
+    const { t, event } = await hybrid();
+    const [category] = await expectedKnockout(t.id, 'en');
+    expect(category).toMatchObject({ eventId: event.id });
+    expect(category!.rounds.map((r) => r.name)).toEqual(['Semi-final', 'Final']);
+    // Seeds 1 and 2 are fixed; the 3rd and 4th qualifier are drawn against them.
+    expect(category!.rounds[0]!.matches).toEqual([
+      { a: '1st', b: '3rd–4th' },
+      { a: '2nd', b: '3rd–4th' },
+    ]);
+    expect(category!.rounds[1]!.matches).toEqual([{ a: 'Winners of the round before', b: null }]);
+    // Not before the last group match is over, and the final after the semi-finals.
+    const lastGroupEnd = Math.max(
+      ...(await prisma.courtSlot.findMany({ where: { tournamentId: t.id } })).map((s) =>
+        s.endsAt.getTime(),
+      ),
+    );
+    expect(category!.rounds[0]!.from.getTime()).toBeGreaterThanOrEqual(lastGroupEnd);
+    expect(category!.rounds[1]!.from.getTime()).toBeGreaterThanOrEqual(
+      category!.rounds[0]!.until.getTime(),
+    );
+    // Dutch wording.
+    expect((await expectedKnockout(t.id, 'nl'))[0]!.rounds[0]!.matches[0]!.a).toBe('1e');
+    // Nothing was stored.
+    expect(await prisma.match.count({ where: { draw: { stage: 'KNOCKOUT' } } })).toBe(0);
+  });
+
+  it('stops when the real knockout exists, or a group match has no time yet', async () => {
+    const { actor, t, event } = await hybrid();
+    const slot = await prisma.courtSlot.findFirstOrThrow({ where: { tournamentId: t.id } });
+    await prisma.courtSlot.delete({ where: { id: slot.id } });
+    expect(await expectedKnockout(t.id, 'en')).toEqual([]);
+    await proposeTournamentSchedule(actor, t.id, { mode: 'remaining' }, meta);
+    expect(await expectedKnockout(t.id, 'en')).toHaveLength(1);
+    await playAll(actor, event.id);
+    await createKnockoutFromGroups(actor, event.id, meta);
+    expect(await expectedKnockout(t.id, 'en')).toEqual([]);
+  });
+
+  it('can be switched off per tournament, by those who manage it', async () => {
+    const { actor, t } = await hybrid();
+    const nosy = await createPlayer();
+    const outsider = (await actorFromWebToken(
+      (await createWebSession(nosy.userId, meta, true)).token,
+    ))!;
+    await expect(setExpectedKnockout(outsider, t.id, false, meta)).rejects.toMatchObject({
+      code: 'notFound',
+    });
+    await setExpectedKnockout(actor, t.id, false, meta);
+    expect(await expectedKnockout(t.id, 'en')).toEqual([]);
+    expect(await prisma.auditLog.count({ where: { action: 'schedule.expectedKnockout' } })).toBe(1);
+    await setExpectedKnockout(actor, t.id, true, meta);
+    expect(await expectedKnockout(t.id, 'en')).toHaveLength(1);
+  });
+
+  it('shows players only their own categories, and only once the schedule is published', async () => {
+    const { actor, t, event, players } = await hybrid();
+    expect(await publicExpectedKnockout('utrecht-open', 'en')).toEqual([]);
+    expect(await expectedKnockoutOfPlayers([players[0]!.profile.id], 'en')).toEqual([]);
+    await publishSchedule(actor, t.id, true, meta);
+    expect(await publicExpectedKnockout('utrecht-open', 'en')).toHaveLength(1);
+    const mine = await expectedKnockoutOfPlayers([players[0]!.profile.id], 'en');
+    expect(mine).toMatchObject([
+      { tournament: { slug: 'utrecht-open' }, categories: [{ eventId: event.id }] },
+    ]);
+    // Someone who plays elsewhere sees nothing.
+    const other = await createPlayer();
+    const profile = await prisma.playerProfile.findUniqueOrThrow({
+      where: { userId: other.userId },
+    });
+    expect(await expectedKnockoutOfPlayers([profile.id], 'en')).toEqual([]);
   });
 });

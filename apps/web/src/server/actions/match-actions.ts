@@ -33,6 +33,7 @@ import {
   waiveShare,
 } from '../services/payment-service';
 import { moveEvent } from '../services/event-service';
+import { setExpectedKnockout } from '../services/expected-knockout-service';
 import { cancelEntryAsOrganiser, restoreRegistration } from '../services/registration-service';
 
 async function actorOrThrow() {
@@ -337,6 +338,13 @@ export async function quickMoveEventAction(
 ) {
   return quick(async () =>
     moveEvent(await actorOrThrow(), tournamentId, eventId, direction, await currentRequestMeta()),
+  );
+}
+
+/** Shows or hides the expected knockout rounds on the schedule (D121). */
+export async function quickExpectedKnockoutAction(tournamentId: string, on: boolean) {
+  return quick(async () =>
+    setExpectedKnockout(await actorOrThrow(), tournamentId, on, await currentRequestMeta()),
   );
 }
 

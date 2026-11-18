@@ -15,8 +15,10 @@ import { getMyAccount } from '@/server/services/profile-service';
 import { followedMatches, listFollowing } from '@/server/services/public-service';
 import { listMyInvites, listMyRegistrations } from '@/server/services/registration-service';
 import { HistoryList } from '@/components/matches/history-list';
+import { ExpectedKnockoutLines } from '@/components/matches/expected-knockout';
 import { MatchesByDay } from '@/components/matches/matches-by-day';
 import { myHistory } from '@/server/services/results-service';
+import { myExpectedKnockout } from '@/server/services/expected-knockout-service';
 import { myMatches } from '@/server/services/schedule-service';
 import { PlayerList } from '@/components/public/player-list';
 
@@ -255,11 +257,12 @@ async function MySchedule({
   actor: Parameters<typeof myMatches>[0];
   locale: AppLocale;
 }) {
-  const [mine, followed] = await Promise.all([
+  const [mine, followed, expected] = await Promise.all([
     myMatches(actor).then((all) =>
       all.filter((m) => !['COMPLETED', 'WALKOVER', 'RETIRED'].includes(m.status)),
     ),
     followedMatches(actor),
+    myExpectedKnockout(actor, locale),
   ]);
   const t = await getTranslations('Dashboard');
   return (
@@ -274,6 +277,7 @@ async function MySchedule({
           <p className="text-muted-foreground">{t('scheduleMineEmpty')}</p>
         )}
       </section>
+      <ExpectedKnockoutLines tournaments={expected} locale={locale} />
       {followed.length > 0 && (
         <section aria-labelledby="followed-matches" className="space-y-4">
           <h2 id="followed-matches" className="font-heading text-lg font-semibold">

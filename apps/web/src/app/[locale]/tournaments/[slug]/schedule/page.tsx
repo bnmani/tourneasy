@@ -5,12 +5,14 @@ import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { AutoRefresh } from '@/components/matches/auto-refresh';
 import { LiveMatches } from '@/components/matches/live-matches';
+import { ExpectedKnockoutList } from '@/components/matches/expected-knockout';
 import { MatchLine } from '@/components/matches/match-line';
 import { PageHero } from '@/components/public/ui';
 import { Link } from '@/i18n/navigation';
 import { pageLocale } from '@/lib/page';
 import { pageMetadata } from '@/lib/seo';
 import { isAppError } from '@/server/lib/errors';
+import { publicExpectedKnockout } from '@/server/services/expected-knockout-service';
 import { getPublicTournament } from '@/server/services/public-service';
 import { publicSchedule } from '@/server/services/schedule-service';
 
@@ -38,6 +40,8 @@ export default async function TournamentSchedulePage({ params }: Props) {
   });
   if (!tournament) notFound();
   const schedule = await publicSchedule(slug, locale);
+  // Only with a published schedule: the knockout rounds that follow the group stage (D121).
+  const expected = schedule.published ? await publicExpectedKnockout(slug, locale) : [];
   const t = await getTranslations('Matches');
   const days = [
     ...new Set(schedule.items.map((i) => utcToAmsterdamLocal(i.startsAt!).slice(0, 10))),
@@ -106,6 +110,11 @@ export default async function TournamentSchedulePage({ params }: Props) {
             );
           })
         )}
+        <ExpectedKnockoutList
+          categories={expected}
+          locale={locale}
+          showDay={tournament.startsOn !== tournament.endsOn}
+        />
         {schedule.published && schedule.unplanned.length > 0 && (
           <section className="space-y-3">
             <h2 className="font-heading text-xl font-semibold">{t('unplannedTitle')}</h2>

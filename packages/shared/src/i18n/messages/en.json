@@ -1187,7 +1187,12 @@
       "exportXlsx": "Schedule (Excel)",
       "exportCourts": "Per court (PDF)",
       "playedUnplanned": "{count, plural, one {# match played without time or court} other {# matches played without time or court}}",
-      "playedUnplannedHint": "Played or in progress without a place in the planning. They are also in the exports and on the public schedule, under \"Without time or court\"."
+      "playedUnplannedHint": "Played or in progress without a place in the planning. They are also in the exports and on the public schedule, under \"Without time or court\".",
+      "expectedHide": "Hide expected knockout rounds",
+      "expectedShow": "Show expected knockout rounds",
+      "expectedHint": "The schedule shows when the knockout rounds are expected, after each category's group stage. Players see this on the public schedule and on My schedule.",
+      "expectedOn": "Expected knockout rounds are shown.",
+      "expectedOff": "Expected knockout rounds are hidden."
     },
     "desk": {
       "title": "Match desk",
@@ -2258,7 +2263,17 @@
     "exportPdf": "Schedule (PDF)",
     "exportXlsx": "Schedule (Excel)",
     "unplannedTitle": "Without time or court",
-    "unplannedIntro": "These matches don't have a fixed time and court (yet). Follow the match desk calls."
+    "unplannedIntro": "These matches don't have a fixed time and court (yet). Follow the match desk calls.",
+    "expectedTitle": "Expected knockout rounds",
+    "expectedIntro": "Expected, not fixed: the knockout rounds follow once a category's group stage is finished, so these times move if the groups run late. The real matches replace these rows when they are made.",
+    "expectedFrom": "expected from {time}",
+    "expectedVs": "{a} vs {b}",
+    "expectedWinners": "Winners of the round before",
+    "expectedGroupWinner": "group winner",
+    "expectedRunnerUp": "runner-up",
+    "expectedMineTitle": "Expected knockout rounds",
+    "expectedRoundFrom": "{name} expected from {time}",
+    "expectedMineHint": "Only if you qualify from the group stage. Times can move if the groups run late."
   },
   "Notifications": {
     "title": "Email preferences",
