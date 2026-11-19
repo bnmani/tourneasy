@@ -168,22 +168,29 @@ async function loadTournament(tournamentId: string) {
 }
 type TournamentRow = Awaited<ReturnType<typeof loadTournament>>;
 
-/** The tournament's courts (created for the venue on first use). */
+/**
+ * The tournament's courts (created for the venue on first use). One read when they all exist,
+ * which is nearly always: this runs on every schedule page load (D124).
+ */
 async function ensureCourts(tx: Tx | typeof prisma, t: TournamentRow) {
   if (!t.venue) throw new AppError('noVenue');
   const count = t.courtsAvailable ?? t.venue.numberOfCourts;
-  for (let n = 1; n <= count; n++) {
-    await tx.court.upsert({
-      where: { venueId_number: { venueId: t.venue.id, number: n } },
-      create: { venueId: t.venue.id, number: n },
-      update: {},
+  const find = () =>
+    tx.court.findMany({
+      where: { venueId: t.venue!.id, number: { lte: count } },
+      orderBy: { number: 'asc' },
+      select: { id: true, number: true, name: true },
     });
-  }
-  return tx.court.findMany({
-    where: { venueId: t.venue.id, number: { lte: count } },
-    orderBy: { number: 'asc' },
-    select: { id: true, number: true, name: true },
+  const existing = await find();
+  if (existing.length >= count) return existing;
+  const have = new Set(existing.map((c) => c.number));
+  await tx.court.createMany({
+    data: Array.from({ length: count }, (_, i) => i + 1)
+      .filter((n) => !have.has(n))
+      .map((number) => ({ venueId: t.venue!.id, number })),
+    skipDuplicates: true,
   });
+  return find();
 }
 
 /** Playing days in UTC: each tournament day from the start time to the end time (Dutch time). */
@@ -836,8 +843,9 @@ async function numbering(tournamentId: string): Promise<Numbering> {
 export async function getSchedule(actor: Actor, tournamentId: string, locale = actor.locale) {
   await assertCanManageTournament(actor, tournamentId);
   const t = await loadTournament(tournamentId);
-  const courts = t.venue ? await ensureCourts(prisma, t) : [];
-  const [matches, feeders] = await Promise.all([
+  // Independent reads, together: the wait is the slowest one, not the sum (D124).
+  const [courts, matches, feeders] = await Promise.all([
+    t.venue ? ensureCourts(prisma, t) : Promise.resolve([]),
     tournamentMatches(tournamentId),
     numbering(tournamentId),
   ]);

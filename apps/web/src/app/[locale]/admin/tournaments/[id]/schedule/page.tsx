@@ -1,4 +1,5 @@
 import { formatDate, formatTime, utcToAmsterdamLocal } from '@tourneasy/shared';
+import type { AppLocale } from '@tourneasy/shared/i18n';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
@@ -18,6 +19,8 @@ import {
 } from '@/server/actions/match-actions';
 import { requirePortal } from '@/server/auth/web';
 import { isAppError } from '@/server/lib/errors';
+import { Suspense } from 'react';
+import { SwapMatch, SwapOptionsProvider } from '@/components/admin/swap-match';
 import { ExpectedKnockoutList } from '@/components/matches/expected-knockout';
 import { QuickButton } from '@/components/desk/quick-buttons';
 import { quickExpectedKnockoutAction } from '@/server/actions/match-actions';
@@ -50,18 +53,22 @@ export default async function SchedulePage({ params, searchParams }: Props) {
   const { tournament, courts, days, scheduled, unscheduled, playedUnplanned, conflictIds } =
     schedule;
   const published = !!tournament.schedulePublishedAt;
-  const [expectedOn, expected] = await Promise.all([
-    isExpectedKnockoutOn(id),
-    expectedKnockout(id, locale),
-  ]);
+  const expectedOn = await isExpectedKnockoutOn(id);
   const byDay = days.map((d) => ({
     ...d,
     items: scheduled.filter((s) => utcToAmsterdamLocal(s.startsAt!).slice(0, 10) === d.date),
   }));
   const allItems = [...scheduled, ...unscheduled, ...playedUnplanned];
+  // Once for the page, not once per card (D124).
+  const swapOptions = scheduled
+    .filter((o) => o.status === 'SCHEDULED')
+    .map((o) => ({
+      id: o.id,
+      label: `#${o.number} · ${formatTime(o.startsAt!, locale)} · ${o.event}`,
+    }));
 
   return (
-    <>
+    <SwapOptionsProvider options={swapOptions}>
       <PageHeader
         title={ts('heading', { tournament: tournament.name })}
         intro={ts('intro')}
@@ -240,27 +247,12 @@ export default async function SchedulePage({ params, searchParams }: Props) {
                                   {ts('move')}
                                 </Button>
                               </form>
-                              <form
+                              <SwapMatch
+                                itemId={item.id}
                                 action={swapMatchAction.bind(null, locale, id, item.id)}
-                                className="mt-2 flex flex-wrap items-end gap-2"
-                              >
-                                <select
-                                  name="other"
-                                  aria-label={ts('swapWith')}
-                                  className={cn(filterInputClass, 'sm:w-auto')}
-                                >
-                                  {scheduled
-                                    .filter((o) => o.id !== item.id && o.status === 'SCHEDULED')
-                                    .map((o) => (
-                                      <option key={o.id} value={o.id}>
-                                        #{o.number} · {formatTime(o.startsAt!, locale)} · {o.event}
-                                      </option>
-                                    ))}
-                                </select>
-                                <Button type="submit" size="sm" variant="outline">
-                                  {ts('swap')}
-                                </Button>
-                              </form>
+                                labels={{ summary: ts('swapWith'), button: ts('swap') }}
+                                selectClassName={cn(filterInputClass, 'sm:w-auto')}
+                              />
                               <form
                                 action={unscheduleMatchAction.bind(null, locale, id, item.id)}
                                 className="mt-2"
@@ -310,12 +302,34 @@ export default async function SchedulePage({ params, searchParams }: Props) {
           {expectedOn ? ts('expectedHide') : ts('expectedShow')}
         </QuickButton>
       </section>
-      <ExpectedKnockoutList
-        categories={expected}
-        locale={locale}
-        showDay={tournament.startsOn.getTime() !== tournament.endsOn.getTime()}
-      />
+      <Suspense
+        fallback={
+          <p role="status" className="text-sm text-muted-foreground">
+            {ts('expectedLoading')}
+          </p>
+        }
+      >
+        <ExpectedSection
+          tournamentId={id}
+          locale={locale}
+          showDay={tournament.startsOn.getTime() !== tournament.endsOn.getTime()}
+        />
+      </Suspense>
       {allItems.length === 0 && <p className="text-muted-foreground">{ts('empty')}</p>}
-    </>
+    </SwapOptionsProvider>
   );
+}
+
+/** The expected knockout rounds load after the schedule, so the page itself opens first (D124). */
+async function ExpectedSection({
+  tournamentId,
+  locale,
+  showDay,
+}: {
+  tournamentId: string;
+  locale: AppLocale;
+  showDay: boolean;
+}) {
+  const expected = await expectedKnockout(tournamentId, locale);
+  return <ExpectedKnockoutList categories={expected} locale={locale} showDay={showDay} />;
 }

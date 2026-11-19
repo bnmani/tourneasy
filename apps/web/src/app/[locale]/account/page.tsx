@@ -4,6 +4,7 @@ import type { AppLocale } from '@tourneasy/shared/i18n';
 import type { Metadata } from 'next';
 import { ChevronDown } from 'lucide-react';
 import { getTranslations } from 'next-intl/server';
+import { Suspense } from 'react';
 import { MyEntries, MyInvites } from '@/components/entry/my-entries';
 import { FormError, FormSuccess } from '@/components/forms/fields';
 import { Button } from '@/components/ui/button';
@@ -257,12 +258,11 @@ async function MySchedule({
   actor: Parameters<typeof myMatches>[0];
   locale: AppLocale;
 }) {
-  const [mine, followed, expected] = await Promise.all([
+  const [mine, followed] = await Promise.all([
     myMatches(actor).then((all) =>
       all.filter((m) => !['COMPLETED', 'WALKOVER', 'RETIRED'].includes(m.status)),
     ),
     followedMatches(actor),
-    myExpectedKnockout(actor, locale),
   ]);
   const t = await getTranslations('Dashboard');
   return (
@@ -277,7 +277,9 @@ async function MySchedule({
           <p className="text-muted-foreground">{t('scheduleMineEmpty')}</p>
         )}
       </section>
-      <ExpectedKnockoutLines tournaments={expected} locale={locale} />
+      <Suspense fallback={null}>
+        <MyExpectedKnockout actor={actor} locale={locale} />
+      </Suspense>
       {followed.length > 0 && (
         <section aria-labelledby="followed-matches" className="space-y-4">
           <h2 id="followed-matches" className="font-heading text-lg font-semibold">
@@ -317,4 +319,16 @@ async function MyHistory({
       <HistoryList rows={rows} locale={locale} />
     </section>
   );
+}
+
+/** Loads after the matches, so My schedule opens first (D124). */
+async function MyExpectedKnockout({
+  actor,
+  locale,
+}: {
+  actor: Parameters<typeof myMatches>[0];
+  locale: AppLocale;
+}) {
+  const expected = await myExpectedKnockout(actor, locale);
+  return <ExpectedKnockoutLines tournaments={expected} locale={locale} />;
 }

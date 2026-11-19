@@ -1192,7 +1192,8 @@
       "expectedShow": "Verwachte knock-outrondes tonen",
       "expectedHint": "Het schema toont wanneer de knock-outrondes verwacht worden, na de poulefase van elke categorie. Spelers zien dit op het openbare schema en bij Mijn schema.",
       "expectedOn": "Verwachte knock-outrondes worden getoond.",
-      "expectedOff": "Verwachte knock-outrondes zijn verborgen."
+      "expectedOff": "Verwachte knock-outrondes zijn verborgen.",
+      "expectedLoading": "Verwachte knock-outrondes worden berekend…"
     },
     "desk": {
       "title": "Wedstrijdtafel",

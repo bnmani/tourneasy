@@ -1192,7 +1192,8 @@
       "expectedShow": "Show expected knockout rounds",
       "expectedHint": "The schedule shows when the knockout rounds are expected, after each category's group stage. Players see this on the public schedule and on My schedule.",
       "expectedOn": "Expected knockout rounds are shown.",
-      "expectedOff": "Expected knockout rounds are hidden."
+      "expectedOff": "Expected knockout rounds are hidden.",
+      "expectedLoading": "Working out the expected knockout rounds…"
     },
     "desk": {
       "title": "Match desk",

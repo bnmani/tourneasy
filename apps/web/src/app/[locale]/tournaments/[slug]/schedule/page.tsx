@@ -2,6 +2,7 @@ import { formatDate, formatTime, utcToAmsterdamLocal } from '@tourneasy/shared';
 import type { Metadata } from 'next';
 import { ExportMenu } from '@/components/export-menu';
 import { notFound } from 'next/navigation';
+import { Suspense } from 'react';
 import { getTranslations } from 'next-intl/server';
 import { AutoRefresh } from '@/components/matches/auto-refresh';
 import { LiveMatches } from '@/components/matches/live-matches';
@@ -10,6 +11,7 @@ import { MatchLine } from '@/components/matches/match-line';
 import { PageHero } from '@/components/public/ui';
 import { Link } from '@/i18n/navigation';
 import { pageLocale } from '@/lib/page';
+import type { AppLocale } from '@tourneasy/shared/i18n';
 import { pageMetadata } from '@/lib/seo';
 import { isAppError } from '@/server/lib/errors';
 import { publicExpectedKnockout } from '@/server/services/expected-knockout-service';
@@ -40,8 +42,6 @@ export default async function TournamentSchedulePage({ params }: Props) {
   });
   if (!tournament) notFound();
   const schedule = await publicSchedule(slug, locale);
-  // Only with a published schedule: the knockout rounds that follow the group stage (D121).
-  const expected = schedule.published ? await publicExpectedKnockout(slug, locale) : [];
   const t = await getTranslations('Matches');
   const days = [
     ...new Set(schedule.items.map((i) => utcToAmsterdamLocal(i.startsAt!).slice(0, 10))),
@@ -110,11 +110,16 @@ export default async function TournamentSchedulePage({ params }: Props) {
             );
           })
         )}
-        <ExpectedKnockoutList
-          categories={expected}
-          locale={locale}
-          showDay={tournament.startsOn !== tournament.endsOn}
-        />
+        {schedule.published && (
+          // The knockout rounds after the group stage (D121) load after the schedule (D124).
+          <Suspense fallback={null}>
+            <ExpectedSection
+              slug={slug}
+              locale={locale}
+              showDay={tournament.startsOn !== tournament.endsOn}
+            />
+          </Suspense>
+        )}
         {schedule.published && schedule.unplanned.length > 0 && (
           <section className="space-y-3">
             <h2 className="font-heading text-xl font-semibold">{t('unplannedTitle')}</h2>
@@ -129,4 +134,17 @@ export default async function TournamentSchedulePage({ params }: Props) {
       </div>
     </>
   );
+}
+
+async function ExpectedSection({
+  slug,
+  locale,
+  showDay,
+}: {
+  slug: string;
+  locale: AppLocale;
+  showDay: boolean;
+}) {
+  const expected = await publicExpectedKnockout(slug, locale);
+  return <ExpectedKnockoutList categories={expected} locale={locale} showDay={showDay} />;
 }

@@ -21,7 +21,9 @@ export default async function TournamentAdminLayout({
   const { id } = await params;
   const actor = await requirePortal(locale);
   if (!(await canManageTournament(actor, id))) notFound();
-  let tournaments = await managedTournaments(actor);
+  // Independent reads, together (D124).
+  const [listed, food] = await Promise.all([managedTournaments(actor), foodAllowed(id)]);
+  let tournaments = listed;
   // An archived (or very old) tournament isn't in the list: keep the one shown selectable.
   if (!tournaments.some((x) => x.id === id)) {
     const self = await prisma.tournament.findUnique({
@@ -35,7 +37,7 @@ export default async function TournamentAdminLayout({
     <div className="space-y-6">
       <TournamentBar
         current={id}
-        food={await foodAllowed(id)}
+        food={food}
         tournaments={tournaments.map((x) => ({
           id: x.id,
           name: x.name,
