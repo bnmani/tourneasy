@@ -983,90 +983,104 @@ export async function paymentsOverview(actor: Actor, filters: PaymentFilters = {
     ...(filters.status ? { status: filters.status } : { status: { not: 'EXPIRED' } }),
   };
   const tournamentWhere = filters.tournamentId ? { tournamentId: filters.tournamentId } : {};
-  const [orderRows, paid, refunded, outstanding, refundRequests, foodByStatus, inProgress] =
-    await Promise.all([
-      prisma.order.findMany({
-        where,
-        orderBy: { createdAt: 'desc' },
-        take: 5000,
-        select: overviewOrderSelect,
-      }),
-      prisma.payment.aggregate({
-        where: { status: 'SUCCEEDED', order: tournamentWhere },
-        _sum: { amountCents: true },
-      }),
-      prisma.refund.aggregate({
-        where: { status: 'SUCCEEDED', payment: { order: tournamentWhere } },
-        _sum: { amountCents: true },
-      }),
-      prisma.registrationParticipant.findMany({
-        where: {
-          active: true,
-          paymentStatus: 'UNPAID',
-          registration: {
-            status: { in: ['PENDING', 'CONFIRMED'] },
-            event: {
-              feeCents: { gt: 0 },
-              ...(filters.tournamentId ? { tournamentId: filters.tournamentId } : {}),
-            },
+  const [
+    orderRows,
+    paid,
+    refunded,
+    outstanding,
+    refundRequests,
+    foodByStatus,
+    inProgress,
+    foodAtPickup,
+  ] = await Promise.all([
+    prisma.order.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      take: 5000,
+      select: overviewOrderSelect,
+    }),
+    prisma.payment.aggregate({
+      where: { status: 'SUCCEEDED', order: tournamentWhere },
+      _sum: { amountCents: true },
+    }),
+    prisma.refund.aggregate({
+      where: { status: 'SUCCEEDED', payment: { order: tournamentWhere } },
+      _sum: { amountCents: true },
+    }),
+    prisma.registrationParticipant.findMany({
+      where: {
+        active: true,
+        paymentStatus: 'UNPAID',
+        registration: {
+          status: { in: ['PENDING', 'CONFIRMED'] },
+          event: {
+            feeCents: { gt: 0 },
+            ...(filters.tournamentId ? { tournamentId: filters.tournamentId } : {}),
           },
         },
-        select: shareSelect,
-      }),
-      prisma.refund.findMany({
-        where: { status: 'REQUESTED', payment: { order: tournamentWhere } },
-        orderBy: { createdAt: 'asc' },
-        select: {
-          id: true,
-          amountCents: true,
-          reason: true,
-          createdAt: true,
-          payment: {
-            select: {
-              method: true,
-              order: {
-                select: {
-                  orderNumber: true,
-                  user: { select: { name: true, email: true } },
-                  tournament: { select: { name: true } },
-                },
+      },
+      select: shareSelect,
+    }),
+    prisma.refund.findMany({
+      where: { status: 'REQUESTED', payment: { order: tournamentWhere } },
+      orderBy: { createdAt: 'asc' },
+      select: {
+        id: true,
+        amountCents: true,
+        reason: true,
+        createdAt: true,
+        payment: {
+          select: {
+            method: true,
+            order: {
+              select: {
+                orderNumber: true,
+                user: { select: { name: true, email: true } },
+                tournament: { select: { name: true } },
               },
             },
           },
-          orderItem: { select: refundItemSelect },
         },
-      }),
-      // Food money counts in the tournament's totals too (D133).
-      prisma.foodOrder.groupBy({
-        by: ['status'],
-        where: tournamentWhere,
-        _sum: { totalCents: true },
-      }),
-      // Approved refunds the bank has not finished yet (D134).
-      prisma.refund.findMany({
-        where: { status: { in: ['APPROVED', 'PENDING'] }, payment: { order: tournamentWhere } },
-        orderBy: { createdAt: 'asc' },
-        select: {
-          id: true,
-          amountCents: true,
-          status: true,
-          reason: true,
-          processedAt: true,
-          payment: {
-            select: {
-              order: {
-                select: {
-                  orderNumber: true,
-                  user: { select: { name: true } },
-                  tournament: { select: { name: true } },
-                },
+        orderItem: { select: refundItemSelect },
+      },
+    }),
+    // Food money counts in the tournament's totals too (D133).
+    prisma.foodOrder.groupBy({
+      by: ['status'],
+      where: tournamentWhere,
+      _sum: { totalCents: true },
+    }),
+    // Approved refunds the bank has not finished yet (D134).
+    prisma.refund.findMany({
+      where: { status: { in: ['APPROVED', 'PENDING'] }, payment: { order: tournamentWhere } },
+      orderBy: { createdAt: 'asc' },
+      select: {
+        id: true,
+        amountCents: true,
+        status: true,
+        reason: true,
+        processedAt: true,
+        payment: {
+          select: {
+            order: {
+              select: {
+                orderNumber: true,
+                user: { select: { name: true } },
+                tournament: { select: { name: true } },
               },
             },
           },
-          orderItem: { select: refundItemSelect },
         },
-      }),
-    ]);
+        orderItem: { select: refundItemSelect },
+      },
+    }),
+    // Food to pay at pickup: orders with no online payment started. An online checkout
+    // that was never finished is not money owed (D136).
+    prisma.foodOrder.aggregate({
+      where: { ...tournamentWhere, status: 'PENDING', stripePaymentIntentId: null },
+      _sum: { totalCents: true },
+    }),
+  ]);
   const foodSum = (status: string) =>
     foodByStatus.find((f) => f.status === status)?._sum.totalCents ?? 0;
   // Paid food orders, and refunded ones (they were paid online first); at-pickup orders that
@@ -1140,7 +1154,7 @@ export async function paymentsOverview(actor: Actor, filters: PaymentFilters = {
       feesRefundedCents,
       foodPaidCents,
       foodRefundedCents,
-      foodPendingCents: foodSum('PENDING'),
+      foodPendingCents: foodAtPickup._sum.totalCents ?? 0,
       refundsInProgressCents: inProgress.reduce((n, r) => n + r.amountCents, 0),
       waivedCents:
         (discounts._sum.discountCents ?? 0) + waivedShares.reduce((n, w) => n + w.waivedCents, 0),

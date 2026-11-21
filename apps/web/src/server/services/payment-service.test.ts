@@ -384,6 +384,17 @@ describe('food in the tournament totals (D133)', () => {
     await order(1, 'PAID', 600);
     await order(2, 'REFUNDED', 400);
     await order(3, 'PENDING', 300);
+    // An online checkout that was never finished is not owed at pickup.
+    await prisma.foodOrder.create({
+      data: {
+        orderNumber: 'F-5',
+        tournamentId: t.id,
+        userId: admin.userId,
+        status: 'PENDING',
+        totalCents: 700,
+        stripePaymentIntentId: 'pi_unfinished',
+      },
+    });
     await order(4, 'CANCELLED', 200);
     const { totals } = await paymentsOverview(admin.actor, { tournamentId: t.id });
     // The export has the food orders as rows too, and a column for refunds on their way.
