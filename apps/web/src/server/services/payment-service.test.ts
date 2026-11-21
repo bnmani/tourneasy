@@ -350,6 +350,54 @@ describe('payments per player (D109)', () => {
   });
 });
 
+describe('food in the tournament totals (D133)', () => {
+  it('counts paid food as received and refunded food as refunded, with the net', async () => {
+    setGatewayForTests(null);
+    const t = await tournament();
+    const de = await event(t.id, 'DE');
+    const anna = await player({ gender: 'FEMALE' });
+    const entered = await enter(anna.actor, [{ eventId: de.id }]);
+    const admin = await player({}, Role.ADMIN);
+    await markShareAsPaid(
+      admin.actor,
+      { participantId: entered.registrations[0]!.participantId! },
+      meta,
+      NOW,
+    );
+    const before = await paymentsOverview(admin.actor, { tournamentId: t.id });
+    const fees = before.totals.paidCents;
+    expect(fees).toBeGreaterThan(0);
+    const order = (
+      n: number,
+      status: 'PAID' | 'REFUNDED' | 'PENDING' | 'CANCELLED',
+      cents: number,
+    ) =>
+      prisma.foodOrder.create({
+        data: {
+          orderNumber: `F-${n}`,
+          tournamentId: t.id,
+          userId: admin.userId,
+          status,
+          totalCents: cents,
+        },
+      });
+    await order(1, 'PAID', 600);
+    await order(2, 'REFUNDED', 400);
+    await order(3, 'PENDING', 300);
+    await order(4, 'CANCELLED', 200);
+    const { totals } = await paymentsOverview(admin.actor, { tournamentId: t.id });
+    expect(totals).toMatchObject({
+      feesPaidCents: fees,
+      foodPaidCents: 1000,
+      foodRefundedCents: 400,
+      foodPendingCents: 300,
+      paidCents: fees + 1000,
+      refundedCents: 400,
+      netCents: fees + 600,
+    });
+  });
+});
+
 describe('waivers and discount codes (D111)', () => {
   it('lets the owner waive and undo; counts it under Waived', async () => {
     setGatewayForTests(null);

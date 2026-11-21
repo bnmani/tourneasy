@@ -973,7 +973,7 @@ export async function paymentsOverview(actor: Actor, filters: PaymentFilters = {
     ...(filters.status ? { status: filters.status } : { status: { not: 'EXPIRED' } }),
   };
   const tournamentWhere = filters.tournamentId ? { tournamentId: filters.tournamentId } : {};
-  const [orderRows, paid, refunded, outstanding, refundRequests] = await Promise.all([
+  const [orderRows, paid, refunded, outstanding, refundRequests, foodByStatus] = await Promise.all([
     prisma.order.findMany({
       where,
       orderBy: { createdAt: 'desc' },
@@ -1025,7 +1025,21 @@ export async function paymentsOverview(actor: Actor, filters: PaymentFilters = {
         orderItem: { select: refundItemSelect },
       },
     }),
+    // Food money counts in the tournament's totals too (D133).
+    prisma.foodOrder.groupBy({
+      by: ['status'],
+      where: tournamentWhere,
+      _sum: { totalCents: true },
+    }),
   ]);
+  const foodSum = (status: string) =>
+    foodByStatus.find((f) => f.status === status)?._sum.totalCents ?? 0;
+  // Paid food orders, and refunded ones (they were paid online first); at-pickup orders that
+  // are not paid yet are shown apart.
+  const foodPaidCents = foodSum('PAID') + foodSum('REFUNDED');
+  const foodRefundedCents = foodSum('REFUNDED');
+  const feesPaidCents = paid._sum.amountCents ?? 0;
+  const feesRefundedCents = refunded._sum.amountCents ?? 0;
   const [discounts, waivedShares] = await Promise.all([
     prisma.order.aggregate({
       where: { ...tournamentWhere, status: { in: MONEY_IN }, discountCents: { gt: 0 } },
@@ -1083,8 +1097,15 @@ export async function paymentsOverview(actor: Actor, filters: PaymentFilters = {
     view: filters.view ?? null,
     pages: Math.max(1, Math.ceil(total / size)),
     totals: {
-      paidCents: paid._sum.amountCents ?? 0,
-      refundedCents: refunded._sum.amountCents ?? 0,
+      // Entry fees and food together: the tournament's money in and out (D133).
+      paidCents: feesPaidCents + foodPaidCents,
+      refundedCents: feesRefundedCents + foodRefundedCents,
+      netCents: feesPaidCents + foodPaidCents - feesRefundedCents - foodRefundedCents,
+      feesPaidCents,
+      feesRefundedCents,
+      foodPaidCents,
+      foodRefundedCents,
+      foodPendingCents: foodSum('PENDING'),
       waivedCents:
         (discounts._sum.discountCents ?? 0) + waivedShares.reduce((n, w) => n + w.waivedCents, 0),
       outstandingCents: await outstandingTotal(outstanding),

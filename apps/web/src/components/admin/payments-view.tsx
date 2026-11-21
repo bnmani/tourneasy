@@ -70,13 +70,29 @@ export async function PaymentsView({
       <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {(
           [
-            { view: 'paid', label: tp('received'), value: overview.totals.paidCents },
-            { view: 'refunded', label: tp('refunded'), value: overview.totals.refundedCents },
-            { view: 'waived', label: tp('waived'), value: overview.totals.waivedCents },
+            {
+              view: 'paid',
+              label: tp('received'),
+              value: overview.totals.paidCents,
+              parts: [overview.totals.feesPaidCents, overview.totals.foodPaidCents],
+            },
+            {
+              view: 'refunded',
+              label: tp('refunded'),
+              value: overview.totals.refundedCents,
+              parts: [overview.totals.feesRefundedCents, overview.totals.foodRefundedCents],
+            },
+            {
+              view: 'waived',
+              label: tp('waived'),
+              value: overview.totals.waivedCents,
+              parts: null,
+            },
             {
               view: 'outstanding',
               label: tp('outstanding', { count: overview.totals.outstandingShares }),
               value: overview.totals.outstandingCents,
+              parts: null,
             },
           ] as const
         ).map((card) => {
@@ -95,11 +111,27 @@ export async function PaymentsView({
                 <span className="mt-1 block font-heading text-2xl font-bold">
                   {euro(card.value)}
                 </span>
+                {card.parts && (
+                  <span className="mt-1 block text-xs text-muted-foreground">
+                    {tp('partFees', { amount: euro(card.parts[0]) })} ·{' '}
+                    {tp('partFood', { amount: euro(card.parts[1]) })}
+                  </span>
+                )}
               </Link>
             </li>
           );
         })}
       </ul>
+      <p className="text-sm">
+        <span className="font-semibold">{tp('net')}: </span>
+        {euro(overview.totals.netCents)}
+        {overview.totals.foodPendingCents > 0 && (
+          <span className="text-muted-foreground">
+            {' '}
+            · {tp('foodPending', { amount: euro(overview.totals.foodPendingCents) })}
+          </span>
+        )}
+      </p>
       {overview.view && (
         <p className="text-sm text-muted-foreground">
           {tp(`showing.${overview.view}`)}{' '}
