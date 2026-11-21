@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils';
 import {
   knockoutStageAction,
   quickCheckInAction,
+  quickPlaceAndStartAction,
   quickStartMatchAction,
   quickUnstartMatchAction,
   removeStageAction,
@@ -22,16 +23,16 @@ import {
 } from '@/server/actions/match-actions';
 import { requirePortal } from '@/server/auth/web';
 import { CheckInList } from '@/components/desk/check-in-list';
-import { CheckInToggle, QuickButton } from '@/components/desk/quick-buttons';
+import { CheckInToggle, QuickButton, QuickPlaceAction } from '@/components/desk/quick-buttons';
 import { AutoRefresh } from '@/components/matches/auto-refresh';
 import { amsterdamDay, checkInList } from '@/server/services/checkin-service';
 import type { Actor } from '@/server/services/session-service';
-import { formatDate, formatEuro, formatTime } from '@tourneasy/shared';
+import { formatDate, formatEuro, formatTime, utcToAmsterdamLocal } from '@tourneasy/shared';
 import type { AppLocale } from '@tourneasy/shared/i18n';
 import { isAppError } from '@/server/lib/errors';
 import { drawOverview } from '@/server/services/draw-service';
 import { stageStatus } from '@/server/services/results-service';
-import { deskMatches } from '@/server/services/schedule-service';
+import { deskCourts, deskMatches } from '@/server/services/schedule-service';
 
 type Props = { params: Promise<{ locale: string; id: string }>; searchParams: SearchParams };
 const VIEWS = ['checkin', 'now', 'next', 'open', 'done'] as const;
@@ -70,6 +71,10 @@ export default async function DeskPage({ params, searchParams }: Props) {
       .map(async (e) => ({ ...e, ...(await stageStatus(e.id)) })),
   );
   const td = await getTranslations('Admin.desk');
+  // Courts and a starting time for matches that still need a court (D126): the next 5-minute mark.
+  const courts = await deskCourts(actor, id);
+  // eslint-disable-next-line react-hooks/purity
+  const defaultStart = utcToAmsterdamLocal(new Date(Math.ceil(Date.now() / 300_000) * 300_000));
   // After a refused score, refill what was typed for that match.
   const [enteredId, enteredGames] = (firstParam(query.entered) ?? '').split('~');
   const refill =
@@ -282,15 +287,27 @@ export default async function DeskPage({ params, searchParams }: Props) {
                         })}
                       </p>
                     )}
-                    {item.status === 'SCHEDULED' && (
-                      <QuickButton
-                        size="sm"
-                        variant="outline"
-                        action={quickStartMatchAction.bind(null, item.id)}
-                      >
-                        {td('onCourt')}
-                      </QuickButton>
-                    )}
+                    {item.status === 'SCHEDULED' &&
+                      (item.court ? (
+                        <QuickButton
+                          size="sm"
+                          variant="outline"
+                          action={quickStartMatchAction.bind(null, item.id)}
+                        >
+                          {td('onCourt')}
+                        </QuickButton>
+                      ) : (
+                        <QuickPlaceAction
+                          courts={courts}
+                          defaultStart={defaultStart}
+                          action={(courtId, startsAt) =>
+                            quickPlaceAndStartAction(item.id, courtId, startsAt)
+                          }
+                          label={td('onCourt')}
+                          labels={{ court: td('courtLabel'), time: td('timeLabel') }}
+                          courtNumber={(n) => td('courtNumber', { number: n })}
+                        />
+                      ))}
                     {item.status === 'IN_PROGRESS' && item.sets.length === 0 && (
                       // On court by mistake: back to waiting while no score is in (D99).
                       <QuickButton

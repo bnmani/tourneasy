@@ -191,3 +191,67 @@ export function QuickTextAction({
     </form>
   );
 }
+
+/**
+ * Desk (D126): a waiting match with no court yet. Choose the court and time, then it goes on
+ * court straight away, so a match can't start without a court.
+ */
+export function QuickPlaceAction({
+  courts,
+  defaultStart,
+  action,
+  label,
+  labels,
+  courtNumber,
+}: {
+  courts: { id: string; number: number }[];
+  defaultStart: string;
+  action: (courtId: string, startsAt: string) => Promise<QuickResult>;
+  label: string;
+  labels: { court: string; time: string };
+  courtNumber: (n: number) => string;
+}) {
+  const [courtId, setCourtId] = useState(courts[0]?.id ?? '');
+  const [startsAt, setStartsAt] = useState(defaultStart);
+  const { error, pending, run } = useQuick();
+  return (
+    <form
+      className="space-y-1"
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (!courtId || !startsAt) return;
+        run(() => action(courtId, startsAt));
+      }}
+    >
+      <div className="flex flex-wrap items-end gap-2 text-xs">
+        <label className="flex flex-col gap-1">
+          <span className="text-muted-foreground">{labels.court}</span>
+          <select
+            value={courtId}
+            onChange={(e) => setCourtId(e.target.value)}
+            className="h-8 rounded-md border border-input bg-background px-2 text-base sm:text-xs"
+          >
+            {courts.map((c) => (
+              <option key={c.id} value={c.id}>
+                {courtNumber(c.number)}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="flex flex-col gap-1">
+          <span className="text-muted-foreground">{labels.time}</span>
+          <input
+            type="datetime-local"
+            value={startsAt}
+            onChange={(e) => setStartsAt(e.target.value)}
+            className="h-8 rounded-md border border-input bg-background px-2 text-base sm:text-xs"
+          />
+        </label>
+        <Button type="submit" size="sm" variant="outline" className="h-8" disabled={pending}>
+          {label}
+        </Button>
+      </div>
+      <ErrorLine error={error} />
+    </form>
+  );
+}

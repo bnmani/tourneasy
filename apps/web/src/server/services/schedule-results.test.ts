@@ -249,7 +249,7 @@ describe('results', () => {
 
   it('builds the knockout from the group tables', async () => {
     const actor = await admin();
-    const { event } = await setup('GROUPS_KNOCKOUT', 8, { groupSize: 4, advancePerGroup: 2 });
+    const { t, event } = await setup('GROUPS_KNOCKOUT', 8, { groupSize: 4, advancePerGroup: 2 });
     await generateDraw(actor, event.id, meta, seededRng(3));
     await publishDraws(actor, event.id, true, meta);
     await expect(createKnockoutFromGroups(actor, event.id, meta)).rejects.toMatchObject({
@@ -285,6 +285,8 @@ describe('results', () => {
     expect(await stageStatus(event.id)).toMatchObject({ canKnockout: true });
     await createKnockoutFromGroups(actor, event.id, meta);
 
+    // A match goes on court only with a court and time (D126).
+    await proposeTournamentSchedule(actor, t.id, { mode: 'remaining' }, meta);
     // A match put on court by mistake goes back to waiting while no score is in.
     const first = await prisma.match.findFirstOrThrow({
       where: {
@@ -878,5 +880,30 @@ describe('expected knockout rounds (D121)', () => {
       [2, 7],
       [3, 6],
     ]);
+  });
+});
+
+describe('start needs a court and time (D126)', () => {
+  it('refuses a match with no court, and starts it once it is placed', async () => {
+    const actor = await admin();
+    const { t, event } = await setup('ROUND_ROBIN', 4);
+    await generateDraw(actor, event.id, meta, seededRng(1));
+    await publishDraws(actor, event.id, true, meta);
+    await proposeTournamentSchedule(actor, t.id, {}, meta);
+    const match = await prisma.match.findFirstOrThrow({
+      where: { draw: { eventId: event.id } },
+    });
+    await unscheduleMatch(actor, match.id, meta);
+    await expect(startMatch(actor, match.id, meta)).rejects.toMatchObject({
+      code: 'matchNotScheduled',
+    });
+    const court = await prisma.court.findFirstOrThrow({
+      where: { venue: { tournaments: { some: { id: t.id } } }, number: 2 },
+    });
+    await moveMatch(actor, match.id, { courtId: court.id, startsAt: '2027-03-13T16:00' }, meta);
+    await startMatch(actor, match.id, meta);
+    expect(await prisma.match.findUniqueOrThrow({ where: { id: match.id } })).toMatchObject({
+      status: 'IN_PROGRESS',
+    });
   });
 });

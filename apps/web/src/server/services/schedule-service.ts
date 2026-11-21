@@ -193,6 +193,13 @@ async function ensureCourts(tx: Tx | typeof prisma, t: TournamentRow) {
   return find();
 }
 
+/** The tournament's courts, for the match desk (D126). */
+export async function deskCourts(actor: Actor, tournamentId: string) {
+  await assertCanManageTournament(actor, tournamentId);
+  const t = await loadTournament(tournamentId);
+  return t.venue ? ensureCourts(prisma, t) : [];
+}
+
 /** Playing days in UTC: each tournament day from the start time to the end time (Dutch time). */
 export function scheduleDays(
   t: Pick<TournamentRow, 'startsOn' | 'endsOn' | 'dayStartTime' | 'dayEndTime'>,

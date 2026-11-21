@@ -237,7 +237,8 @@
     "partnerSame": "This player is already the partner in this entry.",
     "playerOnCourt": "A player in this match is still on court. Enter the result of that match first.",
     "courtInUse": "This court is still in use. Enter the result of the match on it first.",
-    "accountNotFound": "Account not found with the email address you provided. Enter the correct email address to receive the password reset link."
+    "accountNotFound": "Account not found with the email address you provided. Enter the correct email address to receive the password reset link.",
+    "matchNotScheduled": "Put this match on a court and time before it starts."
   },
   "Auth": {
     "login": {
@@ -1255,7 +1256,10 @@
       "removeRoundConfirm": "Remove the latest round of {event}? Its pairings and court times are removed; you can pair it again.",
       "playerOnCourt": "On court {court} now",
       "playerPlaying": "Playing another match now",
-      "courtInUse": "Court {court} is still in use (match #{match})"
+      "courtInUse": "Court {court} is still in use (match #{match})",
+      "courtLabel": "Court",
+      "timeLabel": "Time",
+      "courtNumber": "Court {number}"
     },
     "navEmail": "Email",
     "emailSettings": {

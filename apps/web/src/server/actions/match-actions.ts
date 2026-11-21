@@ -250,6 +250,16 @@ export async function quickStartMatchAction(matchId: string) {
   return quick(async () => startMatch(await actorOrThrow(), matchId, await currentRequestMeta()));
 }
 
+/** Desk (D126): give a waiting match its court and time, then start it, in one go. */
+export async function quickPlaceAndStartAction(matchId: string, courtId: string, startsAt: string) {
+  return quick(async () => {
+    const actor = await actorOrThrow();
+    const meta = await currentRequestMeta();
+    await moveMatch(actor, matchId, { courtId, startsAt }, meta);
+    await startMatch(actor, matchId, meta);
+  });
+}
+
 export async function quickWalkoverAction(matchId: string, winner: 'A' | 'B') {
   return quick(async () =>
     recordWalkover(await actorOrThrow(), matchId, { winner }, await currentRequestMeta()),

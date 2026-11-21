@@ -42,6 +42,7 @@ export type ErrorCode =
   | 'drawNotPublished'
   | 'matchNotReady'
   | 'playerOnCourt'
+  | 'matchNotScheduled'
   | 'courtInUse'
   | 'nextMatchPlayed'
   | 'resultConflict'
@@ -116,6 +117,7 @@ const HTTP_STATUS: Record<ErrorCode, number> = {
   drawNotPublished: 409,
   matchNotReady: 409,
   playerOnCourt: 409,
+  matchNotScheduled: 409,
   courtInUse: 409,
   nextMatchPlayed: 409,
   resultConflict: 409,

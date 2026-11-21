@@ -237,7 +237,8 @@
     "partnerSame": "Deze speler is al de partner in deze inschrijving.",
     "playerOnCourt": "Een speler van deze wedstrijd staat nog op de baan. Vul eerst de uitslag van die wedstrijd in.",
     "courtInUse": "Deze baan is nog bezet. Vul eerst de uitslag van de wedstrijd op die baan in.",
-    "accountNotFound": "Er is geen account gevonden met dit e-mailadres. Vul het juiste e-mailadres in om de link voor een nieuw wachtwoord te ontvangen."
+    "accountNotFound": "Er is geen account gevonden met dit e-mailadres. Vul het juiste e-mailadres in om de link voor een nieuw wachtwoord te ontvangen.",
+    "matchNotScheduled": "Zet deze wedstrijd eerst op een baan en tijd voordat hij start."
   },
   "Auth": {
     "login": {
@@ -1255,7 +1256,10 @@
       "removeRoundConfirm": "De laatste ronde van {event} verwijderen? De indeling en baantijden verdwijnen; je kunt opnieuw indelen.",
       "playerOnCourt": "Nu op baan {court}",
       "playerPlaying": "Speelt nu een andere wedstrijd",
-      "courtInUse": "Baan {court} is nog bezet (wedstrijd #{match})"
+      "courtInUse": "Baan {court} is nog bezet (wedstrijd #{match})",
+      "courtLabel": "Baan",
+      "timeLabel": "Tijd",
+      "courtNumber": "Baan {number}"
     },
     "navEmail": "E-mail",
     "emailSettings": {

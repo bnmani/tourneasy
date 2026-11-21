@@ -230,6 +230,9 @@ export async function startMatch(actor: Actor, matchId: string, meta: RequestMet
   const m = await authorise(actor, matchId);
   if (m.status !== 'SCHEDULED' && m.status !== 'CALLED') throw new AppError('statusTransition');
   const tournamentId = m.draw.event.tournamentId;
+  // A match goes on court only with a court and time (D126): nobody can start a match that has no court.
+  if (!(await prisma.courtSlot.findUnique({ where: { matchId: m.id }, select: { id: true } })))
+    throw new AppError('matchNotScheduled');
   await prisma.$transaction(async (tx) => {
     // One start at a time per tournament, so two desks can't start a clash together.
     await tx.$queryRaw`SELECT id FROM "Tournament" WHERE id = ${tournamentId}::uuid FOR UPDATE`;
