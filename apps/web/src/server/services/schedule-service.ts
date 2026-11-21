@@ -1046,15 +1046,51 @@ export async function deskMatches(
     const courtBusy = i.court ? (courtMatch.get(i.court.id) ?? null) : null;
     return { ...i, busy: players.length || courtBusy ? { players, courtMatch: courtBusy } : null };
   });
+  // Semi-finals that can swap a team with the other semi-final (D130).
+  const semiOf = new Map<string, typeof withBusy>();
+  const roundsOf = new Map<string, number>();
+  for (const m of matches)
+    if (m.bracket === 'W' && m.draw.type !== 'DOUBLE_KNOCKOUT')
+      roundsOf.set(m.draw.id, Math.max(roundsOf.get(m.draw.id) ?? 0, m.round));
+  const drawOfMatch = new Map(matches.map((m) => [m.id, m] as const));
+  for (const i of withBusy) {
+    const m = drawOfMatch.get(i.id)!;
+    if (m.bracket !== 'W' || m.round !== (roundsOf.get(m.draw.id) ?? 0) - 1) continue;
+    semiOf.set(m.draw.id, [...(semiOf.get(m.draw.id) ?? []), i]);
+  }
+  const withSwap = withBusy.map((i) => {
+    const m = drawOfMatch.get(i.id)!;
+    const pair = semiOf.get(m.draw.id);
+    const other = pair?.length === 2 ? pair.find((p) => p.id !== i.id) : undefined;
+    const open = (s: string) => s === 'SCHEDULED' || s === 'CALLED';
+    if (!other || !open(i.status) || !open(other.status) || !i.aEntryId || !i.bEntryId)
+      return { ...i, swap: null };
+    if (!other.aEntryId || !other.bEntryId) return { ...i, swap: null };
+    return {
+      ...i,
+      swap: {
+        otherId: other.id,
+        otherNumber: other.number,
+        mine: [
+          { side: 'A' as const, name: i.a ?? '' },
+          { side: 'B' as const, name: i.b ?? '' },
+        ],
+        theirs: [
+          { side: 'A' as const, name: other.a ?? '' },
+          { side: 'B' as const, name: other.b ?? '' },
+        ],
+      },
+    };
+  });
   const done = (s: string) => s === 'COMPLETED' || s === 'WALKOVER' || s === 'RETIRED';
   const filtered =
     view === 'now'
-      ? withBusy.filter((i) => i.status === 'IN_PROGRESS' || i.status === 'CALLED')
+      ? withSwap.filter((i) => i.status === 'IN_PROGRESS' || i.status === 'CALLED')
       : view === 'next'
-        ? withBusy.filter((i) => i.status === 'SCHEDULED' && i.ready).slice(0, 30)
+        ? withSwap.filter((i) => i.status === 'SCHEDULED' && i.ready).slice(0, 30)
         : view === 'open'
-          ? withBusy.filter((i) => !done(i.status))
-          : withBusy.filter((i) => done(i.status)).reverse();
+          ? withSwap.filter((i) => !done(i.status))
+          : withSwap.filter((i) => done(i.status)).reverse();
   return { tournament: t, items: filtered };
 }
 

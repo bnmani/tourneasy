@@ -1261,6 +1261,10 @@
       "playerOnCourt": "Nu op baan {court}",
       "playerPlaying": "Speelt nu een andere wedstrijd",
       "courtInUse": "Baan {court} is nog bezet (wedstrijd #{match})",
+      "swapTeamsTitle": "Teams wisselen",
+      "swapMine": "Dit team wisselen",
+      "swapWith": "met een team in wedstrijd #{number}",
+      "swapButton": "Wisselen",
       "courtLabel": "Baan",
       "timeLabel": "Tijd",
       "courtNumber": "Baan {number}"

@@ -35,7 +35,7 @@ import {
 } from '../services/payment-service';
 import { moveEvent } from '../services/event-service';
 import { setExpectedKnockout } from '../services/expected-knockout-service';
-import { setSemiPairing } from '../services/semi-pairing-service';
+import { setSemiPairing, swapSemiTeams } from '../services/semi-pairing-service';
 import { cancelEntryAsOrganiser, restoreRegistration } from '../services/registration-service';
 
 async function actorOrThrow() {
@@ -364,6 +364,23 @@ export async function quickExpectedKnockoutAction(tournamentId: string, on: bool
 export async function quickSemiPairingAction(tournamentId: string, eventId: string, on: boolean) {
   return quick(async () =>
     setSemiPairing(await actorOrThrow(), tournamentId, eventId, on, await currentRequestMeta()),
+  );
+}
+
+/** Swaps a team of one semi-final with a team of the other (D130). */
+export async function quickSwapTeamsAction(
+  matchId: string,
+  otherMatchId: string,
+  side: 'A' | 'B',
+  otherSide: 'A' | 'B',
+) {
+  return quick(async () =>
+    swapSemiTeams(
+      await actorOrThrow(),
+      matchId,
+      { side, otherMatchId, otherSide },
+      await currentRequestMeta(),
+    ),
   );
 }
 

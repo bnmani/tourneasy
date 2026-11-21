@@ -1261,6 +1261,10 @@
       "playerOnCourt": "On court {court} now",
       "playerPlaying": "Playing another match now",
       "courtInUse": "Court {court} is still in use (match #{match})",
+      "swapTeamsTitle": "Swap teams",
+      "swapMine": "Swap this team",
+      "swapWith": "with a team in match #{number}",
+      "swapButton": "Swap",
       "courtLabel": "Court",
       "timeLabel": "Time",
       "courtNumber": "Court {number}"

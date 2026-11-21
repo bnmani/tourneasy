@@ -255,3 +255,67 @@ export function QuickPlaceAction({
     </form>
   );
 }
+
+/** Swap one team of a semi-final with one team of the other semi-final (D130). */
+export function SwapTeamsForm({
+  mine,
+  theirs,
+  action,
+  labels,
+}: {
+  mine: { side: 'A' | 'B'; name: string }[];
+  theirs: { side: 'A' | 'B'; name: string }[];
+  action: (side: 'A' | 'B', otherSide: 'A' | 'B') => Promise<QuickResult>;
+  labels: { title: string; mine: string; with: string; button: string };
+}) {
+  const [side, setSide] = useState<'A' | 'B'>(mine[0]!.side);
+  const [otherSide, setOtherSide] = useState<'A' | 'B'>(theirs[0]!.side);
+  const { error, pending, run } = useQuick();
+  const selectClass =
+    'h-8 max-w-full rounded-md border border-input bg-background px-2 text-base sm:text-xs';
+  return (
+    <details className="text-xs">
+      <summary className="cursor-pointer text-muted-foreground">{labels.title}</summary>
+      <form
+        className="mt-2 space-y-2"
+        onSubmit={(e) => {
+          e.preventDefault();
+          run(() => action(side, otherSide));
+        }}
+      >
+        <label className="flex flex-col gap-1">
+          <span className="text-muted-foreground">{labels.mine}</span>
+          <select
+            value={side}
+            onChange={(e) => setSide(e.target.value as 'A' | 'B')}
+            className={selectClass}
+          >
+            {mine.map((o) => (
+              <option key={o.side} value={o.side}>
+                {o.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="flex flex-col gap-1">
+          <span className="text-muted-foreground">{labels.with}</span>
+          <select
+            value={otherSide}
+            onChange={(e) => setOtherSide(e.target.value as 'A' | 'B')}
+            className={selectClass}
+          >
+            {theirs.map((o) => (
+              <option key={o.side} value={o.side}>
+                {o.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <Button type="submit" size="sm" variant="outline" className="h-8" disabled={pending}>
+          {labels.button}
+        </Button>
+        <ErrorLine error={error} />
+      </form>
+    </details>
+  );
+}

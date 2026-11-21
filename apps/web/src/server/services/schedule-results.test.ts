@@ -35,7 +35,7 @@ import {
   publicExpectedKnockout,
   setExpectedKnockout,
 } from './expected-knockout-service';
-import { setSemiPairing } from './semi-pairing-service';
+import { setSemiPairing, swapSemiTeams } from './semi-pairing-service';
 import { PDFDocument } from 'pdf-lib';
 import { buildSchedulePdf, pdfSafe } from '../pdf/schedule-pdf';
 import { checkInList, checkInPdf, payAtDesk, setPlayerCheckIn } from './checkin-service';
@@ -990,5 +990,30 @@ describe('semi-finals paired by seed (D127)', () => {
       [8, 4],
       [2, 3],
     ]);
+  });
+
+  it('swaps a team between the semi-finals by hand, and keeps it after a correction (D130)', async () => {
+    const { actor, qf, seeds, semis } = await quarterFinals();
+    for (const m of qf) await recordResult(actor, m.id, win, meta); // 1 v 4, 2 v 3
+    const [s1, s2] = await semis();
+    // Swap seed 4 (semi 1, side B) with seed 2 (semi 2, side A).
+    await swapSemiTeams(actor, s1!.id, { side: 'B', otherMatchId: s2!.id, otherSide: 'A' }, meta);
+    expect(await seeds()).toEqual([
+      [1, 2],
+      [4, 3],
+    ]);
+    // The quarter-final winners follow their team: correcting one keeps the arrangement.
+    const two = qf.find((m) => m.matchNumber === 3)!;
+    const moved = await prisma.match.findUniqueOrThrow({ where: { id: two.id } });
+    expect(moved.nextMatchId).toBe(s1!.id);
+    expect(await prisma.auditLog.count({ where: { action: 'match.swapTeams' } })).toBe(1);
+    // Not once a semi-final has started, and not across rounds.
+    await expect(
+      swapSemiTeams(actor, s1!.id, { side: 'A', otherMatchId: qf[0]!.id, otherSide: 'A' }, meta),
+    ).rejects.toMatchObject({ code: 'validation' });
+    await prisma.match.update({ where: { id: s2!.id }, data: { status: 'IN_PROGRESS' } });
+    await expect(
+      swapSemiTeams(actor, s1!.id, { side: 'A', otherMatchId: s2!.id, otherSide: 'A' }, meta),
+    ).rejects.toMatchObject({ code: 'nextMatchPlayed' });
   });
 });

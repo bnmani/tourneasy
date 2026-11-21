@@ -12,6 +12,7 @@ import {
   knockoutStageAction,
   quickCheckInAction,
   quickPlaceAndStartAction,
+  quickSwapTeamsAction,
   quickUnstartMatchAction,
   removeStageAction,
   quickWalkoverAction,
@@ -22,7 +23,12 @@ import {
 } from '@/server/actions/match-actions';
 import { requirePortal } from '@/server/auth/web';
 import { CheckInList } from '@/components/desk/check-in-list';
-import { CheckInToggle, QuickButton, QuickPlaceAction } from '@/components/desk/quick-buttons';
+import {
+  CheckInToggle,
+  QuickButton,
+  QuickPlaceAction,
+  SwapTeamsForm,
+} from '@/components/desk/quick-buttons';
 import { AutoRefresh } from '@/components/matches/auto-refresh';
 import { amsterdamDay, checkInList } from '@/server/services/checkin-service';
 import type { Actor } from '@/server/services/session-service';
@@ -300,6 +306,19 @@ export default async function DeskPage({ params, searchParams }: Props) {
                         action={quickPlaceAndStartAction.bind(null, item.id)}
                         label={td('onCourt')}
                         labels={{ court: td('courtLabel'), time: td('timeLabel') }}
+                      />
+                    )}
+                    {item.swap && (
+                      <SwapTeamsForm
+                        mine={item.swap.mine}
+                        theirs={item.swap.theirs}
+                        action={quickSwapTeamsAction.bind(null, item.id, item.swap.otherId)}
+                        labels={{
+                          title: td('swapTeamsTitle'),
+                          mine: td('swapMine'),
+                          with: td('swapWith', { number: item.swap.otherNumber }),
+                          button: td('swapButton'),
+                        }}
                       />
                     )}
                     {item.status === 'IN_PROGRESS' && item.sets.length === 0 && (

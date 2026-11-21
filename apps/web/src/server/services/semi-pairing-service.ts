@@ -6,6 +6,8 @@
  * is kept in SiteSetting, like the expected rounds (D121), so no migration is needed.
  */
 import { prisma, type Prisma } from '@tourneasy/db';
+import { z } from 'zod';
+import { parseInput } from '../lib/validation';
 import { writeAudit } from '../lib/audit';
 import { AppError } from '../lib/errors';
 import type { RequestMeta } from '../lib/request-meta';
@@ -24,6 +26,14 @@ async function fixedList(db: Tx | typeof prisma = prisma): Promise<string[]> {
 
 export async function isSemiPairingOn(eventId: string) {
   return !(await fixedList()).includes(eventId);
+}
+
+/** SiteSetting key: draws whose semi-finals an organiser has arranged by hand (draw ids). */
+export const SEMI_MANUAL_KEY = 'knockout.semiManual';
+
+async function manualList(db: Tx | typeof prisma = prisma): Promise<string[]> {
+  const row = await db.siteSetting.findUnique({ where: { key: SEMI_MANUAL_KEY } });
+  return Array.isArray(row?.value) ? (row.value as string[]) : [];
 }
 
 /** Organisers and admins: pair the semi-finals by seed (on) or keep the fixed bracket (off). */
@@ -90,6 +100,7 @@ async function semiContext(tx: Tx, drawId: string): Promise<Ctx | null> {
   if (inRound(last - 2).length !== 4) return null;
   if (draw.entries.some((e) => !e.registrationId || e.seed === null)) return null;
   if (!(await isSemiPairingOn(draw.eventId))) return null;
+  if ((await manualList(tx)).includes(drawId)) return null;
   return {
     semis: inRound(last - 1),
     feeders: inRound(last - 2),
@@ -164,4 +175,102 @@ export async function pairSemis(tx: Tx, drawId: string) {
       where: { id: p.x.feeder },
       data: { nextMatchId: p.semi, nextMatchSlot: p.slot },
     });
+}
+
+const swapSchema = z.object({
+  side: z.enum(['A', 'B']),
+  otherMatchId: z.string().uuid(),
+  otherSide: z.enum(['A', 'B']),
+});
+
+/**
+ * Swaps one team of a semi-final with one team of the other semi-final (D130). Both matches
+ * must not have started. The winners of the quarter-finals follow their team, so a later
+ * correction keeps the arrangement, and the draw no longer re-pairs by seed.
+ */
+export async function swapSemiTeams(
+  actor: Actor,
+  matchId: string,
+  input: unknown,
+  meta: RequestMeta,
+) {
+  const { side, otherMatchId, otherSide } = parseInput(swapSchema, input);
+  if (matchId === otherMatchId) throw new AppError('validation');
+  const rows = await prisma.match.findMany({
+    where: { id: { in: [matchId, otherMatchId] } },
+    select: {
+      id: true,
+      drawId: true,
+      round: true,
+      bracket: true,
+      status: true,
+      entryAId: true,
+      entryBId: true,
+      draw: { select: { type: true, event: { select: { tournamentId: true } } } },
+    },
+  });
+  const mine = rows.find((r) => r.id === matchId);
+  const other = rows.find((r) => r.id === otherMatchId);
+  if (!mine || !other) throw new AppError('notFound');
+  await assertCanManageTournament(actor, mine.draw.event.tournamentId);
+  if (mine.drawId !== other.drawId || mine.round !== other.round) throw new AppError('validation');
+  if (mine.draw.type === 'DOUBLE_KNOCKOUT' || mine.bracket !== 'W')
+    throw new AppError('validation');
+  const rounds = await prisma.match.groupBy({
+    by: ['round'],
+    where: { drawId: mine.drawId },
+    _count: true,
+  });
+  const last = Math.max(...rounds.map((r) => r.round));
+  const count = rounds.find((r) => r.round === mine.round)?._count;
+  // Semi-finals only: the round before the final, with exactly two matches.
+  if (mine.round !== last - 1 || count !== 2) throw new AppError('validation');
+  if (!open(mine.status) || !open(other.status)) throw new AppError('nextMatchPlayed');
+  const mineEntry = side === 'A' ? mine.entryAId : mine.entryBId;
+  const otherEntry = otherSide === 'A' ? other.entryAId : other.entryBId;
+  if (!mineEntry || !otherEntry) throw new AppError('matchNotReady');
+  await prisma.$transaction(async (tx) => {
+    const put = (id: string, s: 'A' | 'B', entry: string) =>
+      tx.match.update({
+        where: { id },
+        data: {
+          ...(s === 'A' ? { entryAId: entry } : { entryBId: entry }),
+          version: { increment: 1 },
+        },
+      });
+    await put(mine.id, side, otherEntry);
+    await put(other.id, otherSide, mineEntry);
+    // The quarter-finals that feed these slots swap places, so winners go where their team is.
+    const feeders = await tx.match.findMany({
+      where: { nextMatchId: { in: [mine.id, other.id] } },
+      select: { id: true, nextMatchId: true, nextMatchSlot: true },
+    });
+    for (const f of feeders) {
+      if (f.nextMatchId === mine.id && f.nextMatchSlot === side)
+        await tx.match.update({
+          where: { id: f.id },
+          data: { nextMatchId: other.id, nextMatchSlot: otherSide },
+        });
+      else if (f.nextMatchId === other.id && f.nextMatchSlot === otherSide)
+        await tx.match.update({
+          where: { id: f.id },
+          data: { nextMatchId: mine.id, nextMatchSlot: side },
+        });
+    }
+    const list = await manualList(tx);
+    if (!list.includes(mine.drawId))
+      await tx.siteSetting.upsert({
+        where: { key: SEMI_MANUAL_KEY },
+        create: { key: SEMI_MANUAL_KEY, value: [...list, mine.drawId] },
+        update: { value: [...list, mine.drawId] },
+      });
+    await writeAudit(tx, {
+      actorId: actor.userId,
+      action: 'match.swapTeams',
+      entityType: 'Match',
+      entityId: mine.id,
+      after: { side, otherMatchId, otherSide },
+      meta,
+    });
+  });
 }
