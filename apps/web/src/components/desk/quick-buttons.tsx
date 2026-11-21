@@ -202,14 +202,12 @@ export function QuickPlaceAction({
   action,
   label,
   labels,
-  courtNumber,
 }: {
-  courts: { id: string; number: number }[];
+  courts: { id: string; label: string }[];
   defaultStart: string;
   action: (courtId: string, startsAt: string) => Promise<QuickResult>;
   label: string;
   labels: { court: string; time: string };
-  courtNumber: (n: number) => string;
 }) {
   const [courtId, setCourtId] = useState(courts[0]?.id ?? '');
   const [startsAt, setStartsAt] = useState(defaultStart);
@@ -233,7 +231,7 @@ export function QuickPlaceAction({
           >
             {courts.map((c) => (
               <option key={c.id} value={c.id}>
-                {courtNumber(c.number)}
+                {c.label}
               </option>
             ))}
           </select>

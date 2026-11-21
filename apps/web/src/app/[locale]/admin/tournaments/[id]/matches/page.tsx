@@ -298,14 +298,14 @@ export default async function DeskPage({ params, searchParams }: Props) {
                         </QuickButton>
                       ) : (
                         <QuickPlaceAction
-                          courts={courts}
+                          courts={courts.map((c) => ({
+                            id: c.id,
+                            label: td('courtNumber', { number: c.number }),
+                          }))}
                           defaultStart={defaultStart}
-                          action={(courtId, startsAt) =>
-                            quickPlaceAndStartAction(item.id, courtId, startsAt)
-                          }
+                          action={quickPlaceAndStartAction.bind(null, item.id)}
                           label={td('onCourt')}
                           labels={{ court: td('courtLabel'), time: td('timeLabel') }}
-                          courtNumber={(n) => td('courtNumber', { number: n })}
                         />
                       ))}
                     {item.status === 'IN_PROGRESS' && item.sets.length === 0 && (
