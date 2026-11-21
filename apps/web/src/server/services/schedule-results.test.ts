@@ -1016,4 +1016,25 @@ describe('semi-finals paired by seed (D127)', () => {
       swapSemiTeams(actor, s1!.id, { side: 'A', otherMatchId: s2!.id, otherSide: 'A' }, meta),
     ).rejects.toMatchObject({ code: 'nextMatchPlayed' });
   });
+
+  it('offers the swap on both semi-finals of the desk, until one has started (D130)', async () => {
+    const { actor, t, qf } = await quarterFinals();
+    for (const m of qf) await recordResult(actor, m.id, win, meta);
+    const { items } = await deskMatches(actor, t.id, 'open');
+    const semi = items.filter((i) => i.swap);
+    expect(semi).toHaveLength(2);
+    expect(semi[0]!.swap!.otherId).toBe(semi[1]!.id);
+    expect(semi[0]!.swap!.mine.map((o) => o.side)).toEqual(['A', 'B']);
+  });
+
+  it('lets a played semi-final be corrected while the final has not started (D131)', async () => {
+    const { actor, qf, semis } = await quarterFinals();
+    for (const m of qf) await recordResult(actor, m.id, win, meta);
+    const [s1] = await semis();
+    await recordResult(actor, s1!.id, win, meta);
+    await recordResult(actor, s1!.id, lose, meta);
+    expect(await prisma.match.findUniqueOrThrow({ where: { id: s1!.id } })).toMatchObject({
+      winnerEntryId: s1!.entryBId,
+    });
+  });
 });

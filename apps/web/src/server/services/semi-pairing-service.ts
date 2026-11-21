@@ -117,9 +117,11 @@ export async function holdsWinnerForSemis(tx: Tx, m: { id: string; drawId: strin
 const open = (s: string) => s === 'SCHEDULED' || s === 'CALLED';
 
 /** A correction that changes a quarter-final winner needs both semi-finals not started. */
-export async function assertSemisOpen(tx: Tx, m: { drawId: string }) {
+export async function assertSemisOpen(tx: Tx, m: { id: string; drawId: string }) {
   const ctx = await semiContext(tx, m.drawId);
-  if (ctx && ctx.semis.some((s) => !open(s.status))) throw new AppError('nextMatchPlayed');
+  // Only quarter-finals feed the pairing: a semi-final or final is checked by its follow-up.
+  if (!ctx || !ctx.feeders.some((f) => f.id === m.id)) return;
+  if (ctx.semis.some((s) => !open(s.status))) throw new AppError('nextMatchPlayed');
 }
 
 /**
