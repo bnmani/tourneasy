@@ -196,6 +196,8 @@ export async function swapSemiTeams(
   input: unknown,
   meta: RequestMeta,
 ) {
+  // Owners only: a swap changes who plays whom (D132).
+  if (!actor.roles.includes('OWNER')) throw new AppError('forbidden');
   const { side, otherMatchId, otherSide } = parseInput(swapSchema, input);
   if (matchId === otherMatchId) throw new AppError('validation');
   const rows = await prisma.match.findMany({

@@ -46,6 +46,12 @@ import { actorFromWebToken, createWebSession } from './session-service';
 
 beforeEach(resetDatabase);
 
+async function owner() {
+  const p = await createPlayer();
+  await prisma.userRole.create({ data: { userId: p.userId, role: Role.OWNER } });
+  return (await actorFromWebToken((await createWebSession(p.userId, meta, true)).token))!;
+}
+
 async function admin() {
   const p = await createPlayer();
   await prisma.userRole.create({ data: { userId: p.userId, role: Role.ADMIN } });
@@ -993,7 +999,16 @@ describe('semi-finals paired by seed (D127)', () => {
   });
 
   it('swaps a team between the semi-finals by hand, and keeps it after a correction (D130)', async () => {
-    const { actor, qf, seeds, semis } = await quarterFinals();
+    const { actor: admin1, qf, seeds, semis } = await quarterFinals();
+    const actor = await owner();
+    await expect(
+      swapSemiTeams(
+        admin1,
+        (await semis())[0]!.id,
+        { side: 'B', otherMatchId: (await semis())[1]!.id, otherSide: 'A' },
+        meta,
+      ),
+    ).rejects.toMatchObject({ code: 'forbidden' });
     for (const m of qf) await recordResult(actor, m.id, win, meta); // 1 v 4, 2 v 3
     const [s1, s2] = await semis();
     // Swap seed 4 (semi 1, side B) with seed 2 (semi 2, side A).
@@ -1020,7 +1035,9 @@ describe('semi-finals paired by seed (D127)', () => {
   it('offers the swap on both semi-finals of the desk, until one has started (D130)', async () => {
     const { actor, t, qf } = await quarterFinals();
     for (const m of qf) await recordResult(actor, m.id, win, meta);
-    const { items } = await deskMatches(actor, t.id, 'open');
+    // Only owners get the swap.
+    expect((await deskMatches(actor, t.id, 'open')).items.filter((i) => i.swap)).toHaveLength(0);
+    const { items } = await deskMatches(await owner(), t.id, 'open');
     const semi = items.filter((i) => i.swap);
     expect(semi).toHaveLength(2);
     expect(semi[0]!.swap!.otherId).toBe(semi[1]!.id);

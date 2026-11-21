@@ -1063,7 +1063,14 @@ export async function deskMatches(
     const pair = semiOf.get(m.draw.id);
     const other = pair?.length === 2 ? pair.find((p) => p.id !== i.id) : undefined;
     const open = (s: string) => s === 'SCHEDULED' || s === 'CALLED';
-    if (!other || !open(i.status) || !open(other.status) || !i.aEntryId || !i.bEntryId)
+    if (
+      !actor.roles.includes('OWNER') ||
+      !other ||
+      !open(i.status) ||
+      !open(other.status) ||
+      !i.aEntryId ||
+      !i.bEntryId
+    )
       return { ...i, swap: null };
     if (!other.aEntryId || !other.bEntryId) return { ...i, swap: null };
     return {
