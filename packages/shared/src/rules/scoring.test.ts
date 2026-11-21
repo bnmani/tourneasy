@@ -141,12 +141,19 @@ describe('standings', () => {
     expect(two.map((r) => r.won)).toEqual([1, 1, 1]);
   });
 
-  it('counts a walkover as a straight-games win without points', () => {
-    const [first] = standings(
+  it('counts a walkover as a straight-games win with the full score (21-0 per game)', () => {
+    const [first, second] = standings(
       ['a', 'b'],
       [{ a: 'a', b: 'b', winner: 'a', games: [], walkover: true }],
     );
-    expect(first).toMatchObject({ id: 'a', won: 1, gamesFor: 2, pointsFor: 0 });
+    expect(first).toMatchObject({
+      id: 'a',
+      won: 1,
+      gamesFor: 2,
+      pointsFor: 42,
+      pointsAgainst: 0,
+    });
+    expect(second).toMatchObject({ id: 'b', lost: 1, gamesAgainst: 2, pointsAgainst: 42 });
   });
 });
 

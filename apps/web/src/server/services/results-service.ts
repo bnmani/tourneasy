@@ -360,7 +360,7 @@ export function drawStandings(draw: StandingDraw, bestOf = 3): Standing[] {
     }));
   // Swiss byes count as a win.
   const byes = draw.matches.filter((m) => m.status === 'BYE' && m.winnerEntryId);
-  const rows = standings(real, results, { bestOf });
+  const rows = standings(real, results, { bestOf, pointsToWin: 21 });
   for (const b of byes) {
     const row = rows.find((r) => r.id === b.winnerEntryId);
     if (row) row.won += 1;

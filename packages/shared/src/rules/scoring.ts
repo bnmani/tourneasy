@@ -47,7 +47,7 @@ export type ResultForStandings = {
   b: string;
   winner: string | null;
   games: Game[];
-  /** Walkover: counts as a win for the winner in straight games, no points. */
+  /** Walkover: a win for the winner in straight games, with the full score (21-0 per game). */
   walkover?: boolean;
 };
 
@@ -62,7 +62,11 @@ export type Standing = {
   pointsAgainst: number;
 };
 
-function tally(ids: string[], results: ResultForStandings[], rules: Pick<ScoringRules, 'bestOf'>) {
+function tally(
+  ids: string[],
+  results: ResultForStandings[],
+  rules: Pick<ScoringRules, 'bestOf' | 'pointsToWin'>,
+) {
   const rows = new Map<string, Standing>(
     ids.map((id) => [
       id,
@@ -88,9 +92,14 @@ function tally(ids: string[], results: ResultForStandings[], rules: Pick<Scoring
     (aWon ? ra : rb).won += 1;
     (aWon ? rb : ra).lost += 1;
     if (r.walkover) {
+      // Walkover (D125): the winner is credited the full score of every game they would have
+      // needed (21-0 each), so the points and games reflect a win.
       const needed = Math.ceil(rules.bestOf / 2);
+      const full = needed * rules.pointsToWin;
       (aWon ? ra : rb).gamesFor += needed;
       (aWon ? rb : ra).gamesAgainst += needed;
+      (aWon ? ra : rb).pointsFor += full;
+      (aWon ? rb : ra).pointsAgainst += full;
       continue;
     }
     for (const [pa, pb] of r.games) {
@@ -117,7 +126,7 @@ function tally(ids: string[], results: ResultForStandings[], rules: Pick<Scoring
 export function standings(
   ids: string[],
   results: ResultForStandings[],
-  rules: Pick<ScoringRules, 'bestOf'> = { bestOf: 3 },
+  rules: Pick<ScoringRules, 'bestOf' | 'pointsToWin'> = { bestOf: 3, pointsToWin: 21 },
 ): Standing[] {
   const rows = tally(ids, results, rules);
   const mutual = (x: string, y: string) =>
