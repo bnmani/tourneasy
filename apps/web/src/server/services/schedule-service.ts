@@ -397,6 +397,22 @@ async function matchTournament(matchId: string) {
 }
 
 /** Puts a match on a court at a time (by hand). Refused when the court is taken then. */
+/** Like moveMatch, but does nothing when the match already has this court and time. */
+export async function placeMatch(actor: Actor, matchId: string, input: unknown, meta: RequestMeta) {
+  const { courtId, startsAt } = parseInput(moveSchema, input);
+  const slot = await prisma.courtSlot.findUnique({
+    where: { matchId },
+    select: { courtId: true, startsAt: true },
+  });
+  const start = amsterdamLocalToUtc(startsAt);
+  if (slot && start && slot.courtId === courtId && slot.startsAt.getTime() === start.getTime()) {
+    const m = await matchTournament(matchId);
+    await assertCanManageTournament(actor, m.tournamentId);
+    return;
+  }
+  await moveMatch(actor, matchId, input, meta);
+}
+
 export async function moveMatch(actor: Actor, matchId: string, input: unknown, meta: RequestMeta) {
   const m = await matchTournament(matchId);
   await assertCanManageTournament(actor, m.tournamentId);

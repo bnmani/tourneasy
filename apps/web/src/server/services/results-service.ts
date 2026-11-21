@@ -27,6 +27,7 @@ import { AppError, validationError } from '../lib/errors';
 import type { RequestMeta } from '../lib/request-meta';
 import { parseInput } from '../lib/validation';
 import { advance, resolveByes } from './draw-service';
+import { assertSemisOpen, holdsWinnerForSemis, pairSemis } from './semi-pairing-service';
 import { assertCanManageTournament } from './permissions';
 import { fullName, publicName } from './registration-service';
 import type { Actor } from './session-service';
@@ -114,6 +115,7 @@ async function finish(
     // A correction that changes the winner: the follow-up matches must not have started.
     await assertFollowUpOpen(tx, m.nextMatchId);
     await assertFollowUpOpen(tx, m.loserNextMatchId);
+    await assertSemisOpen(tx, m);
   }
   const updated = await tx.match.updateMany({
     where: { id: m.id, version: m.version },
@@ -137,7 +139,9 @@ async function finish(
       })),
     });
   }
-  await advance(tx, m.nextMatchId, m.nextMatchSlot, winnerId);
+  // A quarter-final winner waits for the other three: the semi-finals are paired by seed (D127).
+  if (await holdsWinnerForSemis(tx, m)) await pairSemis(tx, m.drawId);
+  else await advance(tx, m.nextMatchId, m.nextMatchSlot, winnerId);
   await advance(tx, m.loserNextMatchId, m.loserNextMatchSlot, loserId);
   await resolveByes(tx, m.drawId);
   await writeAudit(tx, {

@@ -19,6 +19,7 @@ import {
 } from '../services/results-service';
 import {
   moveMatch,
+  placeMatch,
   proposeTournamentSchedule,
   publishSchedule,
   swapMatches,
@@ -34,6 +35,7 @@ import {
 } from '../services/payment-service';
 import { moveEvent } from '../services/event-service';
 import { setExpectedKnockout } from '../services/expected-knockout-service';
+import { setSemiPairing } from '../services/semi-pairing-service';
 import { cancelEntryAsOrganiser, restoreRegistration } from '../services/registration-service';
 
 async function actorOrThrow() {
@@ -255,7 +257,7 @@ export async function quickPlaceAndStartAction(matchId: string, courtId: string,
   return quick(async () => {
     const actor = await actorOrThrow();
     const meta = await currentRequestMeta();
-    await moveMatch(actor, matchId, { courtId, startsAt }, meta);
+    await placeMatch(actor, matchId, { courtId, startsAt }, meta);
     await startMatch(actor, matchId, meta);
   });
 }
@@ -355,6 +357,13 @@ export async function quickMoveEventAction(
 export async function quickExpectedKnockoutAction(tournamentId: string, on: boolean) {
   return quick(async () =>
     setExpectedKnockout(await actorOrThrow(), tournamentId, on, await currentRequestMeta()),
+  );
+}
+
+/** Pairs one category's semi-finals by seed, or keeps the fixed bracket (D127). */
+export async function quickSemiPairingAction(tournamentId: string, eventId: string, on: boolean) {
+  return quick(async () =>
+    setSemiPairing(await actorOrThrow(), tournamentId, eventId, on, await currentRequestMeta()),
   );
 }
 

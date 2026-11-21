@@ -12,7 +12,6 @@ import {
   knockoutStageAction,
   quickCheckInAction,
   quickPlaceAndStartAction,
-  quickStartMatchAction,
   quickUnstartMatchAction,
   removeStageAction,
   quickWalkoverAction,
@@ -287,27 +286,22 @@ export default async function DeskPage({ params, searchParams }: Props) {
                         })}
                       </p>
                     )}
-                    {item.status === 'SCHEDULED' &&
-                      (item.court ? (
-                        <QuickButton
-                          size="sm"
-                          variant="outline"
-                          action={quickStartMatchAction.bind(null, item.id)}
-                        >
-                          {td('onCourt')}
-                        </QuickButton>
-                      ) : (
-                        <QuickPlaceAction
-                          courts={courts.map((c) => ({
-                            id: c.id,
-                            label: td('courtNumber', { number: c.number }),
-                          }))}
-                          defaultStart={defaultStart}
-                          action={quickPlaceAndStartAction.bind(null, item.id)}
-                          label={td('onCourt')}
-                          labels={{ court: td('courtLabel'), time: td('timeLabel') }}
-                        />
-                      ))}
+                    {item.status === 'SCHEDULED' && (
+                      // Court and time stay visible and can be changed before the match starts (D128).
+                      <QuickPlaceAction
+                        courts={courts.map((c) => ({
+                          id: c.id,
+                          label: td('courtNumber', { number: c.number }),
+                        }))}
+                        defaultCourtId={item.court?.id}
+                        defaultStart={
+                          item.startsAt ? utcToAmsterdamLocal(item.startsAt) : defaultStart
+                        }
+                        action={quickPlaceAndStartAction.bind(null, item.id)}
+                        label={td('onCourt')}
+                        labels={{ court: td('courtLabel'), time: td('timeLabel') }}
+                      />
+                    )}
                     {item.status === 'IN_PROGRESS' && item.sets.length === 0 && (
                       // On court by mistake: back to waiting while no score is in (D99).
                       <QuickButton

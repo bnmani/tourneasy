@@ -198,18 +198,20 @@ export function QuickTextAction({
  */
 export function QuickPlaceAction({
   courts,
+  defaultCourtId,
   defaultStart,
   action,
   label,
   labels,
 }: {
   courts: { id: string; label: string }[];
+  defaultCourtId?: string;
   defaultStart: string;
   action: (courtId: string, startsAt: string) => Promise<QuickResult>;
   label: string;
   labels: { court: string; time: string };
 }) {
-  const [courtId, setCourtId] = useState(courts[0]?.id ?? '');
+  const [courtId, setCourtId] = useState(defaultCourtId ?? courts[0]?.id ?? '');
   const [startsAt, setStartsAt] = useState(defaultStart);
   const { error, pending, run } = useQuick();
   return (

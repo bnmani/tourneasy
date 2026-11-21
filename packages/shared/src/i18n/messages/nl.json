@@ -694,6 +694,10 @@
     "events": {
       "new": "Nieuw onderdeel",
       "edit": "Onderdeel bewerken",
+      "semiTitle": "Indeling halve finales",
+      "semiHint": "Met geplaatste teams en zonder byes worden de vier teams na de kwartfinales ingedeeld: beste tegen slechtste en tweede tegen derde. De halve finales worden gevuld zodra de laatste kwartfinale klaar is.",
+      "semiOn": "Halve finales op plaatsing indelen",
+      "semiOff": "Vast schema behouden",
       "discipline": "Onderdeel",
       "ageCategory": "Leeftijdscategorie",
       "anyAge": "Alle leeftijden",

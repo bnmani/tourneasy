@@ -4,11 +4,14 @@ import { centsToEuroInput } from '@tourneasy/shared/rules';
 import type { LocalizedText } from '@tourneasy/shared/i18n';
 import { getTranslations } from 'next-intl/server';
 import { notFound } from 'next/navigation';
+import { QuickButton } from '@/components/desk/quick-buttons';
 import { EventForm } from '@/components/admin/event-form';
 import { PageHeader } from '@/components/admin/ui';
 import { pageLocale } from '@/lib/page';
 import { requirePortal } from '@/server/auth/web';
+import { quickSemiPairingAction } from '@/server/actions/match-actions';
 import { eventOptions, getEvent } from '@/server/services/event-service';
+import { isSemiPairingOn } from '@/server/services/semi-pairing-service';
 
 type Params = { params: Promise<{ locale: string; id: string; eventId: string }> };
 
@@ -27,6 +30,7 @@ export default async function EditEventPage({ params }: Params) {
   const event = await getEvent(actor, id, eventId).catch(() => null);
   if (!event) notFound();
   const t = await getTranslations('Admin');
+  const semiOn = await isSemiPairingOn(eventId);
   const name = (event.name ?? null) as LocalizedText | null;
   return (
     <>
@@ -61,6 +65,17 @@ export default async function EditEventPage({ params }: Params) {
           isOpen: event.isOpen,
         }}
       />
+      <section className="mt-6 max-w-2xl space-y-2 rounded-xl border bg-card p-4">
+        <h2 className="text-base font-semibold">{t('events.semiTitle')}</h2>
+        <p className="text-sm text-muted-foreground">{t('events.semiHint')}</p>
+        <QuickButton
+          size="sm"
+          variant="outline"
+          action={quickSemiPairingAction.bind(null, id, eventId, !semiOn)}
+        >
+          {semiOn ? t('events.semiOff') : t('events.semiOn')}
+        </QuickButton>
+      </section>
     </>
   );
 }

@@ -35,6 +35,7 @@ import {
   publicExpectedKnockout,
   setExpectedKnockout,
 } from './expected-knockout-service';
+import { setSemiPairing } from './semi-pairing-service';
 import { PDFDocument } from 'pdf-lib';
 import { buildSchedulePdf, pdfSafe } from '../pdf/schedule-pdf';
 import { checkInList, checkInPdf, payAtDesk, setPlayerCheckIn } from './checkin-service';
@@ -905,5 +906,89 @@ describe('start needs a court and time (D126)', () => {
     expect(await prisma.match.findUniqueOrThrow({ where: { id: match.id } })).toMatchObject({
       status: 'IN_PROGRESS',
     });
+  });
+});
+
+describe('semi-finals paired by seed (D127)', () => {
+  const lose = {
+    games: [
+      [10, 21],
+      [12, 21],
+    ],
+  };
+  async function quarterFinals(off = false) {
+    const actor = await admin();
+    const { t, event } = await setup('HYBRID_ROUND_ROBIN_KNOCKOUT', 8, { knockoutSize: 8 });
+    await generateDraw(actor, event.id, meta, seededRng(5));
+    await publishDraws(actor, event.id, true, meta);
+    await proposeTournamentSchedule(actor, t.id, {}, meta);
+    if (off) await setSemiPairing(actor, t.id, event.id, false, meta);
+    await playAll(actor, event.id);
+    await createKnockoutFromGroups(actor, event.id, meta);
+    const ko = { draw: { eventId: event.id, stage: 'KNOCKOUT' } };
+    const qf = await prisma.match.findMany({
+      where: { ...ko, round: 1 },
+      orderBy: { matchNumber: 'asc' },
+    });
+    const semis = () =>
+      prisma.match.findMany({
+        where: { ...ko, round: 2 },
+        orderBy: { matchNumber: 'asc' },
+        include: { entryA: true, entryB: true },
+      });
+    const seeds = async () =>
+      (await semis()).map((m) => [m.entryA?.seed ?? null, m.entryB?.seed ?? null]);
+    return { actor, t, event, qf, seeds, semis };
+  }
+
+  it('waits for the last quarter-final, then pairs best v worst and 2nd v 3rd', async () => {
+    const { actor, qf, seeds } = await quarterFinals();
+    // Seed 8 beats seed 1; 4, 2 and 3 win: the four left are 8, 4, 2, 3.
+    await recordResult(actor, qf[0]!.id, lose, meta);
+    await recordResult(actor, qf[1]!.id, win, meta);
+    await recordResult(actor, qf[2]!.id, win, meta);
+    expect(await seeds()).toEqual([
+      [null, null],
+      [null, null],
+    ]);
+    await recordResult(actor, qf[3]!.id, win, meta);
+    // A fixed bracket would give 8 v 4 and 2 v 3.
+    expect(await seeds()).toEqual([
+      [2, 8],
+      [3, 4],
+    ]);
+  });
+
+  it('re-pairs on a correction until a semi-final has started', async () => {
+    const { actor, qf, seeds, semis } = await quarterFinals();
+    for (const m of qf) await recordResult(actor, m.id, win, meta); // 1, 4, 2, 3
+    expect(await seeds()).toEqual([
+      [1, 4],
+      [2, 3],
+    ]);
+    await recordResult(actor, qf[0]!.id, lose, meta); // 8 instead of 1
+    expect(await seeds()).toEqual([
+      [2, 8],
+      [3, 4],
+    ]);
+    // The winners now point at their new semi-final.
+    const moved = await prisma.match.findUniqueOrThrow({ where: { id: qf[0]!.id } });
+    expect(moved.nextMatchId).toBe((await semis())[0]!.id);
+    const [semi] = await semis();
+    await prisma.match.update({ where: { id: semi!.id }, data: { status: 'IN_PROGRESS' } });
+    await expect(recordResult(actor, qf[0]!.id, win, meta)).rejects.toMatchObject({
+      code: 'nextMatchPlayed',
+    });
+  });
+
+  it('keeps the fixed bracket when the category switches it off', async () => {
+    const { actor, qf, seeds } = await quarterFinals(true);
+    await recordResult(actor, qf[0]!.id, lose, meta);
+    expect((await seeds())[0]).toEqual([8, null]);
+    for (const m of qf.slice(1)) await recordResult(actor, m.id, win, meta);
+    expect(await seeds()).toEqual([
+      [8, 4],
+      [2, 3],
+    ]);
   });
 });

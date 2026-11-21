@@ -694,6 +694,10 @@
     "events": {
       "new": "New event",
       "edit": "Edit event",
+      "semiTitle": "Semi-final pairing",
+      "semiHint": "With seeds and no byes, the four teams left after the quarter-finals are paired best against worst and second against third. The semi-finals are filled in when the last quarter-final is done.",
+      "semiOn": "Pair semi-finals by seed",
+      "semiOff": "Keep the fixed bracket",
       "discipline": "Event",
       "ageCategory": "Age category",
       "anyAge": "All ages",
