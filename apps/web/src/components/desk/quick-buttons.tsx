@@ -209,7 +209,7 @@ export function QuickPlaceAction({
   defaultStart: string;
   action: (courtId: string, startsAt: string) => Promise<QuickResult>;
   label: string;
-  labels: { court: string; time: string };
+  labels: { court: string; time: string; now: string };
 }) {
   const [courtId, setCourtId] = useState(defaultCourtId ?? courts[0]?.id ?? '');
   const [startsAt, setStartsAt] = useState(defaultStart);
@@ -247,6 +247,7 @@ export function QuickPlaceAction({
             className="h-8 rounded-md border border-input bg-background px-2 text-base sm:text-xs"
           />
         </label>
+        <NowButton label={labels.now} onPick={setStartsAt} />
         <Button type="submit" size="sm" variant="outline" className="h-8" disabled={pending}>
           {label}
         </Button>
@@ -317,5 +318,50 @@ export function SwapTeamsForm({
         <ErrorLine error={error} />
       </form>
     </details>
+  );
+}
+
+/** The current date and time in Dutch time, as a datetime-local value (YYYY-MM-DDTHH:MM). */
+function nowInAmsterdam() {
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Europe/Amsterdam',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23',
+    })
+      .formatToParts(new Date())
+      .map((p) => [p.type, p.value]),
+  );
+  return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}`;
+}
+
+/**
+ * "Now" next to a date and time box (D135): fills in the current date and time, so a match put
+ * on court right now doesn't get a wrong time by a slip. Give `onPick` for a controlled box;
+ * otherwise it fills the box named `startsAt` in the same form.
+ */
+export function NowButton({ label, onPick }: { label: string; onPick?: (value: string) => void }) {
+  return (
+    <Button
+      type="button"
+      size="sm"
+      variant="ghost"
+      className="h-8"
+      onClick={(e) => {
+        const value = nowInAmsterdam();
+        if (onPick) return onPick(value);
+        const input = e.currentTarget.form?.elements.namedItem('startsAt');
+        if (input instanceof HTMLInputElement) {
+          input.value = value;
+          input.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+      }}
+    >
+      {label}
+    </Button>
   );
 }

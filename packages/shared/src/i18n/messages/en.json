@@ -1191,6 +1191,7 @@
       "swapWith": "Swap with",
       "swap": "Swap",
       "remove": "Take off the schedule",
+      "now": "Now",
       "place": "Schedule",
       "empty": "Nothing to schedule yet. Publish the draws per category first.",
       "downloadPdf": "Schedule as PDF",
@@ -1272,6 +1273,7 @@
       "swapMine": "Swap this team",
       "swapWith": "with a team in match #{number}",
       "swapButton": "Swap",
+      "now": "Now",
       "courtLabel": "Court",
       "timeLabel": "Time",
       "courtNumber": "Court {number}"

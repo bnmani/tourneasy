@@ -22,7 +22,7 @@ import { isAppError } from '@/server/lib/errors';
 import { Suspense } from 'react';
 import { SwapMatch, SwapOptionsProvider } from '@/components/admin/swap-match';
 import { ExpectedKnockoutList } from '@/components/matches/expected-knockout';
-import { QuickButton } from '@/components/desk/quick-buttons';
+import { NowButton, QuickButton } from '@/components/desk/quick-buttons';
 import { quickExpectedKnockoutAction } from '@/server/actions/match-actions';
 import {
   expectedKnockout,
@@ -180,6 +180,7 @@ export default async function SchedulePage({ params, searchParams }: Props) {
                       defaultValue={`${days[0]?.date ?? ''}T${tournament.dayStartTime ?? '09:00'}`}
                       className={cn(filterInputClass, 'sm:w-auto')}
                     />
+                    <NowButton label={ts('now')} />
                     <Button type="submit" size="sm" variant="outline">
                       {ts('place')}
                     </Button>
@@ -243,6 +244,7 @@ export default async function SchedulePage({ params, searchParams }: Props) {
                                   defaultValue={utcToAmsterdamLocal(item.startsAt!)}
                                   className={cn(filterInputClass, 'sm:w-auto')}
                                 />
+                                <NowButton label={ts('now')} />
                                 <Button type="submit" size="sm" variant="outline">
                                   {ts('move')}
                                 </Button>

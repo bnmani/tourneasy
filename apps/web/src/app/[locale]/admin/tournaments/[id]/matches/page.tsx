@@ -305,7 +305,7 @@ export default async function DeskPage({ params, searchParams }: Props) {
                         }
                         action={quickPlaceAndStartAction.bind(null, item.id)}
                         label={td('onCourt')}
-                        labels={{ court: td('courtLabel'), time: td('timeLabel') }}
+                        labels={{ court: td('courtLabel'), time: td('timeLabel'), now: td('now') }}
                       />
                     )}
                     {item.swap && (

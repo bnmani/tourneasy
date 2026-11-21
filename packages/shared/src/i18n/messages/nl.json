@@ -1191,6 +1191,7 @@
       "swapWith": "Wisselen met",
       "swap": "Wisselen",
       "remove": "Uit de planning halen",
+      "now": "Nu",
       "place": "Inplannen",
       "empty": "Nog niets te plannen. Publiceer eerst de schema's per onderdeel.",
       "downloadPdf": "Speelschema als PDF",
@@ -1272,6 +1273,7 @@
       "swapMine": "Dit team wisselen",
       "swapWith": "met een team in wedstrijd #{number}",
       "swapButton": "Wisselen",
+      "now": "Nu",
       "courtLabel": "Baan",
       "timeLabel": "Tijd",
       "courtNumber": "Baan {number}"
