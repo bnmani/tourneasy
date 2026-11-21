@@ -1131,7 +1131,7 @@ export async function paymentsOverview(actor: Actor, filters: PaymentFilters = {
     filters.view === 'paid'
       ? all.filter((g) => g.paidCents > g.refundedCents)
       : filters.view === 'refunded'
-        ? all.filter((g) => g.refundedCents > 0)
+        ? all.filter((g) => g.refundedCents > 0 || g.pendingRefundCents > 0)
         : filters.view === 'waived'
           ? all.filter((g) => g.discountCents > 0)
           : filters.view === 'outstanding'
@@ -1149,7 +1149,15 @@ export async function paymentsOverview(actor: Actor, filters: PaymentFilters = {
       // Entry fees and food together: the tournament's money in and out (D133).
       paidCents: feesPaidCents + foodPaidCents,
       refundedCents: feesRefundedCents + foodRefundedCents,
-      netCents: feesPaidCents + foodPaidCents - feesRefundedCents - foodRefundedCents,
+      // Refunds box: returned plus approved and on their way (D137).
+      refundsCents:
+        feesRefundedCents + foodRefundedCents + inProgress.reduce((n, r) => n + r.amountCents, 0),
+      netCents:
+        feesPaidCents +
+        foodPaidCents -
+        feesRefundedCents -
+        foodRefundedCents -
+        inProgress.reduce((n, r) => n + r.amountCents, 0),
       feesPaidCents,
       feesRefundedCents,
       foodPaidCents,

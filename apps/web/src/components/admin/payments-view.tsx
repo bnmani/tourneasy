@@ -66,78 +66,79 @@ export async function PaymentsView({
     r.orderItem ? eventLabel(r.orderItem.registration.event, locale) : '';
   return (
     <>
-      {/* Four boxes; a click shows only what that box counts, again to show all (D111). */}
-      <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      {/* Five boxes of one size; a click shows only what that box counts, again to show all (D111). */}
+      <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         {(
           [
             {
               view: 'paid',
               label: tp('received'),
               value: overview.totals.paidCents,
-              parts: [overview.totals.feesPaidCents, overview.totals.foodPaidCents],
+              detail: `${tp('partFees', { amount: euro(overview.totals.feesPaidCents) })} · ${tp('partFood', { amount: euro(overview.totals.foodPaidCents) })}`,
             },
             {
               view: 'refunded',
-              label: tp('refunded'),
-              value: overview.totals.refundedCents,
-              parts: [overview.totals.feesRefundedCents, overview.totals.foodRefundedCents],
+              label: tp('refundsBox'),
+              value: overview.totals.refundsCents,
+              detail: `${tp('refundsDone', { amount: euro(overview.totals.refundedCents) })} · ${tp('refundsOnTheirWay', { amount: euro(overview.totals.refundsInProgressCents) })}`,
             },
             {
               view: 'waived',
               label: tp('waived'),
               value: overview.totals.waivedCents,
-              parts: null,
+              detail: null,
             },
             {
               view: 'outstanding',
               label: tp('outstanding', { count: overview.totals.outstandingShares }),
               value: overview.totals.outstandingCents,
-              parts: null,
+              detail: null,
+            },
+            {
+              view: null,
+              label: tp('netBox'),
+              value: overview.totals.netCents,
+              detail: tp('netHint'),
             },
           ] as const
         ).map((card) => {
-          const active = overview.view === card.view;
+          const active = card.view !== null && overview.view === card.view;
+          const body = (
+            <>
+              <span className="block text-sm text-muted-foreground">{card.label}</span>
+              <span className="mt-1 block font-heading text-2xl font-bold">{euro(card.value)}</span>
+              {card.detail && (
+                <span className="mt-1 block text-xs text-muted-foreground">{card.detail}</span>
+              )}
+            </>
+          );
+          const box = 'block h-full min-h-28 rounded-lg border bg-card p-4';
           return (
-            <li key={card.view}>
-              <Link
-                href={link({ view: active ? null : card.view, page: null })}
-                aria-current={active ? 'true' : undefined}
-                className={cn(
-                  'block rounded-lg border bg-card p-4 hover:border-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
-                  active && 'border-primary bg-primary/5',
-                )}
-              >
-                <span className="block text-sm text-muted-foreground">{card.label}</span>
-                <span className="mt-1 block font-heading text-2xl font-bold">
-                  {euro(card.value)}
-                </span>
-                {card.parts && (
-                  <span className="mt-1 block text-xs text-muted-foreground">
-                    {tp('partFees', { amount: euro(card.parts[0]) })} ·{' '}
-                    {tp('partFood', { amount: euro(card.parts[1]) })}
-                  </span>
-                )}
-              </Link>
+            <li key={card.label}>
+              {card.view === null ? (
+                <div className={cn(box, 'border-primary/40 bg-primary/5')}>{body}</div>
+              ) : (
+                <Link
+                  href={link({ view: active ? null : card.view, page: null })}
+                  aria-current={active ? 'true' : undefined}
+                  className={cn(
+                    box,
+                    'hover:border-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
+                    active && 'border-primary bg-primary/5',
+                  )}
+                >
+                  {body}
+                </Link>
+              )}
             </li>
           );
         })}
       </ul>
-      <p className="text-sm">
-        <span className="font-semibold">{tp('net')}: </span>
-        {euro(overview.totals.netCents)}
-        {overview.totals.refundsInProgressCents > 0 && (
-          <span className="text-muted-foreground">
-            {' '}
-            · {tp('refundsOnTheirWay', { amount: euro(overview.totals.refundsInProgressCents) })}
-          </span>
-        )}
-        {overview.totals.foodPendingCents > 0 && (
-          <span className="text-muted-foreground">
-            {' '}
-            · {tp('foodPending', { amount: euro(overview.totals.foodPendingCents) })}
-          </span>
-        )}
-      </p>
+      {overview.totals.foodPendingCents > 0 && (
+        <p className="text-sm text-muted-foreground">
+          {tp('foodPending', { amount: euro(overview.totals.foodPendingCents) })}
+        </p>
+      )}
       {overview.view && (
         <p className="text-sm text-muted-foreground">
           {tp(`showing.${overview.view}`)}{' '}

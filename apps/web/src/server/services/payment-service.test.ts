@@ -448,6 +448,12 @@ describe('refunds on their way (D134)', () => {
     expect(overview.refundsInProgress).toHaveLength(1);
     expect(overview.totals.refundsInProgressCents).toBe(1000);
     expect(overview.totals.refundedCents).toBe(0);
+    // The Refunds box counts it as soon as it is approved; the net takes it off.
+    expect(overview.totals.refundsCents).toBe(1000);
+    expect(overview.totals.netCents).toBe(overview.totals.paidCents - 1000);
+    expect(
+      (await paymentsOverview(admin.actor, { tournamentId: t.id, view: 'refunded' })).total,
+    ).toBe(1);
     const { header, rows } = await exportPayments(admin.actor, { tournamentId: t.id }, 'en');
     expect(rows[0]![header.indexOf('refundPending')]).toBe(10);
   });
