@@ -1120,7 +1120,12 @@ export async function paymentsOverview(actor: Actor, filters: PaymentFilters = {
     }),
   ]);
   const waivers = await prisma.user.findMany({
-    where: { id: { in: [...new Set(waivedShares.map((w) => w.waivedById!))] } },
+    // A waiver without a recorded person (copied or imported data) must not break the page.
+    where: {
+      id: {
+        in: [...new Set(waivedShares.map((w) => w.waivedById).filter((id): id is string => !!id))],
+      },
+    },
     select: { id: true, name: true },
   });
   const waiverName = new Map(waivers.map((u) => [u.id, u.name]));
@@ -1172,7 +1177,7 @@ export async function paymentsOverview(actor: Actor, filters: PaymentFilters = {
     // The owner's waivers, for the Waived box (D111).
     waivedShares: waivedShares.map((w) => ({
       ...w,
-      waivedBy: waiverName.get(w.waivedById!) ?? null,
+      waivedBy: (w.waivedById && waiverName.get(w.waivedById)) || null,
     })),
     // Who still has to pay, per player, for the Outstanding box (D111).
     outstandingPlayers:

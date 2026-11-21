@@ -459,6 +459,24 @@ describe('refunds on their way (D134)', () => {
   });
 });
 
+describe('a waiver with no recorded person (D138)', () => {
+  it('still shows the payments page data', async () => {
+    setGatewayForTests(null);
+    const t = await tournament();
+    const de = await event(t.id, 'DE');
+    const anna = await player({ gender: 'FEMALE' });
+    const entered = await enter(anna.actor, [{ eventId: de.id }]);
+    const admin = await player({}, Role.ADMIN);
+    await prisma.registrationParticipant.update({
+      where: { id: entered.registrations[0]!.participantId! },
+      data: { paymentStatus: 'WAIVED', waivedCents: 1500, waivedAt: new Date(), waivedById: null },
+    });
+    const overview = await paymentsOverview(admin.actor, { tournamentId: t.id });
+    expect(overview.totals.waivedCents).toBe(1500);
+    expect(overview.waivedShares[0]).toMatchObject({ waivedBy: null });
+  });
+});
+
 describe('waivers and discount codes (D111)', () => {
   it('lets the owner waive and undo; counts it under Waived', async () => {
     setGatewayForTests(null);
