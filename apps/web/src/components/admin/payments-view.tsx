@@ -125,6 +125,12 @@ export async function PaymentsView({
       <p className="text-sm">
         <span className="font-semibold">{tp('net')}: </span>
         {euro(overview.totals.netCents)}
+        {overview.totals.refundsInProgressCents > 0 && (
+          <span className="text-muted-foreground">
+            {' '}
+            · {tp('refundsOnTheirWay', { amount: euro(overview.totals.refundsInProgressCents) })}
+          </span>
+        )}
         {overview.totals.foodPendingCents > 0 && (
           <span className="text-muted-foreground">
             {' '}
@@ -182,6 +188,29 @@ export async function PaymentsView({
                 ) : (
                   <p className="text-sm text-muted-foreground">{tp('adminDecides')}</p>
                 )}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {overview.refundsInProgress.length > 0 && (
+        <section aria-labelledby="progress-title" className="space-y-3">
+          <h2 id="progress-title" className="text-lg font-semibold">
+            {tp('refundsInProgress')}
+          </h2>
+          <p className="text-sm text-muted-foreground">{tp('refundsInProgressHint')}</p>
+          <ul className="space-y-2">
+            {overview.refundsInProgress.map((r) => (
+              <li key={r.id} className="rounded-lg border bg-card p-4 text-sm">
+                <p className="font-medium">
+                  {euro(r.amountCents)} · {refundWho(r)}
+                </p>
+                <p className="text-muted-foreground">
+                  {r.payment.order.tournament.name} · {refundWhat(r)} ·{' '}
+                  {r.payment.order.orderNumber}
+                  {r.processedAt && <> · {short(r.processedAt)}</>}
+                </p>
               </li>
             ))}
           </ul>

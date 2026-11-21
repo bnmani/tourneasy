@@ -822,6 +822,11 @@ const overviewOrderSelect = {
       id: true,
       amountCents: true,
       refundedCents: true,
+      // Refunds not finished yet (waiting for approval or for the bank, D134).
+      refunds: {
+        where: { status: { in: ['REQUESTED', 'APPROVED', 'PENDING'] } },
+        select: { amountCents: true },
+      },
       participant: { select: { player: { select: payerPlayerSelect } } },
       registration: { select: { event: { select: eventLabelSelect } } },
     },
@@ -843,6 +848,7 @@ type OverviewOrder = {
     id: string;
     amountCents: number;
     refundedCents: number;
+    refunds: { amountCents: number }[];
     participant: {
       player: Prisma.PlayerProfileGetPayload<{ select: typeof payerPlayerSelect }>;
     };
@@ -872,6 +878,8 @@ function groupByPlayer(orders: OverviewOrder[]) {
       /** Cancelled or expired (e.g. a desk payment undone): not money in. */
       voidCents: number;
       refundedCents: number;
+      /** Refunds on their way: waiting for approval or for the bank. */
+      pendingRefundCents: number;
       discountCents: number;
       orderIds: Set<string>;
       latest: Date;
@@ -903,6 +911,7 @@ function groupByPlayer(orders: OverviewOrder[]) {
         pendingCents: 0,
         voidCents: 0,
         refundedCents: 0,
+        pendingRefundCents: 0,
         discountCents: 0,
         orderIds: new Set<string>(),
         latest: at,
@@ -914,6 +923,7 @@ function groupByPlayer(orders: OverviewOrder[]) {
       else if (o.status === 'PENDING') g.pendingCents += i.amountCents;
       else g.voidCents += i.amountCents;
       g.refundedCents += i.refundedCents;
+      g.pendingRefundCents += i.refunds.reduce((n, r) => n + r.amountCents, 0);
       // A code's discount is per order: counted once.
       if (!g.orderIds.has(o.id) && MONEY_IN.includes(o.status)) g.discountCents += o.discountCents;
       g.orderIds.add(o.id);
@@ -973,65 +983,90 @@ export async function paymentsOverview(actor: Actor, filters: PaymentFilters = {
     ...(filters.status ? { status: filters.status } : { status: { not: 'EXPIRED' } }),
   };
   const tournamentWhere = filters.tournamentId ? { tournamentId: filters.tournamentId } : {};
-  const [orderRows, paid, refunded, outstanding, refundRequests, foodByStatus] = await Promise.all([
-    prisma.order.findMany({
-      where,
-      orderBy: { createdAt: 'desc' },
-      take: 5000,
-      select: overviewOrderSelect,
-    }),
-    prisma.payment.aggregate({
-      where: { status: 'SUCCEEDED', order: tournamentWhere },
-      _sum: { amountCents: true },
-    }),
-    prisma.refund.aggregate({
-      where: { status: 'SUCCEEDED', payment: { order: tournamentWhere } },
-      _sum: { amountCents: true },
-    }),
-    prisma.registrationParticipant.findMany({
-      where: {
-        active: true,
-        paymentStatus: 'UNPAID',
-        registration: {
-          status: { in: ['PENDING', 'CONFIRMED'] },
-          event: {
-            feeCents: { gt: 0 },
-            ...(filters.tournamentId ? { tournamentId: filters.tournamentId } : {}),
-          },
-        },
-      },
-      select: shareSelect,
-    }),
-    prisma.refund.findMany({
-      where: { status: 'REQUESTED', payment: { order: tournamentWhere } },
-      orderBy: { createdAt: 'asc' },
-      select: {
-        id: true,
-        amountCents: true,
-        reason: true,
-        createdAt: true,
-        payment: {
-          select: {
-            method: true,
-            order: {
-              select: {
-                orderNumber: true,
-                user: { select: { name: true, email: true } },
-                tournament: { select: { name: true } },
-              },
+  const [orderRows, paid, refunded, outstanding, refundRequests, foodByStatus, inProgress] =
+    await Promise.all([
+      prisma.order.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        take: 5000,
+        select: overviewOrderSelect,
+      }),
+      prisma.payment.aggregate({
+        where: { status: 'SUCCEEDED', order: tournamentWhere },
+        _sum: { amountCents: true },
+      }),
+      prisma.refund.aggregate({
+        where: { status: 'SUCCEEDED', payment: { order: tournamentWhere } },
+        _sum: { amountCents: true },
+      }),
+      prisma.registrationParticipant.findMany({
+        where: {
+          active: true,
+          paymentStatus: 'UNPAID',
+          registration: {
+            status: { in: ['PENDING', 'CONFIRMED'] },
+            event: {
+              feeCents: { gt: 0 },
+              ...(filters.tournamentId ? { tournamentId: filters.tournamentId } : {}),
             },
           },
         },
-        orderItem: { select: refundItemSelect },
-      },
-    }),
-    // Food money counts in the tournament's totals too (D133).
-    prisma.foodOrder.groupBy({
-      by: ['status'],
-      where: tournamentWhere,
-      _sum: { totalCents: true },
-    }),
-  ]);
+        select: shareSelect,
+      }),
+      prisma.refund.findMany({
+        where: { status: 'REQUESTED', payment: { order: tournamentWhere } },
+        orderBy: { createdAt: 'asc' },
+        select: {
+          id: true,
+          amountCents: true,
+          reason: true,
+          createdAt: true,
+          payment: {
+            select: {
+              method: true,
+              order: {
+                select: {
+                  orderNumber: true,
+                  user: { select: { name: true, email: true } },
+                  tournament: { select: { name: true } },
+                },
+              },
+            },
+          },
+          orderItem: { select: refundItemSelect },
+        },
+      }),
+      // Food money counts in the tournament's totals too (D133).
+      prisma.foodOrder.groupBy({
+        by: ['status'],
+        where: tournamentWhere,
+        _sum: { totalCents: true },
+      }),
+      // Approved refunds the bank has not finished yet (D134).
+      prisma.refund.findMany({
+        where: { status: { in: ['APPROVED', 'PENDING'] }, payment: { order: tournamentWhere } },
+        orderBy: { createdAt: 'asc' },
+        select: {
+          id: true,
+          amountCents: true,
+          status: true,
+          reason: true,
+          processedAt: true,
+          payment: {
+            select: {
+              order: {
+                select: {
+                  orderNumber: true,
+                  user: { select: { name: true } },
+                  tournament: { select: { name: true } },
+                },
+              },
+            },
+          },
+          orderItem: { select: refundItemSelect },
+        },
+      }),
+    ]);
   const foodSum = (status: string) =>
     foodByStatus.find((f) => f.status === status)?._sum.totalCents ?? 0;
   // Paid food orders, and refunded ones (they were paid online first); at-pickup orders that
@@ -1106,6 +1141,7 @@ export async function paymentsOverview(actor: Actor, filters: PaymentFilters = {
       foodPaidCents,
       foodRefundedCents,
       foodPendingCents: foodSum('PENDING'),
+      refundsInProgressCents: inProgress.reduce((n, r) => n + r.amountCents, 0),
       waivedCents:
         (discounts._sum.discountCents ?? 0) + waivedShares.reduce((n, w) => n + w.waivedCents, 0),
       outstandingCents: await outstandingTotal(outstanding),
@@ -1120,6 +1156,8 @@ export async function paymentsOverview(actor: Actor, filters: PaymentFilters = {
     outstandingPlayers:
       filters.view === 'outstanding' ? await outstandingByPlayer(outstanding) : [],
     refundRequests,
+    // Approved and sent, waiting for the bank to finish (D134).
+    refundsInProgress: inProgress,
     // Declined requests, newest first: a decline made by mistake can be reopened (D99).
     declinedRefunds: await prisma.refund.findMany({
       where: { status: 'REJECTED', payment: { order: tournamentWhere } },
@@ -1177,6 +1215,7 @@ export async function exportPayments(
     'orders',
     'lastPaidAt',
     'status',
+    'refundPending',
   ];
   const rows = groupByPlayer(orders)
     .reverse()
@@ -1195,8 +1234,45 @@ export async function exportPayments(
       [...new Set(g.lines.map((l) => l.orderNumber))].join(', '),
       g.latest.toISOString().slice(0, 16).replace('T', ' '),
       g.status,
+      g.pendingRefundCents / 100,
     ]);
-  return { header, rows };
+  // Food orders as rows of their own, so the sheet is the tournament's whole money (D134).
+  const foodOrders = await prisma.foodOrder.findMany({
+    where: {
+      ...(filters.tournamentId ? { tournamentId: filters.tournamentId } : {}),
+      status: { in: ['PAID', 'REFUNDED'] },
+    },
+    orderBy: { createdAt: 'asc' },
+    take: 20_000,
+    select: {
+      orderNumber: true,
+      status: true,
+      totalCents: true,
+      paidAt: true,
+      createdAt: true,
+      guestName: true,
+      stripePaymentIntentId: true,
+      tournament: { select: { name: true } },
+      user: { select: { name: true, email: true } },
+      lines: { select: { name: true, quantity: true } },
+    },
+  });
+  const food = foodOrders.map((o) => [
+    o.tournament.name,
+    o.guestName ?? o.user.name,
+    '',
+    o.guestName ? '' : o.user.email,
+    '',
+    `${locale === 'nl' ? 'Eten' : 'Food'}: ${o.lines.map((l) => `${l.quantity}× ${l.name}`).join('; ')}`,
+    o.totalCents / 100,
+    o.status === 'REFUNDED' ? o.totalCents / 100 : 0,
+    o.stripePaymentIntentId ? 'ONLINE' : 'DESK',
+    o.orderNumber,
+    (o.paidAt ?? o.createdAt).toISOString().slice(0, 16).replace('T', ' '),
+    `FOOD ${o.status}`,
+    0,
+  ]);
+  return { header, rows: [...rows, ...food] };
 }
 
 /** Tournaments with an entry fee, for the payments filter. */

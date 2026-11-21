@@ -386,6 +386,14 @@ describe('food in the tournament totals (D133)', () => {
     await order(3, 'PENDING', 300);
     await order(4, 'CANCELLED', 200);
     const { totals } = await paymentsOverview(admin.actor, { tournamentId: t.id });
+    // The export has the food orders as rows too, and a column for refunds on their way.
+    const exported = await exportPayments(admin.actor, { tournamentId: t.id }, 'en');
+    expect(exported.header.at(-1)).toBe('refundPending');
+    const foodRows = exported.rows.filter((r) => String(r[11]).startsWith('FOOD'));
+    expect(foodRows.map((r) => [r[11], r[6], r[7]])).toEqual([
+      ['FOOD PAID', 6, 0],
+      ['FOOD REFUNDED', 4, 4],
+    ]);
     expect(totals).toMatchObject({
       feesPaidCents: fees,
       foodPaidCents: 1000,
@@ -395,6 +403,42 @@ describe('food in the tournament totals (D133)', () => {
       refundedCents: 400,
       netCents: fees + 600,
     });
+  });
+});
+
+describe('refunds on their way (D134)', () => {
+  it('shows an approved refund the bank has not finished, and exports it', async () => {
+    setGatewayForTests(null);
+    const t = await tournament();
+    const de = await event(t.id, 'DE');
+    const anna = await player({ gender: 'FEMALE' });
+    const entered = await enter(anna.actor, [{ eventId: de.id }]);
+    const admin = await player({}, Role.ADMIN);
+    await markShareAsPaid(
+      admin.actor,
+      { participantId: entered.registrations[0]!.participantId! },
+      meta,
+      NOW,
+    );
+    const item = await prisma.orderItem.findFirstOrThrow({
+      where: { order: { tournamentId: t.id } },
+      include: { order: { include: { payments: true } } },
+    });
+    await prisma.refund.create({
+      data: {
+        paymentId: item.order.payments[0]!.id,
+        orderItemId: item.id,
+        amountCents: 1000,
+        status: 'PENDING',
+        processedAt: new Date(),
+      },
+    });
+    const overview = await paymentsOverview(admin.actor, { tournamentId: t.id });
+    expect(overview.refundsInProgress).toHaveLength(1);
+    expect(overview.totals.refundsInProgressCents).toBe(1000);
+    expect(overview.totals.refundedCents).toBe(0);
+    const { header, rows } = await exportPayments(admin.actor, { tournamentId: t.id }, 'en');
+    expect(rows[0]![header.indexOf('refundPending')]).toBe(10);
   });
 });
 
