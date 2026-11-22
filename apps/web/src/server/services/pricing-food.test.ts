@@ -11,7 +11,7 @@ import {
   foodOrdersOfUser,
   foodToCollectCount,
   markCollected,
-  myOpenFoodOrders,
+  myFoodOrders,
   undoCollected,
   placeFoodOrder,
   refundFoodOrder,
@@ -592,7 +592,7 @@ describe('food ordering (D87)', () => {
     });
 
     // The player's account: their own order to collect, not the desk order for a guest.
-    expect(await myOpenFoodOrders(player.actor)).toEqual([
+    expect(await myFoodOrders(player.actor)).toEqual([
       expect.objectContaining({ status: 'PENDING', totalCents: 700 }),
     ]);
 

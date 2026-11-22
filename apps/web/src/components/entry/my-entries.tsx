@@ -1,5 +1,6 @@
 import { formatDate, formatDayRange, formatEuro, formatTime } from '@tourneasy/shared';
 import type { AppLocale } from '@tourneasy/shared/i18n';
+import { ChevronDown } from 'lucide-react';
 import { getTranslations } from 'next-intl/server';
 import { PayButton } from '@/components/payments/pay-button';
 import { Button } from '@/components/ui/button';
@@ -11,6 +12,7 @@ import {
   respondInviteAction,
   withdrawAction,
 } from '@/server/actions/registration-actions';
+import type { myFoodOrders } from '@/server/services/food-service';
 import type { listMyInvites, listMyRegistrations } from '@/server/services/registration-service';
 
 type Entry = Awaited<ReturnType<typeof listMyRegistrations>>[number];
@@ -66,18 +68,23 @@ export async function MyInvites({ invites, locale }: { invites: Invite[]; locale
   );
 }
 
+type FoodOrder = Awaited<ReturnType<typeof myFoodOrders>>[number];
+
 /** My entries grouped per tournament, with partner, status, payment and actions. */
 export async function MyEntries({
   entries,
   locale,
   showActions,
   payFor,
+  foodOrders = [],
 }: {
   entries: Entry[];
   locale: AppLocale;
   showActions: boolean;
   /** Tournament slug whose payment window opens straight away (after entering). */
   payFor?: string;
+  /** My food & drink orders; each shows under its tournament. */
+  foodOrders?: FoodOrder[];
 }) {
   const t = await getTranslations('Dashboard');
   const ts = await getTranslations('RegistrationStatuses');
@@ -90,6 +97,7 @@ export async function MyEntries({
     <div className="space-y-6">
       {[...groups.values()].map((group) => {
         const tournament = group[0]!.tournament;
+        const food = foodOrders.filter((o) => o.tournament.slug === tournament.slug);
         return (
           <section key={tournament.slug} className="rounded-lg border">
             <header className="flex flex-wrap items-baseline justify-between gap-2 border-b bg-muted/50 px-4 py-3">
@@ -208,10 +216,85 @@ export async function MyEntries({
                 </li>
               ))}
             </ul>
+            {food.length > 0 && (
+              <FoodOrderRows orders={food} locale={locale} past={group[0]!.past} />
+            )}
           </section>
         );
       })}
     </div>
+  );
+}
+
+/**
+ * My food & drink orders under their tournament: one row each, folded away. While the
+ * tournament is still to come, the pickup code opens with the row; once it's over, the order
+ * is only a record.
+ */
+async function FoodOrderRows({
+  orders,
+  locale,
+  past,
+}: {
+  orders: FoodOrder[];
+  locale: AppLocale;
+  past: boolean;
+}) {
+  const t = await getTranslations('Dashboard');
+  const tf = await getTranslations('Food.player');
+  return (
+    <ul className="divide-y border-t">
+      {orders.map((o) => (
+        <li key={o.id} className="p-4">
+          <details className="group">
+            <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-x-3 gap-y-1 text-sm [&::-webkit-details-marker]:hidden">
+              <span className="font-semibold">{t('foodRow')}</span>
+              <span className="flex flex-wrap items-center gap-x-3 gap-y-1 text-muted-foreground">
+                <code className="font-semibold text-foreground">{o.orderNumber}</code>
+                <span>
+                  {o.collected
+                    ? tf('collected')
+                    : o.status === 'PAID'
+                      ? tf('statusPaid')
+                      : tf('statusPayAtPickup')}
+                </span>
+                {!past && !o.collected && (
+                  <span className="font-medium text-primary underline-offset-4 group-open:hidden">
+                    {t('foodShowCode')}
+                  </span>
+                )}
+                <ChevronDown
+                  aria-hidden="true"
+                  className="size-4 shrink-0 transition-transform group-open:rotate-180"
+                />
+              </span>
+            </summary>
+            <div className="mt-3 space-y-3 text-sm">
+              <p className="text-muted-foreground">
+                {o.lines.map((l) => `${l.quantity}× ${l.name}`).join(', ')} ·{' '}
+                {formatEuro(o.totalCents, locale)}
+              </p>
+              {o.tournament.foodPickupInfo && (
+                <p className="text-muted-foreground">
+                  {tf('pickup')}: {o.tournament.foodPickupInfo}
+                </p>
+              )}
+              {o.qrSvg && (
+                <div className="flex flex-col items-start gap-2 rounded-md border bg-white p-3">
+                  <div
+                    className="size-44 [&>svg]:size-full"
+                    role="img"
+                    aria-label={tf('qr', { number: o.orderNumber })}
+                    dangerouslySetInnerHTML={{ __html: o.qrSvg }}
+                  />
+                  <p className="text-xs text-muted-foreground">{tf('showCode')}</p>
+                </div>
+              )}
+            </div>
+          </details>
+        </li>
+      ))}
+    </ul>
   );
 }
 

@@ -648,32 +648,36 @@ export async function foodOrdersOfUser(actor: Actor | null, userId: string, now 
 }
 
 /**
- * The player's own orders still to collect, for their account: paid, or to pay at pickup. Desk
- * orders for guests aren't theirs (D107). Shows the pickup code and where to collect.
+ * The player's own food orders for their account, shown under their tournament: paid, or to pay
+ * at pickup, collected or not. Desk orders for guests aren't theirs (D107). The pickup QR code
+ * is only there while the order is still to collect.
  */
-export async function myOpenFoodOrders(actor: Actor) {
+export async function myFoodOrders(actor: Actor) {
   const orders = await prisma.foodOrder.findMany({
     where: {
       userId: actor.userId,
       guestName: null,
-      collectedAt: null,
       OR: [{ status: 'PAID' }, { status: 'PENDING', stripePaymentIntentId: null }],
     },
     orderBy: { createdAt: 'asc' },
-    take: 50,
+    take: 100,
     include: {
       lines: true,
       tournament: { select: { name: true, slug: true, foodPickupInfo: true } },
     },
   });
-  return orders.map((o) => ({
-    id: o.id,
-    orderNumber: o.orderNumber,
-    status: o.status,
-    totalCents: o.totalCents,
-    tournament: o.tournament,
-    lines: o.lines.map((l) => ({ name: l.name, quantity: l.quantity })),
-  }));
+  return Promise.all(
+    orders.map(async (o) => ({
+      id: o.id,
+      orderNumber: o.orderNumber,
+      status: o.status,
+      collected: !!o.collectedAt,
+      totalCents: o.totalCents,
+      qrSvg: o.collectedAt ? null : await pickupQr(o.orderNumber),
+      tournament: o.tournament,
+      lines: o.lines.map((l) => ({ name: l.name, quantity: l.quantity })),
+    })),
+  );
 }
 
 /** Handed out at the counter; an order paid at pickup is marked paid at the same time. */

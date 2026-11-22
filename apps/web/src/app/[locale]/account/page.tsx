@@ -1,5 +1,5 @@
 import { managedTournaments } from '@/server/services/tournament-service';
-import { formatDayRange, formatEuro } from '@tourneasy/shared';
+import { formatDayRange } from '@tourneasy/shared';
 import type { AppLocale } from '@tourneasy/shared/i18n';
 import type { Metadata } from 'next';
 import { ChevronDown } from 'lucide-react';
@@ -13,9 +13,8 @@ import { firstParam, pageLocale, type LocaleParams, type SearchParams } from '@/
 import { cn } from '@/lib/utils';
 import { requireActor } from '@/server/auth/web';
 import { getMyAccount } from '@/server/services/profile-service';
-import { myOpenFoodOrders } from '@/server/services/food-service';
+import { myFoodOrders } from '@/server/services/food-service';
 import { followedMatches, listFollowing } from '@/server/services/public-service';
-import type { Actor } from '@/server/services/session-service';
 import { listMyInvites, listMyRegistrations } from '@/server/services/registration-service';
 import { HistoryList } from '@/components/matches/history-list';
 import { ExpectedKnockoutLines } from '@/components/matches/expected-knockout';
@@ -63,6 +62,9 @@ export default async function DashboardPage({
   const entries =
     profile && (tab === 'upcoming' || tab === 'past') ? await listMyRegistrations(actor) : [];
   const invites = profile && tab === 'upcoming' ? await listMyInvites(actor) : [];
+  // My food orders sit under their tournament, on both the upcoming and the past tab.
+  const foodOrders =
+    profile && (tab === 'upcoming' || tab === 'past') ? await myFoodOrders(actor) : [];
   const upcoming = entries.filter((e) => !e.past);
   const past = entries.filter((e) => e.past);
   const status = firstParam(query.status);
@@ -179,11 +181,11 @@ export default async function DashboardPage({
                 locale={locale}
                 showActions
                 payFor={firstParam(query.pay)}
+                foodOrders={foodOrders}
               />
             ) : (
               <p className="text-muted-foreground">{t('upcomingEmpty')}</p>
             )}
-            <MyFoodOrders actor={actor} locale={locale} />
             <Button asChild variant={upcoming.length > 0 ? 'outline' : 'default'}>
               <Link href="/tournaments">{t('browse')}</Link>
             </Button>
@@ -193,7 +195,7 @@ export default async function DashboardPage({
         {tab === 'past' && <MyHistory actor={actor} locale={locale} />}
         {tab === 'past' &&
           (past.length > 0 ? (
-            <MyEntries entries={past} locale={locale} showActions={false} />
+            <MyEntries entries={past} locale={locale} showActions={false} foodOrders={foodOrders} />
           ) : (
             <p className="text-muted-foreground">{t('pastEmpty')}</p>
           ))}
@@ -247,52 +249,6 @@ export default async function DashboardPage({
         )}
       </section>
     </div>
-  );
-}
-
-/**
- * Food & drink to collect (D87): the pickup code and where to collect, so the player can show it
- * at the counter. Only orders paid, or to pay at pickup, that aren't handed out yet.
- */
-async function MyFoodOrders({ actor, locale }: { actor: Actor; locale: AppLocale }) {
-  const orders = await myOpenFoodOrders(actor);
-  if (orders.length === 0) return null;
-  const t = await getTranslations('Dashboard');
-  const tf = await getTranslations('Food.player');
-  return (
-    <section aria-labelledby="my-food" className="space-y-3">
-      <h2 id="my-food" className="font-heading text-lg font-semibold">
-        {t('foodTitle')}
-      </h2>
-      <ul className="divide-y rounded-md border">
-        {orders.map((o) => (
-          <li key={o.id} className="space-y-1 p-3 text-sm">
-            <div className="flex flex-wrap items-center gap-2">
-              <code className="font-semibold">{o.orderNumber}</code>
-              <span className="font-medium">{o.tournament.name}</span>
-              <span className="text-muted-foreground">
-                {o.status === 'PAID' ? tf('statusPaid') : tf('statusPayAtPickup')}
-              </span>
-            </div>
-            <p className="text-muted-foreground">
-              {o.lines.map((l) => `${l.quantity}× ${l.name}`).join(', ')} ·{' '}
-              {formatEuro(o.totalCents, locale)}
-            </p>
-            {o.tournament.foodPickupInfo && (
-              <p className="text-muted-foreground">
-                {tf('pickup')}: {o.tournament.foodPickupInfo}
-              </p>
-            )}
-            <Link
-              href={`/tournaments/${o.tournament.slug}/food`}
-              className="font-medium text-primary underline underline-offset-4"
-            >
-              {t('foodShowCode')}
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </section>
   );
 }
 
