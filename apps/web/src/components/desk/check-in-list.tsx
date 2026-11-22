@@ -111,7 +111,6 @@ function Column({
             <li key={r.playerId}>
               <CheckInToggle
                 name={r.name}
-                detail={[r.memberNumber, r.club, r.when].filter(Boolean).join(' · ')}
                 checkedIn={r.present}
                 busy={r.busy}
                 toggle={() => playerCheckInAction(tournamentId, r.playerId, !r.present)}

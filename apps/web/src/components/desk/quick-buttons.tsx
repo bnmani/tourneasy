@@ -45,7 +45,6 @@ function ErrorLine({ error }: { error: string | null }) {
  */
 export function CheckInToggle({
   name,
-  detail,
   checkedIn,
   busy = null,
   toggle,
@@ -53,8 +52,6 @@ export function CheckInToggle({
   footer,
 }: {
   name: string;
-  /** A small second line, e.g. member number and club. */
-  detail?: string;
   checkedIn: boolean;
   /** "On court 3 now" while the player is busy in another match. */
   busy?: string | null;
@@ -66,8 +63,11 @@ export function CheckInToggle({
 }) {
   const [shown, setShown] = useOptimistic(checkedIn);
   const { error, run } = useQuick();
+  // Every card is the same size: the name takes up to two lines, then one line of status.
+  // Longer names get a smaller font so they still fit in two lines.
+  const nameSize = name.length <= 16 ? 'text-sm' : name.length <= 24 ? 'text-[13px]' : 'text-xs';
   const classes = cn(
-    'flex min-h-14 w-full flex-col justify-center gap-0.5 rounded-md border border-l-[6px] px-3 py-2 text-left text-sm transition-colors',
+    'flex h-[4.75rem] w-full flex-col justify-between rounded-md border border-l-[6px] px-3 py-2 text-left text-sm transition-colors',
     shown ? 'border-l-green-600' : 'border-l-orange-600',
     busy
       ? 'cursor-default border-y-orange-400 border-r-orange-400 bg-orange-50 dark:bg-orange-950/40'
@@ -77,14 +77,22 @@ export function CheckInToggle({
   );
   const content = (
     <>
-      <span className="leading-tight font-semibold break-words">{name}</span>
-      {detail && <span className="text-xs text-muted-foreground">{detail}</span>}
+      <span
+        className={cn(
+          'line-clamp-2 min-h-[2.5rem] leading-tight font-semibold break-words',
+          nameSize,
+        )}
+      >
+        {name}
+      </span>
       {busy ? (
-        <span className="text-xs font-semibold text-orange-800 dark:text-orange-300">{busy}</span>
+        <span className="truncate text-xs font-semibold text-orange-800 dark:text-orange-300">
+          {busy}
+        </span>
       ) : (
         <span
           className={cn(
-            'text-xs',
+            'truncate text-xs',
             shown ? 'font-semibold text-green-600' : 'text-muted-foreground',
           )}
         >
