@@ -14,6 +14,8 @@ overrides:
   postcss: ^8.5.23
   # @prisma/config pins deepmerge-ts 7.x (stack exhaustion; Prisma CLI only)
   deepmerge-ts: ^8.0.0
+  # typescript-estree (lint only) pins minimatch 9.x (globparts amplification)
+  '@typescript-eslint/typescript-estree>minimatch': '>=11.0.1'
 
 # Dependencies allowed to run install scripts (pnpm 11).
 allowBuilds:
