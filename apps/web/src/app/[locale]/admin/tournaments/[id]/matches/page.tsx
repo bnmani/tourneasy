@@ -368,6 +368,15 @@ export default async function DeskPage({ params, searchParams }: Props) {
                             label={td('onCourt')}
                             labels={{ court: td('courtLabel') }}
                           />
+                        ) : item.status === 'IN_PROGRESS' && item.sets.length === 0 ? (
+                          // On court by mistake: back to waiting while no score is in (D99).
+                          <QuickButton
+                            size="sm"
+                            variant="ghost"
+                            action={quickUnstartMatchAction.bind(null, item.id)}
+                          >
+                            {td('backToWaiting')}
+                          </QuickButton>
                         ) : (
                           <span />
                         )}
@@ -387,16 +396,6 @@ export default async function DeskPage({ params, searchParams }: Props) {
                             button: td('swapButton'),
                           }}
                         />
-                      )}
-                      {item.status === 'IN_PROGRESS' && item.sets.length === 0 && (
-                        // On court by mistake: back to waiting while no score is in (D99).
-                        <QuickButton
-                          size="sm"
-                          variant="ghost"
-                          action={quickUnstartMatchAction.bind(null, item.id)}
-                        >
-                          {td('backToWaiting')}
-                        </QuickButton>
                       )}
                     </div>
 
