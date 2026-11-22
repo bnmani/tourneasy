@@ -411,7 +411,9 @@
     "scheduleMine": "My matches",
     "scheduleMineEmpty": "No matches in a published schedule yet. You will get an email when your tournament's schedule is ready.",
     "scheduleFollowed": "Players you follow",
-    "followingScheduleHint": "When they play is shown under"
+    "followingScheduleHint": "When they play is shown under",
+    "foodTitle": "Food & drink to collect",
+    "foodShowCode": "Show my pickup code"
   },
   "Profile": {
     "title": "My profile",
