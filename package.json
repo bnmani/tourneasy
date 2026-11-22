@@ -21,9 +21,9 @@
     "db:studio": "pnpm --filter @tourneasy/db db:studio"
   },
   "devDependencies": {
-    "prettier": "^3.4.2",
-    "prettier-plugin-tailwindcss": "^0.6.9",
-    "turbo": "2.11.8",
+    "prettier": "^3.10.1",
+    "prettier-plugin-tailwindcss": "^0.8.1",
+    "turbo": "2.11.13",
     "typescript": "^5.7.2"
   }
 }
