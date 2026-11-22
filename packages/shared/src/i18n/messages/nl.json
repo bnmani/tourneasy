@@ -1287,7 +1287,9 @@
       "confirmWalkover": "Bevestigen: {name} wint door walkover. Er worden geen scores vastgelegd.",
       "confirmRetirement": "Bevestigen: {name} wint door opgave. De scores hierboven blijven staan.",
       "confirm": "Bevestigen",
-      "cancel": "Annuleren"
+      "cancel": "Annuleren",
+      "courtBusy": "Baan {number} in gebruik",
+      "courtFree": "Baan {number} vrij"
     },
     "navEmail": "E-mail",
     "emailSettings": {

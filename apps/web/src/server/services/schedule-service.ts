@@ -1092,13 +1092,34 @@ export async function deskMatches(
   const done = (s: string) => s === 'COMPLETED' || s === 'WALKOVER' || s === 'RETIRED';
   const filtered =
     view === 'now'
-      ? withSwap.filter((i) => i.status === 'IN_PROGRESS' || i.status === 'CALLED')
+      ? // On court: by court number, then by time, so the courts always read in the same order.
+        withSwap
+          .filter((i) => i.status === 'IN_PROGRESS' || i.status === 'CALLED')
+          .sort(
+            (a, b) =>
+              (a.court?.number ?? Number.MAX_SAFE_INTEGER) -
+                (b.court?.number ?? Number.MAX_SAFE_INTEGER) ||
+              (a.startsAt?.getTime() ?? 0) - (b.startsAt?.getTime() ?? 0),
+          )
       : view === 'next'
         ? withSwap.filter((i) => i.status === 'SCHEDULED' && i.ready).slice(0, 30)
         : view === 'open'
           ? withSwap.filter((i) => !done(i.status))
           : withSwap.filter((i) => done(i.status)).reverse();
-  return { tournament: t, items: filtered };
+  // Courts in use at this venue, by number: any tournament's match on court counts.
+  const venueBusy = t.venue
+    ? await prisma.match.findMany({
+        where: {
+          status: { in: ['IN_PROGRESS', 'CALLED'] },
+          slot: { court: { venueId: t.venue.id } },
+        },
+        select: { slot: { select: { court: { select: { number: true } } } } },
+      })
+    : [];
+  const busyCourts = [...new Set(venueBusy.map((m) => m.slot?.court.number))]
+    .filter((n): n is number => typeof n === 'number')
+    .sort((a, b) => a - b);
+  return { tournament: t, items: filtered, busyCourts };
 }
 
 /**

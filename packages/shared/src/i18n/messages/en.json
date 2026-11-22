@@ -1287,7 +1287,9 @@
       "confirmWalkover": "Confirm: {name} win by walkover. No scores will be recorded.",
       "confirmRetirement": "Confirm: {name} win by retirement. The scores entered above are kept.",
       "confirm": "Confirm",
-      "cancel": "Cancel"
+      "cancel": "Cancel",
+      "courtBusy": "Court {number} in use",
+      "courtFree": "Court {number} free"
     },
     "navEmail": "Email",
     "emailSettings": {

@@ -207,6 +207,28 @@ export default async function DeskPage({ params, searchParams }: Props) {
             {td(`view.${v}`)}
           </Link>
         ))}
+        {/* Courts at a glance, by number: orange when in use anywhere at the venue, green when free. */}
+        <span className="ml-auto flex shrink-0 items-center gap-1 pl-2">
+          {courts.map((c) => {
+            const busy = desk.busyCourts.includes(c.number);
+            return (
+              <span
+                key={c.id}
+                role="img"
+                aria-label={td(busy ? 'courtBusy' : 'courtFree', { number: c.number })}
+                title={td(busy ? 'courtBusy' : 'courtFree', { number: c.number })}
+                className={cn(
+                  'inline-flex size-6 shrink-0 items-center justify-center rounded-full border text-[11px] font-semibold tabular-nums',
+                  busy
+                    ? 'border-orange-400 bg-orange-50 text-orange-800 dark:bg-orange-950/40 dark:text-orange-300'
+                    : 'border-green-600 bg-green-50 text-green-700 dark:bg-green-950/40 dark:text-green-300',
+                )}
+              >
+                {c.number}
+              </span>
+            );
+          })}
+        </span>
       </nav>
 
       {view === 'checkin' ? (
