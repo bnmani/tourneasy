@@ -325,3 +325,11 @@ Not yet mapped to a point: "Expo push" and "early App Store check" (answers 5 an
 - Crash reporting (Sentry, EU data) from the start. Performance monitoring after 1.0.
 - Minimum iOS version: to confirm once the Expo version is chosen.
 - Expo is the app framework and build service.
+
+## 19. Decisions round 6 (these replace section 11 where they conflict)
+
+- **Apple developer account:** individual (the seller name is the owner's own name).
+- **Minimum iOS version:** iOS 16. Still to check against the Expo SDK version chosen in Phase 0; if the SDK drops iOS 16, this decision is reopened.
+- **Crash reporting:** Sentry, on the free Developer plan to start (one user, about 5,000 errors a month). Move to a paid plan when more than one person needs access or error volume exceeds the free limit. The EU data region must be confirmed on the chosen plan. Pricing figures came from third-party sources and must be checked on sentry.io/pricing.
+- **Push notification language:** the player's own language (nl or en), as chosen in the app.
+- **Sign-up in the app:** yes. Players can create an account inside the app. The sign-up endpoint must be checked for the app's fields (section 7).
