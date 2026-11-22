@@ -1239,9 +1239,6 @@
       "correct": "Uitslag corrigeren",
       "save": "Uitslag opslaan",
       "other": "Walk-over of opgave",
-      "walkoverWinner": "Walk-over, winnaar:",
-      "retiredHelp": "Opgave: vul de stand tot dan in en kies de winnaar.",
-      "retiredWinner": "Winnaar:",
       "presentCount": "{present} van {total} aanwezig",
       "checkInSearch": "Zoek op naam, lidnummer of club",
       "noPlayers": "Geen spelers gevonden.",
@@ -1281,7 +1278,16 @@
       "tapToCheckIn": "Tik om aanwezig te melden",
       "notCheckedInCount": "Nog niet aanwezig ({count})",
       "checkedInCount": "Aanwezig ({count})",
-      "columnEmpty": "Hier staat niemand."
+      "columnEmpty": "Hier staat niemand.",
+      "walkoverMode": "Walkover",
+      "retirementMode": "Opgave",
+      "walkoverExplain": "Walkover: de winnaar wordt zonder score vastgelegd.",
+      "retirementExplain": "Opgave: de scores hierboven blijven staan en de winnaar wordt vastgelegd.",
+      "winnerLabel": "Winnaar: {name}",
+      "confirmWalkover": "Bevestigen: {name} wint door walkover. Er worden geen scores vastgelegd.",
+      "confirmRetirement": "Bevestigen: {name} wint door opgave. De scores hierboven blijven staan.",
+      "confirm": "Bevestigen",
+      "cancel": "Annuleren"
     },
     "navEmail": "E-mail",
     "emailSettings": {

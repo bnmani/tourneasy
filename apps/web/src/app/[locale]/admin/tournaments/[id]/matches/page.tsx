@@ -24,6 +24,7 @@ import {
 } from '@/server/actions/match-actions';
 import { requirePortal } from '@/server/auth/web';
 import { CheckInList } from '@/components/desk/check-in-list';
+import { WalkoverOrRetirement } from '@/components/desk/walkover-or-retirement';
 import {
   CheckInToggle,
   QuickButton,
@@ -257,6 +258,7 @@ export default async function DeskPage({ params, searchParams }: Props) {
                         }}
                       />
                       <form
+                        id={`scores-${item.id}`}
                         action={resultAction.bind(null, locale, id, item.id, view)}
                         className="space-y-2"
                       >
@@ -375,83 +377,12 @@ export default async function DeskPage({ params, searchParams }: Props) {
                     </div>
 
                     {!done && (
-                      <details className="text-xs">
-                        <summary className="cursor-pointer font-medium text-primary">
-                          {td('other')}
-                        </summary>
-                        <div className="mt-2 space-y-2">
-                          <form
-                            action={walkoverAction.bind(null, locale, id, item.id, view)}
-                            className="flex flex-wrap items-center gap-2"
-                          >
-                            <span>{td('walkoverWinner')}</span>
-                            <Button
-                              type="submit"
-                              name="winner"
-                              value="A"
-                              size="sm"
-                              variant="outline"
-                            >
-                              {item.a}
-                            </Button>
-                            <Button
-                              type="submit"
-                              name="winner"
-                              value="B"
-                              size="sm"
-                              variant="outline"
-                            >
-                              {item.b}
-                            </Button>
-                          </form>
-                          <form
-                            action={retireAction.bind(null, locale, id, item.id, view)}
-                            className="space-y-2"
-                          >
-                            <p>{td('retiredHelp')}</p>
-                            <div className="flex flex-wrap items-end gap-3">
-                              {games.map((g) => (
-                                <div key={g} className="flex items-center gap-1">
-                                  <input
-                                    name={`g${g}a`}
-                                    inputMode="numeric"
-                                    aria-label={td('scoreA', { number: g })}
-                                    className={scoreInput}
-                                  />
-                                  <span aria-hidden="true">–</span>
-                                  <input
-                                    name={`g${g}b`}
-                                    inputMode="numeric"
-                                    aria-label={td('scoreB', { number: g })}
-                                    className={scoreInput}
-                                  />
-                                </div>
-                              ))}
-                            </div>
-                            <div className="flex flex-wrap items-center gap-2">
-                              <span>{td('retiredWinner')}</span>
-                              <Button
-                                type="submit"
-                                name="winner"
-                                value="A"
-                                size="sm"
-                                variant="outline"
-                              >
-                                {item.a}
-                              </Button>
-                              <Button
-                                type="submit"
-                                name="winner"
-                                value="B"
-                                size="sm"
-                                variant="outline"
-                              >
-                                {item.b}
-                              </Button>
-                            </div>
-                          </form>
-                        </div>
-                      </details>
+                      <WalkoverOrRetirement
+                        names={{ A: item.a, B: item.b }}
+                        scoreFormId={`scores-${item.id}`}
+                        walkover={walkoverAction.bind(null, locale, id, item.id, view)}
+                        retire={retireAction.bind(null, locale, id, item.id, view)}
+                      />
                     )}
                   </div>
                 )}

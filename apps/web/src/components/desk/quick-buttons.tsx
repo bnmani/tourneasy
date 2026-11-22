@@ -241,9 +241,9 @@ export function QuickPlaceAction({
         run(() => action(courtId, nowInAmsterdam()));
       }}
     >
-      <div className="flex flex-wrap items-end gap-2 text-xs">
-        <label className="flex flex-col gap-1">
-          <span className="text-muted-foreground">{labels.court}</span>
+      <div className="flex flex-nowrap items-center gap-2 text-xs">
+        <label className="flex items-center gap-2">
+          <span className="whitespace-nowrap text-muted-foreground">{labels.court}</span>
           <select
             value={courtId}
             onChange={(e) => setCourtId(e.target.value)}

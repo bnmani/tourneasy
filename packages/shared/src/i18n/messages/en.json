@@ -1239,9 +1239,6 @@
       "correct": "Correct result",
       "save": "Save result",
       "other": "Walkover or retirement",
-      "walkoverWinner": "Walkover, winner:",
-      "retiredHelp": "Retirement: enter the score so far and choose the winner.",
-      "retiredWinner": "Winner:",
       "presentCount": "{present} of {total} present",
       "checkInSearch": "Search by name, member number or club",
       "noPlayers": "No players found.",
@@ -1281,7 +1278,16 @@
       "tapToCheckIn": "Tap to check in",
       "notCheckedInCount": "Not checked in ({count})",
       "checkedInCount": "Checked in ({count})",
-      "columnEmpty": "No players here."
+      "columnEmpty": "No players here.",
+      "walkoverMode": "Walkover",
+      "retirementMode": "Retirement",
+      "walkoverExplain": "Walkover: the winner is recorded with no scores.",
+      "retirementExplain": "Retirement: the scores entered above are kept and the winner is recorded.",
+      "winnerLabel": "Winner: {name}",
+      "confirmWalkover": "Confirm: {name} win by walkover. No scores will be recorded.",
+      "confirmRetirement": "Confirm: {name} win by retirement. The scores entered above are kept.",
+      "confirm": "Confirm",
+      "cancel": "Cancel"
     },
     "navEmail": "Email",
     "emailSettings": {
