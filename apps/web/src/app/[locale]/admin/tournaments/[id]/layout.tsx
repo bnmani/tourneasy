@@ -5,7 +5,7 @@ import type { ReactNode } from 'react';
 import { TournamentBar } from '@/components/admin/tournament-bar';
 import { pageLocale } from '@/lib/page';
 import { requirePortal } from '@/server/auth/web';
-import { foodAllowed } from '@/server/services/food-service';
+import { foodAllowed, foodToCollectCount } from '@/server/services/food-service';
 import { canManageTournament } from '@/server/services/permissions';
 import { managedTournaments } from '@/server/services/tournament-service';
 
@@ -23,6 +23,7 @@ export default async function TournamentAdminLayout({
   if (!(await canManageTournament(actor, id))) notFound();
   // Independent reads, together (D124).
   const [listed, food] = await Promise.all([managedTournaments(actor), foodAllowed(id)]);
+  const toCollect = food ? await foodToCollectCount(actor, id) : 0;
   let tournaments = listed;
   // An archived (or very old) tournament isn't in the list: keep the one shown selectable.
   if (!tournaments.some((x) => x.id === id)) {
@@ -38,6 +39,7 @@ export default async function TournamentAdminLayout({
       <TournamentBar
         current={id}
         food={food}
+        toCollect={toCollect}
         tournaments={tournaments.map((x) => ({
           id: x.id,
           name: x.name,

@@ -16,7 +16,12 @@ import type { RequestMeta } from '../lib/request-meta';
 import { parseInput } from '../lib/validation';
 import { toXlsxBook } from '../lib/xlsx';
 import { getGateway } from '../payments/gateway';
-import { assertCanManageTournament, assertOwner, canManageTournament } from './permissions';
+import {
+  assertAdmin,
+  assertCanManageTournament,
+  assertOwner,
+  canManageTournament,
+} from './permissions';
 import { getPricing } from './pricing-service';
 import type { Actor } from './session-service';
 
@@ -595,6 +600,51 @@ export async function foodOrders(actor: Actor, tournamentId: string, now = new D
     closed,
     revenueCents: orders.filter((o) => o.status === 'PAID').reduce((n, o) => n + o.totalCents, 0),
   };
+}
+
+/**
+ * Orders still to hand out, for the Food & drink tab: paid, or to pay at pickup. Orders with an
+ * online payment still under way don't count yet.
+ */
+export async function foodToCollectCount(actor: Actor, tournamentId: string) {
+  await assertCanManageTournament(actor, tournamentId);
+  return prisma.foodOrder.count({
+    where: {
+      tournamentId,
+      collectedAt: null,
+      OR: [{ status: 'PAID' }, { status: 'PENDING', stripePaymentIntentId: null }],
+    },
+  });
+}
+
+/**
+ * A player's own food orders across tournaments, for the admin player page. Desk orders added
+ * for guests are not theirs (D107): they're saved under the organiser's account, so a player
+ * without an account has none here. Abandoned online checkouts are left out.
+ */
+export async function foodOrdersOfUser(actor: Actor | null, userId: string, now = new Date()) {
+  assertAdmin(actor);
+  const orders = await prisma.foodOrder.findMany({
+    where: {
+      userId,
+      guestName: null,
+      OR: [...(liveOrder(now).OR ?? []), { status: { in: ['CANCELLED', 'REFUNDED'] } }],
+    },
+    orderBy: { createdAt: 'desc' },
+    take: 100,
+    include: { lines: true, tournament: { select: { name: true, slug: true } } },
+  });
+  return orders.map((o) => ({
+    id: o.id,
+    orderNumber: o.orderNumber,
+    status: o.status,
+    online: !!o.stripePaymentIntentId,
+    totalCents: o.totalCents,
+    collectedAt: o.collectedAt,
+    createdAt: o.createdAt,
+    tournament: o.tournament,
+    lines: o.lines.map((l) => ({ name: l.name, quantity: l.quantity })),
+  }));
 }
 
 /** Handed out at the counter; an order paid at pickup is marked paid at the same time. */

@@ -811,6 +811,12 @@
       "registeredOn": "Aangemaakt op",
       "history": "Toernooigeschiedenis",
       "historySoon": "Toernooihistorie en uitslagen van deze speler volgen met de uitslagen (fase 6).",
+      "foodOrders": "Eten en drinken",
+      "foodOrdersHelp": "Bestellingen die deze speler online heeft geplaatst. Balie-bestellingen voor gasten zijn niet aan een speler gekoppeld.",
+      "foodNoAccount": "Zonder account kan deze speler geen eten online bestellen.",
+      "foodNone": "Nog geen bestellingen.",
+      "foodRefunded": "Terugbetaald",
+      "foodCancelled": "Geannuleerd",
       "merge": "Dubbele speler samenvoegen",
       "mergeHelp": "Dit profiel wordt samengevoegd met de speler hieronder en daarna gearchiveerd. Inschrijvingen en teams gaan mee.",
       "mergeTarget": "Lidnummer van de speler die blijft",
@@ -1621,7 +1627,8 @@
       "section_log": "Logboek",
       "section_settings": "Instellingen",
       "breadcrumbs": "Kruimelpad",
-      "section_food": "Eten & drinken"
+      "section_food": "Eten & drinken",
+      "toCollect": "{count, plural, one {# bestelling om op te halen} other {# bestellingen om op te halen}}"
     },
     "setup": {
       "title": "Klaarzetten",
@@ -2565,6 +2572,7 @@
       "search": "Zoeken",
       "searchPlaceholder": "Bestelcode, naam of lidnummer",
       "noOrders": "Nog geen bestellingen.",
+      "noMatches": "Geen bestellingen gevonden voor deze zoekopdracht.",
       "paid": "Betaald",
       "paying": "Bezig met online betalen",
       "payAtPickup": "Betalen bij ophalen",

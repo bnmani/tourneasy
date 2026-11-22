@@ -811,6 +811,12 @@
       "registeredOn": "Created on",
       "history": "Tournament history",
       "historySoon": "This player's tournament history and results follow with results (phase 6).",
+      "foodOrders": "Food & drink orders",
+      "foodOrdersHelp": "Orders this player placed online. Desk orders added for guests aren't linked to a player.",
+      "foodNoAccount": "Without an account this player can't order food online.",
+      "foodNone": "No food orders yet.",
+      "foodRefunded": "Refunded",
+      "foodCancelled": "Cancelled",
       "merge": "Merge duplicate player",
       "mergeHelp": "This profile is merged into the player below and then archived. Entries and teams move along.",
       "mergeTarget": "Member number of the player to keep",
@@ -1621,7 +1627,8 @@
       "section_log": "Change log",
       "section_settings": "Settings",
       "breadcrumbs": "Breadcrumb",
-      "section_food": "Food & drink"
+      "section_food": "Food & drink",
+      "toCollect": "{count, plural, one {# order to collect} other {# orders to collect}}"
     },
     "setup": {
       "title": "Set-up",
@@ -2561,6 +2568,7 @@
       "search": "Search",
       "searchPlaceholder": "Order code, name or member number",
       "noOrders": "No orders yet.",
+      "noMatches": "No orders match this search.",
       "paid": "Paid",
       "paying": "Paying online",
       "payAtPickup": "Pay at pickup",

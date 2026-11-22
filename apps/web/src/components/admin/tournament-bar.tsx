@@ -27,11 +27,14 @@ export function TournamentBar({
   current,
   tournaments,
   food = false,
+  toCollect = 0,
 }: {
   current: string;
   tournaments: { id: string; name: string; when: string }[];
   /** Food ordering is allowed for this tournament (D87). */
   food?: boolean;
+  /** Food orders still to hand out, shown on the Food & drink tab (organisers and owners). */
+  toCollect?: number;
 }) {
   const t = useTranslations('Admin.tournamentBar');
   const ta = useTranslations('Admin');
@@ -89,6 +92,19 @@ export function TournamentBar({
             )}
           >
             {t(`section_${s || 'overview'}` as 'section_overview')}
+            {s === 'food' && toCollect > 0 && (
+              <span
+                className={cn(
+                  'ml-1.5 inline-flex min-w-5 justify-center rounded-full px-1.5 text-xs tabular-nums',
+                  s === section
+                    ? 'bg-primary-foreground text-primary'
+                    : 'bg-primary text-primary-foreground',
+                )}
+              >
+                <span aria-hidden="true">{toCollect}</span>
+                <span className="sr-only">{t('toCollect', { count: toCollect })}</span>
+              </span>
+            )}
           </Link>
         ))}
       </nav>

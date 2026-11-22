@@ -8,6 +8,8 @@ import {
   foodOrderingOpen,
   foodMenu,
   foodOrders,
+  foodOrdersOfUser,
+  foodToCollectCount,
   markCollected,
   undoCollected,
   placeFoodOrder,
@@ -553,5 +555,53 @@ describe('food ordering (D87)', () => {
     expect((await prisma.foodOrder.findFirstOrThrow()).status).toBe('PAID');
     await refundFoodOrder(org.actor, t.id, order.id, meta);
     expect((await prisma.foodOrder.findFirstOrThrow()).status).toBe('REFUNDED');
+  });
+
+  it("shows a player's own orders on their admin page, not the guest orders at the desk", async () => {
+    const { owner, org, player, t } = await setup();
+    const admin = await person(Role.ADMIN);
+    await setFoodAccess(owner.actor, t.id, true, meta);
+    await saveFoodItem(
+      org.actor,
+      t.id,
+      null,
+      { name: 'Roll', price: '3,50', allergens: ['gluten'] },
+      meta,
+    );
+    await saveFoodSettings(
+      org.actor,
+      t.id,
+      { on: true, cutoffAt: '2099-01-01T20:00' },
+      meta,
+      toUtc,
+    );
+    const roll = (await foodMenu(player.actor, t.slug))!.items[0]!;
+    await placeFoodOrder(player.actor, t.slug, { lines: [{ itemId: roll.id, quantity: 2 }] }, meta);
+    await addDeskOrder(
+      org.actor,
+      t.id,
+      { name: 'Referee', lines: [{ itemId: roll.id, quantity: 1 }] },
+      meta,
+    );
+
+    // Pending to collect: the player's order and the desk order, both to pay at pickup.
+    expect(await foodToCollectCount(org.actor, t.id)).toBe(2);
+    await expect(foodToCollectCount(player.actor, t.id)).rejects.toMatchObject({
+      code: 'notFound',
+    });
+
+    const mine = await foodOrdersOfUser(admin.actor, player.userId);
+    expect(mine).toHaveLength(1);
+    expect(mine[0]).toMatchObject({
+      status: 'PENDING',
+      online: false,
+      totalCents: 700,
+      tournament: { name: 'Almere Open' },
+    });
+    expect(mine[0]!.lines).toEqual([{ name: 'Roll', quantity: 2 }]);
+    // Organisers see orders on their own list, not a player's profile.
+    await expect(foodOrdersOfUser(org.actor, player.userId)).rejects.toMatchObject({
+      code: 'forbidden',
+    });
   });
 });

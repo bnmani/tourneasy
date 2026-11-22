@@ -1,3 +1,4 @@
+import { formatEuro } from '@tourneasy/shared';
 import type { Metadata } from 'next';
 import { adminMetadata } from '@/lib/seo';
 import { getFormatter, getTranslations } from 'next-intl/server';
@@ -11,6 +12,7 @@ import { requireRole } from '@/server/auth/web';
 import { invitePlayersAction } from '@/server/actions/admin-actions';
 import { lastInvites } from '@/server/services/player-invite-service';
 import { visibleRoles } from '@/server/services/permissions';
+import { foodOrdersOfUser } from '@/server/services/food-service';
 import { getPlayer } from '@/server/services/player-service';
 import { getProfileOptions } from '@/server/services/profile-service';
 
@@ -34,11 +36,13 @@ export default async function AdminPlayerPage({
   const player = await getPlayer(actor, id).catch(() => null);
   if (!player) notFound();
   const t = await getTranslations('Admin');
+  const tf = await getTranslations('Food.admin');
   const tr = await getTranslations('Roles');
   const format = await getFormatter();
   const query = await searchParams;
   const status = firstParam(query.status);
   const lastInvite = player.user ? undefined : (await lastInvites([player.id])).get(player.id);
+  const foodOrders = player.user ? await foodOrdersOfUser(actor, player.user.id) : [];
 
   return (
     <>
@@ -142,6 +146,44 @@ export default async function AdminPlayerPage({
           preferredDisciplines: player.preferredDisciplines,
         }}
       />
+
+      <FormSection title={t('players.foodOrders')}>
+        <p className="text-sm text-muted-foreground">
+          {player.user ? t('players.foodOrdersHelp') : t('players.foodNoAccount')}
+        </p>
+        {foodOrders.length === 0 && player.user && (
+          <p className="text-sm text-muted-foreground">{t('players.foodNone')}</p>
+        )}
+        {foodOrders.length > 0 && (
+          <ul className="divide-y rounded-md border">
+            {foodOrders.map((o) => (
+              <li key={o.id} className="space-y-1 p-3 text-sm">
+                <div className="flex flex-wrap items-center gap-2">
+                  <code className="font-semibold">{o.orderNumber}</code>
+                  <span className="font-medium">{o.tournament.name}</span>
+                  <Badge tone={o.status === 'PAID' ? 'primary' : 'muted'}>
+                    {o.status === 'PAID'
+                      ? tf('paid')
+                      : o.status === 'PENDING'
+                        ? o.online
+                          ? tf('paying')
+                          : tf('payAtPickup')
+                        : o.status === 'REFUNDED'
+                          ? t('players.foodRefunded')
+                          : t('players.foodCancelled')}
+                  </Badge>
+                  {o.collectedAt && <Badge tone="muted">{tf('collected')}</Badge>}
+                </div>
+                <p className="text-muted-foreground">
+                  {o.lines.map((l) => `${l.quantity}× ${l.name}`).join(', ')} ·{' '}
+                  {formatEuro(o.totalCents, locale)} ·{' '}
+                  {format.dateTime(o.createdAt, { dateStyle: 'medium' })}
+                </p>
+              </li>
+            ))}
+          </ul>
+        )}
+      </FormSection>
 
       <FormSection title={t('players.history')}>
         <p className="text-sm text-muted-foreground">{t('players.historySoon')}</p>
