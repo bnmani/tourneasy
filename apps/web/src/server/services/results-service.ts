@@ -372,7 +372,18 @@ export function drawStandings(draw: StandingDraw, bestOf = 3): Standing[] {
     const row = rows.find((r) => r.id === b.winnerEntryId);
     if (row) row.won += 1;
   }
-  return byes.length ? rows.sort((x, y) => y.won - x.won) : rows;
+  // After adding bye wins, re-sort by wins + tiebreakers (game diff, point diff)
+  // to maintain proper tie-breaking order (D139).
+  if (byes.length) {
+    return rows.sort((x, y) => {
+      const byWins = y.won - x.won;
+      if (byWins !== 0) return byWins;
+      const byGames = (y.gamesFor - y.gamesAgainst) - (x.gamesFor - x.gamesAgainst);
+      if (byGames !== 0) return byGames;
+      return (y.pointsFor - y.pointsAgainst) - (x.pointsFor - x.pointsAgainst);
+    });
+  }
+  return rows;
 }
 
 async function eventForStage(actor: Actor, eventId: string) {
