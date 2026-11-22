@@ -256,79 +256,72 @@ export default async function DeskPage({ params, searchParams }: Props) {
                           }),
                         }}
                       />
-                      <div className="grid gap-2 sm:grid-cols-2">
-                        {item.checkIn.map((side, s) => (
-                          <div key={s} className="space-y-1">
-                            {side.map((p) => {
-                              const busy = item.busy?.players.find((b) => b.id === p.id);
-                              return (
-                                <CheckInToggle
-                                  key={p.id}
-                                  name={p.name}
-                                  checkedIn={p.checkedIn}
-                                  busy={
-                                    busy
-                                      ? busy.court
-                                        ? td('playerOnCourt', { court: busy.court })
-                                        : td('playerPlaying')
-                                      : null
-                                  }
-                                  toggle={quickCheckInAction.bind(null, p.id, !p.checkedIn)}
-                                  labels={{
-                                    checkedIn: td('checkedIn'),
-                                    tapToCheckIn: td('tapToCheckIn'),
-                                  }}
-                                />
-                              );
-                            })}
-                          </div>
-                        ))}
-                      </div>
-
                       <form
                         action={resultAction.bind(null, locale, id, item.id, view)}
                         className="space-y-2"
                       >
                         <input type="hidden" name="version" value={item.version} />
-                        <div
-                          className="grid items-center gap-x-2 gap-y-1"
-                          style={{
-                            gridTemplateColumns: `minmax(0,1fr) repeat(${games.length}, 3rem)`,
-                          }}
-                        >
-                          <span />
+                        {/* One row per side: the player cards, then that side's game scores. */}
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <span className="flex-1" />
                           {games.map((g) => (
-                            <span key={g} className="text-center text-xs text-muted-foreground">
+                            <span key={g} className="w-12 text-center whitespace-nowrap">
                               {td('game', { number: g })}
                             </span>
                           ))}
-                          {(['A', 'B'] as const).map((side) => (
-                            <Fragment key={side}>
-                              <span className="truncate text-sm">
-                                {side === 'A' ? item.a : item.b}
-                              </span>
-                              {games.map((g) => {
-                                const typed =
-                                  refill && enteredId === item.id ? refill[g - 1] : undefined;
-                                const set = typed
-                                  ? { scoreA: typed[0], scoreB: typed[1] }
-                                  : item.sets[g - 1];
+                        </div>
+                        {(['A', 'B'] as const).map((side, s) => (
+                          <div key={side} className="flex items-center gap-2">
+                            <div className="flex min-w-0 flex-1 items-center gap-2">
+                              {(item.checkIn[s] ?? []).map((p, i) => {
+                                const busy = item.busy?.players.find((b) => b.id === p.id);
                                 return (
-                                  <input
-                                    key={g}
-                                    name={`g${g}${side.toLowerCase()}`}
-                                    inputMode="numeric"
-                                    aria-label={td(side === 'A' ? 'scoreA' : 'scoreB', {
-                                      number: g,
-                                    })}
-                                    defaultValue={side === 'A' ? set?.scoreA : set?.scoreB}
-                                    className={scoreInput}
-                                  />
+                                  <Fragment key={p.id}>
+                                    {i > 0 && <span className="text-muted-foreground">/</span>}
+                                    <div className="min-w-0 flex-1">
+                                      <CheckInToggle
+                                        name={p.name}
+                                        checkedIn={p.checkedIn}
+                                        busy={
+                                          busy
+                                            ? busy.court
+                                              ? td('playerOnCourt', { court: busy.court })
+                                              : td('playerPlaying')
+                                            : null
+                                        }
+                                        toggle={quickCheckInAction.bind(null, p.id, !p.checkedIn)}
+                                        labels={{
+                                          checkedIn: td('checkedIn'),
+                                          tapToCheckIn: td('tapToCheckIn'),
+                                        }}
+                                      />
+                                    </div>
+                                  </Fragment>
                                 );
                               })}
-                            </Fragment>
-                          ))}
-                        </div>
+                            </div>
+                            {games.map((g) => {
+                              const typed =
+                                refill && enteredId === item.id ? refill[g - 1] : undefined;
+                              const set = typed
+                                ? { scoreA: typed[0], scoreB: typed[1] }
+                                : item.sets[g - 1];
+                              return (
+                                <input
+                                  key={g}
+                                  name={`g${g}${side.toLowerCase()}`}
+                                  inputMode="numeric"
+                                  aria-label={`${side === 'A' ? item.a : item.b} · ${td(
+                                    side === 'A' ? 'scoreA' : 'scoreB',
+                                    { number: g },
+                                  )}`}
+                                  defaultValue={side === 'A' ? set?.scoreA : set?.scoreB}
+                                  className={cn(scoreInput, 'w-12 shrink-0')}
+                                />
+                              );
+                            })}
+                          </div>
+                        ))}
                         <div className="flex justify-end">
                           <Button type="submit" size="sm">
                             {done ? td('correct') : td('save')}

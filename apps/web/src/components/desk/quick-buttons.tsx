@@ -70,10 +70,10 @@ export function CheckInToggle({
     'flex min-h-14 w-full flex-col justify-center gap-0.5 rounded-md border border-l-[6px] px-3 py-2 text-left text-sm transition-colors',
     shown ? 'border-l-green-600' : 'border-l-orange-600',
     busy
-      ? 'cursor-default border-orange-400 bg-orange-50 dark:bg-orange-950/40'
+      ? 'cursor-default border-y-orange-400 border-r-orange-400 bg-orange-50 dark:bg-orange-950/40'
       : shown
-        ? 'border-border bg-emerald-50 hover:bg-emerald-100/60 dark:bg-emerald-950/40'
-        : 'border-border bg-card hover:bg-orange-50 dark:hover:bg-orange-950/30',
+        ? 'border-y-border border-r-border bg-emerald-50 hover:bg-emerald-100/60 dark:bg-emerald-950/40'
+        : 'border-y-border border-r-border bg-card hover:bg-orange-50 dark:hover:bg-orange-950/30',
   );
   const content = (
     <>

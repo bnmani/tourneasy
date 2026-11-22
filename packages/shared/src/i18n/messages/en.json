@@ -1277,7 +1277,7 @@
       "courtLabel": "Court",
       "timeLabel": "Time",
       "courtNumber": "Court {number}",
-      "checkedIn": "Checked in · tap to undo",
+      "checkedIn": "Checked in",
       "tapToCheckIn": "Tap to check in",
       "notCheckedInCount": "Not checked in ({count})",
       "checkedInCount": "Checked in ({count})",

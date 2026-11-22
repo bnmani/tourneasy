@@ -1277,7 +1277,7 @@
       "courtLabel": "Baan",
       "timeLabel": "Tijd",
       "courtNumber": "Baan {number}",
-      "checkedIn": "Aanwezig · tik om ongedaan te maken",
+      "checkedIn": "Aanwezig",
       "tapToCheckIn": "Tik om aanwezig te melden",
       "notCheckedInCount": "Nog niet aanwezig ({count})",
       "checkedInCount": "Aanwezig ({count})",
