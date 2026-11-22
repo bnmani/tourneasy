@@ -378,9 +378,9 @@ export function drawStandings(draw: StandingDraw, bestOf = 3): Standing[] {
     return rows.sort((x, y) => {
       const byWins = y.won - x.won;
       if (byWins !== 0) return byWins;
-      const byGames = (y.gamesFor - y.gamesAgainst) - (x.gamesFor - x.gamesAgainst);
+      const byGames = y.gamesFor - y.gamesAgainst - (x.gamesFor - x.gamesAgainst);
       if (byGames !== 0) return byGames;
-      return (y.pointsFor - y.pointsAgainst) - (x.pointsFor - x.pointsAgainst);
+      return y.pointsFor - y.pointsAgainst - (x.pointsFor - x.pointsAgainst);
     });
   }
   return rows;
