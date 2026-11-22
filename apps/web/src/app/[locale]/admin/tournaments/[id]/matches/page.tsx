@@ -324,11 +324,6 @@ export default async function DeskPage({ params, searchParams }: Props) {
                             })}
                           </div>
                         ))}
-                        <div className="flex justify-end">
-                          <Button type="submit" size="sm">
-                            {done ? td('correct') : td('save')}
-                          </Button>
-                        </div>
                       </form>
                       {item.busy?.courtMatch && item.court && (
                         <p className="text-xs font-medium text-amber-700">
@@ -338,19 +333,26 @@ export default async function DeskPage({ params, searchParams }: Props) {
                           })}
                         </p>
                       )}
-                      {item.status === 'SCHEDULED' && (
-                        // Court and time stay visible and can be changed before the match starts (D128).
-                        <QuickPlaceAction
-                          courts={courts.map((c) => ({
-                            id: c.id,
-                            label: td('courtNumber', { number: c.number }),
-                          }))}
-                          defaultCourtId={item.court?.id}
-                          action={quickPlaceAndStartAction.bind(null, item.id)}
-                          label={td('onCourt')}
-                          labels={{ court: td('courtLabel') }}
-                        />
-                      )}
+                      {/* Court (D128) on the left, Save on the right, on one line. Save submits the score grid above. */}
+                      <div className="flex items-end justify-between gap-2">
+                        {item.status === 'SCHEDULED' ? (
+                          <QuickPlaceAction
+                            courts={courts.map((c) => ({
+                              id: c.id,
+                              label: td('courtNumber', { number: c.number }),
+                            }))}
+                            defaultCourtId={item.court?.id}
+                            action={quickPlaceAndStartAction.bind(null, item.id)}
+                            label={td('onCourt')}
+                            labels={{ court: td('courtLabel') }}
+                          />
+                        ) : (
+                          <span />
+                        )}
+                        <Button type="submit" size="sm" form={`scores-${item.id}`}>
+                          {done ? td('correct') : td('save')}
+                        </Button>
+                      </div>
                       {item.swap && (
                         <SwapTeamsForm
                           mine={item.swap.mine}
