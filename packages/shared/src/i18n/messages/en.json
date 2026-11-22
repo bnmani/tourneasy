@@ -1225,7 +1225,6 @@
       "view": {
         "now": "On court",
         "next": "Next",
-        "open": "All open",
         "done": "Played",
         "checkin": "Check-in"
       },
@@ -1289,7 +1288,8 @@
       "confirm": "Confirm",
       "cancel": "Cancel",
       "courtBusy": "Court {number} in use",
-      "courtFree": "Court {number} free"
+      "courtFree": "Court {number} free",
+      "waitingForPlayers": "Still waiting for players ({count})"
     },
     "navEmail": "Email",
     "emailSettings": {

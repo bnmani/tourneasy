@@ -1012,7 +1012,7 @@ export async function myMatches(actor: Actor) {
 export async function deskMatches(
   actor: Actor,
   tournamentId: string,
-  view: 'now' | 'next' | 'open' | 'done',
+  view: 'now' | 'next' | 'done',
   locale = actor.locale,
 ) {
   await assertCanManageTournament(actor, tournamentId);
@@ -1102,10 +1102,8 @@ export async function deskMatches(
               (a.startsAt?.getTime() ?? 0) - (b.startsAt?.getTime() ?? 0),
           )
       : view === 'next'
-        ? withSwap.filter((i) => i.status === 'SCHEDULED' && i.ready).slice(0, 30)
-        : view === 'open'
-          ? withSwap.filter((i) => !done(i.status))
-          : withSwap.filter((i) => done(i.status)).reverse();
+        ? withSwap.filter((i) => i.status === 'SCHEDULED' && i.ready)
+        : withSwap.filter((i) => done(i.status)).reverse();
   // Courts in use at this venue, by number: any tournament's match on court counts.
   const venueBusy = t.venue
     ? await prisma.match.findMany({
@@ -1119,7 +1117,10 @@ export async function deskMatches(
   const busyCourts = [...new Set(venueBusy.map((m) => m.slot?.court.number))]
     .filter((n): n is number => typeof n === 'number')
     .sort((a, b) => a - b);
-  return { tournament: t, items: filtered, busyCourts };
+  // Next also lists the matches still waiting for players, below the ready ones.
+  const waiting =
+    view === 'next' ? withSwap.filter((i) => i.status === 'SCHEDULED' && !i.ready) : [];
+  return { tournament: t, items: filtered, waiting, busyCourts };
 }
 
 /**

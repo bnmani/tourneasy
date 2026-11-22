@@ -138,6 +138,19 @@ async function playAll(actor: Awaited<ReturnType<typeof admin>>, eventId: string
   }
 }
 
+/** Every unfinished match at the desk: on court, ready, and still waiting for players. */
+async function openDesk(
+  actor: Parameters<typeof deskMatches>[0],
+  tournamentId: string,
+  locale?: Parameters<typeof deskMatches>[3],
+) {
+  const [now, next] = await Promise.all([
+    deskMatches(actor, tournamentId, 'now', locale),
+    deskMatches(actor, tournamentId, 'next', locale),
+  ]);
+  return { items: [...now.items, ...next.items, ...next.waiting] };
+}
+
 describe('schedule', () => {
   it('proposes a schedule on the courts, keeps rest, publishes, and shows my matches', async () => {
     const actor = await admin();
@@ -275,10 +288,9 @@ describe('results', () => {
         .sort(),
     ).toEqual([1, 2]);
     // Match numbers are unique across both groups and the knockout (no two "#1"s at the desk).
-    const desk = await deskMatches(
+    const desk = await openDesk(
       actor,
       (await prisma.tournamentEvent.findUniqueOrThrow({ where: { id: event.id } })).tournamentId,
-      'open',
       'en',
     );
     const numbers = desk.items.map((i) => i.number);
@@ -641,7 +653,7 @@ describe('desk check-in (D74)', () => {
     await setPlayerCheckIn(actor, t.id, anna, true, meta);
     const list = await checkInList(actor, t.id, '2027-03-13');
     expect(list.players.find((p) => p.playerId === anna)?.present).toBe(true);
-    const desk = await deskMatches(actor, t.id, 'open');
+    const desk = await openDesk(actor, t.id);
     const annaShare = await prisma.registrationParticipant.findFirstOrThrow({
       where: { playerId: anna },
     });
@@ -702,7 +714,7 @@ describe('on court (D116)', () => {
     });
     const court = (await prisma.court.findUniqueOrThrow({ where: { id: first.slot!.courtId } }))
       .number;
-    const desk = await deskMatches(actor, t.id, 'open');
+    const desk = await openDesk(actor, t.id);
     const waiting = desk.items.find((i) => i.id === sharing.id)!;
     expect(waiting.busy?.players.map((p) => p.court)).toEqual([court]);
     expect(desk.items.find((i) => i.id === first.id)?.busy).toBeNull();
@@ -716,14 +728,15 @@ describe('on court (D116)', () => {
         endsAt: new Date(first.slot!.endsAt.getTime() + 90 * 60_000),
       },
     });
-    expect(
-      (await deskMatches(actor, t.id, 'open')).items.find((i) => i.id === other.id)?.busy,
-    ).toMatchObject({ players: [], courtMatch: expect.any(Number) });
+    expect((await openDesk(actor, t.id)).items.find((i) => i.id === other.id)?.busy).toMatchObject({
+      players: [],
+      courtMatch: expect.any(Number),
+    });
     await expect(startMatch(actor, other.id, meta)).rejects.toMatchObject({ code: 'courtInUse' });
 
     // The result frees both.
     await recordResult(actor, first.id, win, meta);
-    expect((await deskMatches(actor, t.id, 'open')).items.every((i) => !i.busy)).toBe(true);
+    expect((await openDesk(actor, t.id)).items.every((i) => !i.busy)).toBe(true);
     await startMatch(actor, other.id, meta);
     // In a round robin every later match has a player of the pair now on court.
     await expect(startMatch(actor, sharing.id, meta)).rejects.toMatchObject({
@@ -1036,8 +1049,8 @@ describe('semi-finals paired by seed (D127)', () => {
     const { actor, t, qf } = await quarterFinals();
     for (const m of qf) await recordResult(actor, m.id, win, meta);
     // Only owners get the swap.
-    expect((await deskMatches(actor, t.id, 'open')).items.filter((i) => i.swap)).toHaveLength(0);
-    const { items } = await deskMatches(await owner(), t.id, 'open');
+    expect((await openDesk(actor, t.id)).items.filter((i) => i.swap)).toHaveLength(0);
+    const { items } = await openDesk(await owner(), t.id);
     const semi = items.filter((i) => i.swap);
     expect(semi).toHaveLength(2);
     expect(semi[0]!.swap!.otherId).toBe(semi[1]!.id);

@@ -1225,7 +1225,6 @@
       "view": {
         "now": "Op de baan",
         "next": "Volgende",
-        "open": "Alle open",
         "done": "Gespeeld",
         "checkin": "Aanmelden"
       },
@@ -1289,7 +1288,8 @@
       "confirm": "Bevestigen",
       "cancel": "Annuleren",
       "courtBusy": "Baan {number} in gebruik",
-      "courtFree": "Baan {number} vrij"
+      "courtFree": "Baan {number} vrij",
+      "waitingForPlayers": "Nog wachten op spelers ({count})"
     },
     "navEmail": "E-mail",
     "emailSettings": {

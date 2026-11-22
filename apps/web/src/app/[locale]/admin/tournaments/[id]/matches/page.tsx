@@ -42,7 +42,7 @@ import { stageStatus } from '@/server/services/results-service';
 import { deskCourts, deskMatches } from '@/server/services/schedule-service';
 
 type Props = { params: Promise<{ locale: string; id: string }>; searchParams: SearchParams };
-const VIEWS = ['checkin', 'now', 'next', 'open', 'done'] as const;
+const VIEWS = ['checkin', 'now', 'next', 'done'] as const;
 type View = (typeof VIEWS)[number];
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -233,185 +233,209 @@ export default async function DeskPage({ params, searchParams }: Props) {
 
       {view === 'checkin' ? (
         <CheckInView actor={actor} tournamentId={id} locale={locale} day={firstParam(query.day)} />
-      ) : desk.items.length === 0 ? (
+      ) : desk.items.length === 0 && desk.waiting.length === 0 ? (
         <p className="text-muted-foreground">{td('empty')}</p>
       ) : (
-        <div className="grid gap-3 lg:grid-cols-2">
-          {desk.items.map((item) => {
-            const done = ['COMPLETED', 'WALKOVER', 'RETIRED'].includes(item.status);
-            const games = Array.from({ length: item.bestOf }, (_, i) => i + 1);
-            return (
-              <MatchLine key={item.id} item={item} locale={locale}>
-                {item.ready && (
-                  <div className="space-y-3 border-t pt-3">
-                    {noShow(item) && (
-                      <div
-                        role="alert"
-                        className="space-y-2 rounded-md border border-amber-500/60 bg-amber-500/10 p-2 text-sm"
-                      >
-                        <p className="font-medium">
-                          {td('noShow', {
-                            names: noShow(item)!.missing.join(', '),
-                            minutes: noShow(item)!.late,
-                          })}
-                        </p>
-                        {noShow(item)!.winner && (
-                          <QuickButton
-                            size="sm"
-                            variant="outline"
-                            action={quickWalkoverAction.bind(null, item.id, noShow(item)!.winner!)}
-                            confirm={td('noShowConfirm', { name: noShow(item)!.winnerName })}
+        <div className="space-y-4">
+          {desk.items.length > 0 && (
+            <div className="grid gap-3 lg:grid-cols-2">
+              {desk.items.map((item) => {
+                const done = ['COMPLETED', 'WALKOVER', 'RETIRED'].includes(item.status);
+                const games = Array.from({ length: item.bestOf }, (_, i) => i + 1);
+                return (
+                  <MatchLine key={item.id} item={item} locale={locale}>
+                    {item.ready && (
+                      <div className="space-y-3 border-t pt-3">
+                        {noShow(item) && (
+                          <div
+                            role="alert"
+                            className="space-y-2 rounded-md border border-amber-500/60 bg-amber-500/10 p-2 text-sm"
                           >
-                            {td('noShowWalkover', { name: noShow(item)!.winnerName })}
-                          </QuickButton>
-                        )}
-                      </div>
-                    )}
-                    <div className="space-y-3">
-                      <PresenceSummary
-                        present={item.checkIn.flat().filter((p) => p.checkedIn).length}
-                        total={item.checkIn.flat().length}
-                        labels={{
-                          all: td('allPresent'),
-                          some: td('presentOf', {
-                            present: item.checkIn.flat().filter((p) => p.checkedIn).length,
-                            total: item.checkIn.flat().length,
-                          }),
-                        }}
-                      />
-                      <form
-                        id={`scores-${item.id}`}
-                        action={resultAction.bind(null, locale, id, item.id, view)}
-                        className="space-y-2"
-                      >
-                        <input type="hidden" name="version" value={item.version} />
-                        {/* One row per side: the player cards, then that side's game scores. */}
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <span className="flex-1" />
-                          {games.map((g) => (
-                            <span key={g} className="w-12 text-center whitespace-nowrap">
-                              {td('game', { number: g })}
-                            </span>
-                          ))}
-                        </div>
-                        {(['A', 'B'] as const).map((side, s) => (
-                          <div key={side} className="flex items-center gap-2">
-                            <div className="flex min-w-0 flex-1 items-center gap-2">
-                              {(item.checkIn[s] ?? []).map((p, i) => {
-                                const busy = item.busy?.players.find((b) => b.id === p.id);
-                                return (
-                                  <Fragment key={p.id}>
-                                    {i > 0 && <span className="text-muted-foreground">/</span>}
-                                    <div className="min-w-0 flex-1">
-                                      <CheckInToggle
-                                        name={p.name}
-                                        checkedIn={p.checkedIn}
-                                        busy={
-                                          busy
-                                            ? busy.court
-                                              ? td('playerOnCourt', { court: busy.court })
-                                              : td('playerPlaying')
-                                            : null
-                                        }
-                                        toggle={quickCheckInAction.bind(null, p.id, !p.checkedIn)}
-                                        labels={{
-                                          checkedIn: td('checkedIn'),
-                                          tapToCheckIn: td('tapToCheckIn'),
-                                        }}
-                                      />
-                                    </div>
-                                  </Fragment>
-                                );
+                            <p className="font-medium">
+                              {td('noShow', {
+                                names: noShow(item)!.missing.join(', '),
+                                minutes: noShow(item)!.late,
                               })}
-                            </div>
-                            {games.map((g) => {
-                              const typed =
-                                refill && enteredId === item.id ? refill[g - 1] : undefined;
-                              const set = typed
-                                ? { scoreA: typed[0], scoreB: typed[1] }
-                                : item.sets[g - 1];
-                              return (
-                                <input
-                                  key={g}
-                                  name={`g${g}${side.toLowerCase()}`}
-                                  inputMode="numeric"
-                                  aria-label={`${side === 'A' ? item.a : item.b} · ${td(
-                                    side === 'A' ? 'scoreA' : 'scoreB',
-                                    { number: g },
-                                  )}`}
-                                  defaultValue={side === 'A' ? set?.scoreA : set?.scoreB}
-                                  className={cn(scoreInput, 'w-12 shrink-0')}
-                                />
-                              );
-                            })}
+                            </p>
+                            {noShow(item)!.winner && (
+                              <QuickButton
+                                size="sm"
+                                variant="outline"
+                                action={quickWalkoverAction.bind(
+                                  null,
+                                  item.id,
+                                  noShow(item)!.winner!,
+                                )}
+                                confirm={td('noShowConfirm', { name: noShow(item)!.winnerName })}
+                              >
+                                {td('noShowWalkover', { name: noShow(item)!.winnerName })}
+                              </QuickButton>
+                            )}
                           </div>
-                        ))}
-                      </form>
-                      {item.busy?.courtMatch && item.court && (
-                        <p className="text-xs font-medium text-amber-700">
-                          {td('courtInUse', {
-                            court: item.court.number,
-                            match: item.busy.courtMatch,
-                          })}
-                        </p>
-                      )}
-                      {/* Court (D128) on the left, Save on the right, on one line. Save submits the score grid above. */}
-                      <div className="flex items-end justify-between gap-2">
-                        {item.status === 'SCHEDULED' ? (
-                          <QuickPlaceAction
-                            courts={courts.map((c) => ({
-                              id: c.id,
-                              label: td('courtNumber', { number: c.number }),
-                            }))}
-                            defaultCourtId={item.court?.id}
-                            action={quickPlaceAndStartAction.bind(null, item.id)}
-                            label={td('onCourt')}
-                            labels={{ court: td('courtLabel') }}
-                          />
-                        ) : item.status === 'IN_PROGRESS' && item.sets.length === 0 ? (
-                          // On court by mistake: back to waiting while no score is in (D99).
-                          <QuickButton
-                            size="sm"
-                            variant="ghost"
-                            action={quickUnstartMatchAction.bind(null, item.id)}
-                          >
-                            {td('backToWaiting')}
-                          </QuickButton>
-                        ) : (
-                          <span />
                         )}
-                        <Button type="submit" size="sm" form={`scores-${item.id}`}>
-                          {done ? td('correct') : td('save')}
-                        </Button>
-                      </div>
-                      {item.swap && (
-                        <SwapTeamsForm
-                          mine={item.swap.mine}
-                          theirs={item.swap.theirs}
-                          action={quickSwapTeamsAction.bind(null, item.id, item.swap.otherId)}
-                          labels={{
-                            title: td('swapTeamsTitle'),
-                            mine: td('swapMine'),
-                            with: td('swapWith', { number: item.swap.otherNumber }),
-                            button: td('swapButton'),
-                          }}
-                        />
-                      )}
-                    </div>
+                        <div className="space-y-3">
+                          <PresenceSummary
+                            present={item.checkIn.flat().filter((p) => p.checkedIn).length}
+                            total={item.checkIn.flat().length}
+                            labels={{
+                              all: td('allPresent'),
+                              some: td('presentOf', {
+                                present: item.checkIn.flat().filter((p) => p.checkedIn).length,
+                                total: item.checkIn.flat().length,
+                              }),
+                            }}
+                          />
+                          <form
+                            id={`scores-${item.id}`}
+                            action={resultAction.bind(null, locale, id, item.id, view)}
+                            className="space-y-2"
+                          >
+                            <input type="hidden" name="version" value={item.version} />
+                            {/* One row per side: the player cards, then that side's game scores. */}
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                              <span className="flex-1" />
+                              {games.map((g) => (
+                                <span key={g} className="w-12 text-center whitespace-nowrap">
+                                  {td('game', { number: g })}
+                                </span>
+                              ))}
+                            </div>
+                            {(['A', 'B'] as const).map((side, s) => (
+                              <div key={side} className="flex items-center gap-2">
+                                <div className="flex min-w-0 flex-1 items-center gap-2">
+                                  {(item.checkIn[s] ?? []).map((p, i) => {
+                                    const busy = item.busy?.players.find((b) => b.id === p.id);
+                                    return (
+                                      <Fragment key={p.id}>
+                                        {i > 0 && <span className="text-muted-foreground">/</span>}
+                                        <div className="min-w-0 flex-1">
+                                          <CheckInToggle
+                                            name={p.name}
+                                            checkedIn={p.checkedIn}
+                                            busy={
+                                              busy
+                                                ? busy.court
+                                                  ? td('playerOnCourt', { court: busy.court })
+                                                  : td('playerPlaying')
+                                                : null
+                                            }
+                                            toggle={quickCheckInAction.bind(
+                                              null,
+                                              p.id,
+                                              !p.checkedIn,
+                                            )}
+                                            labels={{
+                                              checkedIn: td('checkedIn'),
+                                              tapToCheckIn: td('tapToCheckIn'),
+                                            }}
+                                          />
+                                        </div>
+                                      </Fragment>
+                                    );
+                                  })}
+                                </div>
+                                {games.map((g) => {
+                                  const typed =
+                                    refill && enteredId === item.id ? refill[g - 1] : undefined;
+                                  const set = typed
+                                    ? { scoreA: typed[0], scoreB: typed[1] }
+                                    : item.sets[g - 1];
+                                  return (
+                                    <input
+                                      key={g}
+                                      name={`g${g}${side.toLowerCase()}`}
+                                      inputMode="numeric"
+                                      aria-label={`${side === 'A' ? item.a : item.b} · ${td(
+                                        side === 'A' ? 'scoreA' : 'scoreB',
+                                        { number: g },
+                                      )}`}
+                                      defaultValue={side === 'A' ? set?.scoreA : set?.scoreB}
+                                      className={cn(scoreInput, 'w-12 shrink-0')}
+                                    />
+                                  );
+                                })}
+                              </div>
+                            ))}
+                          </form>
+                          {item.busy?.courtMatch && item.court && (
+                            <p className="text-xs font-medium text-amber-700">
+                              {td('courtInUse', {
+                                court: item.court.number,
+                                match: item.busy.courtMatch,
+                              })}
+                            </p>
+                          )}
+                          {/* Court (D128) on the left, Save on the right, on one line. Save submits the score grid above. */}
+                          <div className="flex items-end justify-between gap-2">
+                            {item.status === 'SCHEDULED' ? (
+                              <QuickPlaceAction
+                                courts={courts.map((c) => ({
+                                  id: c.id,
+                                  label: td('courtNumber', { number: c.number }),
+                                }))}
+                                defaultCourtId={item.court?.id}
+                                action={quickPlaceAndStartAction.bind(null, item.id)}
+                                label={td('onCourt')}
+                                labels={{ court: td('courtLabel') }}
+                              />
+                            ) : item.status === 'IN_PROGRESS' && item.sets.length === 0 ? (
+                              // On court by mistake: back to waiting while no score is in (D99).
+                              <QuickButton
+                                size="sm"
+                                variant="ghost"
+                                action={quickUnstartMatchAction.bind(null, item.id)}
+                              >
+                                {td('backToWaiting')}
+                              </QuickButton>
+                            ) : (
+                              <span />
+                            )}
+                            <Button type="submit" size="sm" form={`scores-${item.id}`}>
+                              {done ? td('correct') : td('save')}
+                            </Button>
+                          </div>
+                          {item.swap && (
+                            <SwapTeamsForm
+                              mine={item.swap.mine}
+                              theirs={item.swap.theirs}
+                              action={quickSwapTeamsAction.bind(null, item.id, item.swap.otherId)}
+                              labels={{
+                                title: td('swapTeamsTitle'),
+                                mine: td('swapMine'),
+                                with: td('swapWith', { number: item.swap.otherNumber }),
+                                button: td('swapButton'),
+                              }}
+                            />
+                          )}
+                        </div>
 
-                    {!done && (
-                      <WalkoverOrRetirement
-                        names={{ A: item.a, B: item.b }}
-                        scoreFormId={`scores-${item.id}`}
-                        walkover={walkoverAction.bind(null, locale, id, item.id, view)}
-                        retire={retireAction.bind(null, locale, id, item.id, view)}
-                      />
+                        {!done && (
+                          <WalkoverOrRetirement
+                            names={{ A: item.a, B: item.b }}
+                            scoreFormId={`scores-${item.id}`}
+                            walkover={walkoverAction.bind(null, locale, id, item.id, view)}
+                            retire={retireAction.bind(null, locale, id, item.id, view)}
+                          />
+                        )}
+                      </div>
                     )}
-                  </div>
-                )}
-              </MatchLine>
-            );
-          })}
+                  </MatchLine>
+                );
+              })}
+            </div>
+          )}
+          {desk.waiting.length > 0 && (
+            <details className="rounded-lg border bg-card p-3 text-sm">
+              <summary className="cursor-pointer font-medium text-muted-foreground">
+                {td('waitingForPlayers', { count: desk.waiting.length })}
+              </summary>
+              <div className="mt-3 grid gap-2 lg:grid-cols-2">
+                {desk.waiting.map((item) => (
+                  <MatchLine key={item.id} item={item} locale={locale} />
+                ))}
+              </div>
+            </details>
+          )}
         </div>
       )}
     </>
