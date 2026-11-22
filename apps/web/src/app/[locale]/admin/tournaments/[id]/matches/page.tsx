@@ -1,5 +1,6 @@
 import { CheckCircle2 } from 'lucide-react';
 import type { Metadata } from 'next';
+import { Fragment } from 'react';
 import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { PageHeader, StatusNotice } from '@/components/admin/ui';
@@ -32,7 +33,7 @@ import {
 import { AutoRefresh } from '@/components/matches/auto-refresh';
 import { amsterdamDay, checkInList } from '@/server/services/checkin-service';
 import type { Actor } from '@/server/services/session-service';
-import { formatDate, formatEuro, formatTime, utcToAmsterdamLocal } from '@tourneasy/shared';
+import { formatDate, formatEuro, formatTime } from '@tourneasy/shared';
 import type { AppLocale } from '@tourneasy/shared/i18n';
 import { isAppError } from '@/server/lib/errors';
 import { drawOverview } from '@/server/services/draw-service';
@@ -76,10 +77,7 @@ export default async function DeskPage({ params, searchParams }: Props) {
       .map(async (e) => ({ ...e, ...(await stageStatus(e.id)) })),
   );
   const td = await getTranslations('Admin.desk');
-  // Courts and a starting time for matches that still need a court (D126): the next 5-minute mark.
   const courts = await deskCourts(actor, id);
-  // eslint-disable-next-line react-hooks/purity
-  const defaultStart = utcToAmsterdamLocal(new Date(Math.ceil(Date.now() / 300_000) * 300_000));
   // After a refused score, refill what was typed for that match.
   const [enteredId, enteredGames] = (firstParam(query.entered) ?? '').split('~');
   const refill =
@@ -246,133 +244,142 @@ export default async function DeskPage({ params, searchParams }: Props) {
                         )}
                       </div>
                     )}
-                    <PresenceSummary
-                      present={item.checkIn.flat().filter((p) => p.checkedIn).length}
-                      total={item.checkIn.flat().length}
-                      labels={{
-                        all: td('allPresent'),
-                        some: td('presentOf', {
-                          present: item.checkIn.flat().filter((p) => p.checkedIn).length,
-                          total: item.checkIn.flat().length,
-                        }),
-                      }}
-                    />
-                    <div className="grid gap-2 sm:grid-cols-2">
-                      {item.checkIn.map((side, s) => (
-                        <div key={s} className="space-y-1">
-                          {side.map((p) => {
-                            const busy = item.busy?.players.find((b) => b.id === p.id);
-                            return (
-                              <div key={p.id}>
-                                <CheckInToggle
-                                  name={p.name}
-                                  checkedIn={p.checkedIn}
-                                  toggle={quickCheckInAction.bind(null, p.id, !p.checkedIn)}
-                                  labels={{ present: td('present'), checkIn: td('checkIn') }}
-                                />
-                                {busy && (
-                                  <p className="text-xs font-medium text-amber-700">
-                                    {busy.court
-                                      ? td('playerOnCourt', { court: busy.court })
-                                      : td('playerPlaying')}
-                                  </p>
-                                )}
-                              </div>
-                            );
-                          })}
+                    <div className="grid gap-4 md:grid-cols-2 md:items-start">
+                      <div className="space-y-3">
+                        <PresenceSummary
+                          present={item.checkIn.flat().filter((p) => p.checkedIn).length}
+                          total={item.checkIn.flat().length}
+                          labels={{
+                            all: td('allPresent'),
+                            some: td('presentOf', {
+                              present: item.checkIn.flat().filter((p) => p.checkedIn).length,
+                              total: item.checkIn.flat().length,
+                            }),
+                          }}
+                        />
+                        <div className="grid gap-2 sm:grid-cols-2">
+                          {item.checkIn.map((side, s) => (
+                            <div key={s} className="space-y-1">
+                              {side.map((p) => {
+                                const busy = item.busy?.players.find((b) => b.id === p.id);
+                                return (
+                                  <div key={p.id}>
+                                    <CheckInToggle
+                                      name={p.name}
+                                      checkedIn={p.checkedIn}
+                                      toggle={quickCheckInAction.bind(null, p.id, !p.checkedIn)}
+                                      labels={{ present: td('present'), checkIn: td('checkIn') }}
+                                    />
+                                    {busy && (
+                                      <p className="text-xs font-medium text-amber-700">
+                                        {busy.court
+                                          ? td('playerOnCourt', { court: busy.court })
+                                          : td('playerPlaying')}
+                                      </p>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          ))}
                         </div>
-                      ))}
-                    </div>
 
-                    {item.busy?.courtMatch && item.court && (
-                      <p className="text-xs font-medium text-amber-700">
-                        {td('courtInUse', {
-                          court: item.court.number,
-                          match: item.busy.courtMatch,
-                        })}
-                      </p>
-                    )}
-                    {item.status === 'SCHEDULED' && (
-                      // Court and time stay visible and can be changed before the match starts (D128).
-                      <QuickPlaceAction
-                        courts={courts.map((c) => ({
-                          id: c.id,
-                          label: td('courtNumber', { number: c.number }),
-                        }))}
-                        defaultCourtId={item.court?.id}
-                        defaultStart={
-                          item.startsAt ? utcToAmsterdamLocal(item.startsAt) : defaultStart
-                        }
-                        action={quickPlaceAndStartAction.bind(null, item.id)}
-                        label={td('onCourt')}
-                        labels={{ court: td('courtLabel'), time: td('timeLabel'), now: td('now') }}
-                      />
-                    )}
-                    {item.swap && (
-                      <SwapTeamsForm
-                        mine={item.swap.mine}
-                        theirs={item.swap.theirs}
-                        action={quickSwapTeamsAction.bind(null, item.id, item.swap.otherId)}
-                        labels={{
-                          title: td('swapTeamsTitle'),
-                          mine: td('swapMine'),
-                          with: td('swapWith', { number: item.swap.otherNumber }),
-                          button: td('swapButton'),
-                        }}
-                      />
-                    )}
-                    {item.status === 'IN_PROGRESS' && item.sets.length === 0 && (
-                      // On court by mistake: back to waiting while no score is in (D99).
-                      <QuickButton
-                        size="sm"
-                        variant="ghost"
-                        action={quickUnstartMatchAction.bind(null, item.id)}
-                      >
-                        {td('backToWaiting')}
-                      </QuickButton>
-                    )}
-
-                    <form
-                      action={resultAction.bind(null, locale, id, item.id, view)}
-                      className="space-y-2"
-                    >
-                      <input type="hidden" name="version" value={item.version} />
-                      <div className="flex flex-wrap items-end gap-3">
-                        {games.map((g) => {
-                          const typed = refill && enteredId === item.id ? refill[g - 1] : undefined;
-                          const set = typed
-                            ? { scoreA: typed[0], scoreB: typed[1] }
-                            : item.sets[g - 1];
-                          return (
-                            <fieldset key={g} className="space-y-1">
-                              <legend className="text-xs text-muted-foreground">
-                                {td('game', { number: g })}
-                              </legend>
-                              <div className="flex items-center gap-1">
-                                <input
-                                  name={`g${g}a`}
-                                  inputMode="numeric"
-                                  aria-label={td('scoreA', { number: g })}
-                                  defaultValue={set?.scoreA}
-                                  className={scoreInput}
-                                />
-                                <span aria-hidden="true">–</span>
-                                <input
-                                  name={`g${g}b`}
-                                  inputMode="numeric"
-                                  aria-label={td('scoreB', { number: g })}
-                                  defaultValue={set?.scoreB}
-                                  className={scoreInput}
-                                />
-                              </div>
-                            </fieldset>
-                          );
-                        })}
-                        <Button type="submit" size="sm">
-                          {done ? td('correct') : td('save')}
-                        </Button>
+                        {item.busy?.courtMatch && item.court && (
+                          <p className="text-xs font-medium text-amber-700">
+                            {td('courtInUse', {
+                              court: item.court.number,
+                              match: item.busy.courtMatch,
+                            })}
+                          </p>
+                        )}
+                        {item.status === 'SCHEDULED' && (
+                          // Court and time stay visible and can be changed before the match starts (D128).
+                          <QuickPlaceAction
+                            courts={courts.map((c) => ({
+                              id: c.id,
+                              label: td('courtNumber', { number: c.number }),
+                            }))}
+                            defaultCourtId={item.court?.id}
+                            action={quickPlaceAndStartAction.bind(null, item.id)}
+                            label={td('onCourt')}
+                            labels={{ court: td('courtLabel') }}
+                          />
+                        )}
+                        {item.swap && (
+                          <SwapTeamsForm
+                            mine={item.swap.mine}
+                            theirs={item.swap.theirs}
+                            action={quickSwapTeamsAction.bind(null, item.id, item.swap.otherId)}
+                            labels={{
+                              title: td('swapTeamsTitle'),
+                              mine: td('swapMine'),
+                              with: td('swapWith', { number: item.swap.otherNumber }),
+                              button: td('swapButton'),
+                            }}
+                          />
+                        )}
+                        {item.status === 'IN_PROGRESS' && item.sets.length === 0 && (
+                          // On court by mistake: back to waiting while no score is in (D99).
+                          <QuickButton
+                            size="sm"
+                            variant="ghost"
+                            action={quickUnstartMatchAction.bind(null, item.id)}
+                          >
+                            {td('backToWaiting')}
+                          </QuickButton>
+                        )}
                       </div>
-                    </form>
+                      <form
+                        action={resultAction.bind(null, locale, id, item.id, view)}
+                        className="space-y-2"
+                      >
+                        <input type="hidden" name="version" value={item.version} />
+                        <div
+                          className="grid items-center gap-x-2 gap-y-1"
+                          style={{
+                            gridTemplateColumns: `minmax(0,1fr) repeat(${games.length}, 3rem)`,
+                          }}
+                        >
+                          <span />
+                          {games.map((g) => (
+                            <span key={g} className="text-center text-xs text-muted-foreground">
+                              {td('game', { number: g })}
+                            </span>
+                          ))}
+                          {(['A', 'B'] as const).map((side) => (
+                            <Fragment key={side}>
+                              <span className="truncate text-sm">
+                                {side === 'A' ? item.a : item.b}
+                              </span>
+                              {games.map((g) => {
+                                const typed =
+                                  refill && enteredId === item.id ? refill[g - 1] : undefined;
+                                const set = typed
+                                  ? { scoreA: typed[0], scoreB: typed[1] }
+                                  : item.sets[g - 1];
+                                return (
+                                  <input
+                                    key={g}
+                                    name={`g${g}${side.toLowerCase()}`}
+                                    inputMode="numeric"
+                                    aria-label={td(side === 'A' ? 'scoreA' : 'scoreB', {
+                                      number: g,
+                                    })}
+                                    defaultValue={side === 'A' ? set?.scoreA : set?.scoreB}
+                                    className={scoreInput}
+                                  />
+                                );
+                              })}
+                            </Fragment>
+                          ))}
+                        </div>
+                        <div className="flex justify-end">
+                          <Button type="submit" size="sm">
+                            {done ? td('correct') : td('save')}
+                          </Button>
+                        </div>
+                      </form>
+                    </div>
 
                     {!done && (
                       <details className="text-xs">

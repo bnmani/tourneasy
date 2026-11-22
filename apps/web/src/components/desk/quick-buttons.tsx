@@ -199,28 +199,25 @@ export function QuickTextAction({
 export function QuickPlaceAction({
   courts,
   defaultCourtId,
-  defaultStart,
   action,
   label,
   labels,
 }: {
   courts: { id: string; label: string }[];
   defaultCourtId?: string;
-  defaultStart: string;
   action: (courtId: string, startsAt: string) => Promise<QuickResult>;
   label: string;
-  labels: { court: string; time: string; now: string };
+  labels: { court: string };
 }) {
   const [courtId, setCourtId] = useState(defaultCourtId ?? courts[0]?.id ?? '');
-  const [startsAt, setStartsAt] = useState(defaultStart);
   const { error, pending, run } = useQuick();
   return (
     <form
       className="space-y-1"
       onSubmit={(e) => {
         e.preventDefault();
-        if (!courtId || !startsAt) return;
-        run(() => action(courtId, startsAt));
+        if (!courtId) return;
+        run(() => action(courtId, nowInAmsterdam()));
       }}
     >
       <div className="flex flex-wrap items-end gap-2 text-xs">
@@ -238,16 +235,6 @@ export function QuickPlaceAction({
             ))}
           </select>
         </label>
-        <label className="flex flex-col gap-1">
-          <span className="text-muted-foreground">{labels.time}</span>
-          <input
-            type="datetime-local"
-            value={startsAt}
-            onChange={(e) => setStartsAt(e.target.value)}
-            className="h-8 rounded-md border border-input bg-background px-2 text-base sm:text-xs"
-          />
-        </label>
-        <NowButton label={labels.now} onPick={setStartsAt} />
         <Button type="submit" size="sm" variant="outline" className="h-8" disabled={pending}>
           {label}
         </Button>
