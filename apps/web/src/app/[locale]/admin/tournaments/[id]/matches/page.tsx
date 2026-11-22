@@ -244,91 +244,45 @@ export default async function DeskPage({ params, searchParams }: Props) {
                         )}
                       </div>
                     )}
-                    <div className="grid gap-4 md:grid-cols-2 md:items-start">
-                      <div className="space-y-3">
-                        <PresenceSummary
-                          present={item.checkIn.flat().filter((p) => p.checkedIn).length}
-                          total={item.checkIn.flat().length}
-                          labels={{
-                            all: td('allPresent'),
-                            some: td('presentOf', {
-                              present: item.checkIn.flat().filter((p) => p.checkedIn).length,
-                              total: item.checkIn.flat().length,
-                            }),
-                          }}
-                        />
-                        <div className="grid gap-2 sm:grid-cols-2">
-                          {item.checkIn.map((side, s) => (
-                            <div key={s} className="space-y-1">
-                              {side.map((p) => {
-                                const busy = item.busy?.players.find((b) => b.id === p.id);
-                                return (
-                                  <div key={p.id}>
-                                    <CheckInToggle
-                                      name={p.name}
-                                      checkedIn={p.checkedIn}
-                                      toggle={quickCheckInAction.bind(null, p.id, !p.checkedIn)}
-                                      labels={{ present: td('present'), checkIn: td('checkIn') }}
-                                    />
-                                    {busy && (
-                                      <p className="text-xs font-medium text-amber-700">
-                                        {busy.court
-                                          ? td('playerOnCourt', { court: busy.court })
-                                          : td('playerPlaying')}
-                                      </p>
-                                    )}
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          ))}
-                        </div>
-
-                        {item.busy?.courtMatch && item.court && (
-                          <p className="text-xs font-medium text-amber-700">
-                            {td('courtInUse', {
-                              court: item.court.number,
-                              match: item.busy.courtMatch,
+                    <div className="space-y-3">
+                      <PresenceSummary
+                        present={item.checkIn.flat().filter((p) => p.checkedIn).length}
+                        total={item.checkIn.flat().length}
+                        labels={{
+                          all: td('allPresent'),
+                          some: td('presentOf', {
+                            present: item.checkIn.flat().filter((p) => p.checkedIn).length,
+                            total: item.checkIn.flat().length,
+                          }),
+                        }}
+                      />
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        {item.checkIn.map((side, s) => (
+                          <div key={s} className="space-y-1">
+                            {side.map((p) => {
+                              const busy = item.busy?.players.find((b) => b.id === p.id);
+                              return (
+                                <div key={p.id}>
+                                  <CheckInToggle
+                                    name={p.name}
+                                    checkedIn={p.checkedIn}
+                                    toggle={quickCheckInAction.bind(null, p.id, !p.checkedIn)}
+                                    labels={{ present: td('present'), checkIn: td('checkIn') }}
+                                  />
+                                  {busy && (
+                                    <p className="text-xs font-medium text-amber-700">
+                                      {busy.court
+                                        ? td('playerOnCourt', { court: busy.court })
+                                        : td('playerPlaying')}
+                                    </p>
+                                  )}
+                                </div>
+                              );
                             })}
-                          </p>
-                        )}
-                        {item.status === 'SCHEDULED' && (
-                          // Court and time stay visible and can be changed before the match starts (D128).
-                          <QuickPlaceAction
-                            courts={courts.map((c) => ({
-                              id: c.id,
-                              label: td('courtNumber', { number: c.number }),
-                            }))}
-                            defaultCourtId={item.court?.id}
-                            action={quickPlaceAndStartAction.bind(null, item.id)}
-                            label={td('onCourt')}
-                            labels={{ court: td('courtLabel') }}
-                          />
-                        )}
-                        {item.swap && (
-                          <SwapTeamsForm
-                            mine={item.swap.mine}
-                            theirs={item.swap.theirs}
-                            action={quickSwapTeamsAction.bind(null, item.id, item.swap.otherId)}
-                            labels={{
-                              title: td('swapTeamsTitle'),
-                              mine: td('swapMine'),
-                              with: td('swapWith', { number: item.swap.otherNumber }),
-                              button: td('swapButton'),
-                            }}
-                          />
-                        )}
-                        {item.status === 'IN_PROGRESS' && item.sets.length === 0 && (
-                          // On court by mistake: back to waiting while no score is in (D99).
-                          <QuickButton
-                            size="sm"
-                            variant="ghost"
-                            action={quickUnstartMatchAction.bind(null, item.id)}
-                          >
-                            {td('backToWaiting')}
-                          </QuickButton>
-                        )}
+                          </div>
+                        ))}
                       </div>
+
                       <form
                         action={resultAction.bind(null, locale, id, item.id, view)}
                         className="space-y-2"
@@ -379,6 +333,50 @@ export default async function DeskPage({ params, searchParams }: Props) {
                           </Button>
                         </div>
                       </form>
+                      {item.busy?.courtMatch && item.court && (
+                        <p className="text-xs font-medium text-amber-700">
+                          {td('courtInUse', {
+                            court: item.court.number,
+                            match: item.busy.courtMatch,
+                          })}
+                        </p>
+                      )}
+                      {item.status === 'SCHEDULED' && (
+                        // Court and time stay visible and can be changed before the match starts (D128).
+                        <QuickPlaceAction
+                          courts={courts.map((c) => ({
+                            id: c.id,
+                            label: td('courtNumber', { number: c.number }),
+                          }))}
+                          defaultCourtId={item.court?.id}
+                          action={quickPlaceAndStartAction.bind(null, item.id)}
+                          label={td('onCourt')}
+                          labels={{ court: td('courtLabel') }}
+                        />
+                      )}
+                      {item.swap && (
+                        <SwapTeamsForm
+                          mine={item.swap.mine}
+                          theirs={item.swap.theirs}
+                          action={quickSwapTeamsAction.bind(null, item.id, item.swap.otherId)}
+                          labels={{
+                            title: td('swapTeamsTitle'),
+                            mine: td('swapMine'),
+                            with: td('swapWith', { number: item.swap.otherNumber }),
+                            button: td('swapButton'),
+                          }}
+                        />
+                      )}
+                      {item.status === 'IN_PROGRESS' && item.sets.length === 0 && (
+                        // On court by mistake: back to waiting while no score is in (D99).
+                        <QuickButton
+                          size="sm"
+                          variant="ghost"
+                          action={quickUnstartMatchAction.bind(null, item.id)}
+                        >
+                          {td('backToWaiting')}
+                        </QuickButton>
+                      )}
                     </div>
 
                     {!done && (
