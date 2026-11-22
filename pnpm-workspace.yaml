@@ -27,3 +27,5 @@ allowBuilds:
   '@parcel/watcher': false
   '@swc/core': false
   unrs-resolver: false
+  # Sentry CLI downloads a binary; only needed later for uploading source maps (approve then).
+  '@sentry/cli': false
