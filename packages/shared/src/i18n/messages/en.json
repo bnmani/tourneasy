@@ -1243,7 +1243,6 @@
       "retiredHelp": "Retirement: enter the score so far and choose the winner.",
       "retiredWinner": "Winner:",
       "presentCount": "{present} of {total} present",
-      "onlyAbsent": "Only not yet present",
       "checkInSearch": "Search by name, member number or club",
       "noPlayers": "No players found.",
       "unpaid": "Still to pay: {amount}",
@@ -1256,9 +1255,6 @@
       "noShowConfirm": "Give the walkover to {name}? You can still correct the result afterwards.",
       "checkInDay": "Day",
       "checkInIntro": "One tap checks a player in for all their matches of this day.",
-      "todo": "Still to do ({count})",
-      "done": "Present and paid ({count})",
-      "allDone": "Everyone is present and has paid.",
       "presentOf": "{present}/{total} present",
       "allPresent": "Everyone present",
       "checkInPrint": "Print list (PDF)",
@@ -1280,7 +1276,12 @@
       "now": "Now",
       "courtLabel": "Court",
       "timeLabel": "Time",
-      "courtNumber": "Court {number}"
+      "courtNumber": "Court {number}",
+      "checkedIn": "Checked in · tap to undo",
+      "tapToCheckIn": "Tap to check in",
+      "notCheckedInCount": "Not checked in ({count})",
+      "checkedInCount": "Checked in ({count})",
+      "columnEmpty": "No players here."
     },
     "navEmail": "Email",
     "emailSettings": {

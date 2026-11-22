@@ -262,21 +262,23 @@ export default async function DeskPage({ params, searchParams }: Props) {
                             {side.map((p) => {
                               const busy = item.busy?.players.find((b) => b.id === p.id);
                               return (
-                                <div key={p.id}>
-                                  <CheckInToggle
-                                    name={p.name}
-                                    checkedIn={p.checkedIn}
-                                    toggle={quickCheckInAction.bind(null, p.id, !p.checkedIn)}
-                                    labels={{ present: td('present'), checkIn: td('checkIn') }}
-                                  />
-                                  {busy && (
-                                    <p className="text-xs font-medium text-amber-700">
-                                      {busy.court
+                                <CheckInToggle
+                                  key={p.id}
+                                  name={p.name}
+                                  checkedIn={p.checkedIn}
+                                  busy={
+                                    busy
+                                      ? busy.court
                                         ? td('playerOnCourt', { court: busy.court })
-                                        : td('playerPlaying')}
-                                    </p>
-                                  )}
-                                </div>
+                                        : td('playerPlaying')
+                                      : null
+                                  }
+                                  toggle={quickCheckInAction.bind(null, p.id, !p.checkedIn)}
+                                  labels={{
+                                    checkedIn: td('checkedIn'),
+                                    tapToCheckIn: td('tapToCheckIn'),
+                                  }}
+                                />
                               );
                             })}
                           </div>
@@ -527,6 +529,11 @@ async function CheckInView({
             ? `${td('firstMatch', { time: formatTime(p.firstMatch, locale) })} · ${td('matches', { count: p.matches })}`
             : null,
           present: p.present,
+          busy: p.busy
+            ? p.busy.court
+              ? td('playerOnCourt', { court: p.busy.court })
+              : td('playerPlaying')
+            : null,
           unpaid: p.unpaidCents > 0 ? formatEuro(p.unpaidCents, locale) : null,
           deskPaid: p.deskPaid,
         }))}

@@ -3,7 +3,6 @@
 import { Search } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useMemo, useState } from 'react';
-import { cn } from '@/lib/utils';
 import {
   payAtDeskAction,
   playerCheckInAction,
@@ -19,49 +18,41 @@ export type CheckInRow = {
   /** "09:30 · 3 wedstrijden", formatted on the server. */
   when: string | null;
   present: boolean;
+  /** "Nu op baan 3" while the player is busy in another match, formatted on the server. */
+  busy: string | null;
   /** "€ 25,00" when something is still to pay. */
   unpaid: string | null;
   /** Something was paid at the desk and can be undone (D96). */
   deskPaid: boolean;
 };
 
-/** The day's players at the desk (D74): search, one tap per player, pay what's open. */
+/**
+ * The day's players at the desk (D74, D140): two columns of player cards, not checked in on the
+ * left and checked in on the right. A tap moves a player across (and back, as undo). Search
+ * covers both columns.
+ */
 export function CheckInList({ tournamentId, rows }: { tournamentId: string; rows: CheckInRow[] }) {
   const t = useTranslations('Admin.desk');
   const [query, setQuery] = useState('');
-  const [onlyAbsent, setOnlyAbsent] = useState(false);
   const shown = useMemo(() => {
     const q = query.trim().toLowerCase();
+    if (!q) return rows;
     return rows.filter(
       (r) =>
-        (!onlyAbsent || !r.present) &&
-        (!q ||
-          r.name.toLowerCase().includes(q) ||
-          r.memberNumber.toLowerCase().includes(q) ||
-          (r.club ?? '').toLowerCase().includes(q)),
+        r.name.toLowerCase().includes(q) ||
+        r.memberNumber.toLowerCase().includes(q) ||
+        (r.club ?? '').toLowerCase().includes(q),
     );
-  }, [rows, query, onlyAbsent]);
+  }, [rows, query]);
   const present = rows.filter((r) => r.present).length;
-  // Still something to do (not here yet or not paid) on top; present and paid below.
-  const todo = shown.filter((r) => !r.present || r.unpaid);
-  const done = shown.filter((r) => r.present && !r.unpaid);
+  const notYet = shown.filter((r) => !r.present);
+  const here = shown.filter((r) => r.present);
 
   return (
     <section aria-labelledby="checkin-title" className="space-y-3">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 id="checkin-title" className="text-lg font-semibold">
-          {t('presentCount', { present, total: rows.length })}
-        </h2>
-        <label className="flex items-center gap-2 text-sm">
-          <input
-            type="checkbox"
-            checked={onlyAbsent}
-            onChange={(e) => setOnlyAbsent(e.target.checked)}
-            className="size-5 accent-primary"
-          />
-          {t('onlyAbsent')}
-        </label>
-      </div>
+      <h2 id="checkin-title" className="text-lg font-semibold">
+        {t('presentCount', { present, total: rows.length })}
+      </h2>
       <div className="relative">
         <Search
           aria-hidden="true"
@@ -80,87 +71,83 @@ export function CheckInList({ tournamentId, rows }: { tournamentId: string; rows
       {shown.length === 0 ? (
         <p className="text-sm text-muted-foreground">{t('noPlayers')}</p>
       ) : (
-        <>
-          <Rows title={t('todo', { count: todo.length })} rows={todo} tournamentId={tournamentId} />
-          {done.length > 0 && (
-            <Rows
-              title={t('done', { count: done.length })}
-              rows={done}
-              tournamentId={tournamentId}
-              muted
-            />
-          )}
-        </>
+        <div className="grid grid-cols-2 items-start gap-3">
+          <Column
+            title={t('notCheckedInCount', { count: notYet.length })}
+            rows={notYet}
+            tournamentId={tournamentId}
+          />
+          <Column
+            title={t('checkedInCount', { count: here.length })}
+            rows={here}
+            tournamentId={tournamentId}
+          />
+        </div>
       )}
     </section>
   );
 }
 
-function Rows({
+function Column({
   title,
   rows,
   tournamentId,
-  muted = false,
 }: {
   title: string;
   rows: CheckInRow[];
   tournamentId: string;
-  muted?: boolean;
 }) {
   const t = useTranslations('Admin.desk');
   return (
-    <div className="space-y-2">
-      <h3 className="text-sm font-semibold text-muted-foreground">{title}</h3>
+    <div className="min-w-0 space-y-2">
+      <h3 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+        {title}
+      </h3>
       {rows.length === 0 ? (
-        <p className="text-sm text-muted-foreground">{t('allDone')}</p>
+        <p className="text-sm text-muted-foreground">{t('columnEmpty')}</p>
       ) : (
-        <ul className={cn('divide-y rounded-lg border bg-card', muted && 'opacity-80')}>
+        <ul className="space-y-2">
           {rows.map((r) => (
-            <li
-              key={r.playerId}
-              className="grid gap-2 px-3 py-2.5 sm:grid-cols-[1fr_auto] sm:items-center"
-            >
-              <div className="min-w-0">
-                <p className="font-medium">{r.name}</p>
-                <p className="text-xs text-muted-foreground">
-                  {[r.memberNumber, r.club, r.when].filter(Boolean).join(' · ')}
-                </p>
-              </div>
-              <div className="flex flex-wrap items-start gap-2">
-                {r.unpaid && (
-                  <>
-                    <span className="rounded-md bg-destructive/10 px-2 py-1 text-xs font-medium text-destructive">
-                      {t('unpaid', { amount: r.unpaid })}
-                    </span>
-                    <QuickButton
-                      size="sm"
-                      variant="outline"
-                      action={() => payAtDeskAction(tournamentId, r.playerId)}
-                      confirm={t('payConfirm', { name: r.name, amount: r.unpaid })}
-                    >
-                      {t('payAtDesk')}
-                    </QuickButton>
-                  </>
-                )}
-                {r.deskPaid && (
-                  <QuickButton
-                    size="sm"
-                    variant="ghost"
-                    action={() => undoPayAtDeskAction(tournamentId, r.playerId)}
-                    confirm={t('undoPayConfirm', { name: r.name })}
-                  >
-                    {t('undoPay')}
-                  </QuickButton>
-                )}
-                <div className="w-44">
-                  <CheckInToggle
-                    label={r.name}
-                    checkedIn={r.present}
-                    toggle={() => playerCheckInAction(tournamentId, r.playerId, !r.present)}
-                    labels={{ present: t('present'), checkIn: t('checkIn') }}
-                  />
-                </div>
-              </div>
+            <li key={r.playerId}>
+              <CheckInToggle
+                name={r.name}
+                detail={[r.memberNumber, r.club, r.when].filter(Boolean).join(' · ')}
+                checkedIn={r.present}
+                busy={r.busy}
+                toggle={() => playerCheckInAction(tournamentId, r.playerId, !r.present)}
+                labels={{ checkedIn: t('checkedIn'), tapToCheckIn: t('tapToCheckIn') }}
+                footer={
+                  r.unpaid || r.deskPaid ? (
+                    <div className="flex flex-wrap items-center gap-2">
+                      {r.unpaid && (
+                        <>
+                          <span className="rounded-md bg-destructive/10 px-2 py-1 text-xs font-medium text-destructive">
+                            {t('unpaid', { amount: r.unpaid })}
+                          </span>
+                          <QuickButton
+                            size="sm"
+                            variant="outline"
+                            action={() => payAtDeskAction(tournamentId, r.playerId)}
+                            confirm={t('payConfirm', { name: r.name, amount: r.unpaid })}
+                          >
+                            {t('payAtDesk')}
+                          </QuickButton>
+                        </>
+                      )}
+                      {r.deskPaid && (
+                        <QuickButton
+                          size="sm"
+                          variant="ghost"
+                          action={() => undoPayAtDeskAction(tournamentId, r.playerId)}
+                          confirm={t('undoPayConfirm', { name: r.name })}
+                        >
+                          {t('undoPay')}
+                        </QuickButton>
+                      )}
+                    </div>
+                  ) : undefined
+                }
+              />
             </li>
           ))}
         </ul>

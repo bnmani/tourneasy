@@ -1243,7 +1243,6 @@
       "retiredHelp": "Opgave: vul de stand tot dan in en kies de winnaar.",
       "retiredWinner": "Winnaar:",
       "presentCount": "{present} van {total} aanwezig",
-      "onlyAbsent": "Alleen nog niet aanwezig",
       "checkInSearch": "Zoek op naam, lidnummer of club",
       "noPlayers": "Geen spelers gevonden.",
       "unpaid": "Nog te betalen: {amount}",
@@ -1256,9 +1255,6 @@
       "noShowConfirm": "Walk-over geven aan {name}? De uitslag kun je daarna nog corrigeren.",
       "checkInDay": "Dag",
       "checkInIntro": "Eén tik meldt een speler aan voor al zijn of haar wedstrijden van deze dag.",
-      "todo": "Nog te doen ({count})",
-      "done": "Aanwezig en betaald ({count})",
-      "allDone": "Iedereen is aanwezig en heeft betaald.",
       "presentOf": "{present}/{total} aanwezig",
       "allPresent": "Iedereen aanwezig",
       "checkInPrint": "Lijst afdrukken (pdf)",
@@ -1280,7 +1276,12 @@
       "now": "Nu",
       "courtLabel": "Baan",
       "timeLabel": "Tijd",
-      "courtNumber": "Baan {number}"
+      "courtNumber": "Baan {number}",
+      "checkedIn": "Aanwezig · tik om ongedaan te maken",
+      "tapToCheckIn": "Tik om aanwezig te melden",
+      "notCheckedInCount": "Nog niet aanwezig ({count})",
+      "checkedInCount": "Aanwezig ({count})",
+      "columnEmpty": "Hier staat niemand."
     },
     "navEmail": "E-mail",
     "emailSettings": {

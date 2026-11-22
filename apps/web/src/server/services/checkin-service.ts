@@ -96,7 +96,7 @@ export async function checkInList(
       },
     },
   });
-  const [matchesToday, anySlot] = await Promise.all([
+  const [matchesToday, anySlot, playingNow] = await Promise.all([
     prisma.match.findMany({
       where: {
         draw: { event: { tournamentId } },
@@ -110,7 +110,25 @@ export async function checkInList(
       },
     }),
     prisma.courtSlot.count({ where: { tournamentId } }),
+    // Matches on court now: their players are busy (D140), with the court they are on.
+    prisma.match.findMany({
+      where: {
+        draw: { event: { tournamentId } },
+        status: { in: ['IN_PROGRESS', 'CALLED'] },
+      },
+      select: {
+        slot: { select: { court: { select: { number: true } } } },
+        entryA: { select: { registrationId: true } },
+        entryB: { select: { registrationId: true } },
+      },
+    }),
   ]);
+  const busyRegistration = new Map<string, number | null>();
+  for (const m of playingNow) {
+    for (const regId of [m.entryA?.registrationId, m.entryB?.registrationId]) {
+      if (regId) busyRegistration.set(regId, m.slot?.court.number ?? null);
+    }
+  }
   // Per entry: first match time and number of matches that day.
   const byRegistration = new Map<string, { first: Date; count: number }>();
   for (const m of matchesToday) {
@@ -135,6 +153,8 @@ export async function checkInList(
       firstMatch: Date | null;
       matches: number;
       shares: typeof shares;
+      busy: boolean;
+      court: number | null;
     }
   >();
   for (const s of shares) {
@@ -149,7 +169,14 @@ export async function checkInList(
       firstMatch: null,
       matches: 0,
       shares: [],
+      busy: false,
+      court: null,
     };
+    const onCourt = busyRegistration.get(s.registrationId);
+    if (onCourt !== undefined) {
+      p.busy = true;
+      p.court = onCourt;
+    }
     p.shares.push(s);
     if (today) {
       p.matches += today.count;
@@ -173,6 +200,7 @@ export async function checkInList(
         firstMatch: p.firstMatch,
         matches: p.matches,
         present: p.shares.every((s) => checkedInFor(s.checkedInAt, day, days[0]!)),
+        busy: p.busy ? { court: p.court } : null,
         unpaidCents: unpaid.reduce((sum, s) => sum + (due.get(s.id) ?? 0), 0),
         deskPaid: p.shares.some((s) => s.paymentStatus === 'PAID' && s.orderItems.length > 0),
       };

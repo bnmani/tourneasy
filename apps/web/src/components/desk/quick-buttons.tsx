@@ -1,8 +1,7 @@
 'use client';
 
-import { CheckCircle2, Circle } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { useOptimistic, useState, useTransition } from 'react';
+import { type ReactNode, useOptimistic, useState, useTransition } from 'react';
 import { Button, type ButtonProps } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import type { QuickResult } from '@/server/actions/match-actions';
@@ -39,55 +38,77 @@ function ErrorLine({ error }: { error: string | null }) {
   ) : null;
 }
 
-/** One player's check-in on a match card. */
+/**
+ * One player as a card (D140). The left bar shows the status: green when checked in, orange when
+ * not. A player busy in another match gets the amber card and can't be tapped. A tap checks the
+ * player in or, when already checked in, undoes it.
+ */
 export function CheckInToggle({
   name,
-  label,
+  detail,
   checkedIn,
+  busy = null,
   toggle,
   labels,
+  footer,
 }: {
-  /** Shown in the button (match cards); leave out where the name is next to it. */
-  name?: string;
-  /** Accessible name when no name is shown. */
-  label?: string;
+  name: string;
+  /** A small second line, e.g. member number and club. */
+  detail?: string;
   checkedIn: boolean;
+  /** "On court 3 now" while the player is busy in another match. */
+  busy?: string | null;
   /** Bound server action: sets the opposite of `checkedIn`. */
   toggle: () => Promise<QuickResult>;
-  labels: { present: string; checkIn: string };
+  labels: { checkedIn: string; tapToCheckIn: string };
+  /** Controls under the card, e.g. paying at the desk. */
+  footer?: ReactNode;
 }) {
   const [shown, setShown] = useOptimistic(checkedIn);
   const { error, run } = useQuick();
-  return (
-    <div className="space-y-0.5">
-      <button
-        type="button"
-        onClick={() => run(toggle, () => setShown(!shown))}
-        aria-pressed={shown}
-        aria-label={name ? undefined : label}
-        className={cn(
-          'flex min-h-9 w-full items-center gap-2 rounded-md border px-2 text-left text-xs transition-colors',
-          shown
-            ? 'border-emerald-600 bg-emerald-50 text-emerald-900'
-            : 'border-dashed hover:bg-accent',
-        )}
-      >
-        {shown ? (
-          <CheckCircle2 aria-hidden="true" className="size-4 shrink-0 text-emerald-600" />
-        ) : (
-          <Circle aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />
-        )}
-        {name && <span className="truncate">{name}</span>}
+  const classes = cn(
+    'flex min-h-14 w-full flex-col justify-center gap-0.5 rounded-md border border-l-[6px] px-3 py-2 text-left text-sm transition-colors',
+    shown ? 'border-l-green-600' : 'border-l-orange-600',
+    busy
+      ? 'cursor-default border-orange-400 bg-orange-50 dark:bg-orange-950/40'
+      : shown
+        ? 'border-border bg-emerald-50 hover:bg-emerald-100/60 dark:bg-emerald-950/40'
+        : 'border-border bg-card hover:bg-orange-50 dark:hover:bg-orange-950/30',
+  );
+  const content = (
+    <>
+      <span className="leading-tight font-semibold break-words">{name}</span>
+      {detail && <span className="text-xs text-muted-foreground">{detail}</span>}
+      {busy ? (
+        <span className="text-xs font-semibold text-orange-800 dark:text-orange-300">{busy}</span>
+      ) : (
         <span
           className={cn(
-            name ? 'ml-auto' : 'font-medium',
-            shown ? 'font-semibold' : 'text-muted-foreground',
+            'text-xs',
+            shown ? 'font-semibold text-green-600' : 'text-muted-foreground',
           )}
         >
-          {shown ? labels.present : labels.checkIn}
+          {shown ? labels.checkedIn : labels.tapToCheckIn}
         </span>
-      </button>
+      )}
+    </>
+  );
+  return (
+    <div className="space-y-1">
+      {busy ? (
+        <div className={classes}>{content}</div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => run(toggle, () => setShown(!shown))}
+          aria-pressed={shown}
+          className={classes}
+        >
+          {content}
+        </button>
+      )}
       <ErrorLine error={error} />
+      {footer}
     </div>
   );
 }
