@@ -80,6 +80,8 @@ export type ExpectedCategory = {
   /** The category's name in the reader's language. */
   event: string;
   rounds: ExpectedRound[];
+  /** Hybrid only: the number of teams the knockout takes from the ranking (its draw size). */
+  drawSize?: number;
 };
 
 type Locale = 'nl' | 'en';
@@ -348,6 +350,7 @@ export async function expectedKnockout(
         eventId,
         event: eventText(shape.event, locale),
         rounds,
+        drawSize: shape.groupStage ? undefined : shape.size,
       });
   }
   return out;

@@ -1,3 +1,5 @@
+'use client';
+
 import { type KnockoutMatch, knockoutRounds } from '@tourneasy/shared';
 import { useTranslations } from 'next-intl';
 

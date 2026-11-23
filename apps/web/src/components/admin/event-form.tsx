@@ -18,7 +18,7 @@ import {
   TextField,
 } from '@/components/forms/fields';
 import { initialFormState } from '@/components/forms/form-state';
-import { KnockoutPath } from './knockout-path';
+import { KnockoutPath } from '@/components/matches/knockout-path';
 import { saveEventAction } from '@/server/actions/admin-actions';
 
 export type EventFormValues = {
