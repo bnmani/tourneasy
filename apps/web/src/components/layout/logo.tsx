@@ -15,7 +15,7 @@ export function LogoMark({ className }: { className?: string }) {
       )}
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/images/logo-mark.png" alt="" className="h-11 w-auto" />
+      <img src="/images/logo-mark.png" alt="" className="relative -top-1 h-11 w-auto" />
     </span>
   );
 }
