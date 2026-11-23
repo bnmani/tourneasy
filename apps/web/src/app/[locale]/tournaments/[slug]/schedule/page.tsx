@@ -14,7 +14,10 @@ import { pageLocale } from '@/lib/page';
 import type { AppLocale } from '@tourneasy/shared/i18n';
 import { pageMetadata } from '@/lib/seo';
 import { isAppError } from '@/server/lib/errors';
-import { publicExpectedKnockout } from '@/server/services/expected-knockout-service';
+import {
+  publicExpectedKnockout,
+  publicHybridDraws,
+} from '@/server/services/expected-knockout-service';
 import { getPublicTournament } from '@/server/services/public-service';
 import { publicSchedule } from '@/server/services/schedule-service';
 
@@ -145,6 +148,11 @@ async function ExpectedSection({
   locale: AppLocale;
   showDay: boolean;
 }) {
-  const expected = await publicExpectedKnockout(slug, locale);
-  return <ExpectedKnockoutList categories={expected} locale={locale} showDay={showDay} />;
+  const [expected, draws] = await Promise.all([
+    publicExpectedKnockout(slug, locale),
+    publicHybridDraws(slug, locale),
+  ]);
+  return (
+    <ExpectedKnockoutList categories={expected} draws={draws} locale={locale} showDay={showDay} />
+  );
 }

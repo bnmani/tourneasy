@@ -1,7 +1,7 @@
 import { formatDate, formatTime } from '@tourneasy/shared';
 import type { AppLocale } from '@tourneasy/shared/i18n';
 import { getTranslations } from 'next-intl/server';
-import type { ExpectedCategory } from '@/server/services/expected-knockout-service';
+import type { ExpectedCategory, HybridDraw } from '@/server/services/expected-knockout-service';
 import { KnockoutPath } from './knockout-path';
 
 /** "14:15", or "Sat 21 Nov, 14:15" when the tournament lasts more than a day. */
@@ -18,15 +18,17 @@ function when(date: Date, locale: AppLocale, showDay: boolean) {
  */
 export async function ExpectedKnockoutList({
   categories,
+  draws,
   locale,
   showDay = false,
 }: {
   categories: ExpectedCategory[];
+  draws: HybridDraw[];
   locale: AppLocale;
   showDay?: boolean;
 }) {
   const t = await getTranslations('Matches');
-  if (categories.length === 0) return null;
+  if (categories.length === 0 && draws.length === 0) return null;
   return (
     <section className="space-y-3" aria-labelledby="expected-knockout">
       <h2 id="expected-knockout" className="font-heading text-xl font-semibold">
@@ -62,14 +64,12 @@ export async function ExpectedKnockoutList({
           </article>
         ))}
       </div>
-      {categories
-        .filter((c) => c.drawSize)
-        .map((c) => (
-          <div key={c.eventId} className="space-y-2">
-            <h3 className="font-semibold">{c.event}</h3>
-            <KnockoutPath size={c.drawSize!} />
-          </div>
-        ))}
+      {draws.map((d) => (
+        <div key={d.eventId} className="space-y-2">
+          <h3 className="font-semibold">{d.event}</h3>
+          <KnockoutPath size={d.drawSize} />
+        </div>
+      ))}
     </section>
   );
 }

@@ -80,9 +80,10 @@ export type ExpectedCategory = {
   /** The category's name in the reader's language. */
   event: string;
   rounds: ExpectedRound[];
-  /** Hybrid only: the number of teams the knockout takes from the ranking (its draw size). */
-  drawSize?: number;
 };
+
+/** A hybrid category's knockout draw: shown when the expected rounds are on, even before times are placed. */
+export type HybridDraw = { eventId: string; event: string; drawSize: number };
 
 type Locale = 'nl' | 'en';
 
@@ -350,7 +351,6 @@ export async function expectedKnockout(
         eventId,
         event: eventText(shape.event, locale),
         rounds,
-        drawSize: shape.groupStage ? undefined : shape.size,
       });
   }
   return out;
@@ -403,6 +403,41 @@ export async function myExpectedKnockout(actor: Actor, locale: Locale) {
 }
 
 /** Public: the expected knockout rounds of a published tournament with a published schedule. */
+/** The hybrid categories' knockout draws, with the expected rounds switched on. */
+export async function hybridDraws(tournamentId: string, locale: Locale): Promise<HybridDraw[]> {
+  if (!(await isExpectedKnockoutOn(tournamentId))) return [];
+  const events = await prisma.tournamentEvent.findMany({
+    where: {
+      tournamentId,
+      deletedAt: null,
+      drawType: 'HYBRID_ROUND_ROBIN_KNOCKOUT',
+      knockoutSize: { not: null },
+    },
+    orderBy: { sortOrder: 'asc' },
+    select: {
+      id: true,
+      discipline: true,
+      name: true,
+      knockoutSize: true,
+      ageCategory: { select: { code: true, name: true } },
+      levelClass: { select: { code: true } },
+    },
+  });
+  return events.map((e) => ({
+    eventId: e.id,
+    event: eventText(e, locale),
+    drawSize: e.knockoutSize!,
+  }));
+}
+
+export async function publicHybridDraws(slug: string, locale: Locale): Promise<HybridDraw[]> {
+  const t = await prisma.tournament.findFirst({
+    where: { slug, isPublished: true, deletedAt: null, schedulePublishedAt: { not: null } },
+    select: { id: true },
+  });
+  return t ? hybridDraws(t.id, locale) : [];
+}
+
 export async function publicExpectedKnockout(slug: string, locale: Locale) {
   const t = await prisma.tournament.findFirst({
     where: { slug, isPublished: true, deletedAt: null, schedulePublishedAt: { not: null } },

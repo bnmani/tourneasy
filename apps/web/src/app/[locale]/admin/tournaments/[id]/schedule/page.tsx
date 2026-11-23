@@ -26,6 +26,7 @@ import { NowButton, QuickButton } from '@/components/desk/quick-buttons';
 import { quickExpectedKnockoutAction } from '@/server/actions/match-actions';
 import {
   expectedKnockout,
+  hybridDraws,
   isExpectedKnockoutOn,
 } from '@/server/services/expected-knockout-service';
 import { getSchedule } from '@/server/services/schedule-service';
@@ -332,6 +333,11 @@ async function ExpectedSection({
   locale: AppLocale;
   showDay: boolean;
 }) {
-  const expected = await expectedKnockout(tournamentId, locale);
-  return <ExpectedKnockoutList categories={expected} locale={locale} showDay={showDay} />;
+  const [expected, draws] = await Promise.all([
+    expectedKnockout(tournamentId, locale),
+    hybridDraws(tournamentId, locale),
+  ]);
+  return (
+    <ExpectedKnockoutList categories={expected} draws={draws} locale={locale} showDay={showDay} />
+  );
 }
