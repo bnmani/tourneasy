@@ -1,17 +1,29 @@
-import { StyleSheet, Text, View } from 'react-native';
-import { defaultLocale, messages } from '@tourneasy/shared/i18n';
+import { useEffect } from 'react';
+import { Image, StyleSheet, Text, View } from 'react-native';
+import { router } from 'expo-router';
 
-/**
- * Placeholder home screen for Phase 0. The real home comes in Phase 1
- * (sign-in and home, see apps/mobile/SCOPE.md section 8).
- */
-export default function HomeScreen() {
-  const copy = messages[defaultLocale];
+import { useSession } from '@/lib/session';
+import { splashBackground } from '@/theme';
+
+/** Launch screen. Shows the logo, then moves to Home or Welcome depending on the session. */
+export default function SplashScreen() {
+  const { profile } = useSession();
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      router.replace(profile ? '/(tabs)' : '/welcome');
+    }, 1600);
+    return () => clearTimeout(timer);
+  }, [profile]);
+
   return (
     <View style={styles.container}>
-      <Text style={styles.title} testID="home-title">
-        {copy.Metadata.siteName}
-      </Text>
+      <Image
+        accessibilityLabel="Tourneasy logo"
+        source={require('../../assets/brand/logo.jpg')}
+        style={styles.logo}
+      />
+      <Text style={styles.tagline}>Tournament Made Easy</Text>
     </View>
   );
 }
@@ -19,12 +31,11 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: splashBackground,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 16,
+    gap: 6,
   },
-  title: {
-    fontSize: 28,
-    fontWeight: '700',
-  },
+  logo: { width: 295, height: 145, borderRadius: 28 },
+  tagline: { fontSize: 16, color: '#afdde5', marginTop: -10 },
 });
