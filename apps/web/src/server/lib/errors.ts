@@ -59,6 +59,9 @@ export type ErrorCode =
   | 'mfaInvalid'
   | 'passkeyInvalid'
   | 'passkeyLimit'
+  | 'feedbackNoConsent'
+  | 'feedbackAlreadySent'
+  | 'feedbackNotOpen'
   | 'purchasePending'
   | 'mfaAppRequired'
   | 'possibleDuplicate'
@@ -134,6 +137,9 @@ const HTTP_STATUS: Record<ErrorCode, number> = {
   mfaInvalid: 401,
   passkeyInvalid: 401,
   passkeyLimit: 409,
+  feedbackNoConsent: 422,
+  feedbackAlreadySent: 409,
+  feedbackNotOpen: 409,
   purchasePending: 409,
   mfaAppRequired: 401,
   possibleDuplicate: 409,

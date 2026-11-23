@@ -27,20 +27,21 @@ import { Button } from '@/components/ui/button';
 import { ScrollRegion } from '@/components/ui/scroll-region';
 import { Link } from '@/i18n/navigation';
 import { eventLabel } from '@/lib/labels';
-import { pageLocale } from '@/lib/page';
+import { firstParam, pageLocale, type SearchParams } from '@/lib/page';
 import { pageMetadata } from '@/lib/seo';
 import { directionsUrl } from '@/lib/site';
 import { getActor } from '@/server/auth/web';
 import { whatsappLinkFor } from '@/server/services/tournament-service';
 import { isAppError } from '@/server/lib/errors';
 import { LiveMatches } from '@/components/matches/live-matches';
+import { TournamentFeedback } from '@/components/public/tournament-feedback';
 import { TournamentNews } from '@/components/public/tournament-news';
 import { hasPublishedDraws } from '@/server/services/draw-service';
 import { foodOrderingOpen } from '@/server/services/food-service';
 import { pageLogo } from '@/server/services/logo-service';
 import { getPublicTournament } from '@/server/services/public-service';
 
-type Props = { params: Promise<{ locale: string; slug: string }> };
+type Props = { params: Promise<{ locale: string; slug: string }>; searchParams: SearchParams };
 
 // Metadata and page share one database read per request.
 const load = cache(async (slug: string): Promise<PublicTournament | null> => {
@@ -123,7 +124,7 @@ function jsonLd(t: PublicTournament, locale: AppLocale) {
   };
 }
 
-export default async function TournamentPage({ params }: Props) {
+export default async function TournamentPage({ params, searchParams }: Props) {
   const locale = await pageLocale(params);
   const { slug } = await params;
   const t = await load(slug);
@@ -244,6 +245,14 @@ export default async function TournamentPage({ params }: Props) {
       </div>
       <div className="mx-auto max-w-6xl px-4 pt-8 empty:hidden">
         <TournamentNews slug={t.slug} locale={locale} />
+      </div>
+      <div className="mx-auto max-w-6xl px-4 pt-8 empty:hidden">
+        <TournamentFeedback
+          slug={t.slug}
+          locale={locale}
+          ended={t.phase === 'finished'}
+          sent={firstParam((await searchParams).feedback) === 'sent'}
+        />
       </div>
       <div className="mx-auto grid max-w-6xl gap-8 px-4 py-8 sm:py-10 lg:grid-cols-[1fr_340px]">
         <div className="min-w-0 space-y-8">

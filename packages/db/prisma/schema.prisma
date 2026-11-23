@@ -535,6 +535,7 @@ model PlayerProfile {
   partnerRequests PartnerRequest[]
   followers       PlayerFollow[]            @relation("Followed")
   accountInvites  PlayerInvite[]
+  feedback        TournamentFeedback[]
 
   @@index([lastName, firstName])
   @@index([contactEmail])
@@ -768,6 +769,7 @@ model Tournament {
   documents        TournamentDocument[]
   events           TournamentEvent[]
   announcements    Announcement[]
+  feedback         TournamentFeedback[]
   orders           Order[]
   courtSlots       CourtSlot[]
   logo             TournamentLogo?
@@ -1560,4 +1562,37 @@ model FoodOrderLine {
 
   @@index([foodOrderId])
   @@index([foodItemId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Player feedback (after a tournament). Shown publicly only with the player's consent.
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum FeedbackStatus {
+  NEW
+  TOURNAMENT // published on the tournament page
+  WEBSITE // published on the tournament page and the website feedback page
+  PRIVATE // seen by the organiser only
+  REJECTED
+}
+
+model TournamentFeedback {
+  id            String         @id @default(uuid()) @db.Uuid
+  tournamentId  String         @db.Uuid
+  playerId      String         @db.Uuid
+  firstName     String
+  rating        Int
+  comment       String
+  /// The player ticked the public-display box. Required before any public status.
+  shareConsent  Boolean        @default(false)
+  status        FeedbackStatus @default(NEW)
+  moderatedAt   DateTime?
+  moderatedById String?        @db.Uuid
+  createdAt     DateTime       @default(now())
+
+  tournament Tournament    @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  player     PlayerProfile @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([tournamentId, playerId])
+  @@index([status])
 }
