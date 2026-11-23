@@ -241,3 +241,28 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* Website feedback on the home page: a seamless right-to-left loop (see website-feedback.tsx). */
+@keyframes feedback-scroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.feedback-track {
+  animation: feedback-scroll linear infinite;
+}
+
+.feedback-marquee:hover .feedback-track,
+.feedback-marquee:focus-within .feedback-track {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .feedback-track {
+    animation: none;
+  }
+}
