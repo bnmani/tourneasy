@@ -1946,13 +1946,26 @@
     "GROUPS_KNOCKOUT": "Groups + knockout",
     "HYBRID_ROUND_ROBIN_KNOCKOUT": "Hybrid: round robin + knockout"
   },
+  "KnockoutPath": {
+    "title": "How the knockout is drawn",
+    "rankingRule": "The ranking counts wins first, then game difference, then point difference.",
+    "topN": "The top {count} of the ranking go to the knockout. The first round pairs them by rank.",
+    "matchLabel": "Match {n}",
+    "seedVs": "{a} vs {b}",
+    "winnersVs": "Winners of matches {a} and {b} above",
+    "roundOf": "Round of {count}",
+    "quarterFinal": "Quarter-finals",
+    "semiFinal": "Semi-finals",
+    "final": "Final",
+    "outro": "Losers are out. There is no third-place play-off; both semi-final losers share third place."
+  },
   "DrawTypeHelp": {
     "KNOCKOUT": "Lose once and you are out.",
     "DOUBLE_KNOCKOUT": "You are out after two losses.",
     "ROUND_ROBIN": "Everyone plays everyone in the group; fair ranking and more matches.",
     "SWISS": "Fixed number of rounds without elimination; opponents of similar strength.",
     "GROUPS_KNOCKOUT": "Groups first, then a knockout with the best of each group.",
-    "HYBRID_ROUND_ROBIN_KNOCKOUT": "Each team plays a fixed number of matches against random opponents in the same event. The ranking counts wins first, then game difference, then point difference. The best teams (the top 16 by default, or the number the organiser sets) go to the knockout. The first round pairs them by rank: 1 vs 16, 8 vs 9, 4 vs 13, 5 vs 12, 2 vs 15, 7 vs 10, 3 vs 14, 6 vs 11. With fewer teams than places, the top seeds get a bye. After that, each winner plays the winner of the neighbouring match: the quarter-finals, then the semi-finals, then the final. Losers are out. There is no third-place play-off; both semi-final losers share third place."
+    "HYBRID_ROUND_ROBIN_KNOCKOUT": "Each team plays a fixed number of matches against random opponents in the same event. The ranking counts wins first, then game difference, then point difference. The best teams go to the knockout; you choose how many below."
   },
   "SiteThemes": {
     "midnight": {

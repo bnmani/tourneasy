@@ -299,11 +299,13 @@ export function SelectField({
   options,
   defaultValue,
   placeholder,
+  onChange,
   ...field
 }: Omit<FieldProps, 'children'> & {
   options: { value: string; label: string }[];
   defaultValue?: string;
   placeholder?: string;
+  onChange?: (value: string) => void;
 }) {
   const value = valueOf(field.state, field.name) ?? defaultValue ?? '';
   return (
@@ -314,6 +316,7 @@ export function SelectField({
           name={field.name}
           required={field.required}
           defaultValue={value}
+          onChange={(e) => onChange?.(e.target.value)}
           className={inputClass}
         >
           {placeholder !== undefined && <option value="">{placeholder}</option>}

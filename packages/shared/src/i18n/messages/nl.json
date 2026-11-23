@@ -1946,13 +1946,26 @@
     "GROUPS_KNOCKOUT": "Poules + knock-out",
     "HYBRID_ROUND_ROBIN_KNOCKOUT": "Hybride: round robin + knock-out"
   },
+  "KnockoutPath": {
+    "title": "Zo wordt de knock-out getrokken",
+    "rankingRule": "Het klassement telt eerst de overwinningen, dan het verschil in gewonnen spellen, dan het verschil in punten.",
+    "topN": "De beste {count} uit het klassement gaan door naar de knock-out. In de eerste ronde spelen ze op rang.",
+    "matchLabel": "Wedstrijd {n}",
+    "seedVs": "{a} tegen {b}",
+    "winnersVs": "Winnaars van wedstrijd {a} en {b} hierboven",
+    "roundOf": "Laatste {count}",
+    "quarterFinal": "Kwartfinales",
+    "semiFinal": "Halve finales",
+    "final": "Finale",
+    "outro": "Wie verliest, is uit. Er is geen wedstrijd om het derde plaats; beide verliezers van de halve finales delen de derde plaats."
+  },
   "DrawTypeHelp": {
     "KNOCKOUT": "Wie verliest, ligt eruit.",
     "DOUBLE_KNOCKOUT": "Je ligt eruit na twee nederlagen.",
     "ROUND_ROBIN": "Iedereen speelt tegen iedereen in de poule; eerlijke ranglijst en veel wedstrijden.",
     "SWISS": "Vast aantal rondes zonder uitschakeling; tegenstanders van vergelijkbaar niveau.",
     "GROUPS_KNOCKOUT": "Eerst poules, daarna knock-out met de besten uit elke poule.",
-    "HYBRID_ROUND_ROBIN_KNOCKOUT": "Elk team speelt een vast aantal wedstrijden tegen willekeurige tegenstanders in hetzelfde onderdeel. Het klassement telt eerst de overwinningen, dan het verschil in gewonnen spellen, dan het verschil in punten. De beste teams (standaard de top 16, of het aantal dat de organisator instelt) gaan door naar de knock-out. In de eerste ronde spelen ze op rang: 1 tegen 16, 8 tegen 9, 4 tegen 13, 5 tegen 12, 2 tegen 15, 7 tegen 10, 3 tegen 14, 6 tegen 11. Zijn er minder teams dan plekken, dan krijgen de beste plaatsen een vrije ronde. Daarna speelt de winnaar tegen de winnaar van de naastgelegen wedstrijd: eerst de kwartfinales, dan de halve finales, dan de finale. Wie verliest, is uit. Er is geen wedstrijd om het derde plaats; beide verliezers van de halve finales delen de derde plaats."
+    "HYBRID_ROUND_ROBIN_KNOCKOUT": "Elk team speelt een vast aantal wedstrijden tegen willekeurige tegenstanders in hetzelfde onderdeel. Het klassement telt eerst de overwinningen, dan het verschil in gewonnen spellen, dan het verschil in punten. De beste teams gaan door naar de knock-out; je kiest hieronder hoeveel."
   },
   "SiteThemes": {
     "midnight": {

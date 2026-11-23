@@ -361,3 +361,33 @@ export function swissFirstRound<T>(ordered: readonly T[]): { pairs: [T, T][]; by
 /** Number of Swiss rounds: enough to separate a winner (⌈log2 n⌉), at least 3. */
 export const swissRoundCount = (entries: number) =>
   Math.max(3, Math.ceil(Math.log2(Math.max(2, entries))));
+
+/** A knockout slot: a seed of the ranking, or the winner of a match of the round above. */
+export type KnockoutSlot = { seed: number } | { winnerOf: number };
+export type KnockoutMatch = { number: number; a: KnockoutSlot; b: KnockoutSlot };
+export type KnockoutRound = { teams: number; matches: KnockoutMatch[] };
+
+/**
+ * The whole single knockout for `size` teams, as it is drawn: the first round pairs seeds by
+ * rank (bracketOrder), every later match is the winners of two matches above it.
+ */
+export function knockoutRounds(size: number): KnockoutRound[] {
+  const order = bracketOrder(size);
+  let teams = size;
+  let matches: KnockoutMatch[] = Array.from({ length: size / 2 }, (_, i) => ({
+    number: i + 1,
+    a: { seed: order[2 * i]! },
+    b: { seed: order[2 * i + 1]! },
+  }));
+  const rounds: KnockoutRound[] = [{ teams, matches }];
+  while (teams > 2) {
+    teams /= 2;
+    matches = Array.from({ length: teams / 2 }, (_, i) => ({
+      number: i + 1,
+      a: { winnerOf: 2 * i + 1 },
+      b: { winnerOf: 2 * i + 2 },
+    }));
+    rounds.push({ teams, matches });
+  }
+  return rounds;
+}

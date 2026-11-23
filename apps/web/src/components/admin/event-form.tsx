@@ -18,6 +18,7 @@ import {
   TextField,
 } from '@/components/forms/fields';
 import { initialFormState } from '@/components/forms/form-state';
+import { KnockoutPath } from './knockout-path';
 import { saveEventAction } from '@/server/actions/admin-actions';
 
 export type EventFormValues = {
@@ -82,6 +83,9 @@ export function EventForm({
   }
   const submittedKo = state.values?.koScoringFrom as EventFormValues['koScoringFrom'] | undefined;
   const [koFrom, setKoFrom] = useState(submittedKo ?? values.koScoringFrom ?? '');
+  // The knockout size decides the explanation shown under the field.
+  const submittedKoSize = state.values?.knockoutSize as string | undefined;
+  const [koSize, setKoSize] = useState(Number(submittedKoSize ?? values.knockoutSize ?? 16));
 
   return (
     <form action={action} className="space-y-6" noValidate>
@@ -234,8 +238,12 @@ export function EventForm({
               state={state}
               required
               defaultValue={values.knockoutSize}
+              onChange={(v) => setKoSize(Number(v))}
               options={KNOCKOUT_SIZE_OPTIONS.map((n) => ({ value: String(n), label: String(n) }))}
             />
+            <div className="sm:col-span-2">
+              <KnockoutPath size={koSize} />
+            </div>
           </div>
         )}
       </FormSection>

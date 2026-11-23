@@ -6,6 +6,7 @@ import {
   doubleKnockoutPlan,
   hybridRounds,
   knockoutPlan,
+  knockoutRounds,
   placeKnockout,
   roundRobinRounds,
   seededRng,
@@ -140,5 +141,25 @@ describe('match plans', () => {
       ],
       bye: 5,
     });
+  });
+});
+
+describe('knockoutRounds', () => {
+  it('draws the first round by rank, then the winners of the matches above', () => {
+    const rounds = knockoutRounds(16);
+    expect(rounds.map((r) => r.teams)).toEqual([16, 8, 4, 2]);
+    expect(rounds[0]!.matches.slice(0, 2)).toEqual([
+      { number: 1, a: { seed: 1 }, b: { seed: 16 } },
+      { number: 2, a: { seed: 8 }, b: { seed: 9 } },
+    ]);
+    expect(rounds[1]!.matches[0]).toEqual({ number: 1, a: { winnerOf: 1 }, b: { winnerOf: 2 } });
+    expect(rounds[3]!.matches).toEqual([{ number: 1, a: { winnerOf: 1 }, b: { winnerOf: 2 } }]);
+  });
+
+  it('starts at the round of 32 for 32 teams', () => {
+    const rounds = knockoutRounds(32);
+    expect(rounds.map((r) => r.teams)).toEqual([32, 16, 8, 4, 2]);
+    expect(rounds[0]!.matches[0]).toEqual({ number: 1, a: { seed: 1 }, b: { seed: 32 } });
+    expect(rounds[0]!.matches[1]).toEqual({ number: 2, a: { seed: 16 }, b: { seed: 17 } });
   });
 });
