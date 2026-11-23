@@ -4,6 +4,7 @@ import type { Metadata } from 'next';
 import { Bell, CalendarClock, CreditCard, Radio } from 'lucide-react';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { HeroImage } from '@/components/home/hero-image';
+import { WebsiteFeedback } from '@/components/public/website-feedback';
 import { TournamentCarousel } from '@/components/home/tournament-carousel';
 import { Button } from '@/components/ui/button';
 import { LiveMatches } from '@/components/matches/live-matches';
@@ -118,6 +119,10 @@ export default async function HomePage({ params }: Props) {
 
       <div className="mx-auto max-w-6xl px-4 pt-12 empty:hidden">
         <LiveMatches locale={locale as AppLocale} />
+      </div>
+
+      <div className="mx-auto max-w-6xl px-4 pt-12 empty:hidden">
+        <WebsiteFeedback />
       </div>
 
       <section

@@ -10,6 +10,7 @@ import {
   tournamentIdForSlug,
 } from '@/server/services/feedback-service';
 import { FeedbackForm } from './feedback-form';
+import { FeedbackStars } from './feedback-stars';
 
 /**
  * Player feedback on the tournament page: published comments, and once the tournament has ended
@@ -54,7 +55,7 @@ export async function TournamentFeedback({
           {items.map((f) => (
             <li key={f.id} className="rounded-lg border bg-card p-4">
               <p className="text-xs text-muted-foreground">
-                {f.firstName} · {t('outOf', { rating: f.rating })}
+                {f.firstName} · <FeedbackStars rating={f.rating} />
                 {f.moderatedAt ? ` · ${formatDate(f.moderatedAt, locale)}` : ''}
               </p>
               <p className="mt-2 text-sm whitespace-pre-line">{f.comment}</p>
@@ -81,9 +82,6 @@ export async function TournamentFeedback({
           ) : null}
         </div>
       )}
-      <Link href="/feedback" className="text-sm underline underline-offset-4">
-        {t('allWebsite')}
-      </Link>
     </section>
   );
 }

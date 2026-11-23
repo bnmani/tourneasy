@@ -573,6 +573,7 @@
     "allWebsite": "All feedback on the website",
     "websiteTitle": "Feedback from players",
     "websiteIntro": "Comments from players who agreed to share them.",
+    "starsLabel": "{count} stars",
     "outOf": "{rating} out of 5",
     "admin": {
       "title": "Feedback",

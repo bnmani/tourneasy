@@ -122,11 +122,11 @@ export async function publicFeedbackFor(tournamentId: string) {
 }
 
 /** Website-wide published comments, across tournaments. */
-export async function publicWebsiteFeedback() {
+export async function publicWebsiteFeedback(limit = 100) {
   const rows = await prisma.tournamentFeedback.findMany({
     where: { status: 'WEBSITE', tournament: { isPublished: true } },
     orderBy: { moderatedAt: 'desc' },
-    take: 100,
+    take: limit,
     select: {
       id: true,
       firstName: true,

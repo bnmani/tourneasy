@@ -573,6 +573,7 @@
     "allWebsite": "Alle feedback op de website",
     "websiteTitle": "Feedback van spelers",
     "websiteIntro": "Reacties van spelers die toestemming gaven om ze te delen.",
+    "starsLabel": "{count} sterren",
     "outOf": "{rating} van 5",
     "admin": {
       "title": "Feedback",
