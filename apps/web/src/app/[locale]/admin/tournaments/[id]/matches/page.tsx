@@ -13,6 +13,7 @@ import {
   knockoutStageAction,
   quickCheckInAction,
   quickLockAllPlayedAction,
+  quickResultAction,
   quickLockMatchAction,
   quickPlaceAndStartAction,
   quickSwapTeamsAction,
@@ -20,7 +21,6 @@ import {
   quickUnstartMatchAction,
   removeStageAction,
   quickWalkoverAction,
-  resultAction,
   retireAction,
   swissRoundAction,
   walkoverAction,
@@ -30,6 +30,7 @@ import { CheckInList } from '@/components/desk/check-in-list';
 import { WalkoverOrRetirement } from '@/components/desk/walkover-or-retirement';
 import {
   CheckInToggle,
+  ScoreForm,
   QuickButton,
   QuickPlaceAction,
   SwapTeamsForm,
@@ -84,16 +85,6 @@ export default async function DeskPage({ params, searchParams }: Props) {
   );
   const td = await getTranslations('Admin.desk');
   const courts = await deskCourts(actor, id);
-  // After a refused score, refill what was typed for that match.
-  const [enteredId, enteredGames] = (firstParam(query.entered) ?? '').split('~');
-  const refill =
-    firstParam(query.status) !== 'resultSaved' && enteredId
-      ? (enteredGames ?? '')
-          .split('.')
-          .filter(Boolean)
-          .map((g) => g.split('-').map(Number) as [number, number])
-      : null;
-
   // No-show (D74): this long after the start, someone on a side isn't checked in yet. With
   // exactly one side complete, offer that side the walkover (never automatic).
   // Server component, rendered afresh on every refresh: reading the clock here is intended.
@@ -308,10 +299,9 @@ export default async function DeskPage({ params, searchParams }: Props) {
                               {td('lockedHint')}
                             </p>
                           )}
-                          <form
+                          <ScoreForm
                             id={`scores-${item.id}`}
-                            action={resultAction.bind(null, locale, id, item.id, view)}
-                            className="space-y-2"
+                            save={quickResultAction.bind(null, item.id)}
                           >
                             <input type="hidden" name="version" value={item.version} />
                             {/* One row per side: the player cards, then that side's game scores. */}
@@ -360,11 +350,7 @@ export default async function DeskPage({ params, searchParams }: Props) {
                                   })}
                                 </div>
                                 {games.map((g) => {
-                                  const typed =
-                                    refill && enteredId === item.id ? refill[g - 1] : undefined;
-                                  const set = typed
-                                    ? { scoreA: typed[0], scoreB: typed[1] }
-                                    : item.sets[g - 1];
+                                  const set = item.sets[g - 1];
                                   return (
                                     <input
                                       key={g}
@@ -382,7 +368,7 @@ export default async function DeskPage({ params, searchParams }: Props) {
                                 })}
                               </div>
                             ))}
-                          </form>
+                          </ScoreForm>
                           {item.busy?.courtMatch && item.court && (
                             <p className="text-xs font-medium text-amber-700">
                               {td('courtInUse', {

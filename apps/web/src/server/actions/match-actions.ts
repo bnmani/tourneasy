@@ -313,6 +313,18 @@ export async function quickLockMatchAction(matchId: string) {
   return quick(async () => lockMatch(await actorOrThrow(), matchId, await currentRequestMeta()));
 }
 
+/** Saves a score from the desk in place: the page updates, and a refused score keeps what was typed. */
+export async function quickResultAction(matchId: string, formData: FormData) {
+  return quick(async () =>
+    recordResult(
+      await actorOrThrow(),
+      matchId,
+      { games: gamesFrom(formData), version: formData.get('version') ?? undefined },
+      await currentRequestMeta(),
+    ),
+  );
+}
+
 /** The owner locks all played matches of a tournament. */
 export async function quickLockAllPlayedAction(tournamentId: string) {
   return quick(async () =>

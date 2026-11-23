@@ -30,6 +30,33 @@ function useQuick() {
   return { error, pending, run };
 }
 
+/** A score form that saves in place (no page reload); a refused score shows on the card. */
+export function ScoreForm({
+  id,
+  save,
+  children,
+}: {
+  id: string;
+  save: (data: FormData) => Promise<QuickResult>;
+  children: ReactNode;
+}) {
+  const { error, run } = useQuick();
+  return (
+    <form
+      id={id}
+      className="space-y-2"
+      onSubmit={(e) => {
+        e.preventDefault();
+        const data = new FormData(e.currentTarget);
+        run(() => save(data));
+      }}
+    >
+      {children}
+      <ErrorLine error={error} />
+    </form>
+  );
+}
+
 function ErrorLine({ error }: { error: string | null }) {
   return error ? (
     <p role="alert" className="text-xs text-destructive">

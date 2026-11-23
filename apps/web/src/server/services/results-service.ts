@@ -199,6 +199,10 @@ async function finish(
       completedAt: new Date(),
       resultEnteredById: actor.userId,
       version: { increment: 1 },
+      // A correction made after the owner unlocked the score locks it again.
+      ...(m.scoreUnlockedAt
+        ? { lockedAt: new Date(), lockedById: actor.userId, scoreUnlockedAt: null }
+        : {}),
     },
   });
   if (updated.count === 0) throw new AppError('resultConflict');
