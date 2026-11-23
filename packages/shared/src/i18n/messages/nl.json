@@ -1215,7 +1215,7 @@
       "playedUnplannedHint": "Gespeeld of bezig zonder plek in de planning. Ze staan ook in de exports en op de publieke planning, onder \"Zonder tijd en baan\".",
       "expectedHide": "Verwachte knock-outrondes verbergen",
       "expectedShow": "Verwachte knock-outrondes tonen",
-      "expectedHint": "Het schema toont wanneer de knock-outrondes verwacht worden, na de poulefase van elke categorie. Spelers zien dit op het openbare schema en bij Mijn schema.",
+      "expectedHint": "Het schema toont wanneer de knock-outrondes verwacht worden, na de poulefase of round robin van elke categorie. Spelers zien dit op het openbare schema en bij Mijn schema.",
       "expectedOn": "Verwachte knock-outrondes worden getoond.",
       "expectedOff": "Verwachte knock-outrondes zijn verborgen.",
       "expectedLoading": "Verwachte knock-outrondes worden berekend…"
@@ -1952,7 +1952,7 @@
     "ROUND_ROBIN": "Iedereen speelt tegen iedereen in de poule; eerlijke ranglijst en veel wedstrijden.",
     "SWISS": "Vast aantal rondes zonder uitschakeling; tegenstanders van vergelijkbaar niveau.",
     "GROUPS_KNOCKOUT": "Eerst poules, daarna knock-out met de besten uit elke poule.",
-    "HYBRID_ROUND_ROBIN_KNOCKOUT": "Elk team speelt een vast aantal wedstrijden tegen willekeurige tegenstanders in hetzelfde onderdeel. De beste teams uit het totaalklassement gaan door naar de knock-out."
+    "HYBRID_ROUND_ROBIN_KNOCKOUT": "Elk team speelt een vast aantal wedstrijden tegen willekeurige tegenstanders in hetzelfde onderdeel. Het klassement telt eerst de overwinningen, dan het verschil in gewonnen spellen, dan het verschil in punten. De beste teams (standaard de top 16, of het aantal dat de organisator instelt) gaan door naar de knock-out. In de eerste ronde spelen ze op rang: 1 tegen 16, 8 tegen 9, 4 tegen 13, 5 tegen 12, 2 tegen 15, 7 tegen 10, 3 tegen 14, 6 tegen 11. Zijn er minder teams dan plekken, dan krijgen de beste plaatsen een vrije ronde. Daarna speelt de winnaar tegen de winnaar van de naastgelegen wedstrijd: eerst de kwartfinales, dan de halve finales, dan de finale. Wie verliest, is uit. Er is geen wedstrijd om het derde plaats; beide verliezers van de halve finales delen de derde plaats."
   },
   "SiteThemes": {
     "midnight": {
@@ -2309,7 +2309,7 @@
     "unplannedTitle": "Zonder tijd en baan",
     "unplannedIntro": "Deze wedstrijden hebben (nog) geen vaste tijd en baan. Volg de oproep van de wedstrijdtafel.",
     "expectedTitle": "Verwachte knock-outrondes",
-    "expectedIntro": "Verwacht, niet vast: de knock-outrondes volgen zodra de poulefase van een categorie klaar is, dus deze tijden schuiven op als de poules uitlopen. De echte wedstrijden vervangen deze regels zodra ze gemaakt zijn.",
+    "expectedIntro": "Verwacht, niet vast: de knock-outrondes volgen zodra de poulefase of round robin van een categorie klaar is, dus deze tijden schuiven op als de wedstrijden uitlopen. De echte wedstrijden vervangen deze regels zodra ze gemaakt zijn.",
     "expectedFrom": "verwacht vanaf {time}",
     "expectedVs": "{a} tegen {b}",
     "expectedWinners": "Winnaars van de ronde ervoor",
@@ -2317,7 +2317,7 @@
     "expectedRunnerUp": "nummer twee",
     "expectedMineTitle": "Verwachte knock-outrondes",
     "expectedRoundFrom": "{name} verwacht vanaf {time}",
-    "expectedMineHint": "Alleen als je je plaatst via de poulefase. Tijden kunnen opschuiven als de poules uitlopen.",
+    "expectedMineHint": "Alleen als je je plaatst via de poulefase of het klassement. Tijden kunnen opschuiven als de wedstrijden uitlopen.",
     "vs": "tegen"
   },
   "Notifications": {

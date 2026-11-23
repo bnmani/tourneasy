@@ -1215,7 +1215,7 @@
       "playedUnplannedHint": "Played or in progress without a place in the planning. They are also in the exports and on the public schedule, under \"Without time or court\".",
       "expectedHide": "Hide expected knockout rounds",
       "expectedShow": "Show expected knockout rounds",
-      "expectedHint": "The schedule shows when the knockout rounds are expected, after each category's group stage. Players see this on the public schedule and on My schedule.",
+      "expectedHint": "The schedule shows when the knockout rounds are expected, after each category's group stage or round robin. Players see this on the public schedule and on My schedule.",
       "expectedOn": "Expected knockout rounds are shown.",
       "expectedOff": "Expected knockout rounds are hidden.",
       "expectedLoading": "Working out the expected knockout rounds…"
@@ -1952,7 +1952,7 @@
     "ROUND_ROBIN": "Everyone plays everyone in the group; fair ranking and more matches.",
     "SWISS": "Fixed number of rounds without elimination; opponents of similar strength.",
     "GROUPS_KNOCKOUT": "Groups first, then a knockout with the best of each group.",
-    "HYBRID_ROUND_ROBIN_KNOCKOUT": "Each team plays a fixed number of matches against random opponents in the same event. The best teams of the overall ranking go to the knockout."
+    "HYBRID_ROUND_ROBIN_KNOCKOUT": "Each team plays a fixed number of matches against random opponents in the same event. The ranking counts wins first, then game difference, then point difference. The best teams (the top 16 by default, or the number the organiser sets) go to the knockout. The first round pairs them by rank: 1 vs 16, 8 vs 9, 4 vs 13, 5 vs 12, 2 vs 15, 7 vs 10, 3 vs 14, 6 vs 11. With fewer teams than places, the top seeds get a bye. After that, each winner plays the winner of the neighbouring match: the quarter-finals, then the semi-finals, then the final. Losers are out. There is no third-place play-off; both semi-final losers share third place."
   },
   "SiteThemes": {
     "midnight": {
@@ -2309,7 +2309,7 @@
     "unplannedTitle": "Without time or court",
     "unplannedIntro": "These matches don't have a fixed time and court (yet). Follow the match desk calls.",
     "expectedTitle": "Expected knockout rounds",
-    "expectedIntro": "Expected, not fixed: the knockout rounds follow once a category's group stage is finished, so these times move if the groups run late. The real matches replace these rows when they are made.",
+    "expectedIntro": "Expected, not fixed: the knockout rounds follow once a category's group stage or round robin is finished, so these times move if the matches run late. The real matches replace these rows when they are made.",
     "expectedFrom": "expected from {time}",
     "expectedVs": "{a} vs {b}",
     "expectedWinners": "Winners of the round before",
@@ -2317,7 +2317,7 @@
     "expectedRunnerUp": "runner-up",
     "expectedMineTitle": "Expected knockout rounds",
     "expectedRoundFrom": "{name} expected from {time}",
-    "expectedMineHint": "Only if you qualify from the group stage. Times can move if the groups run late.",
+    "expectedMineHint": "Only if you qualify from the group stage or the ranking. Times can move if the matches run late.",
     "vs": "vs"
   },
   "Notifications": {
