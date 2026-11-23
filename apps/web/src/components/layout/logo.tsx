@@ -2,18 +2,20 @@ import { cn } from '@/lib/utils';
 import { TestBadge } from './test-site';
 
 /**
- * The Tourneasy mark: the infinity loop with the shuttlecock. The picture is transparent around
- * the artwork, so the square behind it takes the active theme's primary colour and follows
- * theme changes.
+ * The Tourneasy mark: the infinity loop with the shuttlecock, as a wide tile in the active
+ * theme's badge colour (--logo-bg).
  */
 export function LogoMark({ className }: { className?: string }) {
   return (
     <span
       aria-hidden="true"
-      className={cn('block shrink-0 rounded-md bg-[var(--logo-bg)] p-1.5', className)}
+      className={cn(
+        'inline-flex shrink-0 items-center justify-center rounded-lg bg-[var(--logo-bg)] px-2.5 py-1.5',
+        className,
+      )}
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/images/logo-mark.png" alt="" className="size-full" />
+      <img src="/images/logo-mark.png" alt="" className="h-11 w-auto" />
     </span>
   );
 }
@@ -31,7 +33,7 @@ export function Logo({
 }) {
   return (
     <span className={cn('flex items-center gap-2.5', className)}>
-      <LogoMark className="size-12" />
+      <LogoMark />
       <span className="leading-none">
         <span className="block font-heading text-xl font-bold tracking-tight">
           Tourneasy

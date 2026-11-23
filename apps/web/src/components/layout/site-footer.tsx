@@ -5,11 +5,8 @@ import { CONTACT_EMAIL } from '@/lib/site';
 import { pricingEnabled } from '@/server/services/pricing-service';
 import { Logo } from './logo';
 
-// On the dark band the badge is drawn light (and the shuttle dark), like the logo sheet.
-const invertedMark = {
-  '--primary': 'var(--hero-foreground)',
-  '--primary-foreground': 'var(--hero)',
-} as CSSProperties;
+// On the dark band the logo tile takes the band's own colour, so the mark sits on it without a box.
+const invertedMark = { '--logo-bg': 'var(--hero)' } as CSSProperties;
 
 export async function SiteFooter() {
   const t = await getTranslations('Footer');
