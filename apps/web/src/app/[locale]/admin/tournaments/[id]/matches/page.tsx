@@ -1,4 +1,4 @@
-import { CheckCircle2 } from 'lucide-react';
+import { CheckCircle2, Lock } from 'lucide-react';
 import type { Metadata } from 'next';
 import { Fragment } from 'react';
 import { notFound } from 'next/navigation';
@@ -12,8 +12,10 @@ import { cn } from '@/lib/utils';
 import {
   knockoutStageAction,
   quickCheckInAction,
+  quickLockMatchAction,
   quickPlaceAndStartAction,
   quickSwapTeamsAction,
+  quickUnlockMatchAction,
   quickUnstartMatchAction,
   removeStageAction,
   quickWalkoverAction,
@@ -39,6 +41,7 @@ import type { AppLocale } from '@tourneasy/shared/i18n';
 import { isAppError } from '@/server/lib/errors';
 import { drawOverview } from '@/server/services/draw-service';
 import { stageStatus } from '@/server/services/results-service';
+import { isOwner } from '@/server/services/permissions';
 import { deskCourts, deskMatches } from '@/server/services/schedule-service';
 
 type Props = { params: Promise<{ locale: string; id: string }>; searchParams: SearchParams };
@@ -59,6 +62,7 @@ export default async function DeskPage({ params, searchParams }: Props) {
   const locale = await pageLocale(params);
   const { id } = await params;
   const actor = await requirePortal(locale);
+  const owner = isOwner(actor);
   const query = await searchParams;
   const requested = firstParam(query.view);
   const view: View = (VIEWS as readonly string[]).includes(requested ?? '')
@@ -241,6 +245,7 @@ export default async function DeskPage({ params, searchParams }: Props) {
             <div className="grid gap-3 lg:grid-cols-2">
               {desk.items.map((item) => {
                 const done = ['COMPLETED', 'WALKOVER', 'RETIRED'].includes(item.status);
+                const locked = done && item.locked;
                 const games = Array.from({ length: item.bestOf }, (_, i) => i + 1);
                 return (
                   <MatchLine key={item.id} item={item} locale={locale}>
@@ -285,6 +290,12 @@ export default async function DeskPage({ params, searchParams }: Props) {
                               }),
                             }}
                           />
+                          {locked && (
+                            <p className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                              <Lock className="size-3.5" aria-hidden="true" />
+                              {td('lockedHint')}
+                            </p>
+                          )}
                           <form
                             id={`scores-${item.id}`}
                             action={resultAction.bind(null, locale, id, item.id, view)}
@@ -350,6 +361,7 @@ export default async function DeskPage({ params, searchParams }: Props) {
                                         { number: g },
                                       )}`}
                                       defaultValue={side === 'A' ? set?.scoreA : set?.scoreB}
+                                      disabled={locked}
                                       className={cn(scoreInput, 'w-12 shrink-0')}
                                     />
                                   );
@@ -387,12 +399,34 @@ export default async function DeskPage({ params, searchParams }: Props) {
                               >
                                 {td('backToWaiting')}
                               </QuickButton>
+                            ) : done && owner ? (
+                              // Only the owner locks or unlocks a played result (see match-lock).
+                              item.locked ? (
+                                <QuickButton
+                                  size="sm"
+                                  variant="outline"
+                                  action={quickUnlockMatchAction.bind(null, item.id)}
+                                  confirm={td('unlockConfirm')}
+                                >
+                                  {td('unlockResult')}
+                                </QuickButton>
+                              ) : (
+                                <QuickButton
+                                  size="sm"
+                                  variant="outline"
+                                  action={quickLockMatchAction.bind(null, item.id)}
+                                >
+                                  {td('lockResult')}
+                                </QuickButton>
+                              )
                             ) : (
                               <span />
                             )}
-                            <Button type="submit" size="sm" form={`scores-${item.id}`}>
-                              {done ? td('correct') : td('save')}
-                            </Button>
+                            {!locked && (
+                              <Button type="submit" size="sm" form={`scores-${item.id}`}>
+                                {done ? td('correct') : td('save')}
+                              </Button>
+                            )}
                           </div>
                           {item.swap && (
                             <SwapTeamsForm

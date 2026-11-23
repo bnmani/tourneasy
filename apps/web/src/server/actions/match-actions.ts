@@ -15,6 +15,8 @@ import {
   removeLastSwissRound,
   setCheckIn,
   startMatch,
+  lockMatch,
+  unlockMatch,
   unstartMatch,
 } from '../services/results-service';
 import {
@@ -299,6 +301,15 @@ export async function undoPayAtDeskAction(tournamentId: string, playerId: string
 /** "On court" by mistake: back to waiting (D99). */
 export async function quickUnstartMatchAction(matchId: string) {
   return quick(async () => unstartMatch(await actorOrThrow(), matchId, await currentRequestMeta()));
+}
+
+/** The owner locks a played match's result, or unlocks it so it can be corrected. */
+export async function quickLockMatchAction(matchId: string) {
+  return quick(async () => lockMatch(await actorOrThrow(), matchId, await currentRequestMeta()));
+}
+
+export async function quickUnlockMatchAction(matchId: string) {
+  return quick(async () => unlockMatch(await actorOrThrow(), matchId, await currentRequestMeta()));
 }
 
 /** Removes a knockout stage or the latest Swiss round that has no results yet (D99). */

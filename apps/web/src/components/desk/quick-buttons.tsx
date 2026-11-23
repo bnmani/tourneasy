@@ -71,9 +71,7 @@ export function CheckInToggle({
     shown ? 'border-l-green-600' : 'border-l-orange-600',
     busy
       ? 'cursor-default border-y-orange-400 border-r-orange-400 bg-orange-50 dark:bg-orange-950/40'
-      : shown
-        ? 'border-y-border border-r-border bg-emerald-50 hover:bg-emerald-100/60 dark:bg-emerald-950/40'
-        : 'border-y-border border-r-border bg-card hover:bg-orange-50 dark:hover:bg-orange-950/30',
+      : 'border-y-border border-r-border bg-primary/10 hover:bg-primary/15 dark:bg-primary/20 dark:hover:bg-primary/25',
   );
   const content = (
     <>

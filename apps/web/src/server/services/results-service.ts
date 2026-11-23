@@ -28,7 +28,8 @@ import type { RequestMeta } from '../lib/request-meta';
 import { parseInput } from '../lib/validation';
 import { advance, resolveByes } from './draw-service';
 import { assertSemisOpen, holdsWinnerForSemis, pairSemis } from './semi-pairing-service';
-import { assertCanManageTournament } from './permissions';
+import { assertCanManageTournament, assertOwner } from './permissions';
+import { isMatchLocked } from '../lib/match-lock';
 import { fullName, publicName } from './registration-service';
 import type { Actor } from './session-service';
 
@@ -46,6 +47,9 @@ async function loadMatch(matchId: string, db: Tx | typeof prisma = prisma) {
       round: true,
       bracket: true,
       winnerEntryId: true,
+      completedAt: true,
+      lockedAt: true,
+      autoLockWaived: true,
       entryAId: true,
       entryBId: true,
       nextMatchId: true,
@@ -87,7 +91,48 @@ async function authorise(actor: Actor, matchId: string) {
   await assertCanManageTournament(actor, m.draw.event.tournamentId);
   if (m.draw.status === 'DRAFT') throw new AppError('drawNotPublished');
   if (!m.entryA?.registrationId || !m.entryB?.registrationId) throw new AppError('matchNotReady');
+  if (isMatchLocked(m)) throw new AppError('matchLocked');
   return m;
+}
+
+/** The owner locks a played match: its result can't change until the owner unlocks it. */
+export async function lockMatch(actor: Actor, matchId: string, meta: RequestMeta) {
+  assertOwner(actor);
+  const m = await loadMatch(matchId);
+  if (!m.completedAt) throw new AppError('statusTransition');
+  await prisma.$transaction(async (tx) => {
+    await tx.match.update({
+      where: { id: m.id },
+      data: { lockedAt: new Date(), lockedById: actor.userId, autoLockWaived: false },
+    });
+    await writeAudit(tx, {
+      actorId: actor.userId,
+      action: 'match.lock',
+      entityType: 'Match',
+      entityId: m.id,
+      meta,
+    });
+  });
+}
+
+/** The owner unlocks a match, locked by hand or by the next-day rule, so its result can be fixed. */
+export async function unlockMatch(actor: Actor, matchId: string, meta: RequestMeta) {
+  assertOwner(actor);
+  const m = await loadMatch(matchId);
+  if (!isMatchLocked(m)) throw new AppError('statusTransition');
+  await prisma.$transaction(async (tx) => {
+    await tx.match.update({
+      where: { id: m.id },
+      data: { lockedAt: null, lockedById: null, autoLockWaived: true },
+    });
+    await writeAudit(tx, {
+      actorId: actor.userId,
+      action: 'match.unlock',
+      entityType: 'Match',
+      entityId: m.id,
+      meta,
+    });
+  });
 }
 
 /** A follow-up match may still take a different entry when it hasn't started. */

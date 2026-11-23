@@ -62,6 +62,7 @@ export type ErrorCode =
   | 'feedbackNoConsent'
   | 'feedbackAlreadySent'
   | 'feedbackNotOpen'
+  | 'matchLocked'
   | 'purchasePending'
   | 'mfaAppRequired'
   | 'possibleDuplicate'
@@ -140,6 +141,7 @@ const HTTP_STATUS: Record<ErrorCode, number> = {
   feedbackNoConsent: 422,
   feedbackAlreadySent: 409,
   feedbackNotOpen: 409,
+  matchLocked: 409,
   purchasePending: 409,
   mfaAppRequired: 401,
   possibleDuplicate: 409,

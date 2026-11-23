@@ -1265,6 +1265,11 @@ model Match {
   startedAt          DateTime?
   completedAt        DateTime?
   resultEnteredById  String?     @db.Uuid
+  /// Result lock (owner): set when the owner locks a played match. Locks by themselves the day after it finished.
+  lockedAt           DateTime?
+  lockedById         String?     @db.Uuid
+  /// The owner unlocked it: the automatic lock the day after no longer applies.
+  autoLockWaived     Boolean     @default(false)
   version            Int         @default(0) // optimistic locking for concurrent score entry
   createdAt          DateTime    @default(now())
   updatedAt          DateTime    @updatedAt
