@@ -6,6 +6,7 @@ import { getActor } from '@/server/auth/web';
 import {
   feedbackStateFor,
   publicFeedbackFor,
+  publicRatingFor,
   tournamentIdForSlug,
 } from '@/server/services/feedback-service';
 import { FeedbackForm } from './feedback-form';
@@ -27,7 +28,11 @@ export async function TournamentFeedback({
 }) {
   const tournamentId = await tournamentIdForSlug(slug);
   if (!tournamentId) return null;
-  const [items, actor] = await Promise.all([publicFeedbackFor(tournamentId), getActor()]);
+  const [items, actor, rating] = await Promise.all([
+    publicFeedbackFor(tournamentId),
+    getActor(),
+    publicRatingFor(tournamentId),
+  ]);
   const state = ended ? await feedbackStateFor(actor, tournamentId) : null;
   const t = await getTranslations('Feedback');
   if (items.length === 0 && !ended) return null;
@@ -37,6 +42,11 @@ export async function TournamentFeedback({
       <h2 id="feedback-title" className="font-heading text-2xl font-semibold">
         {t('sectionTitle')}
       </h2>
+      {rating && (
+        <p className="text-sm">
+          {t('average', { average: rating.average.toFixed(1), count: rating.count })}
+        </p>
+      )}
       {items.length === 0 ? (
         <p className="text-sm text-muted-foreground">{t('none')}</p>
       ) : (

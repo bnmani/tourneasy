@@ -11,6 +11,7 @@ export function AdminNav({ isAdmin, isOwner }: { isAdmin: boolean; isOwner: bool
     { href: '/admin', label: t('navDashboard'), exact: true },
     { href: '/admin/tournaments', label: t('navTournaments') },
     { href: '/admin/venues', label: t('navVenues') },
+    { href: '/admin/feedback', label: t('navFeedback') },
     ...(isAdmin
       ? [
           { href: '/admin/players', label: t('navPlayers') },

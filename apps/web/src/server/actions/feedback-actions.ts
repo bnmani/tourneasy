@@ -60,3 +60,30 @@ export async function moderateFeedbackAction(
   revalidatePath('/', 'layout');
   redirect(`${adminPage(locale, tournamentId)}?status=${outcome}`);
 }
+
+const TABS = ['new', 'published', 'private', 'rejected'] as const;
+
+/** From the inbox: choose where a comment shows, then return to the same tab and tournament. */
+export async function moderateFromInboxAction(
+  locale: AppLocale,
+  feedbackId: string,
+  status: 'TOURNAMENT' | 'WEBSITE' | 'PRIVATE' | 'REJECTED',
+  tab: string,
+  tournamentId: string,
+) {
+  let outcome = 'saved';
+  try {
+    const actor = await getActor();
+    if (!actor) throw new AppError('unauthorized');
+    await moderateFeedback(actor, feedbackId, status, await currentRequestMeta());
+  } catch (error) {
+    outcome = isAppError(error) ? error.code : 'unexpected';
+    if (!isAppError(error)) console.error('[feedback inbox] failed', error);
+  }
+  const safeTab = (TABS as readonly string[]).includes(tab) ? tab : 'new';
+  const safeTournament = /^[0-9a-f-]{36}$/.test(tournamentId) ? tournamentId : '';
+  const query = new URLSearchParams({ tab: safeTab, status: outcome });
+  if (safeTournament) query.set('tournament', safeTournament);
+  revalidatePath('/', 'layout');
+  redirect(`/${locale}/admin/feedback?${query.toString()}`);
+}

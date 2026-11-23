@@ -2,11 +2,11 @@
  * Player feedback on a tournament (after it has ended). A comment is shown publicly only when the
  * player ticked the public-display box and the organiser or admin chose where to publish it.
  */
-import { prisma } from '@tourneasy/db';
+import { type FeedbackStatus, Prisma, prisma } from '@tourneasy/db';
 import { writeAudit } from '../lib/audit';
 import { AppError } from '../lib/errors';
 import type { RequestMeta } from '../lib/request-meta';
-import { assertCanManageTournament } from './permissions';
+import { assertCanManageTournament, isAdmin } from './permissions';
 import type { Actor } from './session-service';
 
 export const FEEDBACK_MAX = 500;
@@ -163,4 +163,87 @@ export async function feedbackStateFor(
     select: { id: true },
   });
   return existing ? 'sent' : 'open';
+}
+
+export const PUBLIC_RATING_MIN = 5;
+const PUBLISHED: FeedbackStatus[] = ['TOURNAMENT', 'WEBSITE'];
+type InboxTab = 'new' | 'published' | 'private' | 'rejected';
+const TAB_STATUS: Record<InboxTab, FeedbackStatus[]> = {
+  new: ['NEW'],
+  published: PUBLISHED,
+  private: ['PRIVATE'],
+  rejected: ['REJECTED'],
+};
+
+/** Tournaments the actor may see in the inbox: null means all (admins), else their own ids. */
+async function manageableIds(actor: Actor): Promise<string[] | null> {
+  if (isAdmin(actor)) return null;
+  const links = await prisma.tournamentOrganiser.findMany({
+    where: { userId: actor.userId },
+    select: { tournamentId: true },
+  });
+  return links.map((l) => l.tournamentId);
+}
+
+/** The organiser inbox: one list across tournaments, filtered by tab and tournament. */
+export async function listInbox(actor: Actor, filter: { tab: InboxTab; tournamentId?: string }) {
+  const ids = await manageableIds(actor);
+  const scope: Prisma.TournamentFeedbackWhereInput = ids ? { tournamentId: { in: ids } } : {};
+  const rows = await prisma.tournamentFeedback.findMany({
+    where: {
+      AND: [
+        scope,
+        { status: { in: TAB_STATUS[filter.tab] } },
+        filter.tournamentId ? { tournamentId: filter.tournamentId } : {},
+      ],
+    },
+    orderBy: { createdAt: 'desc' },
+    take: 200,
+    select: {
+      id: true,
+      firstName: true,
+      rating: true,
+      comment: true,
+      shareConsent: true,
+      status: true,
+      createdAt: true,
+      tournament: { select: { id: true, name: true } },
+    },
+  });
+  const counts = await prisma.tournamentFeedback.groupBy({
+    by: ['status'],
+    where: scope,
+    _count: { _all: true },
+  });
+  const count = (s: FeedbackStatus) => counts.find((c) => c.status === s)?._count._all ?? 0;
+  const tabCounts = {
+    new: count('NEW'),
+    published: count('TOURNAMENT') + count('WEBSITE'),
+    private: count('PRIVATE'),
+    rejected: count('REJECTED'),
+  };
+  const tournaments = await prisma.tournament.findMany({
+    where: ids ? { id: { in: ids } } : {},
+    orderBy: { startsOn: 'desc' },
+    select: { id: true, name: true },
+    take: 100,
+  });
+  // Average of everything received, for the owner's own view.
+  const received = await prisma.tournamentFeedback.aggregate({
+    where: scope,
+    _avg: { rating: true },
+    _count: { _all: true },
+  });
+  return { rows, tabCounts, tournaments, received };
+}
+
+/** Public rating for a tournament: published comments only, and only once there are enough. */
+export async function publicRatingFor(tournamentId: string) {
+  const agg = await prisma.tournamentFeedback.aggregate({
+    where: { tournamentId, status: { in: PUBLISHED } },
+    _avg: { rating: true },
+    _count: { _all: true },
+  });
+  if (agg._count._all < PUBLIC_RATING_MIN) return null;
+  return { average: agg._avg.rating ?? 0, count: agg._count._all };
 }
