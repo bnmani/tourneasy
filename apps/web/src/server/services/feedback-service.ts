@@ -25,6 +25,7 @@ export async function submitFeedback(
     select: { id: true, firstName: true },
   });
   if (!profile) throw new AppError('noPlayerProfile');
+  if (!(await hasEntered(profile.id, tournamentId))) throw new AppError('forbidden');
 
   const rating = Number(input.rating);
   const comment = typeof input.comment === 'string' ? input.comment.trim() : '';
@@ -147,17 +148,31 @@ export async function tournamentIdForSlug(slug: string): Promise<string | null> 
   return t?.id ?? null;
 }
 
+/** Only players who entered the tournament (and did not withdraw) may leave feedback on it. */
+async function hasEntered(playerId: string, tournamentId: string): Promise<boolean> {
+  const row = await prisma.registrationParticipant.findFirst({
+    where: {
+      playerId,
+      active: true,
+      registration: { cancelledAt: null, event: { tournamentId } },
+    },
+    select: { id: true },
+  });
+  return row !== null;
+}
+
 /** What the feedback box on a tournament page should offer this visitor. */
 export async function feedbackStateFor(
   actor: Actor | null,
   tournamentId: string,
-): Promise<'signedOut' | 'noProfile' | 'sent' | 'open'> {
+): Promise<'signedOut' | 'noProfile' | 'notEntered' | 'sent' | 'open'> {
   if (!actor) return 'signedOut';
   const profile = await prisma.playerProfile.findUnique({
     where: { userId: actor.userId },
     select: { id: true },
   });
   if (!profile) return 'noProfile';
+  if (!(await hasEntered(profile.id, tournamentId))) return 'notEntered';
   const existing = await prisma.tournamentFeedback.findUnique({
     where: { tournamentId_playerId: { tournamentId, playerId: profile.id } },
     select: { id: true },

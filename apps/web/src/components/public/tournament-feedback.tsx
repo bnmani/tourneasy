@@ -63,7 +63,7 @@ export async function TournamentFeedback({
           ))}
         </ul>
       )}
-      {ended && (
+      {ended && state !== 'notEntered' && state !== 'noProfile' && (
         <div className="rounded-lg border bg-card p-4">
           {sent || state === 'sent' ? (
             <p className="text-sm">{sent ? t('sent') : t('alreadySent')}</p>
