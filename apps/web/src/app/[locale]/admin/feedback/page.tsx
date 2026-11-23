@@ -130,7 +130,7 @@ export default async function FeedbackInboxPage({ params, searchParams }: Props)
                 >
                   {row.shareConsent ? ti('consent') : ti('noConsent')}
                 </p>
-                <div className="flex flex-wrap gap-2 border-t pt-3">
+                <div className="grid grid-cols-2 gap-2 border-t pt-3 sm:grid-cols-4">
                   {(
                     [
                       ['TOURNAMENT', ti('toTournament'), !row.shareConsent],
@@ -139,10 +139,11 @@ export default async function FeedbackInboxPage({ params, searchParams }: Props)
                       ['REJECTED', ti('reject'), false],
                     ] as const
                   ).map(([status, label, disabled]) => (
-                    <form key={status} action={act(status)}>
+                    <form key={status} action={act(status)} className="contents">
                       <Button
                         type="submit"
                         size="sm"
+                        className="w-full"
                         variant={row.status === status ? 'default' : 'outline'}
                         aria-pressed={row.status === status}
                         disabled={disabled}
