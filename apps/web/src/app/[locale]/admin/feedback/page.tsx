@@ -143,7 +143,7 @@ export default async function FeedbackInboxPage({ params, searchParams }: Props)
                       <Button
                         type="submit"
                         size="sm"
-                        className="w-full px-2"
+                        className="w-full px-2 text-xs"
                         variant={row.status === status ? 'default' : 'outline'}
                         aria-pressed={row.status === status}
                         disabled={disabled}
