@@ -10,7 +10,7 @@ export function LogoMark({ className }: { className?: string }) {
   return (
     <span
       aria-hidden="true"
-      className={cn('block shrink-0 rounded-md bg-primary p-1.5', className)}
+      className={cn('block shrink-0 rounded-md bg-[var(--logo-bg)] p-1.5', className)}
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src="/images/logo-mark.png" alt="" className="size-full" />
