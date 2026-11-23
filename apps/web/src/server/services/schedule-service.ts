@@ -31,7 +31,7 @@ import { assertCanManageTournament } from './permissions';
 import { eventText, fullName, publicName } from './registration-service';
 import type { Actor } from './session-service';
 import { emailLogo } from './logo-service';
-import { isMatchLocked } from '../lib/match-lock';
+import { isCheckInClosed, isScoreLocked } from '../lib/match-lock';
 
 type Tx = Prisma.TransactionClient;
 
@@ -80,7 +80,7 @@ export const matchSelect = {
   startedAt: true,
   completedAt: true,
   lockedAt: true,
-  autoLockWaived: true,
+  scoreUnlockedAt: true,
   entryA: { select: entrySelect },
   entryB: { select: entrySelect },
   sets: { orderBy: { setNumber: 'asc' }, select: { setNumber: true, scoreA: true, scoreB: true } },
@@ -1027,7 +1027,8 @@ export async function deskMatches(
   const items = matches.map((m) => ({
     ...toItem(m, locale, t.schedulePublishedAt, feeders, t.startsOn.toISOString().slice(0, 10)),
     version: m.version,
-    locked: isMatchLocked(m),
+    locked: isScoreLocked(m),
+    checkInClosed: isCheckInClosed(m),
     // Score boxes per match: the knockout scoring where it applies (D61).
     bestOf: rulesForMatch(m.draw.event, { ...m.draw, round: m.round, bracket: m.bracket }).bestOf,
     ready: !!m.entryA?.registration && !!m.entryB?.registration,

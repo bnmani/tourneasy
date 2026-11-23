@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils';
 import {
   knockoutStageAction,
   quickCheckInAction,
+  quickLockAllPlayedAction,
   quickLockMatchAction,
   quickPlaceAndStartAction,
   quickSwapTeamsAction,
@@ -233,6 +234,17 @@ export default async function DeskPage({ params, searchParams }: Props) {
             );
           })}
         </span>
+        {owner && (
+          <QuickButton
+            size="sm"
+            variant="outline"
+            className="ml-3 shrink-0"
+            action={quickLockAllPlayedAction.bind(null, id)}
+            confirm={td('lockAllConfirm')}
+          >
+            {td('lockAll')}
+          </QuickButton>
+        )}
       </nav>
 
       {view === 'checkin' ? (
@@ -323,6 +335,7 @@ export default async function DeskPage({ params, searchParams }: Props) {
                                           <CheckInToggle
                                             name={p.name}
                                             checkedIn={p.checkedIn}
+                                            locked={item.checkInClosed}
                                             busy={
                                               busy
                                                 ? busy.court
@@ -334,6 +347,7 @@ export default async function DeskPage({ params, searchParams }: Props) {
                                               null,
                                               p.id,
                                               !p.checkedIn,
+                                              item.id,
                                             )}
                                             labels={{
                                               checkedIn: td('checkedIn'),

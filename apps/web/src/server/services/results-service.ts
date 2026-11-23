@@ -29,7 +29,7 @@ import { parseInput } from '../lib/validation';
 import { advance, resolveByes } from './draw-service';
 import { assertSemisOpen, holdsWinnerForSemis, pairSemis } from './semi-pairing-service';
 import { assertCanManageTournament, assertOwner } from './permissions';
-import { isMatchLocked } from '../lib/match-lock';
+import { isCheckInClosed, isScoreLocked } from '../lib/match-lock';
 import { fullName, publicName } from './registration-service';
 import type { Actor } from './session-service';
 
@@ -49,7 +49,7 @@ async function loadMatch(matchId: string, db: Tx | typeof prisma = prisma) {
       winnerEntryId: true,
       completedAt: true,
       lockedAt: true,
-      autoLockWaived: true,
+      scoreUnlockedAt: true,
       entryAId: true,
       entryBId: true,
       nextMatchId: true,
@@ -91,7 +91,7 @@ async function authorise(actor: Actor, matchId: string) {
   await assertCanManageTournament(actor, m.draw.event.tournamentId);
   if (m.draw.status === 'DRAFT') throw new AppError('drawNotPublished');
   if (!m.entryA?.registrationId || !m.entryB?.registrationId) throw new AppError('matchNotReady');
-  if (isMatchLocked(m)) throw new AppError('matchLocked');
+  if (isScoreLocked(m)) throw new AppError('matchLocked');
   return m;
 }
 
@@ -103,7 +103,7 @@ export async function lockMatch(actor: Actor, matchId: string, meta: RequestMeta
   await prisma.$transaction(async (tx) => {
     await tx.match.update({
       where: { id: m.id },
-      data: { lockedAt: new Date(), lockedById: actor.userId, autoLockWaived: false },
+      data: { lockedAt: new Date(), lockedById: actor.userId, scoreUnlockedAt: null },
     });
     await writeAudit(tx, {
       actorId: actor.userId,
@@ -115,15 +115,44 @@ export async function lockMatch(actor: Actor, matchId: string, meta: RequestMeta
   });
 }
 
+/** The owner locks every played match of a tournament at once (one audit entry per match). */
+export async function lockAllPlayed(actor: Actor, tournamentId: string, meta: RequestMeta) {
+  assertOwner(actor);
+  const matches = await prisma.match.findMany({
+    where: {
+      completedAt: { not: null },
+      draw: { event: { tournamentId, deletedAt: null } },
+      OR: [{ lockedAt: null }, { scoreUnlockedAt: { not: null } }],
+    },
+    select: { id: true },
+  });
+  if (matches.length === 0) return 0;
+  await prisma.$transaction(async (tx) => {
+    await tx.match.updateMany({
+      where: { id: { in: matches.map((m) => m.id) } },
+      data: { lockedAt: new Date(), lockedById: actor.userId, scoreUnlockedAt: null },
+    });
+    for (const m of matches)
+      await writeAudit(tx, {
+        actorId: actor.userId,
+        action: 'match.lock',
+        entityType: 'Match',
+        entityId: m.id,
+        meta,
+      });
+  });
+  return matches.length;
+}
+
 /** The owner unlocks a match, locked by hand or by the next-day rule, so its result can be fixed. */
 export async function unlockMatch(actor: Actor, matchId: string, meta: RequestMeta) {
   assertOwner(actor);
   const m = await loadMatch(matchId);
-  if (!isMatchLocked(m)) throw new AppError('statusTransition');
+  if (!isScoreLocked(m)) throw new AppError('statusTransition');
   await prisma.$transaction(async (tx) => {
     await tx.match.update({
       where: { id: m.id },
-      data: { lockedAt: null, lockedById: null, autoLockWaived: true },
+      data: { scoreUnlockedAt: new Date() },
     });
     await writeAudit(tx, {
       actorId: actor.userId,
@@ -352,6 +381,7 @@ export async function setCheckIn(
   participantId: string,
   present: boolean,
   meta: RequestMeta,
+  matchId?: string,
 ) {
   const p = await prisma.registrationParticipant.findUnique({
     where: { id: participantId },
@@ -359,6 +389,15 @@ export async function setCheckIn(
   });
   if (!p) throw new AppError('notFound');
   await assertCanManageTournament(actor, p.registration.event.tournamentId);
+  // Check-in from a match card: refused once that match's check-in is closed.
+  if (matchId) {
+    const m = await prisma.match.findUnique({
+      where: { id: matchId },
+      select: { lockedAt: true, completedAt: true },
+    });
+    if (!m) throw new AppError('notFound');
+    if (isCheckInClosed(m)) throw new AppError('checkInClosed');
+  }
   await prisma.$transaction(async (tx) => {
     await tx.registrationParticipant.update({
       where: { id: participantId },

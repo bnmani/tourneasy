@@ -15,6 +15,7 @@ import {
   removeLastSwissRound,
   setCheckIn,
   startMatch,
+  lockAllPlayed,
   lockMatch,
   unlockMatch,
   unstartMatch,
@@ -244,9 +245,13 @@ async function quick(work: () => Promise<unknown>): Promise<QuickResult> {
   return { ok: true };
 }
 
-export async function quickCheckInAction(participantId: string, present: boolean) {
+export async function quickCheckInAction(
+  participantId: string,
+  present: boolean,
+  matchId?: string,
+) {
   return quick(async () =>
-    setCheckIn(await actorOrThrow(), participantId, present, await currentRequestMeta()),
+    setCheckIn(await actorOrThrow(), participantId, present, await currentRequestMeta(), matchId),
   );
 }
 
@@ -306,6 +311,13 @@ export async function quickUnstartMatchAction(matchId: string) {
 /** The owner locks a played match's result, or unlocks it so it can be corrected. */
 export async function quickLockMatchAction(matchId: string) {
   return quick(async () => lockMatch(await actorOrThrow(), matchId, await currentRequestMeta()));
+}
+
+/** The owner locks all played matches of a tournament. */
+export async function quickLockAllPlayedAction(tournamentId: string) {
+  return quick(async () =>
+    lockAllPlayed(await actorOrThrow(), tournamentId, await currentRequestMeta()),
+  );
 }
 
 export async function quickUnlockMatchAction(matchId: string) {

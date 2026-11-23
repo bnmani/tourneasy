@@ -47,6 +47,7 @@ export function CheckInToggle({
   name,
   checkedIn,
   busy = null,
+  locked = false,
   toggle,
   labels,
   footer,
@@ -55,6 +56,8 @@ export function CheckInToggle({
   checkedIn: boolean;
   /** "On court 3 now" while the player is busy in another match. */
   busy?: string | null;
+  /** The match is locked (played section): the card shows status but can't be tapped. */
+  locked?: boolean;
   /** Bound server action: sets the opposite of `checkedIn`. */
   toggle: () => Promise<QuickResult>;
   labels: { checkedIn: string; tapToCheckIn: string };
@@ -66,12 +69,16 @@ export function CheckInToggle({
   // Every card is the same size: the name takes up to two lines, then one line of status.
   // Longer names get a smaller font so they still fit in two lines.
   const nameSize = name.length <= 16 ? 'text-sm' : name.length <= 24 ? 'text-[13px]' : 'text-xs';
+  // A locked card (a played match) can't be tapped, like a busy one.
+  const fixed = !!busy || !!locked;
   const classes = cn(
     'flex h-[4.75rem] w-full flex-col justify-between rounded-md border border-l-[6px] px-3 py-2 text-left text-sm transition-colors',
     shown ? 'border-l-green-600' : 'border-l-orange-600',
-    busy
-      ? 'cursor-default border-y-orange-400 border-r-orange-400 bg-orange-50 dark:bg-orange-950/40'
-      : 'border-y-border border-r-border bg-primary/10 hover:bg-primary/15 dark:bg-primary/20 dark:hover:bg-primary/25',
+    busy &&
+      'cursor-default border-y-orange-400 border-r-orange-400 bg-orange-50 dark:bg-orange-950/40',
+    !busy && 'border-y-border border-r-border bg-primary/10 dark:bg-primary/20',
+    !fixed && 'hover:bg-primary/15 dark:hover:bg-primary/25',
+    locked && !busy && 'cursor-default',
   );
   const content = (
     <>
@@ -94,14 +101,14 @@ export function CheckInToggle({
             shown ? 'font-semibold text-green-600' : 'text-muted-foreground',
           )}
         >
-          {shown ? labels.checkedIn : labels.tapToCheckIn}
+          {shown ? labels.checkedIn : locked ? '' : labels.tapToCheckIn}
         </span>
       )}
     </>
   );
   return (
     <div className="space-y-1">
-      {busy ? (
+      {fixed ? (
         <div className={classes}>{content}</div>
       ) : (
         <button
