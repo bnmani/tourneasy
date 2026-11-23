@@ -130,7 +130,7 @@ export default async function FeedbackInboxPage({ params, searchParams }: Props)
                 >
                   {row.shareConsent ? ti('consent') : ti('noConsent')}
                 </p>
-                <div className="grid grid-cols-2 gap-2 border-t pt-3 sm:grid-cols-4">
+                <div className="grid grid-cols-2 gap-2 border-t pt-3 sm:grid-cols-[repeat(4,minmax(0,1fr))]">
                   {(
                     [
                       ['TOURNAMENT', ti('toTournament'), !row.shareConsent],
@@ -143,7 +143,7 @@ export default async function FeedbackInboxPage({ params, searchParams }: Props)
                       <Button
                         type="submit"
                         size="sm"
-                        className="w-full"
+                        className="w-full px-2"
                         variant={row.status === status ? 'default' : 'outline'}
                         aria-pressed={row.status === status}
                         disabled={disabled}
