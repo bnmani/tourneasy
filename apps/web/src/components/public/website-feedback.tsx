@@ -32,7 +32,7 @@ function FeedbackCard({ f, className }: { f: Item; className: string }) {
  * The list is shown twice, so the loop joins up seamlessly and the first card follows the last.
  */
 export async function WebsiteFeedback() {
-  const items = await publicWebsiteFeedback(20);
+  const items = await publicWebsiteFeedback(50);
   if (items.length === 0) return null;
   const t = await getTranslations('Feedback');
   const looping = items.length > GRID_MAX;
