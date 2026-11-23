@@ -131,26 +131,26 @@ export default async function FeedbackInboxPage({ params, searchParams }: Props)
                   {row.shareConsent ? ti('consent') : ti('noConsent')}
                 </p>
                 <div className="flex flex-wrap gap-2 border-t pt-3">
-                  <form action={act('TOURNAMENT')}>
-                    <Button type="submit" size="sm" disabled={!row.shareConsent}>
-                      {ti('toTournament')}
-                    </Button>
-                  </form>
-                  <form action={act('WEBSITE')}>
-                    <Button type="submit" size="sm" variant="outline" disabled={!row.shareConsent}>
-                      {ti('toWebsite')}
-                    </Button>
-                  </form>
-                  <form action={act('PRIVATE')}>
-                    <Button type="submit" size="sm" variant="ghost">
-                      {ti('private')}
-                    </Button>
-                  </form>
-                  <form action={act('REJECTED')}>
-                    <Button type="submit" size="sm" variant="ghost">
-                      {ti('reject')}
-                    </Button>
-                  </form>
+                  {(
+                    [
+                      ['TOURNAMENT', ti('toTournament'), !row.shareConsent],
+                      ['WEBSITE', ti('toWebsite'), !row.shareConsent],
+                      ['PRIVATE', ti('private'), false],
+                      ['REJECTED', ti('reject'), false],
+                    ] as const
+                  ).map(([status, label, disabled]) => (
+                    <form key={status} action={act(status)}>
+                      <Button
+                        type="submit"
+                        size="sm"
+                        variant={row.status === status ? 'default' : 'outline'}
+                        aria-pressed={row.status === status}
+                        disabled={disabled}
+                      >
+                        {label}
+                      </Button>
+                    </form>
+                  ))}
                 </div>
               </li>
             );
