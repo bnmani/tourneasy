@@ -25,7 +25,7 @@ export default function WelcomeScreen() {
         </View>
         <View style={styles.actions}>
           <Button title="Sign in" onPress={() => router.push('/signin')} />
-          <Button title="Create an account" variant="secondary" onPress={() => router.push('/signup')} />
+          <Button title="Create an account" variant="secondary" onPress={() => router.push('/signup/name')} />
           <TextLink
             title="Browse tournaments without an account"
             onPress={() => Alert.alert('Coming soon', 'Public tournaments arrive in a later update.')}

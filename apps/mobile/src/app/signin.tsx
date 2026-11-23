@@ -55,7 +55,7 @@ export default function SignInScreen() {
         <Button title={busy ? 'Signing in…' : 'Sign in'} disabled={busy} onPress={submit} />
         <View style={styles.footer}>
           <Text style={{ color: colors.muted, fontSize: 15 }}>New to Tourneasy? </Text>
-          <TextLink title="Create an account" onPress={() => router.replace('/signup')} />
+          <TextLink title="Create an account" onPress={() => router.replace('/signup/name')} />
         </View>
       </View>
     </Screen>

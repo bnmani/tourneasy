@@ -18,9 +18,11 @@
     "db:deploy": "pnpm --filter @tourneasy/db db:deploy",
     "db:seed": "pnpm --filter @tourneasy/db db:seed",
     "db:reset": "pnpm --filter @tourneasy/db db:reset",
-    "db:studio": "pnpm --filter @tourneasy/db db:studio"
+    "db:studio": "pnpm --filter @tourneasy/db db:studio",
+    "postinstall": "patch-package"
   },
   "devDependencies": {
+    "patch-package": "^8.0.1",
     "prettier": "^3.4.2",
     "prettier-plugin-tailwindcss": "^0.6.9",
     "turbo": "2.11.8",
