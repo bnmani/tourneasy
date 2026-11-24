@@ -14,7 +14,7 @@ export default function WelcomeScreen() {
         <View style={styles.header}>
           <Image
             accessibilityLabel={t('Tourneasy logo')}
-            source={require('../../assets/brand/logo.jpg')}
+            source={require('../../../assets/brand/logo.jpg')}
             style={styles.logo}
           />
         </View>

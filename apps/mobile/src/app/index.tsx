@@ -13,7 +13,7 @@ export default function SplashScreen() {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      router.replace(profile ? '/(tabs)' : '/welcome');
+      router.replace(profile ? '/(app)/(tabs)' : '/welcome');
     }, 1600);
     return () => clearTimeout(timer);
   }, [profile]);
