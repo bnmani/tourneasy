@@ -38,7 +38,7 @@ export const nl: Record<string, string> = {
   'Phase 4': 'fase 4',
   'This part of the app is built in {phase}.': 'Dit onderdeel van de app wordt gebouwd in {phase}.',
   'Nothing to show yet.': 'Nog niets om te tonen.',
-  'Notifications': 'Meldingen',
+  Notifications: 'Meldingen',
 
   // Welcome
   Welcome: 'Welkom',
@@ -147,7 +147,8 @@ export const nl: Record<string, string> = {
   "Set at sign-up and can't be changed": 'Ingesteld bij aanmelding en niet te wijzigen',
   'Tap a field to edit it. Date of birth is locked.':
     'Tik op een veld om het te bewerken. Geboortedatum is vergrendeld.',
-  'We send a link to check the new address.': 'We sturen een link om het nieuwe adres te controleren.',
+  'We send a link to check the new address.':
+    'We sturen een link om het nieuwe adres te controleren.',
   'Include the country code.': 'Vul de landcode in.',
   'Choose one or more.': 'Kies één of meer.',
 

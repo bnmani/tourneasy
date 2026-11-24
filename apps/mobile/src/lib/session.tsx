@@ -67,7 +67,13 @@ type SessionValue = {
 
 const SessionContext = createContext<SessionValue | null>(null);
 
-export function SessionProvider({ children, api = demoAuth }: { children: ReactNode; api?: AuthApi }) {
+export function SessionProvider({
+  children,
+  api = demoAuth,
+}: {
+  children: ReactNode;
+  api?: AuthApi;
+}) {
   const [profile, setProfile] = useState<Profile | null>(null);
 
   const signIn = useCallback(

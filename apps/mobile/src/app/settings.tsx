@@ -43,7 +43,9 @@ export default function SettingsScreen() {
             <Row
               label={t('App lock')}
               value={t('Off. Use Face ID, fingerprint or passcode')}
-              onPress={() => Alert.alert(t('Coming soon'), t('App lock arrives in a later update.'))}
+              onPress={() =>
+                Alert.alert(t('Coming soon'), t('App lock arrives in a later update.'))
+              }
               last
             />
           </Card>
@@ -53,11 +55,15 @@ export default function SettingsScreen() {
           <Card>
             <Row
               label={t('Notification settings')}
-              onPress={() => Alert.alert(t('Coming soon'), t('Notification settings arrive in Phase 4.'))}
+              onPress={() =>
+                Alert.alert(t('Coming soon'), t('Notification settings arrive in Phase 4.'))
+              }
             />
             <Row
               label={t('Download my data')}
-              onPress={() => Alert.alert(t('Coming soon'), t('Data download arrives in a later update.'))}
+              onPress={() =>
+                Alert.alert(t('Coming soon'), t('Data download arrives in a later update.'))
+              }
               last
             />
           </Card>
@@ -71,7 +77,11 @@ export default function SettingsScreen() {
         </Section>
 
         <View style={styles.danger}>
-          <Button title={t('Delete account')} variant="destructive" onPress={() => router.push('/delete-account')} />
+          <Button
+            title={t('Delete account')}
+            variant="destructive"
+            onPress={() => router.push('/delete-account')}
+          />
         </View>
         <Text style={{ color: colors.muted, fontSize: 13, textAlign: 'center' }}>Tourneasy</Text>
       </ScrollView>

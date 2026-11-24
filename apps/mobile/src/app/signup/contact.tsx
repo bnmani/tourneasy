@@ -90,11 +90,17 @@ export default function SignUpContactScreen() {
             {t('I accept the terms of use and privacy notice.')}
           </Consent>
           <Consent checked={reminders} onChange={setReminders}>
-            {t('Remind me about my matches. You can switch this off anytime in Notification settings.')}
+            {t(
+              'Remind me about my matches. You can switch this off anytime in Notification settings.',
+            )}
           </Consent>
           {error ? <Text style={{ color: colors.destructive, fontSize: 14 }}>{error}</Text> : null}
         </ScrollView>
-        <Button title={busy ? t('Creating account…') : t('Create account')} disabled={!canSubmit} onPress={submit} />
+        <Button
+          title={busy ? t('Creating account…') : t('Create account')}
+          disabled={!canSubmit}
+          onPress={submit}
+        />
       </View>
     </Screen>
   );
@@ -118,8 +124,18 @@ function Consent({
       onPress={() => onChange(!checked)}
       style={[styles.consent, { backgroundColor: colors.card, borderColor: colors.border }]}
     >
-      <View style={[styles.box, { borderColor: colors.primary, backgroundColor: checked ? colors.primary : 'transparent' }]}>
-        {checked ? <Text style={{ color: colors.primaryFg, fontSize: 14, fontFamily: font.bold }}>✓</Text> : null}
+      <View
+        style={[
+          styles.box,
+          {
+            borderColor: colors.primary,
+            backgroundColor: checked ? colors.primary : 'transparent',
+          },
+        ]}
+      >
+        {checked ? (
+          <Text style={{ color: colors.primaryFg, fontSize: 14, fontFamily: font.bold }}>✓</Text>
+        ) : null}
       </View>
       <Text style={[styles.consentText, { color: colors.fg }]}>{children}</Text>
     </Pressable>

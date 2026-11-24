@@ -19,7 +19,9 @@ export default function ForgotPasswordScreen() {
         <TextLink title={t('Back')} onPress={() => router.back()} />
         <Heading>{t('Reset your password')}</Heading>
         <Body>
-          {t('Enter the email address on your account. We send a link to set a new password. The link opens the Tourneasy website to finish.')}
+          {t(
+            'Enter the email address on your account. We send a link to set a new password. The link opens the Tourneasy website to finish.',
+          )}
         </Body>
         <Field
           label={t('Email')}
@@ -32,7 +34,9 @@ export default function ForgotPasswordScreen() {
             setSent(false);
           }}
         />
-        <Hint>{t('You can request a link up to 5 times an hour from one internet connection.')}</Hint>
+        <Hint>
+          {t('You can request a link up to 5 times an hour from one internet connection.')}
+        </Hint>
         {sent ? (
           <Text style={{ color: colors.fg, fontSize: 15, lineHeight: 22 }}>
             {t('If an account exists for this email, we sent a link.')}

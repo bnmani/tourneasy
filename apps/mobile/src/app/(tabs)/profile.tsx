@@ -46,7 +46,9 @@ export default function ProfileScreen() {
             <Text style={[styles.name, { color: colors.fg }]}>
               {profile.firstName} {profile.lastName}
             </Text>
-            <Text style={{ color: colors.muted, fontSize: 14 }}>{t('Member {number} · Player', { number: profile.memberNumber })}</Text>
+            <Text style={{ color: colors.muted, fontSize: 14 }}>
+              {t('Member {number} · Player', { number: profile.memberNumber })}
+            </Text>
           </View>
         </View>
 
@@ -61,7 +63,9 @@ export default function ProfileScreen() {
                 onPress={() => setTab(name)}
                 style={[styles.tab, selected && { borderBottomColor: colors.primary }]}
               >
-                <Text style={[styles.tabText, { color: selected ? colors.primary : colors.muted }]}>{t(name)}</Text>
+                <Text style={[styles.tabText, { color: selected ? colors.primary : colors.muted }]}>
+                  {t(name)}
+                </Text>
               </Pressable>
             );
           })}
@@ -69,7 +73,9 @@ export default function ProfileScreen() {
 
         {tab !== 'Details' ? (
           <Text style={{ color: colors.muted, fontSize: 15, paddingTop: 16 }}>
-            {tab === 'My entries' ? t('Entries come in Phase 2.') : t('Followed players come in Phase 3.')}
+            {tab === 'My entries'
+              ? t('Entries come in Phase 2.')
+              : t('Followed players come in Phase 3.')}
           </Text>
         ) : (
           <DetailsCard
@@ -87,7 +93,10 @@ export default function ProfileScreen() {
       <MenuSheet
         visible={menuOpen}
         onClose={() => setMenuOpen(false)}
-        title={t('{name} · Member {number}', { name: `${profile.firstName} ${profile.lastName}`, number: profile.memberNumber })}
+        title={t('{name} · Member {number}', {
+          name: `${profile.firstName} ${profile.lastName}`,
+          number: profile.memberNumber,
+        })}
         items={[
           { label: 'Settings', onPress: () => router.push('/settings') },
           { label: 'Sign out', onPress: signOut, destructive: true },
@@ -116,9 +125,18 @@ function DetailsCard({
         {editing === 'name' ? (
           <NameEdit profile={profile} onCancel={() => setEditing(null)} onSave={onSave} />
         ) : (
-          <Row label={t('Name')} value={`${profile.firstName} ${profile.lastName}`} onPress={() => setEditing('name')} />
+          <Row
+            label={t('Name')}
+            value={`${profile.firstName} ${profile.lastName}`}
+            onPress={() => setEditing('name')}
+          />
         )}
-        <Row label={t('Date of birth')} value={profile.dateOfBirth} locked hint={t("Set at sign-up and can't be changed")} />
+        <Row
+          label={t('Date of birth')}
+          value={profile.dateOfBirth}
+          locked
+          hint={t("Set at sign-up and can't be changed")}
+        />
         {editing === 'email' ? (
           <EmailEdit profile={profile} onCancel={() => setEditing(null)} onSave={onSave} />
         ) : (
@@ -127,7 +145,11 @@ function DetailsCard({
         {editing === 'mobile' ? (
           <MobileEdit profile={profile} onCancel={() => setEditing(null)} onSave={onSave} />
         ) : (
-          <Row label={t('Mobile number')} value={profile.mobile} onPress={() => setEditing('mobile')} />
+          <Row
+            label={t('Mobile number')}
+            value={profile.mobile}
+            onPress={() => setEditing('mobile')}
+          />
         )}
         {editing === 'events' ? (
           <EventsEdit profile={profile} onCancel={() => setEditing(null)} onSave={onSave} />
@@ -171,9 +193,7 @@ function EditActions({
 
 function EditBlock({ children }: { children: ReactNode }) {
   const colors = useColors();
-  return (
-    <View style={[styles.editBlock, { borderBottomColor: colors.border }]}>{children}</View>
-  );
+  return <View style={[styles.editBlock, { borderBottomColor: colors.border }]}>{children}</View>;
 }
 
 function NameEdit({
@@ -192,12 +212,19 @@ function NameEdit({
   return (
     <EditBlock>
       <Field label={t('First name')} value={firstName} onChangeText={setFirstName} />
-      <Field label={t('Name prefix (optional)')} placeholder={t('e.g. van, de')} value={prefix} onChangeText={setPrefix} />
+      <Field
+        label={t('Name prefix (optional)')}
+        placeholder={t('e.g. van, de')}
+        value={prefix}
+        onChangeText={setPrefix}
+      />
       <Field label={t('Last name')} value={lastName} onChangeText={setLastName} />
       <EditActions
         onCancel={onCancel}
         saveDisabled={!firstName.trim() || !lastName.trim()}
-        onSave={() => onSave({ firstName: firstName.trim(), prefix: prefix.trim(), lastName: lastName.trim() })}
+        onSave={() =>
+          onSave({ firstName: firstName.trim(), prefix: prefix.trim(), lastName: lastName.trim() })
+        }
       />
     </EditBlock>
   );
@@ -283,11 +310,20 @@ function EventsEdit({
       <Text style={{ fontSize: 13, color: colors.muted }}>{t('Preferred events')}</Text>
       <View style={styles.chips}>
         {preferredEventOptions.map((event) => (
-          <Chip key={event} label={t(event)} selected={events.includes(event)} onPress={() => toggle(event)} />
+          <Chip
+            key={event}
+            label={t(event)}
+            selected={events.includes(event)}
+            onPress={() => toggle(event)}
+          />
         ))}
       </View>
       <Hint>{t('Choose one or more.')}</Hint>
-      <EditActions onCancel={onCancel} saveDisabled={events.length === 0} onSave={() => onSave({ preferredEvents: events })} />
+      <EditActions
+        onCancel={onCancel}
+        saveDisabled={events.length === 0}
+        onSave={() => onSave({ preferredEvents: events })}
+      />
     </EditBlock>
   );
 }
@@ -298,11 +334,24 @@ const styles = StyleSheet.create({
   title: { fontSize: 32, fontFamily: font.display },
   dots: { fontSize: 20, fontFamily: font.bold },
   identity: { flexDirection: 'row', alignItems: 'center', gap: 14, marginTop: 14 },
-  avatar: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center' },
+  avatar: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   initials: { fontSize: 20, fontFamily: font.bold },
   name: { fontSize: 19, fontFamily: font.semibold },
   tabs: { flexDirection: 'row', marginTop: 18, borderBottomWidth: 1 },
-  tab: { flex: 1, minHeight: 48, alignItems: 'center', justifyContent: 'center', borderBottomWidth: 2, borderBottomColor: 'transparent' },
+  tab: {
+    flex: 1,
+    minHeight: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+  },
   tabText: { fontSize: 15, fontFamily: font.semibold },
   details: { paddingTop: 16, gap: 8 },
   editBlock: { padding: 12, gap: 10, borderBottomWidth: 1 },

@@ -23,7 +23,10 @@ export default function SignUpNameScreen() {
   const [events, setEvents] = useState<string[]>(stepOne.preferredEvents);
 
   const canContinue =
-    firstName.trim() !== '' && lastName.trim() !== '' && dateOfBirth.trim() !== '' && events.length > 0;
+    firstName.trim() !== '' &&
+    lastName.trim() !== '' &&
+    dateOfBirth.trim() !== '' &&
+    events.length > 0;
 
   function toggleEvent(event: string) {
     setEvents((current) =>
@@ -80,9 +83,14 @@ export default function SignUpNameScreen() {
               accessibilityRole="button"
               accessibilityLabel={t('Gender, {value}', { value: gender ? t(gender) : t('Choose') })}
               onPress={pickGender}
-              style={[styles.select, { backgroundColor: colors.card, borderColor: colors.inputBorder }]}
+              style={[
+                styles.select,
+                { backgroundColor: colors.card, borderColor: colors.inputBorder },
+              ]}
             >
-              <Text style={{ color: gender ? colors.fg : colors.muted, fontSize: 16 }}>{gender ? t(gender) : t('Choose')}</Text>
+              <Text style={{ color: gender ? colors.fg : colors.muted, fontSize: 16 }}>
+                {gender ? t(gender) : t('Choose')}
+              </Text>
               <Text style={{ color: colors.muted, fontSize: 18 }}>›</Text>
             </Pressable>
           </View>
@@ -91,7 +99,12 @@ export default function SignUpNameScreen() {
             <Text style={{ color: colors.muted, fontSize: 13 }}>{t('Pick at least one.')}</Text>
             <View style={styles.chips}>
               {preferredEventOptions.map((event) => (
-                <Chip key={event} label={t(event)} selected={events.includes(event)} onPress={() => toggleEvent(event)} />
+                <Chip
+                  key={event}
+                  label={t(event)}
+                  selected={events.includes(event)}
+                  onPress={() => toggleEvent(event)}
+                />
               ))}
             </View>
           </View>

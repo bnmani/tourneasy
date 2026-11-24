@@ -11,10 +11,15 @@ export default function VerifyEmailScreen() {
   const { email = t('your email address') } = useLocalSearchParams<{ email?: string }>();
 
   // The email is set in bold, so the translated sentence is split around its placeholder.
-  const [before, after = ''] = t('We sent a link to {email}. Tap the link in the email to open Tourneasy and finish your account.', { email: '\u0001' }).split('\u0001');
+  const [before, after = ''] = t(
+    'We sent a link to {email}. Tap the link in the email to open Tourneasy and finish your account.',
+    { email: '\u0001' },
+  ).split('\u0001');
 
   function openMail() {
-    Linking.openURL('message://').catch(() => Alert.alert(t('Open your mail app'), t('Find the email from Tourneasy.')));
+    Linking.openURL('message://').catch(() =>
+      Alert.alert(t('Open your mail app'), t('Find the email from Tourneasy.')),
+    );
   }
 
   return (

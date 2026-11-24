@@ -61,7 +61,11 @@ export function Button({
     variant === 'primary'
       ? { backgroundColor: colors.primary, borderColor: colors.primary, color: colors.primaryFg }
       : variant === 'destructive'
-        ? { backgroundColor: 'transparent', borderColor: colors.destructive, color: colors.destructive }
+        ? {
+            backgroundColor: 'transparent',
+            borderColor: colors.destructive,
+            color: colors.destructive,
+          }
         : { backgroundColor: 'transparent', borderColor: colors.border, color: colors.primary };
   return (
     <Pressable
@@ -147,7 +151,9 @@ export function Row({
       {!locked && onPress ? <Text style={[styles.chevron, { color: colors.muted }]}>›</Text> : null}
     </>
   );
-  const divider = last ? undefined : { borderBottomWidth: StyleSheet.hairlineWidth * 2, borderBottomColor: colors.border };
+  const divider = last
+    ? undefined
+    : { borderBottomWidth: StyleSheet.hairlineWidth * 2, borderBottomColor: colors.border };
   if (!onPress || locked) {
     return <View style={[styles.row, divider]}>{content}</View>;
   }
@@ -251,7 +257,12 @@ export function ProgressBar({ fraction }: { fraction: number }) {
   const colors = useColors();
   return (
     <View style={[styles.progressTrack, { backgroundColor: colors.border }]}>
-      <View style={[styles.progressFill, { width: `${fraction * 100}%`, backgroundColor: colors.primary }]} />
+      <View
+        style={[
+          styles.progressFill,
+          { width: `${fraction * 100}%`, backgroundColor: colors.primary },
+        ]}
+      />
     </View>
   );
 }

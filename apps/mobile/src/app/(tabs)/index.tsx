@@ -15,7 +15,11 @@ export default function HomeScreen() {
   const t = useT();
   const { locale } = useLocale();
   const [menuOpen, setMenuOpen] = useState(false);
-  const today = new Date().toLocaleDateString(dateLocaleTag(locale), { weekday: 'long', day: 'numeric', month: 'long' });
+  const today = new Date().toLocaleDateString(dateLocaleTag(locale), {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+  });
 
   return (
     <Screen scroll>
@@ -27,7 +31,10 @@ export default function HomeScreen() {
           </Text>
         </View>
         <View style={styles.headerButtons}>
-          <IconButton label={t('Notifications, 2 unread')} onPress={() => router.push('/notifications')}>
+          <IconButton
+            label={t('Notifications, 2 unread')}
+            onPress={() => router.push('/notifications')}
+          >
             <Text style={[styles.badge, { color: colors.fg }]}>2</Text>
           </IconButton>
           <IconButton label={t('Menu')} onPress={() => setMenuOpen(true)}>
@@ -39,10 +46,17 @@ export default function HomeScreen() {
       <View style={[styles.hero, { backgroundColor: colors.hero }]}>
         <Text style={[styles.heroLabel, { color: colors.heroMuted }]}>{t('YOUR NEXT MATCH')}</Text>
         <Text style={[styles.heroTitle, { color: colors.heroFg }]}>
-          {t('{event} vs. {players}', { event: t('Open Doubles'), players: 'J. de Boer / R. Smit' })}
+          {t('{event} vs. {players}', {
+            event: t('Open Doubles'),
+            players: 'J. de Boer / R. Smit',
+          })}
         </Text>
         <Text style={[styles.heroMeta, { color: colors.heroMuted }]}>
-          {t('Today {time} · Court {court} · Starts in {duration}', { time: '14:30', court: 4, duration: t('2 h 10 min') })}
+          {t('Today {time} · Court {court} · Starts in {duration}', {
+            time: '14:30',
+            court: 4,
+            duration: t('2 h 10 min'),
+          })}
         </Text>
       </View>
 
@@ -62,7 +76,14 @@ export default function HomeScreen() {
       <MenuSheet
         visible={menuOpen}
         onClose={() => setMenuOpen(false)}
-        title={profile ? t('{name} · Member {number}', { name: `${profile.firstName} ${profile.lastName}`, number: profile.memberNumber }) : t('Menu')}
+        title={
+          profile
+            ? t('{name} · Member {number}', {
+                name: `${profile.firstName} ${profile.lastName}`,
+                number: profile.memberNumber,
+              })
+            : t('Menu')
+        }
         items={[
           { label: 'Settings', onPress: () => router.push('/settings') },
           { label: 'Sign out', onPress: signOut, destructive: true },
@@ -86,7 +107,12 @@ const styles = StyleSheet.create({
   heroMeta: { fontSize: 15 },
   section: { gap: 10 },
   sectionTitle: { fontSize: 17, fontFamily: font.semibold },
-  liveRow: { padding: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  liveRow: {
+    padding: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
   liveText: { gap: 2 },
   liveName: { fontSize: 16, fontFamily: font.semibold },
   live: { fontSize: 13, fontFamily: font.semibold },

@@ -22,7 +22,11 @@ export function MenuSheet({
   const t = useT();
   return (
     <Modal transparent visible={visible} animationType="slide" onRequestClose={onClose}>
-      <Pressable style={[styles.scrim, { backgroundColor: colors.scrim }]} onPress={onClose} accessibilityLabel={t('Close menu')} />
+      <Pressable
+        style={[styles.scrim, { backgroundColor: colors.scrim }]}
+        onPress={onClose}
+        accessibilityLabel={t('Close menu')}
+      />
       <View accessibilityRole="menu" style={[styles.sheet, { backgroundColor: colors.card }]}>
         <View style={[styles.handle, { backgroundColor: colors.border }]} />
         <Text style={[styles.title, { color: colors.muted }]}>{title}</Text>
@@ -39,12 +43,17 @@ export function MenuSheet({
             <Text
               style={[
                 styles.itemText,
-                { color: item.destructive ? colors.destructive : colors.fg, fontFamily: item.destructive ? font.semibold : font.regular },
+                {
+                  color: item.destructive ? colors.destructive : colors.fg,
+                  fontFamily: item.destructive ? font.semibold : font.regular,
+                },
               ]}
             >
               {t(item.label)}
             </Text>
-            {item.destructive ? null : <Text style={[styles.chevron, { color: colors.muted }]}>›</Text>}
+            {item.destructive ? null : (
+              <Text style={[styles.chevron, { color: colors.muted }]}>›</Text>
+            )}
           </Pressable>
         ))}
         <View style={styles.close}>

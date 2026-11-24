@@ -23,7 +23,9 @@ export default function DeleteAccountScreen() {
       // On success the session ends and the router moves to Welcome.
       await deleteAccount(password);
     } catch (caught) {
-      setError(caught instanceof Error ? t(caught.message) : t('Could not delete the account. Try again.'));
+      setError(
+        caught instanceof Error ? t(caught.message) : t('Could not delete the account. Try again.'),
+      );
     } finally {
       setBusy(false);
     }
@@ -38,13 +40,18 @@ export default function DeleteAccountScreen() {
 
         <View style={styles.list}>
           <Text style={[styles.item, { color: colors.fg }]}>
-            <Text style={styles.bold}>{t('Removed:')}</Text> {t('your name, email, date of birth, phone number and your account balance.')}
+            <Text style={styles.bold}>{t('Removed:')}</Text>{' '}
+            {t('your name, email, date of birth, phone number and your account balance.')}
           </Text>
           <Text style={[styles.item, { color: colors.fg }]}>
-            <Text style={styles.bold}>{t('Kept:')}</Text> {t('your match and tournament history, under your member number, shown as "Deleted player" in draws and results.')}
+            <Text style={styles.bold}>{t('Kept:')}</Text>{' '}
+            {t(
+              'your match and tournament history, under your member number, shown as "Deleted player" in draws and results.',
+            )}
           </Text>
           <Text style={[styles.item, { color: colors.fg }]}>
-            <Text style={styles.bold}>{t('Payment records:')}</Text> {t('kept for 7 years, as the law requires.')}
+            <Text style={styles.bold}>{t('Payment records:')}</Text>{' '}
+            {t('kept for 7 years, as the law requires.')}
           </Text>
         </View>
 

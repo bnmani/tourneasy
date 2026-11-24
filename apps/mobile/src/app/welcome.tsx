@@ -22,15 +22,23 @@ export default function WelcomeScreen() {
           <Text style={[styles.eyebrow, { color: colors.muted }]}>{t('Welcome')}</Text>
           <Heading>{t('Enter tournaments and follow your matches')}</Heading>
           <Body>
-            {t('Find a badminton tournament near you, see your schedule on court, and get a message when you are called.')}
+            {t(
+              'Find a badminton tournament near you, see your schedule on court, and get a message when you are called.',
+            )}
           </Body>
         </View>
         <View style={styles.actions}>
           <Button title={t('Sign in')} onPress={() => router.push('/signin')} />
-          <Button title={t('Create an account')} variant="secondary" onPress={() => router.push('/signup/name')} />
+          <Button
+            title={t('Create an account')}
+            variant="secondary"
+            onPress={() => router.push('/signup/name')}
+          />
           <TextLink
             title={t('Browse tournaments without an account')}
-            onPress={() => Alert.alert(t('Coming soon'), t('Public tournaments arrive in a later update.'))}
+            onPress={() =>
+              Alert.alert(t('Coming soon'), t('Public tournaments arrive in a later update.'))
+            }
           />
         </View>
       </View>

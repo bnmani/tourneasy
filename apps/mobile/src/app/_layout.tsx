@@ -1,6 +1,12 @@
 import '@/lib/sentry';
 
-import { useFonts as useInter, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
+import {
+  useFonts as useInter,
+  Inter_400Regular,
+  Inter_500Medium,
+  Inter_600SemiBold,
+  Inter_700Bold,
+} from '@expo-google-fonts/inter';
 import { Fraunces_700Bold, useFonts as useFraunces } from '@expo-google-fonts/fraunces';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -10,7 +16,12 @@ import { LocaleProvider } from '@/lib/i18n';
 import { ThemeProvider } from '@/theme';
 
 export default function RootLayout() {
-  const [interLoaded] = useInter({ Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold });
+  const [interLoaded] = useInter({
+    Inter_400Regular,
+    Inter_500Medium,
+    Inter_600SemiBold,
+    Inter_700Bold,
+  });
   const [frauncesLoaded] = useFraunces({ Fraunces_700Bold });
 
   // Wait for the fonts so no screen flashes in the system font.
