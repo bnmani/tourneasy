@@ -47,6 +47,12 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "a3c64b67-f8cd-4ad8-8803-56681307384a"
+      }
+    },
+    "owner": "tourneasy"
   }
 }
