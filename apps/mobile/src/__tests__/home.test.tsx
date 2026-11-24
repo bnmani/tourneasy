@@ -1,13 +1,22 @@
 import { render, screen } from '@testing-library/react-native';
-import { messages, defaultLocale } from '@tourneasy/shared/i18n';
 
-import HomeScreen from '@/app/index';
+import SplashScreen from '@/app/index';
+import { SessionProvider } from '@/lib/session';
+import { ThemeProvider } from '@/theme';
 
-describe('HomeScreen', () => {
-  it('shows the site name from the shared translations', () => {
-    render(<HomeScreen />);
-    expect(screen.getByTestId('home-title')).toHaveTextContent(
-      messages[defaultLocale].Metadata.siteName,
+jest.mock('expo-router', () => ({
+  router: { replace: jest.fn(), push: jest.fn(), back: jest.fn() },
+}));
+
+describe('SplashScreen', () => {
+  it('shows the tagline under the logo', () => {
+    render(
+      <ThemeProvider>
+        <SessionProvider>
+          <SplashScreen />
+        </SessionProvider>
+      </ThemeProvider>,
     );
+    expect(screen.getByText('Tournament Made Easy')).toBeTruthy();
   });
 });
