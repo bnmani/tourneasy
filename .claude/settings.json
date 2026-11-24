@@ -1,13 +1,20 @@
 {
+  "enabledPlugins": {
+    "ponytail@ponytail": true,
+    "expo@claude-plugins-official": true
+  },
   "extraKnownMarketplaces": {
     "ponytail": {
       "source": {
         "source": "github",
         "repo": "DietrichGebert/ponytail"
       }
+    },
+    "claude-plugins-official": {
+      "source": {
+        "source": "github",
+        "repo": "anthropics/claude-plugins-official"
+      }
     }
-  },
-  "enabledPlugins": {
-    "ponytail@ponytail": true
   }
 }
