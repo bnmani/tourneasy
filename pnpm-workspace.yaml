@@ -16,6 +16,12 @@ overrides:
   deepmerge-ts: ^8.0.0
   # typescript-estree (lint only) pins minimatch 9.x (globparts amplification)
   '@typescript-eslint/typescript-estree>minimatch': '>=11.0.1'
+  # Dependabot #18 (GHSA-g3hv-75wg-m249): minimatch >=7 <11.0.1 is vulnerable. Dev/build tooling only
+  # (Expo CLI, Jest, ESLint). Range-scoped so the old minimatch 3.x used by eslint is left alone.
+  'minimatch@>=7.0.0 <11.0.1': '>=11.0.1'
+  # Dependabot #17 (GHSA-3g3m-2fjr-6pw4): glob >=9 <=14.0.1 is vulnerable. Range-scoped so glob 7.x
+  # (used by istanbul/jest) is not forced onto the new major.
+  'glob@>=9.0.0 <14.0.2': '>=14.0.2'
 
 # Dependencies allowed to run install scripts (pnpm 11).
 allowBuilds:
