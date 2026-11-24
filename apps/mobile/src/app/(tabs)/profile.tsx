@@ -6,7 +6,7 @@ import { MenuSheet } from '@/components/MenuSheet';
 import { Button, Card, Chip, Field, Hint, IconButton, Row, Screen } from '@/components/ui';
 import { preferredEventOptions } from '@/lib/links';
 import { useSession, type Profile } from '@/lib/session';
-import { useColors } from '@/theme';
+import { font, useColors } from '@/theme';
 
 type EditField = 'name' | 'email' | 'mobile' | 'events' | null;
 type TabName = 'Details' | 'My entries' | 'Followed';
@@ -287,15 +287,15 @@ function EventsEdit({
 const styles = StyleSheet.create({
   container: { flex: 1, paddingHorizontal: 20, paddingTop: 16 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  title: { fontSize: 32, fontWeight: '700' },
-  dots: { fontSize: 20, fontWeight: '700' },
+  title: { fontSize: 32, fontFamily: font.display },
+  dots: { fontSize: 20, fontFamily: font.bold },
   identity: { flexDirection: 'row', alignItems: 'center', gap: 14, marginTop: 14 },
   avatar: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center' },
-  initials: { fontSize: 20, fontWeight: '700' },
-  name: { fontSize: 19, fontWeight: '600' },
+  initials: { fontSize: 20, fontFamily: font.bold },
+  name: { fontSize: 19, fontFamily: font.semibold },
   tabs: { flexDirection: 'row', marginTop: 18, borderBottomWidth: 1 },
   tab: { flex: 1, minHeight: 48, alignItems: 'center', justifyContent: 'center', borderBottomWidth: 2, borderBottomColor: 'transparent' },
-  tabText: { fontSize: 15, fontWeight: '600' },
+  tabText: { fontSize: 15, fontFamily: font.semibold },
   details: { paddingTop: 16, gap: 8 },
   editBlock: { padding: 12, gap: 10, borderBottomWidth: 1 },
   editActions: { flexDirection: 'row', gap: 8, marginTop: 4 },

@@ -1,7 +1,7 @@
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '@/components/ui';
-import { useColors } from '@/theme';
+import { font, useColors } from '@/theme';
 
 export type MenuItem = { label: string; onPress: () => void; destructive?: boolean };
 
@@ -37,7 +37,7 @@ export function MenuSheet({
             <Text
               style={[
                 styles.itemText,
-                { color: item.destructive ? colors.destructive : colors.fg, fontWeight: item.destructive ? '600' : '400' },
+                { color: item.destructive ? colors.destructive : colors.fg, fontFamily: item.destructive ? font.semibold : font.regular },
               ]}
             >
               {item.label}

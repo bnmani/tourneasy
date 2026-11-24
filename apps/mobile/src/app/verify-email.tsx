@@ -2,7 +2,7 @@ import { Alert, Linking, StyleSheet, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 
 import { Body, Button, Heading, Hint, Screen, TextLink } from '@/components/ui';
-import { useColors } from '@/theme';
+import { font, useColors } from '@/theme';
 
 export default function VerifyEmailScreen() {
   const colors = useColors();
@@ -18,7 +18,7 @@ export default function VerifyEmailScreen() {
         <Text style={[styles.eyebrow, { color: colors.primary }]}>Email verification</Text>
         <Heading>Check your email</Heading>
         <Body>
-          We sent a link to <Text style={{ color: colors.fg, fontWeight: '600' }}>{email}</Text>. Tap the link in the
+          We sent a link to <Text style={{ color: colors.fg, fontFamily: font.semibold }}>{email}</Text>. Tap the link in the
           email to open Tourneasy and finish your account.
         </Body>
         <Hint>The link is valid for 24 hours.</Hint>
@@ -38,6 +38,6 @@ export default function VerifyEmailScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 24, gap: 16, justifyContent: 'center' },
-  eyebrow: { fontSize: 14, fontWeight: '600' },
+  eyebrow: { fontSize: 14, fontFamily: font.semibold },
   actions: { marginTop: 24, gap: 12 },
 });

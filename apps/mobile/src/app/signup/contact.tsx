@@ -6,7 +6,7 @@ import { Button, Field, Heading, ProgressBar, Screen, TextLink } from '@/compone
 import { passwordMinLength } from '@/lib/links';
 import { useSession } from '@/lib/session';
 import { useSignUpDraft } from '@/lib/signup';
-import { useColors } from '@/theme';
+import { font, useColors } from '@/theme';
 
 /** Sign-up step 2 of 2: contact details, password and consent. */
 export default function SignUpContactScreen() {
@@ -117,7 +117,7 @@ function Consent({
       style={[styles.consent, { backgroundColor: colors.card, borderColor: colors.border }]}
     >
       <View style={[styles.box, { borderColor: colors.primary, backgroundColor: checked ? colors.primary : 'transparent' }]}>
-        {checked ? <Text style={{ color: colors.primaryFg, fontSize: 14, fontWeight: '700' }}>✓</Text> : null}
+        {checked ? <Text style={{ color: colors.primaryFg, fontSize: 14, fontFamily: font.bold }}>✓</Text> : null}
       </View>
       <Text style={[styles.consentText, { color: colors.fg }]}>{children}</Text>
     </Pressable>

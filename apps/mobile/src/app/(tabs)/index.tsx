@@ -5,7 +5,7 @@ import { router } from 'expo-router';
 import { MenuSheet } from '@/components/MenuSheet';
 import { Card, Hint, IconButton, Screen } from '@/components/ui';
 import { useSession } from '@/lib/session';
-import { useColors } from '@/theme';
+import { font, useColors } from '@/theme';
 
 /** Home. The match and tournament cards use demo data until the schedule API exists (Phase 2). */
 export default function HomeScreen() {
@@ -67,18 +67,18 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   greeting: { flex: 1, gap: 2 },
   date: { fontSize: 14 },
-  hello: { fontSize: 32, fontWeight: '700' },
+  hello: { fontSize: 32, fontFamily: font.display },
   headerButtons: { flexDirection: 'row', gap: 8 },
-  badge: { fontSize: 15, fontWeight: '600' },
-  dots: { fontSize: 20, fontWeight: '700' },
+  badge: { fontSize: 15, fontFamily: font.semibold },
+  dots: { fontSize: 20, fontFamily: font.bold },
   hero: { borderRadius: 18, padding: 18, gap: 8 },
-  heroLabel: { fontSize: 13, fontWeight: '600', letterSpacing: 0.5 },
-  heroTitle: { fontSize: 22, fontWeight: '700' },
+  heroLabel: { fontSize: 13, fontFamily: font.semibold, letterSpacing: 0.5 },
+  heroTitle: { fontSize: 22, fontFamily: font.display },
   heroMeta: { fontSize: 15 },
   section: { gap: 10 },
-  sectionTitle: { fontSize: 17, fontWeight: '600' },
+  sectionTitle: { fontSize: 17, fontFamily: font.semibold },
   liveRow: { padding: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   liveText: { gap: 2 },
-  liveName: { fontSize: 16, fontWeight: '600' },
-  live: { fontSize: 13, fontWeight: '600' },
+  liveName: { fontSize: 16, fontFamily: font.semibold },
+  live: { fontSize: 13, fontFamily: font.semibold },
 });

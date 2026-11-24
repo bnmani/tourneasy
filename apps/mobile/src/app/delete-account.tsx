@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 
 import { Body, Button, Field, Heading, Hint, Screen, TextLink } from '@/components/ui';
 import { useSession } from '@/lib/session';
-import { useColors } from '@/theme';
+import { font, useColors } from '@/theme';
 
 export default function DeleteAccountScreen() {
   const colors = useColors();
@@ -75,6 +75,6 @@ const styles = StyleSheet.create({
   container: { flex: 1, padding: 24, gap: 14 },
   list: { gap: 10 },
   item: { fontSize: 15, lineHeight: 22 },
-  bold: { fontWeight: '600' },
+  bold: { fontFamily: font.semibold },
   spacer: { flex: 1 },
 });

@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { useColors } from '@/theme';
+import { font, useColors } from '@/theme';
 
 export function Screen({ children, scroll = false }: { children: ReactNode; scroll?: boolean }) {
   const colors = useColors();
@@ -259,7 +259,7 @@ export function ProgressBar({ fraction }: { fraction: number }) {
 const styles = StyleSheet.create({
   fill: { flex: 1 },
   scrollContent: { flexGrow: 1, padding: 24, gap: 18 },
-  heading: { fontSize: 32, fontWeight: '700' },
+  heading: { fontSize: 32, fontFamily: font.display },
   body: { fontSize: 16, lineHeight: 24 },
   hint: { fontSize: 13, lineHeight: 19 },
   button: {
@@ -270,13 +270,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 16,
   },
-  buttonText: { fontSize: 17, fontWeight: '600' },
+  buttonText: { fontSize: 17, fontFamily: font.semibold },
   disabled: { opacity: 0.5 },
   pressed: { opacity: 0.8 },
   link: { minHeight: 44, justifyContent: 'center' },
-  linkText: { fontSize: 15, fontWeight: '600' },
+  linkText: { fontSize: 15, fontFamily: font.semibold },
   field: { gap: 6 },
-  label: { fontSize: 15, fontWeight: '500' },
+  label: { fontSize: 15, fontFamily: font.medium },
   input: {
     minHeight: 52,
     borderWidth: 1.5,
@@ -304,7 +304,7 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     justifyContent: 'center',
   },
-  chipText: { fontSize: 14, fontWeight: '600' },
+  chipText: { fontSize: 14, fontFamily: font.semibold },
   segmented: {
     flexDirection: 'row',
     borderWidth: 1,
@@ -312,7 +312,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   segment: { flex: 1, minHeight: 48, alignItems: 'center', justifyContent: 'center' },
-  segmentText: { fontSize: 15, fontWeight: '600' },
+  segmentText: { fontSize: 15, fontFamily: font.semibold },
   iconButton: {
     width: 44,
     height: 44,

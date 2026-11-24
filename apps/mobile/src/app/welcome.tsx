@@ -2,7 +2,7 @@ import { Alert, Image, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 
 import { Body, Button, Heading, Screen, TextLink } from '@/components/ui';
-import { useColors } from '@/theme';
+import { font, useColors } from '@/theme';
 
 export default function WelcomeScreen() {
   const colors = useColors();
@@ -41,6 +41,6 @@ const styles = StyleSheet.create({
   header: { marginTop: 32 },
   logo: { width: 72, height: 72, borderRadius: 16 },
   copy: { gap: 12 },
-  eyebrow: { fontSize: 14, fontWeight: '600' },
+  eyebrow: { fontSize: 14, fontFamily: font.semibold },
   actions: { flex: 1, justifyContent: 'flex-end', gap: 12 },
 });

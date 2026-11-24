@@ -5,7 +5,7 @@ import { router } from 'expo-router';
 import { Button, Chip, Field, Heading, ProgressBar, Screen, TextLink } from '@/components/ui';
 import { preferredEventOptions } from '@/lib/links';
 import { useSignUpDraft } from '@/lib/signup';
-import { useColors } from '@/theme';
+import { font, useColors } from '@/theme';
 
 const genders = ['Female', 'Male', 'Other'];
 
@@ -106,7 +106,7 @@ const styles = StyleSheet.create({
   fields: { flex: 1 },
   fieldsContent: { gap: 14, paddingBottom: 8 },
   field: { gap: 6 },
-  label: { fontSize: 15, fontWeight: '500' },
+  label: { fontSize: 15, fontFamily: font.medium },
   select: {
     minHeight: 52,
     borderWidth: 1.5,

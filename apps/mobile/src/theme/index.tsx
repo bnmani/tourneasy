@@ -84,5 +84,17 @@ export function useColors(): Colors {
   return useTheme().colors;
 }
 
+/**
+ * Font families loaded in the root layout. Fraunces is for display headings;
+ * Inter is for everything else, picked by weight.
+ */
+export const font = {
+  display: 'Fraunces_700Bold',
+  regular: 'Inter_400Regular',
+  medium: 'Inter_500Medium',
+  semibold: 'Inter_600SemiBold',
+  bold: 'Inter_700Bold',
+} as const;
+
 /** Splash background: the logo's own teal, the same in both themes. */
 export const splashBackground = '#024950';

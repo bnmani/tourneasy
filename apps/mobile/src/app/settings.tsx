@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 
 import { Button, Card, Heading, Row, Screen, Segmented, TextLink } from '@/components/ui';
 import { links } from '@/lib/links';
-import { useColors, useTheme, type ThemePreference } from '@/theme';
+import { font, type ThemePreference, useColors, useTheme } from '@/theme';
 
 const themeOptions: { value: ThemePreference; label: string }[] = [
   { value: 'light', label: 'Light' },
@@ -91,6 +91,6 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 const styles = StyleSheet.create({
   content: { padding: 24, gap: 18 },
   section: { gap: 8 },
-  sectionTitle: { fontSize: 13, fontWeight: '600', letterSpacing: 0.5 },
+  sectionTitle: { fontSize: 13, fontFamily: font.semibold, letterSpacing: 0.5 },
   danger: { marginTop: 8 },
 });
