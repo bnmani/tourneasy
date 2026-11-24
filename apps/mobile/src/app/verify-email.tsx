@@ -2,34 +2,40 @@ import { Alert, Linking, StyleSheet, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 
 import { Body, Button, Heading, Hint, Screen, TextLink } from '@/components/ui';
+import { useT } from '@/lib/i18n';
 import { font, useColors } from '@/theme';
 
 export default function VerifyEmailScreen() {
   const colors = useColors();
-  const { email = 'your email address' } = useLocalSearchParams<{ email?: string }>();
+  const t = useT();
+  const { email = t('your email address') } = useLocalSearchParams<{ email?: string }>();
+
+  // The email is set in bold, so the translated sentence is split around its placeholder.
+  const [before, after = ''] = t('We sent a link to {email}. Tap the link in the email to open Tourneasy and finish your account.', { email: '\u0001' }).split('\u0001');
 
   function openMail() {
-    Linking.openURL('message://').catch(() => Alert.alert('Open your mail app', 'Find the email from Tourneasy.'));
+    Linking.openURL('message://').catch(() => Alert.alert(t('Open your mail app'), t('Find the email from Tourneasy.')));
   }
 
   return (
     <Screen>
       <View style={styles.container}>
-        <Text style={[styles.eyebrow, { color: colors.primary }]}>Email verification</Text>
-        <Heading>Check your email</Heading>
+        <Text style={[styles.eyebrow, { color: colors.primary }]}>{t('Email verification')}</Text>
+        <Heading>{t('Check your email')}</Heading>
         <Body>
-          We sent a link to <Text style={{ color: colors.fg, fontFamily: font.semibold }}>{email}</Text>. Tap the link in the
-          email to open Tourneasy and finish your account.
+          {before}
+          <Text style={{ color: colors.fg, fontFamily: font.semibold }}>{email}</Text>
+          {after}
         </Body>
-        <Hint>The link is valid for 24 hours.</Hint>
+        <Hint>{t('The link is valid for 24 hours.')}</Hint>
         <View style={styles.actions}>
-          <Button title="Open email app" onPress={openMail} />
+          <Button title={t('Open email app')} onPress={openMail} />
           <Button
-            title="Resend the email"
+            title={t('Resend the email')}
             variant="secondary"
-            onPress={() => Alert.alert('Email sent', 'We sent the link again.')}
+            onPress={() => Alert.alert(t('Email sent'), t('We sent the link again.'))}
           />
-          <TextLink title="Change email address" onPress={() => router.back()} />
+          <TextLink title={t('Change email address')} onPress={() => router.back()} />
         </View>
       </View>
     </Screen>

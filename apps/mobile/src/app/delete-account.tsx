@@ -3,12 +3,15 @@ import { StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 
 import { Body, Button, Field, Heading, Hint, Screen, TextLink } from '@/components/ui';
+import { useT } from '@/lib/i18n';
 import { useSession } from '@/lib/session';
 import { font, useColors } from '@/theme';
 
 export default function DeleteAccountScreen() {
   const colors = useColors();
   const { deleteAccount } = useSession();
+  const t = useT();
+
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -20,7 +23,7 @@ export default function DeleteAccountScreen() {
       // On success the session ends and the router moves to Welcome.
       await deleteAccount(password);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'Could not delete the account. Try again.');
+      setError(caught instanceof Error ? t(caught.message) : t('Could not delete the account. Try again.'));
     } finally {
       setBusy(false);
     }
@@ -29,28 +32,26 @@ export default function DeleteAccountScreen() {
   return (
     <Screen>
       <View style={styles.container}>
-        <TextLink title="Back" onPress={() => router.back()} />
-        <Heading>Delete your account?</Heading>
-        <Body>Your account is closed and you are signed out on every device.</Body>
+        <TextLink title={t('Back')} onPress={() => router.back()} />
+        <Heading>{t('Delete your account?')}</Heading>
+        <Body>{t('Your account is closed and you are signed out on every device.')}</Body>
 
         <View style={styles.list}>
           <Text style={[styles.item, { color: colors.fg }]}>
-            <Text style={styles.bold}>Removed:</Text> your name, email, date of birth, phone number and your account
-            balance.
+            <Text style={styles.bold}>{t('Removed:')}</Text> {t('your name, email, date of birth, phone number and your account balance.')}
           </Text>
           <Text style={[styles.item, { color: colors.fg }]}>
-            <Text style={styles.bold}>Kept:</Text> your match and tournament history, under your member number, shown
-            as &quot;Deleted player&quot; in draws and results.
+            <Text style={styles.bold}>{t('Kept:')}</Text> {t('your match and tournament history, under your member number, shown as "Deleted player" in draws and results.')}
           </Text>
           <Text style={[styles.item, { color: colors.fg }]}>
-            <Text style={styles.bold}>Payment records:</Text> kept for 7 years, as the law requires.
+            <Text style={styles.bold}>{t('Payment records:')}</Text> {t('kept for 7 years, as the law requires.')}
           </Text>
         </View>
 
-        <Hint>This cannot be undone. Download your data first if you want a copy.</Hint>
+        <Hint>{t('This cannot be undone. Download your data first if you want a copy.')}</Hint>
 
         <Field
-          label="Enter your password to confirm"
+          label={t('Enter your password to confirm')}
           secureTextEntry
           autoComplete="current-password"
           value={password}
@@ -60,12 +61,12 @@ export default function DeleteAccountScreen() {
 
         <View style={styles.spacer} />
         <Button
-          title={busy ? 'Deleting…' : 'Delete my account'}
+          title={busy ? t('Deleting…') : t('Delete my account')}
           variant="destructive"
           disabled={!password || busy}
           onPress={confirm}
         />
-        <Button title="Keep my account" variant="secondary" onPress={() => router.back()} />
+        <Button title={t('Keep my account')} variant="secondary" onPress={() => router.back()} />
       </View>
     </Screen>
   );

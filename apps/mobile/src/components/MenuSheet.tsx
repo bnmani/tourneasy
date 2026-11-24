@@ -1,6 +1,7 @@
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '@/components/ui';
+import { useT } from '@/lib/i18n';
 import { font, useColors } from '@/theme';
 
 export type MenuItem = { label: string; onPress: () => void; destructive?: boolean };
@@ -18,9 +19,10 @@ export function MenuSheet({
   items: MenuItem[];
 }) {
   const colors = useColors();
+  const t = useT();
   return (
     <Modal transparent visible={visible} animationType="slide" onRequestClose={onClose}>
-      <Pressable style={[styles.scrim, { backgroundColor: colors.scrim }]} onPress={onClose} accessibilityLabel="Close menu" />
+      <Pressable style={[styles.scrim, { backgroundColor: colors.scrim }]} onPress={onClose} accessibilityLabel={t('Close menu')} />
       <View accessibilityRole="menu" style={[styles.sheet, { backgroundColor: colors.card }]}>
         <View style={[styles.handle, { backgroundColor: colors.border }]} />
         <Text style={[styles.title, { color: colors.muted }]}>{title}</Text>
@@ -40,13 +42,13 @@ export function MenuSheet({
                 { color: item.destructive ? colors.destructive : colors.fg, fontFamily: item.destructive ? font.semibold : font.regular },
               ]}
             >
-              {item.label}
+              {t(item.label)}
             </Text>
             {item.destructive ? null : <Text style={[styles.chevron, { color: colors.muted }]}>›</Text>}
           </Pressable>
         ))}
         <View style={styles.close}>
-          <Button title="Close" variant="secondary" onPress={onClose} />
+          <Button title={t('Close')} variant="secondary" onPress={onClose} />
         </View>
       </View>
     </Modal>

@@ -2,12 +2,14 @@ import { useEffect } from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 
+import { useT } from '@/lib/i18n';
 import { useSession } from '@/lib/session';
 import { splashBackground } from '@/theme';
 
 /** Launch screen. Shows the logo, then moves to Home or Welcome depending on the session. */
 export default function SplashScreen() {
   const { profile } = useSession();
+  const t = useT();
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -19,11 +21,11 @@ export default function SplashScreen() {
   return (
     <View style={styles.container}>
       <Image
-        accessibilityLabel="Tourneasy logo"
+        accessibilityLabel={t('Tourneasy logo')}
         source={require('../../assets/brand/logo.jpg')}
         style={styles.logo}
       />
-      <Text style={styles.tagline}>Tournament Made Easy</Text>
+      <Text style={styles.tagline}>{t('Tournament Made Easy')}</Text>
     </View>
   );
 }

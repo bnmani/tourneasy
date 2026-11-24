@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 
 import { MenuSheet } from '@/components/MenuSheet';
 import { Button, Card, Chip, Field, Hint, IconButton, Row, Screen } from '@/components/ui';
+import { useT } from '@/lib/i18n';
 import { preferredEventOptions } from '@/lib/links';
 import { useSession, type Profile } from '@/lib/session';
 import { font, useColors } from '@/theme';
@@ -15,6 +16,7 @@ type TabName = 'Details' | 'My entries' | 'Followed';
 export default function ProfileScreen() {
   const colors = useColors();
   const { profile, signOut, updateProfile } = useSession();
+  const t = useT();
   const [tab, setTab] = useState<TabName>('Details');
   const [menuOpen, setMenuOpen] = useState(false);
   const [editing, setEditing] = useState<EditField>(null);
@@ -27,8 +29,8 @@ export default function ProfileScreen() {
     <Screen>
       <View style={styles.container}>
         <View style={styles.header}>
-          <Text style={[styles.title, { color: colors.fg }]}>Profile</Text>
-          <IconButton label="Menu" onPress={() => setMenuOpen(true)}>
+          <Text style={[styles.title, { color: colors.fg }]}>{t('Profile')}</Text>
+          <IconButton label={t('Menu')} onPress={() => setMenuOpen(true)}>
             <Text style={[styles.dots, { color: colors.fg }]}>⋯</Text>
           </IconButton>
         </View>
@@ -44,7 +46,7 @@ export default function ProfileScreen() {
             <Text style={[styles.name, { color: colors.fg }]}>
               {profile.firstName} {profile.lastName}
             </Text>
-            <Text style={{ color: colors.muted, fontSize: 14 }}>Member {profile.memberNumber} · Player</Text>
+            <Text style={{ color: colors.muted, fontSize: 14 }}>{t('Member {number} · Player', { number: profile.memberNumber })}</Text>
           </View>
         </View>
 
@@ -59,7 +61,7 @@ export default function ProfileScreen() {
                 onPress={() => setTab(name)}
                 style={[styles.tab, selected && { borderBottomColor: colors.primary }]}
               >
-                <Text style={[styles.tabText, { color: selected ? colors.primary : colors.muted }]}>{name}</Text>
+                <Text style={[styles.tabText, { color: selected ? colors.primary : colors.muted }]}>{t(name)}</Text>
               </Pressable>
             );
           })}
@@ -67,7 +69,7 @@ export default function ProfileScreen() {
 
         {tab !== 'Details' ? (
           <Text style={{ color: colors.muted, fontSize: 15, paddingTop: 16 }}>
-            {tab === 'My entries' ? 'Entries come in Phase 2.' : 'Followed players come in Phase 3.'}
+            {tab === 'My entries' ? t('Entries come in Phase 2.') : t('Followed players come in Phase 3.')}
           </Text>
         ) : (
           <DetailsCard
@@ -85,7 +87,7 @@ export default function ProfileScreen() {
       <MenuSheet
         visible={menuOpen}
         onClose={() => setMenuOpen(false)}
-        title={`${profile.firstName} ${profile.lastName} · Member ${profile.memberNumber}`}
+        title={t('{name} · Member {number}', { name: `${profile.firstName} ${profile.lastName}`, number: profile.memberNumber })}
         items={[
           { label: 'Settings', onPress: () => router.push('/settings') },
           { label: 'Sign out', onPress: signOut, destructive: true },
@@ -107,38 +109,39 @@ function DetailsCard({
   onSave: (patch: Partial<Profile>) => void;
 }) {
   const colors = useColors();
+  const t = useT();
   return (
     <View style={styles.details}>
       <Card>
         {editing === 'name' ? (
           <NameEdit profile={profile} onCancel={() => setEditing(null)} onSave={onSave} />
         ) : (
-          <Row label="Name" value={`${profile.firstName} ${profile.lastName}`} onPress={() => setEditing('name')} />
+          <Row label={t('Name')} value={`${profile.firstName} ${profile.lastName}`} onPress={() => setEditing('name')} />
         )}
-        <Row label="Date of birth" value={profile.dateOfBirth} locked hint="Set at sign-up and can't be changed" />
+        <Row label={t('Date of birth')} value={profile.dateOfBirth} locked hint={t("Set at sign-up and can't be changed")} />
         {editing === 'email' ? (
           <EmailEdit profile={profile} onCancel={() => setEditing(null)} onSave={onSave} />
         ) : (
-          <Row label="Email" value={profile.email} onPress={() => setEditing('email')} />
+          <Row label={t('Email')} value={profile.email} onPress={() => setEditing('email')} />
         )}
         {editing === 'mobile' ? (
           <MobileEdit profile={profile} onCancel={() => setEditing(null)} onSave={onSave} />
         ) : (
-          <Row label="Mobile number" value={profile.mobile} onPress={() => setEditing('mobile')} />
+          <Row label={t('Mobile number')} value={profile.mobile} onPress={() => setEditing('mobile')} />
         )}
         {editing === 'events' ? (
           <EventsEdit profile={profile} onCancel={() => setEditing(null)} onSave={onSave} />
         ) : (
           <Row
-            label="Preferred events"
-            value={profile.preferredEvents.join(', ')}
+            label={t('Preferred events')}
+            value={profile.preferredEvents.map((event) => t(event)).join(', ')}
             onPress={() => setEditing('events')}
             last
           />
         )}
       </Card>
       <Text style={{ color: colors.muted, fontSize: 13, paddingHorizontal: 4 }}>
-        Tap a field to edit it. Date of birth is locked.
+        {t('Tap a field to edit it. Date of birth is locked.')}
       </Text>
     </View>
   );
@@ -153,13 +156,14 @@ function EditActions({
   onSave: () => void;
   saveDisabled?: boolean;
 }) {
+  const t = useT();
   return (
     <View style={styles.editActions}>
       <View style={styles.editAction}>
-        <Button title="Cancel" variant="secondary" onPress={onCancel} />
+        <Button title={t('Cancel')} variant="secondary" onPress={onCancel} />
       </View>
       <View style={styles.editAction}>
-        <Button title="Save" disabled={saveDisabled} onPress={onSave} />
+        <Button title={t('Save')} disabled={saveDisabled} onPress={onSave} />
       </View>
     </View>
   );
@@ -181,14 +185,15 @@ function NameEdit({
   onCancel: () => void;
   onSave: (patch: Partial<Profile>) => void;
 }) {
+  const t = useT();
   const [firstName, setFirstName] = useState(profile.firstName);
   const [prefix, setPrefix] = useState(profile.prefix);
   const [lastName, setLastName] = useState(profile.lastName);
   return (
     <EditBlock>
-      <Field label="First name" value={firstName} onChangeText={setFirstName} />
-      <Field label="Name prefix (optional)" placeholder="e.g. van, de" value={prefix} onChangeText={setPrefix} />
-      <Field label="Last name" value={lastName} onChangeText={setLastName} />
+      <Field label={t('First name')} value={firstName} onChangeText={setFirstName} />
+      <Field label={t('Name prefix (optional)')} placeholder={t('e.g. van, de')} value={prefix} onChangeText={setPrefix} />
+      <Field label={t('Last name')} value={lastName} onChangeText={setLastName} />
       <EditActions
         onCancel={onCancel}
         saveDisabled={!firstName.trim() || !lastName.trim()}
@@ -207,16 +212,17 @@ function EmailEdit({
   onCancel: () => void;
   onSave: (patch: Partial<Profile>) => void;
 }) {
+  const t = useT();
   const [email, setEmail] = useState(profile.email);
   return (
     <EditBlock>
       <Field
-        label="Email"
+        label={t('Email')}
         autoCapitalize="none"
         keyboardType="email-address"
         value={email}
         onChangeText={setEmail}
-        hint="We send a link to check the new address."
+        hint={t('We send a link to check the new address.')}
       />
       <EditActions
         onCancel={onCancel}
@@ -236,15 +242,16 @@ function MobileEdit({
   onCancel: () => void;
   onSave: (patch: Partial<Profile>) => void;
 }) {
+  const t = useT();
   const [mobile, setMobile] = useState(profile.mobile);
   return (
     <EditBlock>
       <Field
-        label="Mobile number"
+        label={t('Mobile number')}
         keyboardType="phone-pad"
         value={mobile}
         onChangeText={setMobile}
-        hint="Include the country code."
+        hint={t('Include the country code.')}
       />
       <EditActions
         onCancel={onCancel}
@@ -265,6 +272,7 @@ function EventsEdit({
   onSave: (patch: Partial<Profile>) => void;
 }) {
   const colors = useColors();
+  const t = useT();
   const [events, setEvents] = useState<string[]>(profile.preferredEvents);
   const toggle = (event: string) =>
     setEvents((current) =>
@@ -272,13 +280,13 @@ function EventsEdit({
     );
   return (
     <EditBlock>
-      <Text style={{ fontSize: 13, color: colors.muted }}>Preferred events</Text>
+      <Text style={{ fontSize: 13, color: colors.muted }}>{t('Preferred events')}</Text>
       <View style={styles.chips}>
         {preferredEventOptions.map((event) => (
-          <Chip key={event} label={event} selected={events.includes(event)} onPress={() => toggle(event)} />
+          <Chip key={event} label={t(event)} selected={events.includes(event)} onPress={() => toggle(event)} />
         ))}
       </View>
-      <Hint>Choose one or more.</Hint>
+      <Hint>{t('Choose one or more.')}</Hint>
       <EditActions onCancel={onCancel} saveDisabled={events.length === 0} onSave={() => onSave({ preferredEvents: events })} />
     </EditBlock>
   );

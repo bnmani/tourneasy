@@ -1,9 +1,11 @@
 import { Tabs } from 'expo-router';
 
+import { useT } from '@/lib/i18n';
 import { useColors } from '@/theme';
 
 export default function TabsLayout() {
   const colors = useColors();
+  const t = useT();
   return (
     <Tabs
       screenOptions={{
@@ -13,11 +15,11 @@ export default function TabsLayout() {
         tabBarStyle: { backgroundColor: colors.card, borderTopColor: colors.border },
       }}
     >
-      <Tabs.Screen name="index" options={{ title: 'Home' }} />
-      <Tabs.Screen name="tournaments" options={{ title: 'Tournaments' }} />
-      <Tabs.Screen name="schedule" options={{ title: 'Schedule' }} />
-      <Tabs.Screen name="players" options={{ title: 'Players' }} />
-      <Tabs.Screen name="profile" options={{ title: 'Profile' }} />
+      <Tabs.Screen name="index" options={{ title: t('Home') }} />
+      <Tabs.Screen name="tournaments" options={{ title: t('Tournaments') }} />
+      <Tabs.Screen name="schedule" options={{ title: t('Schedule') }} />
+      <Tabs.Screen name="players" options={{ title: t('Players') }} />
+      <Tabs.Screen name="profile" options={{ title: t('Profile') }} />
     </Tabs>
   );
 }

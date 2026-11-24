@@ -6,6 +6,7 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 
 import { SessionProvider, useSession } from '@/lib/session';
+import { LocaleProvider } from '@/lib/i18n';
 import { ThemeProvider } from '@/theme';
 
 export default function RootLayout() {
@@ -18,11 +19,13 @@ export default function RootLayout() {
   }
 
   return (
-    <ThemeProvider>
-      <SessionProvider>
-        <Routes />
-      </SessionProvider>
-    </ThemeProvider>
+    <LocaleProvider>
+      <ThemeProvider>
+        <SessionProvider>
+          <Routes />
+        </SessionProvider>
+      </ThemeProvider>
+    </LocaleProvider>
   );
 }
 

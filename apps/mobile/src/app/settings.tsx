@@ -1,16 +1,11 @@
-import { useState, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { Alert, Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 
 import { Button, Card, Heading, Row, Screen, Segmented, TextLink } from '@/components/ui';
+import { useLocale, useT } from '@/lib/i18n';
 import { links } from '@/lib/links';
-import { font, type ThemePreference, useColors, useTheme } from '@/theme';
-
-const themeOptions: { value: ThemePreference; label: string }[] = [
-  { value: 'light', label: 'Light' },
-  { value: 'dark', label: 'Dark' },
-  { value: 'system', label: 'System' },
-];
+import { font, useColors, useTheme } from '@/theme';
 
 const languageOptions = [
   { value: 'en' as const, label: 'English' },
@@ -19,58 +14,64 @@ const languageOptions = [
 
 export default function SettingsScreen() {
   const colors = useColors();
+  const t = useT();
   const { preference, setPreference } = useTheme();
-  // Language stays on this screen until the translations are wired (SCOPE.md section 2).
-  const [language, setLanguage] = useState<'en' | 'nl'>('en');
+  const { locale, setLocale } = useLocale();
+
+  const themeOptions = [
+    { value: 'light' as const, label: t('Light') },
+    { value: 'dark' as const, label: t('Dark') },
+    { value: 'system' as const, label: t('System') },
+  ];
 
   return (
     <Screen>
       <ScrollView contentContainerStyle={styles.content}>
-        <TextLink title="Back" onPress={() => router.back()} />
-        <Heading>Settings</Heading>
+        <TextLink title={t('Back')} onPress={() => router.back()} />
+        <Heading>{t('Settings')}</Heading>
 
-        <Section title="LANGUAGE">
-          <Segmented options={languageOptions} value={language} onChange={setLanguage} />
+        <Section title={t('LANGUAGE')}>
+          <Segmented options={languageOptions} value={locale} onChange={setLocale} />
         </Section>
 
-        <Section title="THEME">
+        <Section title={t('THEME')}>
           <Segmented options={themeOptions} value={preference} onChange={setPreference} />
         </Section>
 
-        <Section title="SECURITY">
+        <Section title={t('SECURITY')}>
           <Card>
             <Row
-              label="App lock"
-              value="Off. Use Face ID, fingerprint or passcode"
-              onPress={() => Alert.alert('Coming soon', 'App lock arrives in a later update.')}
+              label={t('App lock')}
+              value={t('Off. Use Face ID, fingerprint or passcode')}
+              onPress={() => Alert.alert(t('Coming soon'), t('App lock arrives in a later update.'))}
               last
             />
           </Card>
         </Section>
 
-        <Section title="PRIVACY">
+        <Section title={t('PRIVACY')}>
           <Card>
             <Row
-              label="Notification settings"
-              onPress={() => Alert.alert('Coming soon', 'Notification settings arrive in Phase 4.')}
+              label={t('Notification settings')}
+              onPress={() => Alert.alert(t('Coming soon'), t('Notification settings arrive in Phase 4.'))}
             />
             <Row
-              label="Download my data"
-              onPress={() => Alert.alert('Coming soon', 'Data download arrives in a later update.')}
+              label={t('Download my data')}
+              onPress={() => Alert.alert(t('Coming soon'), t('Data download arrives in a later update.'))}
               last
             />
           </Card>
         </Section>
 
-        <Section title="LEGAL">
+        <Section title={t('LEGAL')}>
           <Card>
-            <Row label="Terms of use" onPress={() => Linking.openURL(links.terms)} />
-            <Row label="Privacy policy" onPress={() => Linking.openURL(links.privacy)} last />
+            <Row label={t('Terms of use')} onPress={() => Linking.openURL(links.terms)} />
+            <Row label={t('Privacy policy')} onPress={() => Linking.openURL(links.privacy)} last />
           </Card>
         </Section>
 
         <View style={styles.danger}>
-          <Button title="Delete account" variant="destructive" onPress={() => router.push('/delete-account')} />
+          <Button title={t('Delete account')} variant="destructive" onPress={() => router.push('/delete-account')} />
         </View>
         <Text style={{ color: colors.muted, fontSize: 13, textAlign: 'center' }}>Tourneasy</Text>
       </ScrollView>

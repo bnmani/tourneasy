@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 
 import { MenuSheet } from '@/components/MenuSheet';
 import { Card, Hint, IconButton, Screen } from '@/components/ui';
+import { dateLocaleTag, useLocale, useT } from '@/lib/i18n';
 import { useSession } from '@/lib/session';
 import { font, useColors } from '@/theme';
 
@@ -11,39 +12,47 @@ import { font, useColors } from '@/theme';
 export default function HomeScreen() {
   const colors = useColors();
   const { profile, signOut } = useSession();
+  const t = useT();
+  const { locale } = useLocale();
   const [menuOpen, setMenuOpen] = useState(false);
-  const today = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+  const today = new Date().toLocaleDateString(dateLocaleTag(locale), { weekday: 'long', day: 'numeric', month: 'long' });
 
   return (
     <Screen scroll>
       <View style={styles.header}>
         <View style={styles.greeting}>
           <Text style={[styles.date, { color: colors.muted }]}>{today}</Text>
-          <Text style={[styles.hello, { color: colors.fg }]}>Hello, {profile?.firstName ?? 'there'}</Text>
+          <Text style={[styles.hello, { color: colors.fg }]}>
+            {t('Hello, {name}', { name: profile?.firstName ?? t('there') })}
+          </Text>
         </View>
         <View style={styles.headerButtons}>
-          <IconButton label="Notifications, 2 unread" onPress={() => router.push('/notifications')}>
+          <IconButton label={t('Notifications, 2 unread')} onPress={() => router.push('/notifications')}>
             <Text style={[styles.badge, { color: colors.fg }]}>2</Text>
           </IconButton>
-          <IconButton label="Menu" onPress={() => setMenuOpen(true)}>
+          <IconButton label={t('Menu')} onPress={() => setMenuOpen(true)}>
             <Text style={[styles.dots, { color: colors.fg }]}>⋯</Text>
           </IconButton>
         </View>
       </View>
 
       <View style={[styles.hero, { backgroundColor: colors.hero }]}>
-        <Text style={[styles.heroLabel, { color: colors.heroMuted }]}>YOUR NEXT MATCH</Text>
-        <Text style={[styles.heroTitle, { color: colors.heroFg }]}>Open Doubles vs. J. de Boer / R. Smit</Text>
-        <Text style={[styles.heroMeta, { color: colors.heroMuted }]}>Today 14:30 · Court 4 · Starts in 2 h 10 min</Text>
+        <Text style={[styles.heroLabel, { color: colors.heroMuted }]}>{t('YOUR NEXT MATCH')}</Text>
+        <Text style={[styles.heroTitle, { color: colors.heroFg }]}>
+          {t('{event} vs. {players}', { event: t('Open Doubles'), players: 'J. de Boer / R. Smit' })}
+        </Text>
+        <Text style={[styles.heroMeta, { color: colors.heroMuted }]}>
+          {t('Today {time} · Court {court} · Starts in {duration}', { time: '14:30', court: 4, duration: t('2 h 10 min') })}
+        </Text>
       </View>
 
       <View style={styles.section}>
-        <Text style={[styles.sectionTitle, { color: colors.fg }]}>Live today</Text>
+        <Text style={[styles.sectionTitle, { color: colors.fg }]}>{t('Live today')}</Text>
         <Card>
           <View style={styles.liveRow}>
             <View style={styles.liveText}>
               <Text style={[styles.liveName, { color: colors.fg }]}>Winter Open 2026</Text>
-              <Hint>Hall A · 3 matches on court</Hint>
+              <Hint>{t('Hall A · 3 matches on court')}</Hint>
             </View>
             <Text style={[styles.live, { color: colors.primary }]}>LIVE</Text>
           </View>
@@ -53,7 +62,7 @@ export default function HomeScreen() {
       <MenuSheet
         visible={menuOpen}
         onClose={() => setMenuOpen(false)}
-        title={profile ? `${profile.firstName} ${profile.lastName} · Member ${profile.memberNumber}` : 'Menu'}
+        title={profile ? t('{name} · Member {number}', { name: `${profile.firstName} ${profile.lastName}`, number: profile.memberNumber }) : t('Menu')}
         items={[
           { label: 'Settings', onPress: () => router.push('/settings') },
           { label: 'Sign out', onPress: signOut, destructive: true },

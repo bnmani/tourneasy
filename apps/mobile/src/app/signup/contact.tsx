@@ -3,6 +3,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 
 import { Button, Field, Heading, ProgressBar, Screen, TextLink } from '@/components/ui';
+import { useT } from '@/lib/i18n';
 import { passwordMinLength } from '@/lib/links';
 import { useSession } from '@/lib/session';
 import { useSignUpDraft } from '@/lib/signup';
@@ -11,6 +12,7 @@ import { font, useColors } from '@/theme';
 /** Sign-up step 2 of 2: contact details, password and consent. */
 export default function SignUpContactScreen() {
   const colors = useColors();
+  const t = useT();
   const { stepOne } = useSignUpDraft();
   const { signUp } = useSession();
   const [email, setEmail] = useState('');
@@ -34,7 +36,7 @@ export default function SignUpContactScreen() {
       await signUp({ ...stepOne, email, mobile, password, reminders });
       router.push({ pathname: '/verify-email', params: { email } });
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'Sign-up failed. Try again.');
+      setError(caught instanceof Error ? t(caught.message) : t('Sign-up failed. Try again.'));
     } finally {
       setBusy(false);
     }
@@ -44,55 +46,55 @@ export default function SignUpContactScreen() {
     <Screen>
       <View style={styles.container}>
         <View style={styles.topRow}>
-          <TextLink title="Back" onPress={() => router.back()} />
-          <Text style={{ color: colors.muted, fontSize: 14 }}>Step 2 of 2</Text>
+          <TextLink title={t('Back')} onPress={() => router.back()} />
+          <Text style={{ color: colors.muted, fontSize: 14 }}>{t('Step 2 of 2')}</Text>
         </View>
         <ProgressBar fraction={1} />
         <ScrollView style={styles.fields} contentContainerStyle={styles.fieldsContent}>
-          <Heading>How do we reach you?</Heading>
+          <Heading>{t('How do we reach you?')}</Heading>
           <Field
-            label="Email"
-            placeholder="name@example.com"
+            label={t('Email')}
+            placeholder={t('name@example.com')}
             autoCapitalize="none"
             autoComplete="email"
             keyboardType="email-address"
             value={email}
             onChangeText={setEmail}
-            hint="We send a link to check this address."
+            hint={t('We send a link to check this address.')}
           />
           <Field
-            label="Mobile number"
+            label={t('Mobile number')}
             placeholder="612345678"
             keyboardType="number-pad"
             value={mobile}
             onChangeText={setMobile}
-            hint="So organisers can reach you on the tournament day. Digits only."
+            hint={t('So organisers can reach you on the tournament day. Digits only.')}
           />
           <Field
-            label="Password"
-            placeholder={`At least ${passwordMinLength} characters`}
+            label={t('Password')}
+            placeholder={t('At least {min} characters', { min: passwordMinLength })}
             secureTextEntry
             autoComplete="new-password"
             value={password}
             onChangeText={setPassword}
-            hint="A short sentence works well."
+            hint={t('A short sentence works well.')}
           />
           <Field
-            label="Repeat password"
+            label={t('Repeat password')}
             secureTextEntry
             autoComplete="new-password"
             value={repeat}
             onChangeText={setRepeat}
           />
           <Consent checked={terms} onChange={setTerms}>
-            I accept the terms of use and privacy notice.
+            {t('I accept the terms of use and privacy notice.')}
           </Consent>
           <Consent checked={reminders} onChange={setReminders}>
-            Remind me about my matches. You can switch this off anytime in Notification settings.
+            {t('Remind me about my matches. You can switch this off anytime in Notification settings.')}
           </Consent>
           {error ? <Text style={{ color: colors.destructive, fontSize: 14 }}>{error}</Text> : null}
         </ScrollView>
-        <Button title={busy ? 'Creating account…' : 'Create account'} disabled={!canSubmit} onPress={submit} />
+        <Button title={busy ? t('Creating account…') : t('Create account')} disabled={!canSubmit} onPress={submit} />
       </View>
     </Screen>
   );

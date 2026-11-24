@@ -3,6 +3,7 @@ import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 import { router } from 'expo-router';
 
 import { Button, Chip, Field, Heading, ProgressBar, Screen, TextLink } from '@/components/ui';
+import { useT } from '@/lib/i18n';
 import { preferredEventOptions } from '@/lib/links';
 import { useSignUpDraft } from '@/lib/signup';
 import { font, useColors } from '@/theme';
@@ -12,6 +13,7 @@ const genders = ['Female', 'Male', 'Other'];
 /** Sign-up step 1 of 2: name, date of birth, gender and preferred events. */
 export default function SignUpNameScreen() {
   const colors = useColors();
+  const t = useT();
   const { stepOne, setStepOne } = useSignUpDraft();
   const [firstName, setFirstName] = useState(stepOne.firstName);
   const [prefix, setPrefix] = useState(stepOne.prefix);
@@ -30,9 +32,9 @@ export default function SignUpNameScreen() {
   }
 
   function pickGender() {
-    Alert.alert('Gender', undefined, [
-      ...genders.map((option) => ({ text: option, onPress: () => setGender(option) })),
-      { text: 'Cancel', style: 'cancel' as const },
+    Alert.alert(t('Gender'), undefined, [
+      ...genders.map((option) => ({ text: t(option), onPress: () => setGender(option) })),
+      { text: t('Cancel'), style: 'cancel' as const },
     ]);
   }
 
@@ -45,56 +47,56 @@ export default function SignUpNameScreen() {
     <Screen>
       <View style={styles.container}>
         <View style={styles.topRow}>
-          <TextLink title="Back" onPress={() => router.back()} />
-          <Text style={{ color: colors.muted, fontSize: 14 }}>Step 1 of 2</Text>
+          <TextLink title={t('Back')} onPress={() => router.back()} />
+          <Text style={{ color: colors.muted, fontSize: 14 }}>{t('Step 1 of 2')}</Text>
         </View>
         <ProgressBar fraction={0.5} />
         <ScrollView style={styles.fields} contentContainerStyle={styles.fieldsContent}>
-          <Heading>Create your account</Heading>
+          <Heading>{t('Create your account')}</Heading>
           <Field
-            label="First name"
-            placeholder="As on your membership card"
+            label={t('First name')}
+            placeholder={t('As on your membership card')}
             value={firstName}
             onChangeText={setFirstName}
           />
           <Field
-            label="Name prefix (optional)"
-            placeholder="e.g. van, de"
+            label={t('Name prefix (optional)')}
+            placeholder={t('e.g. van, de')}
             value={prefix}
             onChangeText={setPrefix}
           />
-          <Field label="Last name" value={lastName} onChangeText={setLastName} />
+          <Field label={t('Last name')} value={lastName} onChangeText={setLastName} />
           <Field
-            label="Date of birth"
-            placeholder="DD-MM-YYYY"
+            label={t('Date of birth')}
+            placeholder={t('DD-MM-YYYY')}
             keyboardType="numbers-and-punctuation"
             value={dateOfBirth}
             onChangeText={setDateOfBirth}
-            hint="Players under 16 need a parent or guardian to confirm the account."
+            hint={t('Players under 16 need a parent or guardian to confirm the account.')}
           />
           <View style={styles.field}>
-            <Text style={[styles.label, { color: colors.fg }]}>Gender</Text>
+            <Text style={[styles.label, { color: colors.fg }]}>{t('Gender')}</Text>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={`Gender, ${gender || 'Choose'}`}
+              accessibilityLabel={t('Gender, {value}', { value: gender ? t(gender) : t('Choose') })}
               onPress={pickGender}
               style={[styles.select, { backgroundColor: colors.card, borderColor: colors.inputBorder }]}
             >
-              <Text style={{ color: gender ? colors.fg : colors.muted, fontSize: 16 }}>{gender || 'Choose'}</Text>
+              <Text style={{ color: gender ? colors.fg : colors.muted, fontSize: 16 }}>{gender ? t(gender) : t('Choose')}</Text>
               <Text style={{ color: colors.muted, fontSize: 18 }}>›</Text>
             </Pressable>
           </View>
           <View style={styles.field}>
-            <Text style={[styles.label, { color: colors.fg }]}>Preferred events</Text>
-            <Text style={{ color: colors.muted, fontSize: 13 }}>Pick at least one.</Text>
+            <Text style={[styles.label, { color: colors.fg }]}>{t('Preferred events')}</Text>
+            <Text style={{ color: colors.muted, fontSize: 13 }}>{t('Pick at least one.')}</Text>
             <View style={styles.chips}>
               {preferredEventOptions.map((event) => (
-                <Chip key={event} label={event} selected={events.includes(event)} onPress={() => toggleEvent(event)} />
+                <Chip key={event} label={t(event)} selected={events.includes(event)} onPress={() => toggleEvent(event)} />
               ))}
             </View>
           </View>
         </ScrollView>
-        <Button title="Continue" disabled={!canContinue} onPress={next} />
+        <Button title={t('Continue')} disabled={!canContinue} onPress={next} />
       </View>
     </Screen>
   );
