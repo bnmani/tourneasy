@@ -13,3 +13,37 @@ index de76b97..5045c08 100644
        }
      }
      body(slot.pointee)
+diff --git a/node_modules/expo-modules-jsi/apple/scripts/build-xcframework.sh b/node_modules/expo-modules-jsi/apple/scripts/build-xcframework.sh
+index e38a4d2..8ce11a9 100755
+--- a/node_modules/expo-modules-jsi/apple/scripts/build-xcframework.sh
++++ b/node_modules/expo-modules-jsi/apple/scripts/build-xcframework.sh
+@@ -239,6 +239,14 @@ build_slice() {
+   # DEVELOPER_DIR and TOOLCHAINS are forwarded so the nested build uses the same Xcode and
+   # Swift toolchain as compute_hash and the app build, not the xcode-select Xcode or the
+   # default toolchain.
++  # Nested xcodebuild stderr goes to a file instead of the build log. Xcode 26+/27 prints a
++  # harmless "command failed with exit code 0 but produced no further output" line on stderr
++  # here, and EAS's log scanner reports that as XCODE_BUILD_ERROR even though the build
++  # succeeded. Failures still abort the script, and the captured stderr is printed then.
++  local nested_stdout="${DERIVED_DATA_PATH}/nested-xcodebuild-stdout.log"
++  local nested_stderr="${DERIVED_DATA_PATH}/nested-xcodebuild-stderr.log"
++  mkdir -p "$DERIVED_DATA_PATH"
++
+   (cd "$PACKAGE_DIR" && env -i PATH="$PATH" HOME="$HOME" PODS_ROOT="$PODS_ROOT" RN_ROOT="$RN_ROOT" \
+     ${DEVELOPER_DIR:+"DEVELOPER_DIR=$DEVELOPER_DIR"} ${TOOLCHAINS:+"TOOLCHAINS=$TOOLCHAINS"} \
+     EXPO_CUSTOM_BUILD_ROOT="$BUILD_ROOT" \
+@@ -267,7 +275,13 @@ build_slice() {
+     SWIFT_SERIALIZE_DEBUGGING_OPTIONS=NO \
+     SWIFT_ENABLE_EXPLICIT_MODULES=NO \
+     "OTHER_LDFLAGS=\$(inherited) -Xlinker -unexported_symbols_list -Xlinker \"${UNEXPORTED_SYMBOLS_LIST}\"" \
+-  )
++    >"$nested_stdout" 2>"$nested_stderr" \
++  ) || {
++    nested_status=$?
++    log "error: nested xcodebuild failed (exit ${nested_status}); its stderr follows"
++    cat "$nested_stdout" "$nested_stderr" >&2
++    exit "$nested_status"
++  }
+ 
+   local product_path="${BUILD_PRODUCTS_PATH}/${build_dir_name}"
+   local framework_src="${product_path}/PackageFrameworks/${PACKAGE_NAME}.framework"
