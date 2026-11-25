@@ -97,4 +97,4 @@ export const font = {
 } as const;
 
 /** Splash background: the logo's own teal, the same in both themes. */
-export const splashBackground = '#024950';
+export const splashBackground = '#11464c';
