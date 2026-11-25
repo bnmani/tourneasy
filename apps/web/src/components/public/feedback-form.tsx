@@ -56,7 +56,7 @@ export function FeedbackForm({
         maxLength={500}
         hint={t('commentHint')}
       />
-      <CheckboxField name="shareConsent" label={t('consent')} state={state} />
+      <CheckboxField name="shareConsent" label={t('consent')} state={state} required />
       <SubmitButton>{t('submit')}</SubmitButton>
     </form>
   );

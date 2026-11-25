@@ -31,6 +31,8 @@ export async function submitFeedback(
   const comment = typeof input.comment === 'string' ? input.comment.trim() : '';
   if (!Number.isInteger(rating) || rating < 1 || rating > 5) throw new AppError('validation');
   if (comment.length === 0 || comment.length > FEEDBACK_MAX) throw new AppError('validation');
+  if (input.shareConsent !== true)
+    throw new AppError('validation', { fields: { shareConsent: 'required' } });
 
   const t = await prisma.tournament.findUnique({
     where: { id: tournamentId },
