@@ -132,6 +132,7 @@ export const publicTournamentSchema = publicTournamentSummarySchema.extend({
 export type PublicTournament = z.infer<typeof publicTournamentSchema>;
 
 export const publicClubSchema = z.object({
+  id: z.string(),
   slug: z.string(),
   name: z.string(),
   shortName: z.string().nullable(),

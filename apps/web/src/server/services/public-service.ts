@@ -520,6 +520,7 @@ export async function followedMatches(actor: Actor) {
 
 const clubSelect = (now: Date) =>
   ({
+    id: true,
     slug: true,
     name: true,
     shortName: true,
@@ -532,6 +533,7 @@ const clubSelect = (now: Date) =>
 
 function toClub(c: Prisma.ClubGetPayload<{ select: ReturnType<typeof clubSelect> }>): PublicClub {
   return {
+    id: c.id,
     slug: c.slug,
     name: c.name,
     shortName: c.shortName,
@@ -565,6 +567,16 @@ export async function listPublicClubs(
     prisma.club.count({ where }),
   ]);
   return paged(rows.map(toClub), total, { offset, limit: query.limit });
+}
+
+/** Active skill levels, lowest rank first. Used by the app's profile form. */
+export async function listPublicLevels() {
+  const rows = await prisma.levelClass.findMany({
+    where: { isActive: true },
+    orderBy: { rank: 'asc' },
+    select: { id: true, code: true, name: true },
+  });
+  return rows;
 }
 
 export async function getPublicClub(slug: string, now = new Date()) {
