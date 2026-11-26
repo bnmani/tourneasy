@@ -304,6 +304,7 @@ model User {
   playerInvitesSent   PlayerInvite[]
   recoveryCodes       MfaRecoveryCode[]
   passkeys            Passkey[]
+  pushDevices         PushDevice[]
   packagePurchases    PackagePurchase[]
   foodOrders          FoodOrder[]
 
@@ -1367,6 +1368,21 @@ model NotificationPreference {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, type, channel])
+}
+
+/// A phone that receives push notifications from the mobile app (APNs device token).
+model PushDevice {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String   @db.Uuid
+  /// APNs device token, hex. Moves to the newest user that registers it.
+  token      String   @unique
+  platform   String   @default("ios")
+  createdAt  DateTime @default(now())
+  lastSeenAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 /// Site-wide settings changed in the admin portal, e.g. `theme`. Changes are audit-logged.

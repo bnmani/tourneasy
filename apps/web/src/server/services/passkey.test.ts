@@ -7,10 +7,12 @@ import { currentStep, totpCode } from '../lib/totp';
 import { checkMfaCode, confirmMfaSetup, hasMfa, mfaSetup, resetUserMfa } from './mfa-service';
 import {
   addPasskey,
+  finishMobilePasskeyLogin,
   passkeyLoginOptions,
   passkeyRegistrationOptions,
   relyingParty,
   removePasskey,
+  startMobilePasskeyLogin,
   verifyPasskeyLogin,
 } from './passkey-service';
 import { actorFromWebToken, createWebSession, pendingMfaSession } from './session-service';
@@ -220,5 +222,37 @@ describe('passkeys as the second step (D88)', () => {
     await resetUserMfa((await owner.actor())!, player.userId, meta);
     expect(await prisma.passkey.count({ where: { userId: player.userId } })).toBe(0);
     expect(await hasMfa(player.userId)).toBe(false);
+  });
+});
+
+describe('passkeys in the mobile app', () => {
+  it('logs in once with the pending app session, which is gone afterwards', async () => {
+    const p = await person();
+    const { device } = await addOne(p);
+    const { pendingId, options } = await startMobilePasskeyLogin(p.userId, meta);
+    const answer = device.login(options.challenge);
+
+    await finishMobilePasskeyLogin(p.userId, pendingId, answer);
+    expect(await prisma.userSession.count({ where: { id: pendingId } })).toBe(0);
+    // The same answer can't be used again.
+    await expect(finishMobilePasskeyLogin(p.userId, pendingId, answer)).rejects.toMatchObject({
+      code: 'passkeyInvalid',
+    });
+  });
+
+  it("refuses someone else's pending login and a wrong answer", async () => {
+    const p = await person();
+    const other = await person();
+    const { device } = await addOne(p);
+    const { pendingId, options } = await startMobilePasskeyLogin(p.userId, meta);
+    await expect(
+      finishMobilePasskeyLogin(other.userId, pendingId, device.login(options.challenge)),
+    ).rejects.toMatchObject({ code: 'passkeyInvalid' });
+
+    const again = await startMobilePasskeyLogin(p.userId, meta);
+    await expect(
+      finishMobilePasskeyLogin(p.userId, again.pendingId, device.login('not-the-challenge')),
+    ).rejects.toMatchObject({ code: 'passkeyInvalid' });
+    expect(await prisma.userSession.count({ where: { id: again.pendingId } })).toBe(0);
   });
 });
