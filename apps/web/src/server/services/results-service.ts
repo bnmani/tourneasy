@@ -32,6 +32,7 @@ import { assertCanManageTournament, assertOwner } from './permissions';
 import { isCheckInClosed, isScoreLocked } from '../lib/match-lock';
 import { fullName, publicName } from './registration-service';
 import type { Actor } from './session-service';
+import { notifyMatchOnCourt } from './push-service';
 
 type Tx = Prisma.TransactionClient;
 const DONE = ['COMPLETED', 'WALKOVER', 'RETIRED', 'BYE'] as const;
@@ -354,7 +355,8 @@ export async function startMatch(actor: Actor, matchId: string, meta: RequestMet
       entityId: m.id,
       meta,
     });
-  });
+  }); // Players and their followers get a push; it never holds up the desk.
+  void notifyMatchOnCourt(m.id);
 }
 
 /** "On court" by mistake (D99): back to waiting, as long as no score has been entered. */

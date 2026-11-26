@@ -227,3 +227,56 @@ export async function verifyPasskeyLogin(
     },
   });
 }
+
+// ── Logging in from the mobile app (after the password) ─────────────────────────────
+
+const MOBILE_PASSKEY_WINDOW_MS = 5 * 60_000;
+
+/**
+ * Starts a passkey login for the app: a short-lived pending session holds the challenge,
+ * exactly like the website's second step. Returns its id and the options for the phone.
+ */
+export async function startMobilePasskeyLogin(userId: string, meta: RequestMeta) {
+  const pending = await prisma.userSession.create({
+    data: {
+      userId,
+      kind: 'MOBILE',
+      mfaPending: true,
+      deviceName: describeUserAgent(meta.userAgent),
+      userAgent: meta.userAgent,
+      ipAddress: meta.ip,
+      expiresAt: new Date(Date.now() + MOBILE_PASSKEY_WINDOW_MS),
+    },
+    select: { id: true },
+  });
+  const options = await passkeyLoginOptions({ sessionId: pending.id, userId });
+  return { pendingId: pending.id, options };
+}
+
+/**
+ * Checks the phone's answer for a pending app login and removes the pending session, so it
+ * can be used once. Throws passkeyInvalid when it's unknown, expired or someone else's.
+ */
+export async function finishMobilePasskeyLogin(
+  userId: string,
+  pendingId: string,
+  response: AuthenticationResponseJSON,
+) {
+  const pending = await prisma.userSession.findFirst({
+    where: {
+      id: pendingId,
+      userId,
+      kind: 'MOBILE',
+      mfaPending: true,
+      revokedAt: null,
+      expiresAt: { gt: new Date() },
+    },
+    select: { id: true },
+  });
+  if (!pending) throw new AppError('passkeyInvalid');
+  try {
+    await verifyPasskeyLogin({ sessionId: pending.id, userId }, response);
+  } finally {
+    await prisma.userSession.deleteMany({ where: { id: pending.id } });
+  }
+}
