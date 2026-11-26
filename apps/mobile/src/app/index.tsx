@@ -1,43 +1,52 @@
-import { useEffect } from 'react';
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useRef } from 'react';
+import { StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
+import { useVideoPlayer, VideoView } from 'expo-video';
 
-import { useT } from '@/lib/i18n';
 import { useSession } from '@/lib/session';
 import { splashBackground } from '@/theme';
 
-/** Launch screen. Shows the logo, then moves to Home or Welcome depending on the session. */
+// The clip is about 10 seconds. Give it a little extra time so a stalled video cannot keep the user here.
+const MAX_SPLASH_MS = 12000;
+
+/** Launch screen. Plays the brand animation once, then moves to Home or Welcome depending on the session. */
 export default function SplashScreen() {
   const { profile } = useSession();
-  const t = useT();
+  const profileRef = useRef(profile);
+
+  const player = useVideoPlayer(require('../../assets/brand/splash-animation.mp4'), (instance) => {
+    instance.loop = false;
+    instance.muted = true;
+    instance.play();
+  });
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      router.replace(profile ? '/(app)/(tabs)' : '/welcome');
-    }, 1600);
-    return () => clearTimeout(timer);
+    profileRef.current = profile;
   }, [profile]);
+
+  useEffect(() => {
+    let finished = false;
+    const finish = () => {
+      if (finished) return;
+      finished = true;
+      router.replace(profileRef.current ? '/(app)/(tabs)' : '/welcome');
+    };
+    const subscription = player.addListener('playToEnd', finish);
+    const timer = setTimeout(finish, MAX_SPLASH_MS);
+    return () => {
+      subscription.remove();
+      clearTimeout(timer);
+    };
+  }, [player]);
 
   return (
     <View style={styles.container}>
-      <Image
-        accessibilityLabel={t('Tourneasy logo')}
-        source={require('../../assets/brand/logo.jpg')}
-        style={styles.logo}
-      />
-      <Text style={styles.tagline}>{t('Tournament Made Easy')}</Text>
+      <VideoView player={player} style={styles.video} contentFit="contain" nativeControls={false} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: splashBackground,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-  },
-  logo: { width: 295, height: 145, borderRadius: 28 },
-  tagline: { fontSize: 16, color: '#afdde5', marginTop: -10 },
+  container: { flex: 1, backgroundColor: splashBackground },
+  video: { flex: 1 },
 });
