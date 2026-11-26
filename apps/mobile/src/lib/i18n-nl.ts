@@ -191,4 +191,88 @@ export const nl: Record<string, string> = {
   'Delete my account': 'Verwijder mijn account',
   'Keep my account': 'Behoud mijn account',
   'Could not delete the account. Try again.': 'Account verwijderen mislukt. Probeer het opnieuw.',
+
+  // Schedule, players, app lock, notification settings
+  'Your matches could not be loaded. Pull down to try again.':
+    'Je wedstrijden konden niet worden geladen. Trek omlaag om het opnieuw te proberen.',
+  'Your entries could not be loaded. Pull down to try again.':
+    'Je inschrijvingen konden niet worden geladen. Trek omlaag om het opnieuw te proberen.',
+  Matches: 'Wedstrijden',
+  Entries: 'Inschrijvingen',
+  'No entries yet': 'Nog geen inschrijvingen',
+  'Tournaments you enter on the website show here.':
+    'Toernooien waarvoor je je op de website inschrijft, staan hier.',
+  'Time to follow': 'Tijd volgt',
+  'Court {court}': 'Baan {court}',
+  New: 'Nieuw',
+  Changed: 'Gewijzigd',
+  Called: 'Opgeroepen',
+  Playing: 'Bezig',
+  Played: 'Gespeeld',
+  Walkover: 'Walk-over',
+  Retired: 'Opgegeven',
+  'Waiting list #{n}': 'Wachtlijst #{n}',
+  'Waiting list': 'Wachtlijst',
+  'To pay': 'Te betalen',
+  Confirmed: 'Bevestigd',
+  'With {name}': 'Met {name}',
+  'Invite sent to {name}': 'Uitnodiging verstuurd naar {name}',
+  'No partner yet': 'Nog geen partner',
+  'Your schedule could not be loaded.': 'Je schema kon niet worden geladen.',
+  'Search players': 'Spelers zoeken',
+  'Name, club or member number': 'Naam, club of lidnummer',
+  Results: 'Resultaten',
+  Following: 'Volgend',
+  'Players could not be loaded.': 'Spelers konden niet worden geladen.',
+  'No players found. Only players with a public profile can be found.':
+    'Geen spelers gevonden. Alleen spelers met een openbaar profiel zijn te vinden.',
+  'You don’t follow anyone yet. Search for a player and tap Follow.':
+    'Je volgt nog niemand. Zoek een speler en tik op Volgen.',
+  'Member {number}': 'Lid {number}',
+  'This player could not be loaded.': 'Deze speler kon niet worden geladen.',
+  'That didn’t work': 'Dat lukte niet',
+  Club: 'Club',
+  'No club': 'Geen club',
+  Plays: 'Speelt',
+  'Not given': 'Niet opgegeven',
+  Followers: 'Volgers',
+  'This is you. Others see this page when your profile is public.':
+    'Dit ben jij. Anderen zien deze pagina als je profiel openbaar is.',
+  'Following ✓': 'Volgend ✓',
+  Follow: 'Volgen',
+  'Follow a player to see them in your Players tab. Match alerts for followed players come with push notifications.':
+    'Volg een speler om die in je tabblad Spelers te zien. Meldingen over wedstrijden van gevolgde spelers komen met pushmeldingen.',
+  'Unlock Tourneasy': 'Tourneasy ontgrendelen',
+  'Tourneasy is locked': 'Tourneasy is vergrendeld',
+  Unlock: 'Ontgrendelen',
+  'Set up Face ID, Touch ID or a passcode in your phone’s Settings first.':
+    'Stel eerst Face ID, Touch ID of een toegangscode in via de Instellingen van je telefoon.',
+  'App lock could not be turned on. Try again.':
+    'App-vergrendeling kon niet worden aangezet. Probeer het opnieuw.',
+  'Turn on app lock': 'App-vergrendeling aanzetten',
+  'Ask for Face ID, Touch ID or your passcode when the app opens.':
+    'Vraag om Face ID, Touch ID of je toegangscode als de app opent.',
+  EMAIL: 'E-MAIL',
+  'You can switch these emails off': 'Deze e-mails kun je uitzetten',
+  'Your email settings could not be loaded.': 'Je e-mailinstellingen konden niet worden geladen.',
+  'Not saved': 'Niet opgeslagen',
+  'ALWAYS SENT': 'ALTIJD VERSTUURD',
+  'ON THIS PHONE': 'OP DEZE TELEFOON',
+  'Tournament reminder': 'Herinnering voor een toernooi',
+  'Two days before: venue and your first match.':
+    'Twee dagen vooraf: locatie en je eerste wedstrijd.',
+  'Entry deadline reminder': 'Herinnering voor de sluiting van de inschrijving',
+  'When something is still open just before entries close: payment, partner, invitation.':
+    'Als er vlak voor de sluiting nog iets openstaat: betaling, partner, uitnodiging.',
+  'Results after a tournament': 'Uitslagen na een toernooi',
+  'Your matches and placings afterwards.': 'Je wedstrijden en plaatsen na afloop.',
+  'News from the organisers': 'Nieuws van de organisatie',
+  'Messages from the organisers of tournaments you entered.':
+    'Berichten van de organisatie van toernooien waarvoor je bent ingeschreven.',
+  'Entry confirmations, partner invitations, receipts, refunds, password and account messages, and your match times (also when they change).':
+    'Bevestigingen van je inschrijving, uitnodigingen van partners, betaalbewijzen, terugbetalingen, wachtwoord en accountmeldingen, en je wedstrijdtijden (ook als die veranderen).',
+  'Push notifications for match calls and schedule changes come in a later update. Until then, these arrive by email.':
+    'Pushmeldingen voor oproepen en schemawijzigingen komen in een latere update. Tot die tijd krijg je deze per e-mail.',
+  'NEXT MATCH': 'VOLGENDE WEDSTRIJD',
+  vs: 'tegen',
 };

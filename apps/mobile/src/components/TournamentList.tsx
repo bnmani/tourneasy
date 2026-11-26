@@ -95,7 +95,10 @@ export function TournamentList() {
               onPress={() => setWhen(f.value)}
               style={[
                 styles.filter,
-                { borderColor: colors.border, backgroundColor: active ? colors.primary : colors.card },
+                {
+                  borderColor: colors.border,
+                  backgroundColor: active ? colors.primary : colors.card,
+                },
               ]}
             >
               <Text
@@ -116,6 +119,8 @@ export function TournamentList() {
 
       <FlatList
         data={items}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
         keyExtractor={(item) => item.slug}
         contentContainerStyle={styles.list}
         refreshControl={
@@ -131,12 +136,18 @@ export function TournamentList() {
         ListEmptyComponent={
           loading ? undefined : (
             <Body>
-              {query.trim() ? t('No tournaments match your search.') : t('No tournaments to show yet.')}
+              {query.trim()
+                ? t('No tournaments match your search.')
+                : t('No tournaments to show yet.')}
             </Body>
           )
         }
         renderItem={({ item }) => {
-          const fee = formatFee(item.feeFromCents, item.feeToCents, locale === 'nl' ? 'nl-NL' : 'en-GB');
+          const fee = formatFee(
+            item.feeFromCents,
+            item.feeToCents,
+            locale === 'nl' ? 'nl-NL' : 'en-GB',
+          );
           const phase = PHASE_LABELS[item.phase];
           return (
             <Pressable

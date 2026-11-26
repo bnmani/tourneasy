@@ -5,8 +5,8 @@
   "main": "expo-router/entry",
   "scripts": {
     "start": "expo start",
-    "ios": "expo start --ios",
-    "android": "expo start --android",
+    "ios": "expo run:ios",
+    "android": "expo run:android",
     "lint": "expo lint",
     "typecheck": "tsc --noEmit",
     "test": "jest"
@@ -36,10 +36,12 @@
     "expo-constants": "~58.0.16",
     "expo-font": "~58.0.12",
     "expo-linking": "~58.0.17",
+    "expo-local-authentication": "~58.0.3",
     "expo-router": "~58.0.32",
     "expo-secure-store": "~58.0.3",
     "expo-splash-screen": "~58.0.14",
     "expo-status-bar": "~58.0.5",
+    "expo-symbols": "~58.0.5",
     "expo-video": "~58.0.14",
     "react": "19.3.1",
     "react-dom": "19.3.1",

@@ -9,7 +9,7 @@ jest.mock('expo-router', () => ({
 }));
 
 describe('SplashScreen', () => {
-  it('shows the tagline under the logo', () => {
+  it('shows the static brand logo', () => {
     render(
       <ThemeProvider>
         <SessionProvider>
@@ -17,6 +17,6 @@ describe('SplashScreen', () => {
         </SessionProvider>
       </ThemeProvider>,
     );
-    expect(screen.getByText('Tournament Made Easy')).toBeTruthy();
+    expect(screen.getByTestId('splash-logo')).toBeTruthy();
   });
 });

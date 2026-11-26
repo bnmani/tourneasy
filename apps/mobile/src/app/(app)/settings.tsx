@@ -1,8 +1,9 @@
 import type { ReactNode } from 'react';
-import { Alert, Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Linking, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { router } from 'expo-router';
 
 import { Button, Card, Heading, Row, Screen, Segmented, TextLink } from '@/components/ui';
+import { useAppLock } from '@/lib/app-lock';
 import { useLocale, useT } from '@/lib/i18n';
 import { links } from '@/lib/links';
 import { font, useColors, useTheme } from '@/theme';
@@ -18,6 +19,19 @@ export default function SettingsScreen() {
   const { preference, setPreference } = useTheme();
   const { locale, setLocale } = useLocale();
 
+  const lock = useAppLock();
+
+  async function toggleLock(on: boolean) {
+    if (!on) {
+      await lock.disable();
+      return;
+    }
+    const problem = await lock.enable(t('Turn on app lock'));
+    if (problem) {
+      Alert.alert(t('App lock'), t(problem));
+    }
+  }
+
   const themeOptions = [
     { value: 'light' as const, label: t('Light') },
     { value: 'dark' as const, label: t('Dark') },
@@ -26,7 +40,7 @@ export default function SettingsScreen() {
 
   return (
     <Screen>
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <TextLink title={t('Back')} onPress={() => router.back()} />
         <Heading>{t('Settings')}</Heading>
 
@@ -40,14 +54,20 @@ export default function SettingsScreen() {
 
         <Section title={t('SECURITY')}>
           <Card>
-            <Row
-              label={t('App lock')}
-              value={t('Off. Use Face ID, fingerprint or passcode')}
-              onPress={() =>
-                Alert.alert(t('Coming soon'), t('App lock arrives in a later update.'))
-              }
-              last
-            />
+            <View style={styles.switchRow}>
+              <View style={styles.switchText}>
+                <Text style={[styles.switchTitle, { color: colors.fg }]}>{t('App lock')}</Text>
+                <Text style={{ color: colors.muted, fontSize: 13, lineHeight: 19 }}>
+                  {t('Ask for Face ID, Touch ID or your passcode when the app opens.')}
+                </Text>
+              </View>
+              <Switch
+                accessibilityLabel={t('App lock')}
+                value={lock.enabled}
+                onValueChange={(on) => void toggleLock(on)}
+                trackColor={{ true: colors.primary }}
+              />
+            </View>
           </Card>
         </Section>
 
@@ -55,9 +75,7 @@ export default function SettingsScreen() {
           <Card>
             <Row
               label={t('Notification settings')}
-              onPress={() =>
-                Alert.alert(t('Coming soon'), t('Notification settings arrive in Phase 4.'))
-              }
+              onPress={() => router.push('/notification-settings')}
             />
             <Row
               label={t('Download my data')}
@@ -104,4 +122,7 @@ const styles = StyleSheet.create({
   section: { gap: 8 },
   sectionTitle: { fontSize: 13, fontFamily: font.semibold, letterSpacing: 0.5 },
   danger: { marginTop: 8 },
+  switchRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 },
+  switchText: { flex: 1, gap: 2 },
+  switchTitle: { fontSize: 16, fontFamily: font.medium },
 });

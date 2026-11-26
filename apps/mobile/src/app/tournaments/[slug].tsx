@@ -4,8 +4,15 @@ import { router, useLocalSearchParams } from 'expo-router';
 
 import { Body, Heading, Hint, Screen } from '@/components/ui';
 import { Panel } from '@/components/Panel';
-import { dateLocaleTag, useLocale, useT } from '@/lib/i18n';
-import { fetchTournament, formatFee, type TournamentDetail } from '@/lib/tournaments';
+import { dateLocaleTag, useLocale, useT, type TranslateFn } from '@/lib/i18n';
+import { disciplineOptions } from '@/lib/links';
+import {
+  fetchTournament,
+  formatFee,
+  pickLocale,
+  type TournamentDetail,
+  type TournamentEvent,
+} from '@/lib/tournaments';
 import { font, useColors } from '@/theme';
 
 /** Public tournament page: date, venue, fees, categories and organiser contact. */
@@ -31,13 +38,20 @@ export default function TournamentDetailScreen() {
     };
   }, [slug, t]);
 
-  const dayFormat = new Intl.DateTimeFormat(tag, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  const dayFormat = new Intl.DateTimeFormat(tag, {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
 
   return (
     <Screen scroll>
       <View style={styles.container}>
         <Pressable accessibilityRole="button" onPress={() => router.back()} hitSlop={12}>
-          <Text style={{ color: colors.primary, fontSize: 16, fontWeight: '600' }}>{t('Back')}</Text>
+          <Text style={{ color: colors.primary, fontSize: 16, fontWeight: '600' }}>
+            {t('Back')}
+          </Text>
         </Pressable>
 
         {error ? <Hint>{error}</Hint> : null}
@@ -58,7 +72,9 @@ export default function TournamentDetailScreen() {
                 <Text style={{ color: colors.fg, fontSize: 15 }}>{tournament.venue.name}</Text>
                 {tournament.venue.street ? (
                   <Text style={{ color: colors.muted, fontSize: 14 }}>
-                    {[tournament.venue.street, tournament.venue.houseNumber].filter(Boolean).join(' ')}
+                    {[tournament.venue.street, tournament.venue.houseNumber]
+                      .filter(Boolean)
+                      .join(' ')}
                   </Text>
                 ) : null}
                 {tournament.venue.city ? (
@@ -67,7 +83,9 @@ export default function TournamentDetailScreen() {
               </Panel>
             ) : null}
 
-            {tournament.description ? <Body>{tournament.description}</Body> : null}
+            {pickLocale(tournament.description, locale) ? (
+              <Body>{pickLocale(tournament.description, locale)}</Body>
+            ) : null}
 
             {tournament.events.length > 0 ? (
               <Panel>
@@ -75,10 +93,14 @@ export default function TournamentDetailScreen() {
                 {tournament.events.map((event) => (
                   <View key={event.id} style={styles.row}>
                     <Text style={{ color: colors.fg, fontSize: 15, flex: 1 }}>
-                      {event.name ?? event.discipline}
+                      {categoryLabel(event, locale, t)}
                     </Text>
                     <Text style={{ color: colors.muted, fontSize: 14 }}>
-                      {formatFee(event.feeCents, event.feeCents, locale === 'nl' ? 'nl-NL' : 'en-GB')}
+                      {formatFee(
+                        event.feeCents,
+                        event.feeCents,
+                        locale === 'nl' ? 'nl-NL' : 'en-GB',
+                      )}
                     </Text>
                   </View>
                 ))}
@@ -113,7 +135,19 @@ export default function TournamentDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 24, gap: 12 },
+  // Screen already pads the page, so the container adds no padding of its own.
+  container: { gap: 12 },
   section: { fontSize: 14, fontFamily: font.semibold, marginBottom: 4 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 4 },
 });
+
+/** A category shown by name: discipline codes such as HD become "Men's doubles"; other names stay as they are. */
+/** The organiser's own name, else discipline + age group + level, e.g. "Men's singles U15". */
+function categoryLabel(event: TournamentEvent, locale: string, t: TranslateFn): string {
+  const custom = pickLocale(event.name, locale);
+  if (custom) return custom;
+  const option = disciplineOptions.find((item) => item.code === event.discipline);
+  return [option ? t(option.label) : event.discipline, event.ageCategory?.code, event.level]
+    .filter(Boolean)
+    .join(' ');
+}

@@ -11,7 +11,8 @@
       "bundleIdentifier": "com.tourneasy.app",
       "supportsTablet": false,
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "UIViewControllerBasedStatusBarAppearance": false
       }
     },
     "android": {
@@ -48,7 +49,13 @@
       "@sentry/react-native/expo",
       "expo-font",
       "expo-video",
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Tourneasy uses Face ID to unlock the app when you turn on App lock."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

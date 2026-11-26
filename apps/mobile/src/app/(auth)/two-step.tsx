@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Keyboard, StyleSheet, Text, View } from 'react-native';
 import { Redirect, router } from 'expo-router';
 
 import { Body, Button, Field, Heading, Screen, TextLink } from '@/components/ui';
@@ -14,6 +14,8 @@ export default function TwoStepScreen() {
   const { pendingTwoStep, completeTwoStep, cancelTwoStep } = useSession();
 
   const [code, setCode] = useState('');
+  // Authenticator codes are digits, so the number pad opens by default. Recovery codes have letters.
+  const [recovery, setRecovery] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -23,6 +25,7 @@ export default function TwoStepScreen() {
   }
 
   async function submit() {
+    Keyboard.dismiss();
     setBusy(true);
     setError(null);
     try {
@@ -46,17 +49,29 @@ export default function TwoStepScreen() {
         <TextLink title={t('Back')} onPress={cancel} />
         <Heading>{t('Two-step login')}</Heading>
         <Body>
-          {t('Enter the 6-digit code from your authenticator app. You can also enter a recovery code.')}
+          {recovery
+            ? t('Enter one of your recovery codes.')
+            : t('Enter the 6-digit code from your authenticator app.')}
         </Body>
         <Field
-          label={t('Code')}
-          placeholder={t('123456')}
+          label={recovery ? t('Recovery code') : t('Code')}
+          placeholder={recovery ? t('Recovery code') : t('123456')}
           autoCapitalize="none"
           autoCorrect={false}
           autoComplete="one-time-code"
-          keyboardType="default"
+          keyboardType={recovery ? 'default' : 'number-pad'}
+          returnKeyType="done"
+          onSubmitEditing={() => Keyboard.dismiss()}
           value={code}
           onChangeText={setCode}
+        />
+        <TextLink
+          title={recovery ? t('Use the 6-digit code instead') : t('Use a recovery code instead')}
+          onPress={() => {
+            setRecovery((current) => !current);
+            setCode('');
+            setError(null);
+          }}
         />
         {error ? <Text style={[styles.error, { color: colors.destructive }]}>{error}</Text> : null}
         <View style={styles.spacer} />

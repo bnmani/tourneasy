@@ -1,5 +1,6 @@
 import { Image, StyleSheet, Text, View } from 'react-native';
-import { router } from 'expo-router';
+import { router, useIsFocused } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button, TextLink } from '@/components/ui';
@@ -21,8 +22,11 @@ const MUTED = '#afdde5';
 
 export default function WelcomeScreen() {
   const t = useT();
+  const focused = useIsFocused();
   return (
     <SafeAreaView edges={['top', 'bottom']} style={styles.screen}>
+      {/* Light status bar text on the brand teal, only while this screen is showing. */}
+      {focused ? <StatusBar style="light" /> : null}
       <View style={styles.container}>
         <View style={styles.band}>
           <Image
@@ -42,14 +46,16 @@ export default function WelcomeScreen() {
           </Text>
         </View>
         <View style={styles.actions}>
-          <Button title={t('Sign in')} onPress={() => router.push('/signin')} />
+          <Button title={t('Sign in')} onDark onPress={() => router.push('/signin')} />
           <Button
             title={t('Create an account')}
             variant="secondary"
+            onDark
             onPress={() => router.push('/signup/name')}
           />
           <TextLink
             title={t('Browse tournaments without an account')}
+            onDark
             onPress={() => router.push('/tournaments')}
           />
         </View>

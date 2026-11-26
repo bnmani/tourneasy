@@ -11,4 +11,21 @@ export const links = {
 
 export const passwordMinLength = 12;
 
-export const preferredEventOptions = ['Open singles', 'Open doubles', 'Mixed doubles'] as const;
+/**
+ * Disciplines a player can choose, with the codes the website stores. Men's and women's
+ * events need that gender; mixed doubles is open to both (same rule as the website).
+ */
+export const disciplineOptions = [
+  { code: 'HE', label: "Men's singles", gender: 'MALE' },
+  { code: 'DE', label: "Women's singles", gender: 'FEMALE' },
+  { code: 'HD', label: "Men's doubles", gender: 'MALE' },
+  { code: 'DD', label: "Women's doubles", gender: 'FEMALE' },
+  { code: 'GD', label: 'Mixed doubles', gender: null },
+] as const;
+
+/** Disciplines that fit a gender. With no gender chosen yet, all of them are shown. */
+export function disciplinesFor(gender: string) {
+  return disciplineOptions.filter(
+    (option) => !option.gender || !gender || option.gender === gender,
+  );
+}

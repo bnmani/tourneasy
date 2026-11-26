@@ -25,7 +25,7 @@ const light: Colors = {
   muted: '#3b5f63',
   border: '#afdde5',
   inputBorder: '#9fd0d9',
-  primary: '#024950',
+  primary: '#0e4145',
   primaryFg: '#ffffff',
   destructive: '#a3402e',
   scrim: 'rgba(0, 49, 53, 0.45)',
@@ -37,7 +37,7 @@ const light: Colors = {
 const dark: Colors = {
   bg: '#003135',
   fg: '#f3fafb',
-  card: '#024950',
+  card: '#0e4145',
   muted: '#afdde5',
   border: '#0fa4af',
   inputBorder: '#0fa4af',
@@ -45,7 +45,7 @@ const dark: Colors = {
   primaryFg: '#003135',
   destructive: '#f0a293',
   scrim: 'rgba(0, 0, 0, 0.5)',
-  hero: '#024950',
+  hero: '#0e4145',
   heroFg: '#f3fafb',
   heroMuted: '#afdde5',
 };

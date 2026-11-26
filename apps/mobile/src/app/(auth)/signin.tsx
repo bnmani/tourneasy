@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Keyboard, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 
 import { Button, Field, Heading, Screen, TextLink } from '@/components/ui';
@@ -18,6 +18,7 @@ export default function SignInScreen() {
   const [busy, setBusy] = useState(false);
 
   async function submit() {
+    Keyboard.dismiss();
     setBusy(true);
     setError(null);
     try {
@@ -52,6 +53,8 @@ export default function SignInScreen() {
           placeholder={t('Your password')}
           secureTextEntry
           autoComplete="password"
+          returnKeyType="done"
+          onSubmitEditing={() => Keyboard.dismiss()}
           value={password}
           onChangeText={setPassword}
         />

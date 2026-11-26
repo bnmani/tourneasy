@@ -6,12 +6,15 @@ export const API_BASE_URL: string =
 export class ApiError extends Error {
   readonly status: number;
   readonly code: string;
+  /** For validation errors: the fields the server rejected, as { field: reason }. */
+  readonly fields: Record<string, string>;
 
-  constructor(status: number, code: string, message: string) {
+  constructor(status: number, code: string, message: string, fields: Record<string, string> = {}) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
     this.code = code;
+    this.fields = fields;
   }
 }
 
@@ -32,12 +35,13 @@ function withQuery(path: string, query?: Query): string {
 async function readError(response: Response): Promise<ApiError> {
   try {
     const body = (await response.json()) as {
-      error?: { code?: string; message?: string };
+      error?: { code?: string; message?: string; details?: { fields?: Record<string, string> } };
     };
     return new ApiError(
       response.status,
       body.error?.code ?? 'UNKNOWN',
       body.error?.message ?? `The request failed (${response.status}).`,
+      body.error?.details?.fields ?? {},
     );
   } catch {
     return new ApiError(response.status, 'UNKNOWN', `The request failed (${response.status}).`);
@@ -70,9 +74,9 @@ export async function apiPost<T>(path: string, body: unknown): Promise<T> {
   return (await response.json()) as T;
 }
 
-/** Send a JSON request with an optional bearer token. Returns null for a 204 answer. */
+/** Send a JSON request with an optional bearer token. Returns null when the answer has no body. */
 export async function apiSend<T>(
-  method: 'POST' | 'DELETE',
+  method: 'POST' | 'PATCH' | 'PUT' | 'DELETE',
   path: string,
   body?: unknown,
   token?: string,
@@ -92,8 +96,10 @@ export async function apiSend<T>(
   if (!response.ok) {
     throw await readError(response);
   }
-  if (response.status === 204) {
+  // 202 and 204 answers can have no body, so read it as text first.
+  const text = await response.text();
+  if (!text) {
     return null;
   }
-  return (await response.json()) as T;
+  return JSON.parse(text) as T;
 }

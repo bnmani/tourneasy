@@ -45,20 +45,29 @@ export function Hint({ children }: { children: ReactNode }) {
 
 type ButtonVariant = 'primary' | 'secondary' | 'destructive';
 
+// Colours for buttons and links placed on the brand teal (the welcome screen), in either theme.
+const ON_DARK = { text: '#f3fafb', muted: '#afdde5', teal: '#11464c' } as const;
+
 export function Button({
   title,
   onPress,
   variant = 'primary',
   disabled = false,
+  onDark = false,
 }: {
   title: string;
   onPress: () => void;
   variant?: ButtonVariant;
   disabled?: boolean;
+  /** True on the brand teal background, where theme colours would be dark on dark. */
+  onDark?: boolean;
 }) {
   const colors = useColors();
-  const tone =
-    variant === 'primary'
+  const tone = onDark
+    ? variant === 'primary'
+      ? { backgroundColor: ON_DARK.text, borderColor: ON_DARK.text, color: ON_DARK.teal }
+      : { backgroundColor: 'transparent', borderColor: ON_DARK.muted, color: ON_DARK.text }
+    : variant === 'primary'
       ? { backgroundColor: colors.primary, borderColor: colors.primary, color: colors.primaryFg }
       : variant === 'destructive'
         ? {
@@ -86,11 +95,22 @@ export function Button({
   );
 }
 
-export function TextLink({ title, onPress }: { title: string; onPress: () => void }) {
+export function TextLink({
+  title,
+  onPress,
+  onDark = false,
+}: {
+  title: string;
+  onPress: () => void;
+  /** True on the brand teal background. */
+  onDark?: boolean;
+}) {
   const colors = useColors();
   return (
     <Pressable accessibilityRole="link" onPress={onPress} style={styles.link} hitSlop={8}>
-      <Text style={[styles.linkText, { color: colors.primary }]}>{title}</Text>
+      <Text style={[styles.linkText, { color: onDark ? ON_DARK.muted : colors.primary }]}>
+        {title}
+      </Text>
     </Pressable>
   );
 }

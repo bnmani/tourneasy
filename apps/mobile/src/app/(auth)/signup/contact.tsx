@@ -1,12 +1,13 @@
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 
 import { Button, Field, Heading, ProgressBar, Screen, TextLink } from '@/components/ui';
+import { ApiError } from '@/lib/api';
 import { useT } from '@/lib/i18n';
 import { passwordMinLength } from '@/lib/links';
 import { useSession } from '@/lib/session';
-import { useSignUpDraft } from '@/lib/signup';
+import { ageFromIsoDate, isoFromDisplayDate, MINOR_AGE, useSignUpDraft } from '@/lib/signup';
 import { font, useColors } from '@/theme';
 
 /** Sign-up step 2 of 2: contact details, password and consent. */
@@ -21,22 +22,49 @@ export default function SignUpContactScreen() {
   const [repeat, setRepeat] = useState('');
   const [terms, setTerms] = useState(false);
   const [reminders, setReminders] = useState(true);
+  const [guardianName, setGuardianName] = useState('');
+  const [parentalConsent, setParentalConsent] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
+  // Players under 16 need a parent or guardian, as on the website.
+  const isoDate = isoFromDisplayDate(stepOne.dateOfBirth);
+  const minor = isoDate !== null && ageFromIsoDate(isoDate) < MINOR_AGE;
+
   const emailOk = /\S+@\S+\.\S+/.test(email);
-  const mobileOk = /^\d{8,15}$/.test(mobile);
+  const digits = mobile.replace(/\D/g, '');
+  const mobileOk = /^[+\d\s().-]+$/.test(mobile) && digits.length >= 8 && digits.length <= 15;
   const passwordOk = password.length >= passwordMinLength && password === repeat;
-  const canSubmit = emailOk && mobileOk && passwordOk && terms && !busy;
+  const guardianOk = !minor || (guardianName.trim() !== '' && parentalConsent);
+  const canSubmit = emailOk && mobileOk && passwordOk && terms && guardianOk && !busy;
 
   async function submit() {
     setBusy(true);
     setError(null);
     try {
-      await signUp({ ...stepOne, email, mobile, password, reminders });
+      await signUp({
+        ...stepOne,
+        email,
+        mobile,
+        password,
+        reminders,
+        guardianName: minor ? guardianName.trim() : undefined,
+        parentalConsent: minor ? parentalConsent : undefined,
+      });
       router.push({ pathname: '/verify-email', params: { email } });
     } catch (caught) {
-      setError(caught instanceof Error ? t(caught.message) : t('Sign-up failed. Try again.'));
+      const message = caught instanceof Error ? t(caught.message) : t('Sign-up failed. Try again.');
+      setError(message);
+      // The keyboard can hide the message under the button, so show it as a pop-up too.
+      if (caught instanceof ApiError && caught.code === 'EMAIL_TAKEN') {
+        Alert.alert(t('You already have an account'), message, [
+          { text: t('Sign in'), onPress: () => router.replace('/signin') },
+          { text: t('Reset password'), onPress: () => router.push('/forgot-password') },
+          { text: t('Cancel'), style: 'cancel' },
+        ]);
+      } else {
+        Alert.alert(t('Sign-up failed'), message);
+      }
     } finally {
       setBusy(false);
     }
@@ -50,7 +78,12 @@ export default function SignUpContactScreen() {
           <Text style={{ color: colors.muted, fontSize: 14 }}>{t('Step 2 of 2')}</Text>
         </View>
         <ProgressBar fraction={1} />
-        <ScrollView style={styles.fields} contentContainerStyle={styles.fieldsContent}>
+        <ScrollView
+          style={styles.fields}
+          contentContainerStyle={styles.fieldsContent}
+          keyboardShouldPersistTaps="handled"
+          automaticallyAdjustKeyboardInsets
+        >
           <Heading>{t('How do we reach you?')}</Heading>
           <Field
             label={t('Email')}
@@ -64,11 +97,13 @@ export default function SignUpContactScreen() {
           />
           <Field
             label={t('Mobile number')}
-            placeholder="612345678"
-            keyboardType="number-pad"
+            placeholder={t('+31 6 12345678')}
+            keyboardType="phone-pad"
             value={mobile}
             onChangeText={setMobile}
-            hint={t('So organisers can reach you on the tournament day. Digits only.')}
+            hint={t(
+              'So organisers can reach you on the tournament day. Include the country code, or start with 0 for Dutch numbers.',
+            )}
           />
           <Field
             label={t('Password')}
@@ -89,6 +124,21 @@ export default function SignUpContactScreen() {
           <Consent checked={terms} onChange={setTerms}>
             {t('I accept the terms of use and privacy notice.')}
           </Consent>
+          {minor ? (
+            <>
+              <Field
+                label={t('Parent or guardian name')}
+                value={guardianName}
+                onChangeText={setGuardianName}
+                hint={t('Players under {age} need a parent or guardian to confirm the account.', {
+                  age: MINOR_AGE,
+                })}
+              />
+              <Consent checked={parentalConsent} onChange={setParentalConsent}>
+                {t('My parent or guardian agrees to this account.')}
+              </Consent>
+            </>
+          ) : null}
           <Consent checked={reminders} onChange={setReminders}>
             {t(
               'Remind me about my matches. You can switch this off anytime in Notification settings.',

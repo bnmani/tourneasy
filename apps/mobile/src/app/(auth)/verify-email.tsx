@@ -35,10 +35,12 @@ export default function VerifyEmailScreen() {
         <Hint>{t('The link is valid for 24 hours.')}</Hint>
         <View style={styles.actions}>
           <Button title={t('Open email app')} onPress={openMail} />
+          {/* The website has no "send the link again" call for the app yet, so this
+              offers the next real step: signing in with the new account. */}
           <Button
-            title={t('Resend the email')}
+            title={t('Go to sign in')}
             variant="secondary"
-            onPress={() => Alert.alert(t('Email sent'), t('We sent the link again.'))}
+            onPress={() => router.replace('/signin')}
           />
           <TextLink title={t('Change email address')} onPress={() => router.back()} />
         </View>

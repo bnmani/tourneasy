@@ -17,11 +17,27 @@ export type TournamentSummary = {
   logoUrl: string | null;
 };
 
+/** Text the organiser wrote in both languages. Either one can be missing. */
+export type Localized = { nl?: string; en?: string } | null;
+
+/**
+ * The text in the reader's language, else the other one, else null. Never render a
+ * Localized value directly: React Native crashes on an object inside <Text>.
+ */
+export function pickLocale(value: Localized | string | undefined, locale: string): string | null {
+  if (!value) return null;
+  if (typeof value === 'string') return value || null;
+  const preferred = locale === 'nl' ? value.nl : value.en;
+  const other = locale === 'nl' ? value.en : value.nl;
+  return preferred?.trim() || other?.trim() || null;
+}
+
 export type TournamentEvent = {
   id: string;
   discipline: string;
-  name: string | null;
-  ageCategory: string | null;
+  /** Custom name; otherwise the label is built from discipline, age and level. */
+  name: Localized;
+  ageCategory: { code: string; name: Localized } | null;
   level: string | null;
   feeCents: number;
   maxEntries: number | null;
@@ -30,7 +46,7 @@ export type TournamentEvent = {
 
 /** Full tournament page (`GET /tournaments/{slug}`). */
 export type TournamentDetail = Omit<TournamentSummary, 'venue'> & {
-  description: string | null;
+  description: Localized;
   dayStartTime: string | null;
   withdrawalDeadline: string | null;
   refundPolicy: string;
@@ -74,11 +90,14 @@ export function fetchTournament(slug: string): Promise<TournamentDetail> {
 /** Euro amount in cents, shown as "€15" or "€15–€35". Null when there's no fee. */
 export function formatFee(from: number | null, to: number | null, locale: string): string | null {
   if (from === null) return null;
-  const fmt = new Intl.NumberFormat(locale, {
-    style: 'currency',
-    currency: 'EUR',
-    maximumFractionDigits: 0,
-  });
-  if (to === null || to === from) return fmt.format(from / 100);
-  return `${fmt.format(from / 100)}–${fmt.format(to / 100)}`;
+  // Whole euros without cents (€15), otherwise exact (€7.50), so a fee is never rounded.
+  const format = (cents: number) =>
+    new Intl.NumberFormat(locale, {
+      style: 'currency',
+      currency: 'EUR',
+      minimumFractionDigits: cents % 100 === 0 ? 0 : 2,
+      maximumFractionDigits: 2,
+    }).format(cents / 100);
+  if (to === null || to === from) return format(from);
+  return `${format(from)}–${format(to)}`;
 }
