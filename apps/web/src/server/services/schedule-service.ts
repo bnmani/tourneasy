@@ -32,6 +32,7 @@ import { eventText, fullName, publicName } from './registration-service';
 import type { Actor } from './session-service';
 import { emailLogo } from './logo-service';
 import { isCheckInClosed, isScoreLocked } from '../lib/match-lock';
+import { notifySchedulePushed } from './push-service';
 
 type Tx = Prisma.TransactionClient;
 
@@ -693,6 +694,13 @@ async function notifySchedule(
           }),
         };
       }),
+  );
+  void notifySchedulePushed(
+    [...targets]
+      .map((playerId) => accountOf.get(playerId)?.userId)
+      .filter((id): id is string => !!id),
+    { name: t.name, slug: t.slug },
+    opts.changed,
   );
 }
 

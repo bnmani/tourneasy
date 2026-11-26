@@ -24,20 +24,23 @@ Use **Import .env** with the local file `.env.test-server` after filling in `DAT
 Delete these rows from the platform form (they are for local development only):
 `SMTP_HOST`, `SMTP_PORT`, `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD`, `SEED_PLAYER_PASSWORD`.
 
-| Key                                  | Value                                                                                                                               |
-| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------- |
-| `APP_URL`                            | `https://test.tourneasy.app`                                                                                                        |
-| `NEXT_PUBLIC_APP_URL`                | `https://test.tourneasy.app`                                                                                                        |
-| `DATABASE_URL`                       | your hosted Postgres connection string                                                                                              |
-| `EMAIL_FROM`                         | `Tourneasy <no-reply@tourneasy.app>`                                                                                                |
-| `NEXT_TELEMETRY_DISABLED`            | `1`                                                                                                                                 |
-| `AUTH_SECRET`                        | random secret (in `.env.test-server`); signs mobile access tokens                                                                   |
-| `EMAIL_TRANSPORT`                    | `log`; the mail server is set in Admin → E-mail (that wins over this)                                                               |
-| `NEXT_SERVER_ACTIONS_ENCRYPTION_KEY` | 32-byte base64 key (in `.env.test-server`); keep it the same across deploys so buttons on pages opened before a deploy keep working |
-| `STRIPE_SECRET_KEY`                  | Stripe → Developers → API keys, **test mode** `sk_test_…` (online payment stays off while empty)                                    |
-| `STRIPE_PUBLISHABLE_KEY`             | the matching `pk_test_…`                                                                                                            |
-| `STRIPE_WEBHOOK_SECRET`              | `whsec_…` of the webhook endpoint `https://test.tourneasy.app/api/v1/payments/webhook` (events `payment_intent.*`, `refund.*`)      |
-| `CRON_SECRET`                        | random secret; a scheduler calls `POST /api/cron/housekeeping` with `Authorization: Bearer …` every 5 minutes (optional)            |
+| Key                                  | Value                                                                                                                                                                |
+| ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `APP_URL`                            | `https://test.tourneasy.app`                                                                                                                                         |
+| `NEXT_PUBLIC_APP_URL`                | `https://test.tourneasy.app`                                                                                                                                         |
+| `DATABASE_URL`                       | your hosted Postgres connection string                                                                                                                               |
+| `EMAIL_FROM`                         | `Tourneasy <no-reply@tourneasy.app>`                                                                                                                                 |
+| `NEXT_TELEMETRY_DISABLED`            | `1`                                                                                                                                                                  |
+| `AUTH_SECRET`                        | random secret (in `.env.test-server`); signs mobile access tokens                                                                                                    |
+| `EMAIL_TRANSPORT`                    | `log`; the mail server is set in Admin → E-mail (that wins over this)                                                                                                |
+| `NEXT_SERVER_ACTIONS_ENCRYPTION_KEY` | 32-byte base64 key (in `.env.test-server`); keep it the same across deploys so buttons on pages opened before a deploy keep working                                  |
+| `STRIPE_SECRET_KEY`                  | Stripe → Developers → API keys, **test mode** `sk_test_…` (online payment stays off while empty)                                                                     |
+| `STRIPE_PUBLISHABLE_KEY`             | the matching `pk_test_…`                                                                                                                                             |
+| `STRIPE_WEBHOOK_SECRET`              | `whsec_…` of the webhook endpoint `https://test.tourneasy.app/api/v1/payments/webhook` (events `payment_intent.*`, `refund.*`)                                       |
+| `CRON_SECRET`                        | random secret; a scheduler calls `POST /api/cron/housekeeping` with `Authorization: Bearer …` every 5 minutes (optional)                                             |
+| `APNS_KEY`                           | push notifications for the app: the .p8 key from Apple Developer → Keys (Apple Push Notifications service), on one line with `\n` (optional; push is off without it) |
+| `APNS_KEY_ID`                        | that key's 10-character id                                                                                                                                           |
+| `APNS_TEAM_ID`                       | the Apple developer team id (`7J9CMK225U`)                                                                                                                           |
 
 ## 3. Build settings
 
