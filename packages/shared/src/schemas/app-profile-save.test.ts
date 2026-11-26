@@ -29,7 +29,14 @@ describe('mobile profile save body', () => {
   });
 
   it('accepts cleared optional fields sent as empty strings', () => {
-    const cleared = { ...fullBody, nationality: '', clubId: '', federationId: '', emergencyName: '', emergencyPhone: '' };
+    const cleared = {
+      ...fullBody,
+      nationality: '',
+      clubId: '',
+      federationId: '',
+      emergencyName: '',
+      emergencyPhone: '',
+    };
     expect(profileUpdateSchema.safeParse(cleared).success).toBe(true);
   });
 });
