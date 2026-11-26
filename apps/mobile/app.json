@@ -14,10 +14,7 @@
         "ITSAppUsesNonExemptEncryption": false,
         "UIViewControllerBasedStatusBarAppearance": false
       },
-      "associatedDomains": [
-        "webcredentials:test.tourneasy.app",
-        "webcredentials:tourneasy.com"
-      ]
+      "associatedDomains": ["webcredentials:test.tourneasy.app", "webcredentials:tourneasy.com"]
     },
     "android": {
       "package": "com.tourneasy.app",
