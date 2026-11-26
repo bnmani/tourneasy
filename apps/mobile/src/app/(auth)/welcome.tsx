@@ -1,4 +1,4 @@
-import { Alert, Image, StyleSheet, Text, View } from 'react-native';
+import { Image, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -50,9 +50,7 @@ export default function WelcomeScreen() {
           />
           <TextLink
             title={t('Browse tournaments without an account')}
-            onPress={() =>
-              Alert.alert(t('Coming soon'), t('Public tournaments arrive in a later update.'))
-            }
+            onPress={() => router.push('/tournaments')}
           />
         </View>
       </View>

@@ -47,7 +47,8 @@
       ],
       "@sentry/react-native/expo",
       "expo-font",
-      "expo-video"
+      "expo-video",
+      "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true

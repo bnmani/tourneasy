@@ -22,7 +22,10 @@ export default function SignInScreen() {
     setError(null);
     try {
       // On success the session changes and the router moves to Home.
-      await signIn(identifier, password);
+      const result = await signIn(identifier, password);
+      if (result === 'twoStep') {
+        router.push('/two-step');
+      }
     } catch (caught) {
       setError(caught instanceof Error ? t(caught.message) : t('Sign in failed. Try again.'));
     } finally {

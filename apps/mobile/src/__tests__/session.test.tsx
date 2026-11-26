@@ -4,7 +4,7 @@ import type { ReactNode } from 'react';
 import { demoAuth, demoProfile, SessionProvider, useSession } from '@/lib/session';
 
 function wrapper({ children }: { children: ReactNode }) {
-  return <SessionProvider>{children}</SessionProvider>;
+  return <SessionProvider api={demoAuth}>{children}</SessionProvider>;
 }
 
 describe('session', () => {

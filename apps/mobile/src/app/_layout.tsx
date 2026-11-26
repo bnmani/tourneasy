@@ -1,5 +1,6 @@
 import '@/lib/sentry';
 
+import type { ReactNode } from 'react';
 import {
   useFonts as useInter,
   Inter_400Regular,
@@ -12,8 +13,14 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 
 import { LocaleProvider } from '@/lib/i18n';
-import { SessionProvider } from '@/lib/session';
+import { SessionProvider, useSession } from '@/lib/session';
 import { ThemeProvider } from '@/theme';
+
+/** Shows nothing until the stored login is checked, so no screen flashes before the right one. */
+function WhenSessionReady({ children }: { children: ReactNode }) {
+  const { ready } = useSession();
+  return ready ? <>{children}</> : null;
+}
 
 export default function RootLayout() {
   const [interLoaded] = useInter({
@@ -34,11 +41,14 @@ export default function RootLayout() {
       <ThemeProvider>
         <SessionProvider>
           <StatusBar style="auto" />
-          <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="index" />
-            <Stack.Screen name="(app)" />
-            <Stack.Screen name="(auth)" />
-          </Stack>
+          <WhenSessionReady>
+            <Stack screenOptions={{ headerShown: false }}>
+              <Stack.Screen name="index" />
+              <Stack.Screen name="(app)" />
+              <Stack.Screen name="(auth)" />
+              <Stack.Screen name="tournaments" />
+            </Stack>
+          </WhenSessionReady>
         </SessionProvider>
       </ThemeProvider>
     </LocaleProvider>

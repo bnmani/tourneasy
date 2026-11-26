@@ -1,0 +1,99 @@
+/** Base address of the Tourneasy API. The test server is the default until production is live. */
+export const API_BASE_URL: string =
+  process.env.EXPO_PUBLIC_API_URL ?? 'https://test.tourneasy.app/api/v1';
+
+/** An error answer from the API. `code` is stable; `message` is already in the device's language. */
+export class ApiError extends Error {
+  readonly status: number;
+  readonly code: string;
+
+  constructor(status: number, code: string, message: string) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    this.code = code;
+  }
+}
+
+type Query = Record<string, string | number | undefined>;
+
+function withQuery(path: string, query?: Query): string {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(query ?? {})) {
+    if (value !== undefined && value !== '') {
+      params.set(key, String(value));
+    }
+  }
+  const qs = params.toString();
+  return `${API_BASE_URL}${path}${qs ? `?${qs}` : ''}`;
+}
+
+/** Reads the API error body. Falls back to a generic message when the body isn't in the expected shape. */
+async function readError(response: Response): Promise<ApiError> {
+  try {
+    const body = (await response.json()) as {
+      error?: { code?: string; message?: string };
+    };
+    return new ApiError(
+      response.status,
+      body.error?.code ?? 'UNKNOWN',
+      body.error?.message ?? `The request failed (${response.status}).`,
+    );
+  } catch {
+    return new ApiError(response.status, 'UNKNOWN', `The request failed (${response.status}).`);
+  }
+}
+
+/** GET a public or signed-in endpoint. Pass `token` for signed-in requests. */
+export async function apiGet<T>(path: string, query?: Query, token?: string): Promise<T> {
+  const headers: Record<string, string> = { Accept: 'application/json' };
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  const response = await fetch(withQuery(path, query), { headers });
+  if (!response.ok) {
+    throw await readError(response);
+  }
+  return (await response.json()) as T;
+}
+
+/** POST a JSON body and return the parsed answer. */
+export async function apiPost<T>(path: string, body: unknown): Promise<T> {
+  const response = await fetch(withQuery(path), {
+    method: 'POST',
+    headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!response.ok) {
+    throw await readError(response);
+  }
+  return (await response.json()) as T;
+}
+
+/** Send a JSON request with an optional bearer token. Returns null for a 204 answer. */
+export async function apiSend<T>(
+  method: 'POST' | 'DELETE',
+  path: string,
+  body?: unknown,
+  token?: string,
+): Promise<T | null> {
+  const headers: Record<string, string> = { Accept: 'application/json' };
+  if (body !== undefined) {
+    headers['Content-Type'] = 'application/json';
+  }
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  const response = await fetch(withQuery(path), {
+    method,
+    headers,
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+  if (!response.ok) {
+    throw await readError(response);
+  }
+  if (response.status === 204) {
+    return null;
+  }
+  return (await response.json()) as T;
+}
