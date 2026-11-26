@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 
 import { Button, Field, Heading, ProgressBar, Screen, TextLink } from '@/components/ui';
 import { ApiError } from '@/lib/api';
-import { useT } from '@/lib/i18n';
+import { useLocale, useT } from '@/lib/i18n';
 import { passwordMinLength } from '@/lib/links';
 import { useSession } from '@/lib/session';
 import { ageFromIsoDate, isoFromDisplayDate, MINOR_AGE, useSignUpDraft } from '@/lib/signup';
@@ -14,6 +14,7 @@ import { font, useColors } from '@/theme';
 export default function SignUpContactScreen() {
   const colors = useColors();
   const t = useT();
+  const { locale } = useLocale();
   const { stepOne } = useSignUpDraft();
   const { signUp } = useSession();
   const [email, setEmail] = useState('');
@@ -48,6 +49,7 @@ export default function SignUpContactScreen() {
         mobile,
         password,
         reminders,
+        locale,
         guardianName: minor ? guardianName.trim() : undefined,
         parentalConsent: minor ? parentalConsent : undefined,
       });

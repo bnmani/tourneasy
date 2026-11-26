@@ -1,6 +1,6 @@
 import '@/lib/sentry';
 
-import type { ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import {
   useFonts as useInter,
   Inter_400Regular,
@@ -11,19 +11,46 @@ import {
 import { Fraunces_700Bold, useFonts as useFraunces } from '@expo-google-fonts/fraunces';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useColorScheme } from 'react-native';
+import { Linking } from 'react-native';
+import { handleURLCallback } from '@stripe/stripe-react-native';
 
 import { AppLockProvider } from '@/lib/app-lock';
+import { PushSetup } from '@/lib/push';
 import { LocaleProvider } from '@/lib/i18n';
 import { SessionProvider, useSession } from '@/lib/session';
-import { ThemeProvider, useTheme } from '@/theme';
+import { ThemeProvider, useColors } from '@/theme';
 
 /** Status bar text that stays readable in the app's chosen theme (not only the phone's). */
 function ThemedStatusBar() {
-  const { preference } = useTheme();
-  const system = useColorScheme();
-  const dark = preference === 'dark' || (preference === 'system' && system === 'dark');
-  return <StatusBar style={dark ? 'light' : 'dark'} />;
+  const colors = useColors();
+  return <StatusBar style={colors.dark ? 'light' : 'dark'} />;
+}
+
+/** The screen stack, with the theme's background behind every screen so transitions never flash. */
+function ThemedStack({ children }: { children: ReactNode }) {
+  const colors = useColors();
+  return (
+    <Stack
+      screenOptions={{
+        headerShown: false,
+        animation: 'fade',
+        contentStyle: { backgroundColor: colors.bg },
+      }}
+    >
+      {children}
+    </Stack>
+  );
+}
+
+/** Hands links back from a bank page (iDEAL) to Stripe's payment sheet. */
+function StripeLinks() {
+  useEffect(() => {
+    const subscription = Linking.addEventListener('url', ({ url }) => {
+      if (url.includes('stripe-redirect')) void handleURLCallback(url);
+    });
+    return () => subscription.remove();
+  }, []);
+  return null;
 }
 
 /** Shows nothing until the stored login is checked, so no screen flashes before the right one. */
@@ -51,14 +78,16 @@ export default function RootLayout() {
       <ThemeProvider>
         <SessionProvider>
           <ThemedStatusBar />
+          <StripeLinks />
+          <PushSetup />
           <AppLockProvider>
             <WhenSessionReady>
-              <Stack screenOptions={{ headerShown: false, animation: 'fade' }}>
+              <ThemedStack>
                 <Stack.Screen name="index" />
                 <Stack.Screen name="(app)" />
                 <Stack.Screen name="(auth)" />
                 <Stack.Screen name="tournaments" />
-              </Stack>
+              </ThemedStack>
             </WhenSessionReady>
           </AppLockProvider>
         </SessionProvider>

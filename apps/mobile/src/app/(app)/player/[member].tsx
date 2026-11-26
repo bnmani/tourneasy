@@ -3,10 +3,17 @@ import { Alert, StyleSheet, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 
 import { Body, Button, Card, Heading, Hint, Row, Screen, TextLink } from '@/components/ui';
-import { useT } from '@/lib/i18n';
+import { dateLocaleTag, useLocale, useT } from '@/lib/i18n';
 import { disciplineOptions } from '@/lib/links';
-import { fetchPlayer, setFollowing, type PublicPlayer } from '@/lib/me';
-import { useColors } from '@/theme';
+import { MatchCard } from '@/components/MatchCard';
+import {
+  fetchPlayer,
+  fetchPlayerMatches,
+  setFollowing,
+  type PlayerMatch,
+  type PublicPlayer,
+} from '@/lib/me';
+import { font, useColors } from '@/theme';
 
 /** A public player: club, disciplines, followers, and a button to follow them. */
 export default function PlayerScreen() {
@@ -18,6 +25,18 @@ export default function PlayerScreen() {
   const [isSelf, setIsSelf] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const { locale } = useLocale();
+  const [matches, setMatches] = useState<PlayerMatch[] | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    fetchPlayerMatches(member, locale)
+      .then((list) => active && setMatches(list))
+      .catch(() => active && setMatches([]));
+    return () => {
+      active = false;
+    };
+  }, [member, locale]);
 
   useEffect(() => {
     let active = true;
@@ -75,6 +94,34 @@ export default function PlayerScreen() {
             <Row label={t('Plays')} value={disciplines || t('Not given')} />
             <Row label={t('Followers')} value={String(Math.max(0, player.followerCount))} last />
           </Card>
+          <Text style={[styles.section, { color: colors.fg }]}>{t('Coming matches')}</Text>
+          {matches === null ? <Hint>{t('Loading…')}</Hint> : null}
+          {matches && matches.length === 0 ? (
+            <Hint>{t('No matches planned in a published schedule.')}</Hint>
+          ) : null}
+          {(matches ?? []).map((m) => (
+            <MatchCard
+              key={m.id}
+              match={{
+                ...m,
+                number: null,
+                aEntryId: null,
+                bEntryId: null,
+                winnerEntryId: null,
+                sets: [],
+                changed: null,
+              }}
+              dateTag={dateLocaleTag(locale)}
+              subtitle={m.tournament.name}
+              showDate
+              onPress={() =>
+                router.push({
+                  pathname: '/tournaments/[slug]/schedule',
+                  params: { slug: m.tournament.slug, name: m.tournament.name },
+                })
+              }
+            />
+          ))}
           {isSelf ? (
             <Hint>{t('This is you. Others see this page when your profile is public.')}</Hint>
           ) : (
@@ -100,4 +147,5 @@ export default function PlayerScreen() {
 
 const styles = StyleSheet.create({
   title: { gap: 4 },
+  section: { fontSize: 17, fontFamily: font.semibold, marginTop: 4 },
 });

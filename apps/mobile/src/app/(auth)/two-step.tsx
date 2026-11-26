@@ -7,11 +7,14 @@ import { useT } from '@/lib/i18n';
 import { useSession } from '@/lib/session';
 import { useColors } from '@/theme';
 
-/** Second step of sign-in: the code from the authenticator app, or a recovery code. */
+/** Second step of sign-in: a passkey (Face ID / Touch ID), the authenticator code, or a recovery code. */
 export default function TwoStepScreen() {
   const colors = useColors();
   const t = useT();
-  const { pendingTwoStep, completeTwoStep, cancelTwoStep } = useSession();
+  const { pendingTwoStep, twoStepMethods, completeTwoStep, completeWithPasskey, cancelTwoStep } =
+    useSession();
+  const hasPasskey = !!twoStepMethods?.passkey;
+  const hasApp = twoStepMethods?.app ?? true;
 
   const [code, setCode] = useState('');
   // Authenticator codes are digits, so the number pad opens by default. Recovery codes have letters.
@@ -38,6 +41,18 @@ export default function TwoStepScreen() {
     }
   }
 
+  async function signInWithPasskey() {
+    setBusy(true);
+    setError(null);
+    try {
+      await completeWithPasskey();
+    } catch (caught) {
+      setError(caught instanceof Error ? t(caught.message) : t('Sign in failed. Try again.'));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   function cancel() {
     cancelTwoStep();
     router.replace('/signin');
@@ -48,11 +63,27 @@ export default function TwoStepScreen() {
       <View style={styles.container}>
         <TextLink title={t('Back')} onPress={cancel} />
         <Heading>{t('Two-step login')}</Heading>
-        <Body>
-          {recovery
-            ? t('Enter one of your recovery codes.')
-            : t('Enter the 6-digit code from your authenticator app.')}
-        </Body>
+        {hasPasskey ? (
+          <>
+            <Body>{t('Confirm it’s you with the passkey on this phone.')}</Body>
+            <Button
+              title={busy ? t('Checking…') : t('Use passkey')}
+              disabled={busy}
+              onPress={() => void signInWithPasskey()}
+            />
+            <Body>
+              {hasApp
+                ? t('Or enter the 6-digit code from your authenticator app or a recovery code.')
+                : t('Or enter one of your recovery codes.')}
+            </Body>
+          </>
+        ) : (
+          <Body>
+            {recovery
+              ? t('Enter one of your recovery codes.')
+              : t('Enter the 6-digit code from your authenticator app.')}
+          </Body>
+        )}
         <Field
           label={recovery ? t('Recovery code') : t('Code')}
           placeholder={recovery ? t('Recovery code') : t('123456')}
@@ -77,6 +108,7 @@ export default function TwoStepScreen() {
         <View style={styles.spacer} />
         <Button
           title={busy ? t('Checking…') : t('Continue')}
+          variant={hasPasskey ? 'secondary' : 'primary'}
           disabled={busy || code.trim().length === 0}
           onPress={submit}
         />

@@ -15,9 +15,7 @@ export default function PublicTournamentsScreen() {
       <View style={styles.container}>
         <View style={styles.header}>
           <Pressable accessibilityRole="button" onPress={() => router.back()} hitSlop={12}>
-            <Text style={{ color: colors.primary, fontSize: 16, fontWeight: '600' }}>
-              {t('Back')}
-            </Text>
+            <Text style={{ color: colors.fg, fontSize: 16, fontWeight: '600' }}>{t('Back')}</Text>
           </Pressable>
         </View>
         <Heading>{t('Tournaments')}</Heading>

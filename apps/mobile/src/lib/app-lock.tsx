@@ -16,7 +16,7 @@ import { StatusBar } from 'expo-status-bar';
 import { Button } from '@/components/ui';
 import { useT } from '@/lib/i18n';
 import { useSession } from '@/lib/session';
-import { font, splashBackground } from '@/theme';
+import { font, useColors } from '@/theme';
 
 const LOCK_KEY = 'tourneasy.appLock';
 
@@ -43,6 +43,7 @@ export function useAppLock(): AppLockValue {
  */
 export function AppLockProvider({ children }: { children: ReactNode }) {
   const t = useT();
+  const colors = useColors();
   const { profile } = useSession();
   const [enabled, setEnabled] = useState(false);
   const [locked, setLocked] = useState(false);
@@ -132,19 +133,19 @@ export function AppLockProvider({ children }: { children: ReactNode }) {
       {children}
       {/* Hide everything until the stored setting is read, so nothing shows before the lock. */}
       {!checked || active ? (
-        <View style={styles.cover}>
+        <View style={[styles.cover, { backgroundColor: colors.bg }]}>
           {active ? (
             <>
-              <StatusBar style="light" />
+              <StatusBar style={colors.dark ? 'light' : 'dark'} />
               <Image
                 accessibilityLabel={t('Tourneasy logo')}
-                source={require('../../assets/brand/logo-teal.jpeg')}
-                style={styles.logo}
+                source={require('../../assets/brand/logo-transparent.png')}
+                style={[styles.logo, !colors.dark && { tintColor: colors.fg }]}
                 resizeMode="contain"
               />
-              <Text style={styles.title}>{t('Tourneasy is locked')}</Text>
+              <Text style={[styles.title, { color: colors.fg }]}>{t('Tourneasy is locked')}</Text>
               <View style={styles.button}>
-                <Button title={t('Unlock')} onDark onPress={() => void unlock()} />
+                <Button title={t('Unlock')} onPress={() => void unlock()} />
               </View>
             </>
           ) : null}
@@ -157,13 +158,12 @@ export function AppLockProvider({ children }: { children: ReactNode }) {
 const styles = StyleSheet.create({
   cover: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: splashBackground,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 16,
     padding: 24,
   },
-  logo: { width: 180, height: 170 },
-  title: { fontSize: 22, fontFamily: font.display, color: '#f3fafb' },
+  logo: { width: 220, height: 147 },
+  title: { fontSize: 22, fontFamily: font.display },
   button: { alignSelf: 'stretch', marginTop: 24 },
 });

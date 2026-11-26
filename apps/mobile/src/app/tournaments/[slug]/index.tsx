@@ -2,10 +2,11 @@ import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 
-import { Body, Heading, Hint, Screen } from '@/components/ui';
+import { Body, Button, Heading, Hint, Screen } from '@/components/ui';
 import { Panel } from '@/components/Panel';
 import { dateLocaleTag, useLocale, useT, type TranslateFn } from '@/lib/i18n';
 import { disciplineOptions } from '@/lib/links';
+import { useSession } from '@/lib/session';
 import {
   fetchTournament,
   formatFee,
@@ -22,6 +23,7 @@ export default function TournamentDetailScreen() {
   const t = useT();
   const { locale } = useLocale();
   const tag = dateLocaleTag(locale);
+  const { profile } = useSession();
 
   const [tournament, setTournament] = useState<TournamentDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -49,9 +51,7 @@ export default function TournamentDetailScreen() {
     <Screen scroll>
       <View style={styles.container}>
         <Pressable accessibilityRole="button" onPress={() => router.back()} hitSlop={12}>
-          <Text style={{ color: colors.primary, fontSize: 16, fontWeight: '600' }}>
-            {t('Back')}
-          </Text>
+          <Text style={{ color: colors.fg, fontSize: 16, fontWeight: '600' }}>{t('Back')}</Text>
         </Pressable>
 
         {error ? <Hint>{error}</Hint> : null}
@@ -126,7 +126,34 @@ export default function TournamentDetailScreen() {
               </Panel>
             ) : null}
 
-            <Hint>{t('Entering a tournament is done on the Tourneasy website for now.')}</Hint>
+            {tournament.schedulePublished ? (
+              <Button
+                title={t('View the schedule')}
+                variant="secondary"
+                onPress={() =>
+                  router.push({
+                    pathname: '/tournaments/[slug]/schedule',
+                    params: { slug: tournament.slug, name: tournament.name },
+                  })
+                }
+              />
+            ) : null}
+
+            {tournament.phase === 'registrationOpen' ? (
+              <Button
+                title={t('Enter this tournament')}
+                onPress={() =>
+                  profile
+                    ? router.push({
+                        pathname: '/enter/[slug]',
+                        params: { slug: tournament.slug },
+                      })
+                    : router.push('/signin')
+                }
+              />
+            ) : (
+              <Hint>{phaseHint(tournament.phase, t)}</Hint>
+            )}
           </>
         ) : null}
       </View>
@@ -141,7 +168,22 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 4 },
 });
 
-/** A category shown by name: discipline codes such as HD become "Men's doubles"; other names stay as they are. */
+/** Why entering isn't possible right now. */
+function phaseHint(phase: string, t: TranslateFn): string {
+  switch (phase) {
+    case 'registrationSoon':
+      return t('Entries open soon.');
+    case 'registrationClosed':
+      return t('Entries are closed.');
+    case 'inProgress':
+      return t('This tournament is being played.');
+    case 'finished':
+      return t('This tournament has finished.');
+    default:
+      return '';
+  }
+}
+
 /** The organiser's own name, else discipline + age group + level, e.g. "Men's singles U15". */
 function categoryLabel(event: TournamentEvent, locale: string, t: TranslateFn): string {
   const custom = pickLocale(event.name, locale);

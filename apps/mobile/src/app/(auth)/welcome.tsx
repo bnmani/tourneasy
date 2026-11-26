@@ -1,61 +1,62 @@
-import { Image, StyleSheet, Text, View } from 'react-native';
-import { router, useIsFocused } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
+import { Image, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button, TextLink } from '@/components/ui';
 import { useT } from '@/lib/i18n';
-import { font, splashBackground } from '@/theme';
+import { font, useColors } from '@/theme';
 
-// Logo artwork is 1381 x 1299 px. Shown 256 px wide, it is 241 px tall.
-const LOGO_WIDTH = 256;
-const LOGO_HEIGHT = 241;
-// Band is a fixed height, so moving or resizing the logo never moves the text below it.
-const BAND_HEIGHT = 300;
-// Offsets from the approved mockup.
-const LOGO_OFFSET_Y = -51;
-const TEXT_OFFSET_Y = -72;
+// The transparent logo artwork is 800 x 536 px.
+const LOGO_ASPECT = 800 / 536;
 
-// The welcome screen is always shown on the logo's teal, with light text, in either theme.
-const TEXT = '#f3fafb';
-const MUTED = '#afdde5';
-
+/**
+ * Welcome, as in the approved mock-up: the logo with the wordmark and tagline, the welcome
+ * text right under it, and the buttons at the bottom.
+ */
 export default function WelcomeScreen() {
   const t = useT();
-  const focused = useIsFocused();
+  const colors = useColors();
+  // 70% of the content width, as in the mock-up.
+  const logoWidth = Math.min(300, (useWindowDimensions().width - 48) * 0.7);
   return (
-    <SafeAreaView edges={['top', 'bottom']} style={styles.screen}>
-      {/* Light status bar text on the brand teal, only while this screen is showing. */}
-      {focused ? <StatusBar style="light" /> : null}
+    <SafeAreaView edges={['top', 'bottom']} style={[styles.screen, { backgroundColor: colors.bg }]}>
       <View style={styles.container}>
-        <View style={styles.band}>
+        <View style={styles.brand}>
           <Image
             accessibilityLabel={t('Tourneasy logo')}
-            source={require('../../../assets/brand/logo-teal.jpeg')}
-            style={[styles.logo, { transform: [{ translateY: LOGO_OFFSET_Y }] }]}
+            source={require('../../../assets/brand/logo-transparent.png')}
+            // In the light theme the logo is drawn in the text colour.
+            style={{
+              width: logoWidth,
+              height: logoWidth / LOGO_ASPECT,
+              tintColor: colors.dark ? undefined : colors.fg,
+            }}
             resizeMode="contain"
           />
+          <Text style={[styles.wordmark, { color: colors.fg }]}>TOURNEASY</Text>
+          <Text style={[styles.tagline, { color: colors.muted }]}>{t('Tournament made easy')}</Text>
         </View>
-        <View style={[styles.copy, { transform: [{ translateY: TEXT_OFFSET_Y }] }]}>
-          <Text style={styles.eyebrow}>{t('Welcome')}</Text>
-          <Text style={styles.heading}>{t('Enter tournaments and follow your matches')}</Text>
-          <Text style={styles.body}>
+        <View style={styles.copy}>
+          <Text style={[styles.eyebrow, { color: colors.muted }]}>{t('Welcome')}</Text>
+          <Text style={[styles.heading, { color: colors.fg }]}>
+            {t('Enter tournaments and follow your matches')}
+          </Text>
+          <Text style={[styles.body, { color: colors.muted }]}>
             {t(
               'Find a badminton tournament near you, see your schedule on court, and get a message when you are called.',
             )}
           </Text>
         </View>
         <View style={styles.actions}>
-          <Button title={t('Sign in')} onDark onPress={() => router.push('/signin')} />
+          <Button title={t('Sign in')} onPress={() => router.push('/signin')} />
           <Button
             title={t('Create an account')}
             variant="secondary"
-            onDark
             onPress={() => router.push('/signup/name')}
           />
           <TextLink
             title={t('Browse tournaments without an account')}
-            onDark
+            center
             onPress={() => router.push('/tournaments')}
           />
         </View>
@@ -65,20 +66,25 @@ export default function WelcomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: splashBackground },
-  container: { flex: 1, paddingHorizontal: 24, paddingBottom: 24, gap: 24 },
-  band: {
-    height: BAND_HEIGHT,
-    marginHorizontal: -24,
-    backgroundColor: splashBackground,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
+  screen: { flex: 1 },
+  container: { flex: 1, paddingHorizontal: 24, paddingBottom: 16, gap: 20 },
+  brand: { alignItems: 'center', paddingTop: 12 },
+  wordmark: { fontSize: 30, fontFamily: font.display, letterSpacing: 4.2, marginTop: -4 },
+  tagline: {
+    fontSize: 12,
+    fontFamily: font.regular,
+    letterSpacing: 2.4,
+    textTransform: 'uppercase',
+    marginTop: 2,
   },
-  logo: { width: LOGO_WIDTH, height: LOGO_HEIGHT },
-  copy: { gap: 12 },
-  eyebrow: { fontSize: 14, fontFamily: font.semibold, color: MUTED },
-  heading: { fontSize: 30, lineHeight: 35, fontFamily: font.display, color: TEXT },
-  body: { fontSize: 15, lineHeight: 22, fontFamily: font.regular, color: MUTED },
-  actions: { flex: 1, justifyContent: 'flex-end', gap: 12 },
+  copy: { gap: 10 },
+  eyebrow: {
+    fontSize: 13,
+    fontFamily: font.semibold,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+  },
+  heading: { fontSize: 30, lineHeight: 35, fontFamily: font.display },
+  body: { fontSize: 15, lineHeight: 22, fontFamily: font.regular },
+  actions: { flex: 1, justifyContent: 'flex-end', gap: 16 },
 });

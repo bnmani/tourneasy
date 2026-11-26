@@ -8,13 +8,22 @@ export class ApiError extends Error {
   readonly code: string;
   /** For validation errors: the fields the server rejected, as { field: reason }. */
   readonly fields: Record<string, string>;
+  /** Everything the server added, e.g. { methods } on MFA_REQUIRED. */
+  readonly details: Record<string, unknown>;
 
-  constructor(status: number, code: string, message: string, fields: Record<string, string> = {}) {
+  constructor(
+    status: number,
+    code: string,
+    message: string,
+    fields: Record<string, string> = {},
+    details: Record<string, unknown> = {},
+  ) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
     this.code = code;
     this.fields = fields;
+    this.details = details;
   }
 }
 
@@ -35,13 +44,18 @@ function withQuery(path: string, query?: Query): string {
 async function readError(response: Response): Promise<ApiError> {
   try {
     const body = (await response.json()) as {
-      error?: { code?: string; message?: string; details?: { fields?: Record<string, string> } };
+      error?: {
+        code?: string;
+        message?: string;
+        details?: { fields?: Record<string, string> } & Record<string, unknown>;
+      };
     };
     return new ApiError(
       response.status,
       body.error?.code ?? 'UNKNOWN',
       body.error?.message ?? `The request failed (${response.status}).`,
       body.error?.details?.fields ?? {},
+      body.error?.details ?? {},
     );
   } catch {
     return new ApiError(response.status, 'UNKNOWN', `The request failed (${response.status}).`);
@@ -49,8 +63,13 @@ async function readError(response: Response): Promise<ApiError> {
 }
 
 /** GET a public or signed-in endpoint. Pass `token` for signed-in requests. */
-export async function apiGet<T>(path: string, query?: Query, token?: string): Promise<T> {
-  const headers: Record<string, string> = { Accept: 'application/json' };
+export async function apiGet<T>(
+  path: string,
+  query?: Query,
+  token?: string,
+  extraHeaders?: Record<string, string>,
+): Promise<T> {
+  const headers: Record<string, string> = { Accept: 'application/json', ...extraHeaders };
   if (token) {
     headers.Authorization = `Bearer ${token}`;
   }

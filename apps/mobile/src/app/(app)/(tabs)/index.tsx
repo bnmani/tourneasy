@@ -76,7 +76,10 @@ export default function HomeScreen() {
       <Pressable
         accessibilityRole="button"
         onPress={() => router.navigate('/(app)/(tabs)/schedule')}
-        style={[styles.hero, { backgroundColor: colors.hero }]}
+        style={[
+          styles.hero,
+          { backgroundColor: colors.hero, borderColor: colors.border, boxShadow: colors.lift },
+        ]}
       >
         <Text style={[styles.heroLabel, { color: colors.heroMuted }]}>
           {nextMatch ? t('NEXT MATCH') : t('YOUR MATCHES')}
@@ -179,7 +182,7 @@ const styles = StyleSheet.create({
   date: { fontSize: 14 },
   hello: { fontSize: 32, fontFamily: font.display },
   dots: { fontSize: 20, fontFamily: font.bold },
-  hero: { borderRadius: 18, padding: 18, gap: 8 },
+  hero: { borderRadius: 20, borderWidth: 1, padding: 18, gap: 8 },
   heroLabel: { fontSize: 13, fontFamily: font.semibold, letterSpacing: 0.5 },
   heroTitle: { fontSize: 22, fontFamily: font.display },
   heroMeta: { fontSize: 15, lineHeight: 21 },

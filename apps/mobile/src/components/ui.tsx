@@ -45,37 +45,24 @@ export function Hint({ children }: { children: ReactNode }) {
 
 type ButtonVariant = 'primary' | 'secondary' | 'destructive';
 
-// Colours for buttons and links placed on the brand teal (the welcome screen), in either theme.
-const ON_DARK = { text: '#f3fafb', muted: '#afdde5', teal: '#11464c' } as const;
-
+/**
+ * The approved pill: the screen's own colour, a thin light outline, spaced capitals and a
+ * shadow on the left, right and underneath so it floats. Main and secondary buttons look the
+ * same; a destructive one has a red outline and text.
+ */
 export function Button({
   title,
   onPress,
   variant = 'primary',
   disabled = false,
-  onDark = false,
 }: {
   title: string;
   onPress: () => void;
   variant?: ButtonVariant;
   disabled?: boolean;
-  /** True on the brand teal background, where theme colours would be dark on dark. */
-  onDark?: boolean;
 }) {
   const colors = useColors();
-  const tone = onDark
-    ? variant === 'primary'
-      ? { backgroundColor: ON_DARK.text, borderColor: ON_DARK.text, color: ON_DARK.teal }
-      : { backgroundColor: 'transparent', borderColor: ON_DARK.muted, color: ON_DARK.text }
-    : variant === 'primary'
-      ? { backgroundColor: colors.primary, borderColor: colors.primary, color: colors.primaryFg }
-      : variant === 'destructive'
-        ? {
-            backgroundColor: 'transparent',
-            borderColor: colors.destructive,
-            color: colors.destructive,
-          }
-        : { backgroundColor: 'transparent', borderColor: colors.border, color: colors.primary };
+  const destructive = variant === 'destructive';
   return (
     <Pressable
       accessibilityRole="button"
@@ -85,12 +72,18 @@ export function Button({
       onPress={onPress}
       style={({ pressed }) => [
         styles.button,
-        { backgroundColor: tone.backgroundColor, borderColor: tone.borderColor },
+        {
+          backgroundColor: colors.card,
+          borderColor: destructive ? colors.destructive : colors.border,
+          boxShadow: pressed && !disabled ? colors.liftPressed : colors.lift,
+        },
+        pressed && !disabled && styles.buttonPressed,
         disabled && styles.disabled,
-        pressed && !disabled && styles.pressed,
       ]}
     >
-      <Text style={[styles.buttonText, { color: tone.color }]}>{title}</Text>
+      <Text style={[styles.buttonText, { color: destructive ? colors.destructive : colors.fg }]}>
+        {title}
+      </Text>
     </Pressable>
   );
 }
@@ -98,19 +91,16 @@ export function Button({
 export function TextLink({
   title,
   onPress,
-  onDark = false,
+  center = false,
 }: {
   title: string;
   onPress: () => void;
-  /** True on the brand teal background. */
-  onDark?: boolean;
+  center?: boolean;
 }) {
   const colors = useColors();
   return (
     <Pressable accessibilityRole="link" onPress={onPress} style={styles.link} hitSlop={8}>
-      <Text style={[styles.linkText, { color: onDark ? ON_DARK.muted : colors.primary }]}>
-        {title}
-      </Text>
+      <Text style={[styles.linkText, { color: colors.fg }, center && styles.center]}>{title}</Text>
     </Pressable>
   );
 }
@@ -136,11 +126,17 @@ export function Field({ label, hint, ...input }: FieldProps) {
   );
 }
 
+/** A floating card: outline and shadow on the outside, contents clipped to the rounded corners. */
 export function Card({ children }: { children: ReactNode }) {
   const colors = useColors();
   return (
-    <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-      {children}
+    <View
+      style={[
+        styles.card,
+        { backgroundColor: colors.card, borderColor: colors.border, boxShadow: colors.liftSmall },
+      ]}
+    >
+      <View style={styles.cardInner}>{children}</View>
     </View>
   );
 }
@@ -208,11 +204,11 @@ export function Chip({
       style={[
         styles.chip,
         selected
-          ? { backgroundColor: colors.primary, borderColor: colors.primary }
+          ? { backgroundColor: colors.card, borderColor: colors.fg, boxShadow: colors.liftSmall }
           : { backgroundColor: 'transparent', borderColor: colors.inputBorder },
       ]}
     >
-      <Text style={[styles.chipText, { color: selected ? colors.primaryFg : colors.fg }]}>
+      <Text style={[styles.chipText, { color: selected ? colors.fg : colors.muted }]}>
         {selected ? `${label} ✓` : label}
       </Text>
     </Pressable>
@@ -230,7 +226,7 @@ export function Segmented<T extends string>({
 }) {
   const colors = useColors();
   return (
-    <View style={[styles.segmented, { backgroundColor: colors.card, borderColor: colors.border }]}>
+    <View style={[styles.segmented, { backgroundColor: colors.bg, borderColor: colors.border }]}>
       {options.map((option) => {
         const selected = option.value === value;
         return (
@@ -239,9 +235,16 @@ export function Segmented<T extends string>({
             accessibilityRole="button"
             accessibilityState={{ selected }}
             onPress={() => onChange(option.value)}
-            style={[styles.segment, selected && { backgroundColor: colors.primary }]}
+            style={[
+              styles.segment,
+              selected && {
+                backgroundColor: colors.card,
+                borderColor: colors.border,
+                boxShadow: colors.liftSmall,
+              },
+            ]}
           >
-            <Text style={[styles.segmentText, { color: selected ? colors.primaryFg : colors.fg }]}>
+            <Text style={[styles.segmentText, { color: selected ? colors.fg : colors.muted }]}>
               {option.label}
             </Text>
           </Pressable>
@@ -266,7 +269,10 @@ export function IconButton({
       accessibilityRole="button"
       accessibilityLabel={label}
       onPress={onPress}
-      style={[styles.iconButton, { backgroundColor: colors.card, borderColor: colors.border }]}
+      style={[
+        styles.iconButton,
+        { backgroundColor: colors.card, borderColor: colors.border, boxShadow: colors.liftSmall },
+      ]}
     >
       {children}
     </Pressable>
@@ -295,14 +301,22 @@ const styles = StyleSheet.create({
   hint: { fontSize: 13, lineHeight: 19 },
   button: {
     minHeight: 52,
-    borderRadius: 14,
-    borderWidth: 1.5,
+    borderRadius: 999,
+    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 16,
+    paddingHorizontal: 22,
   },
-  buttonText: { fontSize: 17, fontFamily: font.semibold },
+  buttonPressed: { transform: [{ translateY: 1 }] },
+  buttonText: {
+    fontSize: 14,
+    fontFamily: font.regular,
+    letterSpacing: 3.2,
+    textTransform: 'uppercase',
+    textAlign: 'center',
+  },
   disabled: { opacity: 0.5 },
+  center: { textAlign: 'center' },
   pressed: { opacity: 0.8 },
   link: { minHeight: 44, justifyContent: 'center' },
   linkText: { fontSize: 15, fontFamily: font.semibold },
@@ -315,7 +329,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     fontSize: 16,
   },
-  card: { borderWidth: 1, borderRadius: 14, overflow: 'hidden' },
+  card: { borderWidth: 1, borderRadius: 16 },
+  cardInner: { borderRadius: 15, overflow: 'hidden' },
   row: {
     minHeight: 60,
     paddingVertical: 10,
@@ -339,10 +354,18 @@ const styles = StyleSheet.create({
   segmented: {
     flexDirection: 'row',
     borderWidth: 1,
-    borderRadius: 12,
-    overflow: 'hidden',
+    borderRadius: 999,
+    padding: 3,
   },
-  segment: { flex: 1, minHeight: 48, alignItems: 'center', justifyContent: 'center' },
+  segment: {
+    flex: 1,
+    minHeight: 42,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
   segmentText: { fontSize: 15, fontFamily: font.semibold },
   iconButton: {
     width: 44,

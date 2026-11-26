@@ -96,14 +96,15 @@ export function TournamentList() {
               style={[
                 styles.filter,
                 {
-                  borderColor: colors.border,
-                  backgroundColor: active ? colors.primary : colors.card,
+                  borderColor: active ? colors.border : 'transparent',
+                  backgroundColor: colors.card,
+                  boxShadow: active ? colors.liftSmall : undefined,
                 },
               ]}
             >
               <Text
                 style={{
-                  color: active ? colors.primaryFg : colors.fg,
+                  color: active ? colors.fg : colors.muted,
                   fontFamily: font.semibold,
                   fontSize: 13,
                 }}

@@ -83,12 +83,7 @@ export default function SignUpNameScreen() {
           automaticallyAdjustKeyboardInsets
         >
           <Heading>{t('Create your account')}</Heading>
-          <Field
-            label={t('First name')}
-            placeholder={t('As on your membership card')}
-            value={firstName}
-            onChangeText={setFirstName}
-          />
+          <Field label={t('First name')} value={firstName} onChangeText={setFirstName} />
           <Field
             label={t('Name prefix (optional)')}
             placeholder={t('e.g. van, de')}

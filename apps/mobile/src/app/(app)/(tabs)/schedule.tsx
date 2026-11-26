@@ -1,12 +1,14 @@
 import { useCallback, useState } from 'react';
-import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Card, Heading, Hint, Segmented } from '@/components/ui';
+import { MatchCard } from '@/components/MatchCard';
+import { Button, Card, Heading, Hint, Segmented } from '@/components/ui';
+import { formatCents, payShares, withdrawEntry } from '@/lib/entries';
 import { dateLocaleTag, useLocale, useT, type TranslateFn } from '@/lib/i18n';
 import { disciplineOptions } from '@/lib/links';
-import { courtName, fetchMyEntries, fetchMyMatches, type MyEntry, type MyMatch } from '@/lib/me';
+import { fetchMyEntries, fetchMyMatches, type MyEntry, type MyMatch } from '@/lib/me';
 import { pickLocale } from '@/lib/tournaments';
 import { font, useColors } from '@/theme';
 
@@ -87,7 +89,18 @@ export default function ScheduleTab() {
               <View key={day} style={styles.section}>
                 <Text style={[styles.day, { color: colors.fg }]}>{day}</Text>
                 {dayMatches.map((match) => (
-                  <MatchCard key={match.id} match={match} dateTag={dateTag} />
+                  <MatchCard
+                    key={match.id}
+                    match={match}
+                    dateTag={dateTag}
+                    subtitle={match.tournament.name}
+                    onPress={() =>
+                      router.push({
+                        pathname: '/tournaments/[slug]/schedule',
+                        params: { slug: match.tournament.slug, name: match.tournament.name },
+                      })
+                    }
+                  />
                 ))}
               </View>
             ))
@@ -102,7 +115,12 @@ export default function ScheduleTab() {
             />
           ) : (
             upcomingEntries.map((entry) => (
-              <EntryCard key={entry.id} entry={entry} dateTag={dateTag} />
+              <EntryCard
+                key={entry.id}
+                entry={entry}
+                dateTag={dateTag}
+                onChanged={() => void load()}
+              />
             ))
           )
         ) : null}
@@ -114,58 +132,28 @@ export default function ScheduleTab() {
 function Empty({ title, text }: { title: string; text: string }) {
   const colors = useColors();
   return (
-    <View style={[styles.empty, { backgroundColor: colors.hero }]}>
+    <View
+      style={[
+        styles.empty,
+        { backgroundColor: colors.hero, borderColor: colors.border, boxShadow: colors.lift },
+      ]}
+    >
       <Text style={[styles.emptyTitle, { color: colors.heroFg }]}>{title}</Text>
       <Text style={[styles.emptyText, { color: colors.heroMuted }]}>{text}</Text>
     </View>
   );
 }
 
-function MatchCard({ match, dateTag }: { match: MyMatch; dateTag: string }) {
-  const colors = useColors();
-  const t = useT();
-  const time = match.startsAt
-    ? new Date(match.startsAt).toLocaleTimeString(dateTag, { hour: '2-digit', minute: '2-digit' })
-    : t('Time to follow');
-  const court = courtName(match.court);
-  const score = match.sets.map((s) => `${s.scoreA}-${s.scoreB}`).join('  ');
-  const aWon = !!match.winnerEntryId && match.winnerEntryId === match.aEntryId;
-  const bWon = !!match.winnerEntryId && match.winnerEntryId === match.bEntryId;
-  const status = statusLabel(match.status, t);
-  return (
-    <Card>
-      <Pressable
-        accessibilityRole="button"
-        onPress={() =>
-          router.push({ pathname: '/tournaments/[slug]', params: { slug: match.tournament.slug } })
-        }
-        style={styles.card}
-      >
-        <View style={styles.cardTop}>
-          <Text style={[styles.time, { color: colors.primary }]}>
-            {time}
-            {court ? ` · ${t('Court {court}', { court })}` : ''}
-          </Text>
-          {status ? (
-            <Text style={[styles.badge, { color: colors.primary, borderColor: colors.primary }]}>
-              {status}
-            </Text>
-          ) : match.changed ? (
-            <Text style={[styles.badge, { color: colors.muted, borderColor: colors.border }]}>
-              {match.changed === 'new' ? t('New') : t('Changed')}
-            </Text>
-          ) : null}
-        </View>
-        <Text style={[styles.player, { color: colors.fg }, aWon && styles.winner]}>{match.a}</Text>
-        <Text style={[styles.player, { color: colors.fg }, bWon && styles.winner]}>{match.b}</Text>
-        {score ? <Text style={[styles.score, { color: colors.fg }]}>{score}</Text> : null}
-        <Hint>{[match.event, match.round, match.tournament.name].filter(Boolean).join(' · ')}</Hint>
-      </Pressable>
-    </Card>
-  );
-}
-
-function EntryCard({ entry, dateTag }: { entry: MyEntry; dateTag: string }) {
+function EntryCard({
+  entry,
+  dateTag,
+  onChanged,
+}: {
+  entry: MyEntry;
+  dateTag: string;
+  onChanged: () => void;
+}) {
+  const [busy, setBusy] = useState(false);
   const colors = useColors();
   const t = useT();
   const dates = formatRange(entry.tournament.startsOn, entry.tournament.endsOn, dateTag);
@@ -196,24 +184,87 @@ function EntryCard({ entry, dateTag }: { entry: MyEntry; dateTag: string }) {
         <Text style={[styles.player, { color: colors.fg }]}>{entry.tournament.name}</Text>
         <Hint>{[category, partner].filter(Boolean).join(' · ')}</Hint>
       </Pressable>
+      {entry.canPay || entry.canWithdraw ? (
+        <View style={styles.actions}>
+          {entry.canPay && entry.paymentStatus === 'UNPAID' ? (
+            <View style={styles.action}>
+              <Button
+                title={
+                  busy
+                    ? t('Opening…')
+                    : entry.amountDueCents
+                      ? t('Pay {amount}', { amount: formatCents(entry.amountDueCents, locale) })
+                      : t('Pay')
+                }
+                disabled={busy}
+                onPress={() => void pay()}
+              />
+            </View>
+          ) : null}
+          {entry.canWithdraw ? (
+            <View style={styles.action}>
+              <Button
+                title={t('Withdraw')}
+                variant="destructive"
+                disabled={busy}
+                onPress={withdraw}
+              />
+            </View>
+          ) : null}
+        </View>
+      ) : null}
     </Card>
   );
-}
 
-function statusLabel(status: MyMatch['status'], t: TranslateFn): string | null {
-  switch (status) {
-    case 'CALLED':
-      return t('Called');
-    case 'IN_PROGRESS':
-      return t('Playing');
-    case 'COMPLETED':
-      return t('Played');
-    case 'WALKOVER':
-      return t('Walkover');
-    case 'RETIRED':
-      return t('Retired');
-    default:
-      return null;
+  async function pay() {
+    setBusy(true);
+    try {
+      const outcome = await payShares([entry.participantId]);
+      if (outcome !== 'canceled') {
+        Alert.alert(
+          outcome === 'processing' ? t('Payment received') : t('Paid'),
+          outcome === 'processing'
+            ? t('Your bank is still confirming the payment. Your entry updates by itself.')
+            : t('Thank you. You get a receipt by email.'),
+        );
+        onChanged();
+      }
+    } catch (caught) {
+      Alert.alert(
+        t('Payment not finished'),
+        caught instanceof Error ? caught.message : t('Something went wrong. Try again.'),
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function withdraw() {
+    Alert.alert(
+      t('Withdraw from {name}?', { name: entry.tournament.name }),
+      t('Your place goes to the next player. Any refund follows the tournament’s refund rules.'),
+      [
+        { text: t('Keep my entry'), style: 'cancel' },
+        {
+          text: t('Withdraw'),
+          style: 'destructive',
+          onPress: async () => {
+            setBusy(true);
+            try {
+              await withdrawEntry(entry.id);
+              onChanged();
+            } catch (caught) {
+              Alert.alert(
+                t('Not withdrawn'),
+                caught instanceof Error ? caught.message : t('Something went wrong. Try again.'),
+              );
+            } finally {
+              setBusy(false);
+            }
+          },
+        },
+      ],
+    );
   }
 }
 
@@ -283,7 +334,9 @@ const styles = StyleSheet.create({
   player: { fontSize: 16, fontFamily: font.medium },
   winner: { fontFamily: font.bold },
   score: { fontSize: 15, fontFamily: font.semibold },
-  empty: { borderRadius: 18, padding: 18, gap: 8 },
+  actions: { flexDirection: 'row', gap: 10, paddingHorizontal: 14, paddingBottom: 14 },
+  action: { flex: 1 },
+  empty: { borderRadius: 20, borderWidth: 1, padding: 18, gap: 8 },
   emptyTitle: { fontSize: 22, fontFamily: font.display },
   emptyText: { fontSize: 15, lineHeight: 21 },
 });

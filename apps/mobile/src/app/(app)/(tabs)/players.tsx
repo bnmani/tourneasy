@@ -118,7 +118,7 @@ function PlayerRow({ player }: { player: PublicPlayer }) {
       }
       style={({ pressed }) => [
         styles.row,
-        { backgroundColor: colors.card, borderColor: colors.border },
+        { backgroundColor: colors.card, borderColor: colors.border, boxShadow: colors.liftSmall },
         pressed && { opacity: 0.8 },
       ]}
     >

@@ -1,10 +1,11 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Alert, Linking, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { router } from 'expo-router';
 
 import { Button, Card, Heading, Row, Screen, Segmented, TextLink } from '@/components/ui';
 import { useAppLock } from '@/lib/app-lock';
 import { useLocale, useT } from '@/lib/i18n';
+import { shareMyData } from '@/lib/me';
 import { links } from '@/lib/links';
 import { font, useColors, useTheme } from '@/theme';
 
@@ -20,6 +21,22 @@ export default function SettingsScreen() {
   const { locale, setLocale } = useLocale();
 
   const lock = useAppLock();
+  const [exporting, setExporting] = useState(false);
+
+  async function downloadData() {
+    if (exporting) return;
+    setExporting(true);
+    try {
+      await shareMyData();
+    } catch (caught) {
+      Alert.alert(
+        t('Download my data'),
+        caught instanceof Error ? t(caught.message) : t('Something went wrong. Try again.'),
+      );
+    } finally {
+      setExporting(false);
+    }
+  }
 
   async function toggleLock(on: boolean) {
     if (!on) {
@@ -65,7 +82,8 @@ export default function SettingsScreen() {
                 accessibilityLabel={t('App lock')}
                 value={lock.enabled}
                 onValueChange={(on) => void toggleLock(on)}
-                trackColor={{ true: colors.primary }}
+                trackColor={{ true: colors.primary, false: colors.border }}
+                ios_backgroundColor={colors.border}
               />
             </View>
           </Card>
@@ -79,9 +97,8 @@ export default function SettingsScreen() {
             />
             <Row
               label={t('Download my data')}
-              onPress={() =>
-                Alert.alert(t('Coming soon'), t('Data download arrives in a later update.'))
-              }
+              hint={exporting ? t('Preparing your file…') : undefined}
+              onPress={() => void downloadData()}
               last
             />
           </Card>

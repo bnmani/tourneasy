@@ -52,16 +52,34 @@ export type SignUpInput = {
   email: string;
   mobile: string;
   password: string;
-  /** Not sent to the website yet: match reminders come with notifications. */
+  /** Unticked: tournament reminders are switched off at the first sign-in. */
   reminders: boolean;
+  /** The app's language, which also becomes the account's email language. */
+  locale?: 'nl' | 'en';
   /** Only for players under 16. */
   guardianName?: string;
   parentalConsent?: boolean;
 };
 
 /** The account API, as the screens use it. */
+/** A passkey answer for the second login step (from /auth/passkey-options and the phone). */
+export type PasskeyAnswer = { pendingId: string; response: Record<string, unknown> };
+
+/** Which second steps an account has, as the website reports with MFA_REQUIRED. */
+export type TwoStepMethods = { app: boolean; passkey: boolean };
+
 export interface AuthApi {
-  signIn(identifier: string, password: string, code?: string): Promise<Profile>;
+  signIn(
+    identifier: string,
+    password: string,
+    code?: string,
+    passkey?: PasskeyAnswer,
+  ): Promise<Profile>;
+  /** Starts a passkey login: checks the password and returns what the phone must sign. */
+  passkeyOptions?(
+    identifier: string,
+    password: string,
+  ): Promise<{ pendingId: string; options: Record<string, unknown> }>;
   signUp(input: SignUpInput): Promise<void>;
   deleteAccount(password: string): Promise<void>;
   /** Saves the changed fields and returns the profile as the server now holds it. */
@@ -157,6 +175,10 @@ type AccountResponse = {
 let accessToken: string | null = null;
 
 const REFRESH_KEY = 'tourneasy.refreshToken';
+/** The APNs token this phone registered for push, so sign-out can remove it from the account. */
+export const PUSH_TOKEN_KEY = 'tourneasy.pushToken';
+/** Email of a new account that unticked "remind me", until its first sign-in applies it. */
+export const REMINDERS_OFF_KEY = 'tourneasy.remindersOff';
 
 function toProfile(account: AccountResponse): Profile {
   const p = account.profile!;
@@ -234,27 +256,18 @@ export async function signedIn<T>(
 
 /** Sign-in against the Tourneasy API. Sign-up and account deletion still use the stand-in until they're wired. */
 export const apiAuth: AuthApi = {
-  async signIn(identifier, password, code) {
+  async signIn(identifier, password, code, passkey) {
     if (!identifier.trim() || !password) {
       throw new Error('Enter your email or member number and your password.');
     }
-    let tokens: TokenPair;
-    try {
-      tokens = await apiPost<TokenPair>('/auth/token', {
-        identifier: identifier.trim(),
-        password,
-        ...(code ? { code } : {}),
-        deviceName: 'Tourneasy app',
-      });
-    } catch (error) {
-      // MFA_REQUIRED is handled by the session, which asks for the code.
-      if (error instanceof ApiError && error.code === 'MFA_APP_REQUIRED') {
-        throw new Error(
-          'This account signs in with a passkey only. Add the authenticator app on the website first.',
-        );
-      }
-      throw error;
-    }
+    // MFA_REQUIRED and MFA_APP_REQUIRED are handled by the session, which asks for the second step.
+    const tokens = await apiPost<TokenPair>('/auth/token', {
+      identifier: identifier.trim(),
+      password,
+      ...(code ? { code } : {}),
+      ...(passkey ? { passkey } : {}),
+      deviceName: 'Tourneasy app',
+    });
     const account = await apiGet<AccountResponse>('/me', undefined, tokens.accessToken);
     if (!account.profile) {
       throw new Error('This account has no player profile. The app is for players.');
@@ -262,6 +275,13 @@ export const apiAuth: AuthApi = {
     accessToken = tokens.accessToken;
     await SecureStore.setItemAsync(REFRESH_KEY, tokens.refreshToken);
     return toProfile(account);
+  },
+
+  async passkeyOptions(identifier, password) {
+    return apiPost<{ pendingId: string; options: Record<string, unknown> }>(
+      '/auth/passkey-options',
+      { identifier: identifier.trim(), password },
+    );
   },
 
   async signUp(input) {
@@ -280,13 +300,17 @@ export const apiAuth: AuthApi = {
       dateOfBirth,
       gender: input.gender,
       preferredDisciplines: input.preferredDisciplines,
-      locale: 'nl',
+      locale: input.locale ?? 'nl',
       acceptTerms: true,
       acceptPrivacy: true,
       ...(input.parentalConsent !== undefined
         ? { parentalConsent: input.parentalConsent, guardianName: input.guardianName ?? '' }
         : {}),
     });
+    // Preferences can only be saved once signed in, so remember the choice until then.
+    if (!input.reminders) {
+      await SecureStore.setItemAsync(REMINDERS_OFF_KEY, input.email.trim().toLowerCase());
+    }
   },
 
   async saveProfile(patch) {
@@ -351,6 +375,12 @@ export const apiAuth: AuthApi = {
     const token = accessToken;
     accessToken = null;
     await SecureStore.deleteItemAsync(REFRESH_KEY);
+    // Stop pushes for this account on this phone before the login ends.
+    const pushToken = await SecureStore.getItemAsync(PUSH_TOKEN_KEY);
+    await SecureStore.deleteItemAsync(PUSH_TOKEN_KEY);
+    if (token && pushToken) {
+      await apiSend('DELETE', `/me/push-devices/${pushToken}`, undefined, token).catch(() => null);
+    }
     if (token) {
       await apiSend('POST', '/auth/logout', undefined, token).catch(() => null);
     }
@@ -365,7 +395,10 @@ type SessionValue = {
   signIn: (identifier: string, password: string) => Promise<'signedIn' | 'twoStep'>;
   /** True while the app waits for the authenticator or recovery code. */
   pendingTwoStep: boolean;
+  /** The second steps the pending account can use. */
+  twoStepMethods: TwoStepMethods | null;
   completeTwoStep: (code: string) => Promise<void>;
+  completeWithPasskey: () => Promise<void>;
   cancelTwoStep: () => void;
   signUp: (input: SignUpInput) => Promise<void>;
   signOut: () => void;
@@ -404,7 +437,11 @@ export function SessionProvider({
   }, [api]);
 
   // Credentials wait here, in memory only, while the two-step code is entered.
-  const [pending, setPending] = useState<{ identifier: string; password: string } | null>(null);
+  const [pending, setPending] = useState<{
+    identifier: string;
+    password: string;
+    methods: TwoStepMethods;
+  } | null>(null);
 
   const signIn = useCallback(
     async (identifier: string, password: string) => {
@@ -413,8 +450,16 @@ export function SessionProvider({
         setPending(null);
         return 'signedIn' as const;
       } catch (error) {
-        if (error instanceof ApiError && error.code === 'MFA_REQUIRED') {
-          setPending({ identifier: identifier.trim(), password });
+        if (
+          error instanceof ApiError &&
+          (error.code === 'MFA_REQUIRED' || error.code === 'MFA_APP_REQUIRED')
+        ) {
+          // Older servers don't list the methods: MFA_APP_REQUIRED then means passkey only.
+          const methods = (error.details.methods as TwoStepMethods | undefined) ?? {
+            app: error.code === 'MFA_REQUIRED',
+            passkey: error.code === 'MFA_APP_REQUIRED',
+          };
+          setPending({ identifier: identifier.trim(), password, methods });
           return 'twoStep' as const;
         }
         throw error;
@@ -433,6 +478,32 @@ export function SessionProvider({
     },
     [api, pending],
   );
+
+  // Second step with a passkey: the website checks the password and sends a challenge, the
+  // phone signs it with Face ID or Touch ID, and the website checks the answer.
+  const completeWithPasskey = useCallback(async () => {
+    if (!pending || !api.passkeyOptions) {
+      throw new Error('Sign in again to continue.');
+    }
+    const { pendingId, options } = await api.passkeyOptions(pending.identifier, pending.password);
+    const { Passkey } = await import('react-native-passkey');
+    let result;
+    try {
+      result = await Passkey.get(options as unknown as Parameters<typeof Passkey.get>[0]);
+    } catch {
+      throw new Error('The passkey was not used. Try again, or use a code.');
+    }
+    const response = {
+      ...result,
+      rawId: result.rawId ?? result.id,
+      type: result.type ?? 'public-key',
+      clientExtensionResults: result.clientExtensionResults ?? {},
+    };
+    setProfile(
+      await api.signIn(pending.identifier, pending.password, undefined, { pendingId, response }),
+    );
+    setPending(null);
+  }, [api, pending]);
 
   const cancelTwoStep = useCallback(() => setPending(null), []);
 
@@ -464,7 +535,9 @@ export function SessionProvider({
       ready,
       signIn,
       pendingTwoStep: pending !== null,
+      twoStepMethods: pending?.methods ?? null,
       completeTwoStep,
+      completeWithPasskey,
       cancelTwoStep,
       signUp,
       signOut,
@@ -477,6 +550,7 @@ export function SessionProvider({
       pending,
       signIn,
       completeTwoStep,
+      completeWithPasskey,
       cancelTwoStep,
       signUp,
       signOut,
