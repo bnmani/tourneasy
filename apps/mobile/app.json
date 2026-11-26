@@ -12,7 +12,8 @@
       "supportsTablet": false,
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
-        "UIViewControllerBasedStatusBarAppearance": false
+        "UIViewControllerBasedStatusBarAppearance": false,
+        "NSCameraUsageDescription": "Tourneasy uses the camera only to scan your payment card when you pay an entry fee. Nothing is recorded or stored."
       },
       "associatedDomains": ["webcredentials:test.tourneasy.app", "webcredentials:tourneasy.com"]
     },
