@@ -10,12 +10,15 @@ import { cn } from '@/lib/utils';
  * on tap (phones). The text stays in the page as the field's description (aria-describedby),
  * so screen readers still read it with the field; it is hidden from the label itself so a
  * legend's name stays short. Positioned under the label row, which must be `relative`.
+ *
+ * The hover group is named (`group/tip`): a plain `group-hover` would also open the tip when any
+ * outer element with `group` is hovered, e.g. a whole <details> section on the food page.
  */
 export function InfoTip({ id, text }: { id: string; text: string }) {
   const t = useTranslations('Common');
   const [open, setOpen] = useState(false);
   return (
-    <span className="group inline-flex">
+    <span className="group/tip inline-flex">
       <button
         type="button"
         aria-label={t('moreInfo')}
@@ -34,7 +37,7 @@ export function InfoTip({ id, text }: { id: string; text: string }) {
         id={id}
         aria-hidden="true"
         className={cn(
-          'pointer-events-none invisible absolute top-full left-0 z-30 mt-1 w-full max-w-sm rounded-md border bg-card px-3 py-2 text-sm font-normal text-card-foreground opacity-0 shadow-md transition-opacity group-focus-within:visible group-focus-within:opacity-100 group-hover:visible group-hover:opacity-100',
+          'pointer-events-none invisible absolute top-full left-0 z-30 mt-1 w-full max-w-sm rounded-md border bg-card px-3 py-2 text-sm font-normal text-card-foreground opacity-0 shadow-md transition-opacity group-focus-within/tip:visible group-focus-within/tip:opacity-100 group-hover/tip:visible group-hover/tip:opacity-100',
           open && 'visible opacity-100',
         )}
       >
