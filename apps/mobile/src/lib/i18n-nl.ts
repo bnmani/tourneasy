@@ -200,8 +200,8 @@ export const nl: Record<string, string> = {
   Matches: 'Wedstrijden',
   Entries: 'Inschrijvingen',
   'No entries yet': 'Nog geen inschrijvingen',
-  'Tournaments you enter on the website show here.':
-    'Toernooien waarvoor je je op de website inschrijft, staan hier.',
+  'Tournaments you enter show here.': 'Toernooien waarvoor je je inschrijft, staan hier.',
+  'Past tournaments': 'Eerdere toernooien',
   'Time to follow': 'Tijd volgt',
   'Court {court}': 'Baan {court}',
   New: 'Nieuw',
@@ -240,8 +240,10 @@ export const nl: Record<string, string> = {
     'Dit ben jij. Anderen zien deze pagina als je profiel openbaar is.',
   'Following ✓': 'Volgend ✓',
   Follow: 'Volgen',
-  'Follow a player to see them in your Players tab. Match alerts for followed players come with push notifications.':
-    'Volg een speler om die in je tabblad Spelers te zien. Meldingen over wedstrijden van gevolgde spelers komen met pushmeldingen.',
+  'Follow a player to see them in your Players tab and your profile. You get a notification when they go on court.':
+    'Volg een speler om die in je tabblad Spelers en je profiel te zien. Je krijgt een melding als die speler de baan op gaat.',
+  'The players you follow could not be loaded. Pull down to try again.':
+    'De spelers die je volgt konden niet worden geladen. Trek omlaag om het opnieuw te proberen.',
   'Unlock Tourneasy': 'Tourneasy ontgrendelen',
   'Tourneasy is locked': 'Tourneasy is vergrendeld',
   Unlock: 'Ontgrendelen',
@@ -331,6 +333,11 @@ export const nl: Record<string, string> = {
   'Member number or email': 'Lidnummer of e-mailadres',
   'Mixed level': 'Niveau gemengd',
   'My matches': 'Mijn wedstrijden',
+  'My schedule': 'Mijn schema',
+  'Your matches and entries. Matches appear once a schedule is published.':
+    'Je wedstrijden en inschrijvingen. Wedstrijden verschijnen zodra een schema online staat.',
+  'No matches planned yet for the players you follow.':
+    'Nog geen wedstrijden gepland voor de spelers die je volgt.',
   'My parent or guardian agrees to this account.':
     'Mijn ouder of voogd gaat akkoord met dit account.',
   'Name of a tournament': 'Naam van een toernooi',
@@ -369,7 +376,6 @@ export const nl: Record<string, string> = {
   'Players I follow': 'Spelers die ik volg',
   'Players under {age} need a parent or guardian to confirm the account.':
     'Spelers onder de {age} hebben toestemming van een ouder of voogd nodig.',
-  'Players you follow will show here soon.': 'Spelers die je volgt, verschijnen hier binnenkort.',
   'Preferred disciplines': 'Voorkeursonderdelen',
   'Preparing your file…': 'Je bestand wordt klaargemaakt…',
   'Push notifications': 'Pushmeldingen',
@@ -449,7 +455,6 @@ export const nl: Record<string, string> = {
     'Je partner kan niet in dit onderdeel spelen (geslacht, leeftijd of niveau).',
   'Your place goes to the next player. Any refund follows the tournament’s refund rules.':
     'Je plek gaat naar de volgende speler. Een eventuele terugbetaling volgt de regels van het toernooi.',
-  'Your tournament entries will show here soon.': 'Je inschrijvingen verschijnen hier binnenkort.',
   '{left} places left': 'Nog {left} plekken',
   'Not for your gender': 'Niet voor jouw geslacht',
   'You are too old for this age group': 'Je bent te oud voor deze leeftijdscategorie',

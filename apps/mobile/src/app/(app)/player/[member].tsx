@@ -134,7 +134,7 @@ export default function PlayerScreen() {
               />
               <Hint>
                 {t(
-                  'Follow a player to see them in your Players tab. Match alerts for followed players come with push notifications.',
+                  'Follow a player to see them in your Players tab and your profile. You get a notification when they go on court.',
                 )}
               </Hint>
             </>

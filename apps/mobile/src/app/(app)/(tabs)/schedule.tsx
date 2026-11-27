@@ -1,33 +1,90 @@
-import { useCallback, useState } from 'react';
-import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useEffect, useState } from 'react';
+import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { EntryCard } from '@/components/EntryCard';
 import { MatchCard } from '@/components/MatchCard';
-import { Button, Card, Heading, Hint, Segmented } from '@/components/ui';
-import { formatCents, payShares, withdrawEntry } from '@/lib/entries';
+import { Heading, Hint, Segmented } from '@/components/ui';
 import { dateLocaleTag, useLocale, useT, type TranslateFn } from '@/lib/i18n';
-import { disciplineOptions } from '@/lib/links';
-import { fetchMyEntries, fetchMyMatches, type MyEntry, type MyMatch } from '@/lib/me';
-import { pickLocale } from '@/lib/tournaments';
+import {
+  fetchFollowing,
+  fetchMyEntries,
+  fetchMyMatches,
+  fetchPlayerMatches,
+  type MyEntry,
+  type MyMatch,
+} from '@/lib/me';
 import { font, useColors } from '@/theme';
 
 type ScheduleView = 'matches' | 'entries';
 
-/** My schedule: matches from published schedules, and the tournaments I entered. */
+/** Matches of players I follow, and how many I follow (the section shows only when > 0). */
+type FollowedMatches = { following: number; matches: MyMatch[] };
+
+/**
+ * Coming matches of everyone I follow, from each player's public match list, without the ones
+ * I play in myself. One player that fails to load doesn't hide the others.
+ */
+async function fetchFollowedMatches(locale: string, mine: Set<string>): Promise<FollowedMatches> {
+  const players = await fetchFollowing();
+  const lists = await Promise.allSettled(
+    players.map((p) => fetchPlayerMatches(p.memberNumber, locale)),
+  );
+  const byId = new Map<string, MyMatch>();
+  for (const list of lists) {
+    if (list.status !== 'fulfilled') continue;
+    for (const m of list.value) {
+      if (mine.has(m.id) || byId.has(m.id)) continue;
+      byId.set(m.id, {
+        ...m,
+        number: null,
+        aEntryId: null,
+        bEntryId: null,
+        winnerEntryId: null,
+        sets: [],
+        changed: null,
+      });
+    }
+  }
+  const time = (m: MyMatch) => (m.startsAt ? Date.parse(m.startsAt) : Number.POSITIVE_INFINITY);
+  return {
+    following: players.length,
+    matches: [...byId.values()].sort((a, b) => time(a) - time(b)),
+  };
+}
+
+/**
+ * My schedule: my matches from published schedules, those of players I follow, and the
+ * tournaments I entered. Opens on Entries when linked with `view=entries` (e.g. "See my
+ * entries" after entering).
+ */
 export default function ScheduleTab() {
   const colors = useColors();
   const t = useT();
   const { locale } = useLocale();
   const dateTag = dateLocaleTag(locale);
-  const [view, setView] = useState<ScheduleView>('matches');
+  const params = useLocalSearchParams<{ view?: string }>();
+  const [view, setView] = useState<ScheduleView>(params.view === 'entries' ? 'entries' : 'matches');
   const [matches, setMatches] = useState<MyMatch[] | null>(null);
   const [entries, setEntries] = useState<MyEntry[] | null>(null);
+  const [followed, setFollowed] = useState<FollowedMatches | null>(null);
   const [failed, setFailed] = useState<{ matches: boolean; entries: boolean }>({
     matches: false,
     entries: false,
   });
   const [refreshing, setRefreshing] = useState(false);
+
+  // The tab may already be open on Matches when a link asks for Entries: switch on a new link,
+  // then clear it so the next "See my entries" counts as new again.
+  const [linked, setLinked] = useState(params.view);
+  if (params.view !== linked) {
+    setLinked(params.view);
+    if (params.view === 'entries') setView('entries');
+  }
+  useEffect(() => {
+    if (params.view) router.setParams({ view: undefined });
+  }, [params.view]);
 
   // Each list loads on its own, so one that fails doesn't hide the other.
   const load = useCallback(async () => {
@@ -35,7 +92,14 @@ export default function ScheduleTab() {
     if (m.status === 'fulfilled') setMatches(m.value);
     if (e.status === 'fulfilled') setEntries(e.value);
     setFailed({ matches: m.status === 'rejected', entries: e.status === 'rejected' });
-  }, []);
+    // Followed players' matches are extra: if they fail, the section just stays away.
+    const mine = new Set(m.status === 'fulfilled' ? m.value.map((x) => x.id) : []);
+    try {
+      setFollowed(await fetchFollowedMatches(locale, mine));
+    } catch {
+      setFollowed(null);
+    }
+  }, [locale]);
 
   // Reload whenever the tab opens, so a schedule published meanwhile shows up.
   useFocusEffect(
@@ -64,7 +128,10 @@ export default function ScheduleTab() {
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}
       >
-        <Heading>{t('Schedule')}</Heading>
+        <View style={styles.title}>
+          <Heading>{t('My schedule')}</Heading>
+          <Hint>{t('Your matches and entries. Matches appear once a schedule is published.')}</Hint>
+        </View>
         <Segmented<ScheduleView>
           options={[
             { value: 'matches', label: t('Matches') },
@@ -77,42 +144,37 @@ export default function ScheduleTab() {
         {loading ? <Hint>{t('Loading…')}</Hint> : null}
 
         {view === 'matches' && matches ? (
-          matches.length === 0 ? (
-            <Empty
-              title={t('No matches planned yet')}
-              text={t(
-                'Your matches show here once a tournament you entered publishes its schedule.',
-              )}
-            />
-          ) : (
-            groupByDay(matches, dateTag, t).map(([day, dayMatches]) => (
-              <View key={day} style={styles.section}>
-                <Text style={[styles.day, { color: colors.fg }]}>{day}</Text>
-                {dayMatches.map((match) => (
-                  <MatchCard
-                    key={match.id}
-                    match={match}
-                    dateTag={dateTag}
-                    subtitle={match.tournament.name}
-                    onPress={() =>
-                      router.push({
-                        pathname: '/tournaments/[slug]/schedule',
-                        params: { slug: match.tournament.slug, name: match.tournament.name },
-                      })
-                    }
-                  />
-                ))}
-              </View>
-            ))
-          )
+          <View style={styles.block}>
+            {followed && followed.following > 0 ? (
+              <Text style={[styles.blockTitle, { color: colors.fg }]}>{t('My matches')}</Text>
+            ) : null}
+            {matches.length === 0 ? (
+              <Empty
+                title={t('No matches planned yet')}
+                text={t(
+                  'Your matches show here once a tournament you entered publishes its schedule.',
+                )}
+              />
+            ) : (
+              <MatchDays matches={matches} dateTag={dateTag} t={t} />
+            )}
+          </View>
+        ) : null}
+
+        {view === 'matches' && followed && followed.following > 0 ? (
+          <View style={styles.block}>
+            <Text style={[styles.blockTitle, { color: colors.fg }]}>{t('Players I follow')}</Text>
+            {followed.matches.length === 0 ? (
+              <Hint>{t('No matches planned yet for the players you follow.')}</Hint>
+            ) : (
+              <MatchDays matches={followed.matches} dateTag={dateTag} t={t} />
+            )}
+          </View>
         ) : null}
 
         {view === 'entries' && entries ? (
           upcomingEntries.length === 0 ? (
-            <Empty
-              title={t('No entries yet')}
-              text={t('Tournaments you enter on the website show here.')}
-            />
+            <Empty title={t('No entries yet')} text={t('Tournaments you enter show here.')} />
           ) : (
             upcomingEntries.map((entry) => (
               <EntryCard
@@ -129,6 +191,38 @@ export default function ScheduleTab() {
   );
 }
 
+/** Matches per day; tapping one opens that tournament's full schedule. */
+function MatchDays({
+  matches,
+  dateTag,
+  t,
+}: {
+  matches: MyMatch[];
+  dateTag: string;
+  t: TranslateFn;
+}) {
+  const colors = useColors();
+  return groupByDay(matches, dateTag, t).map(([day, dayMatches]) => (
+    <View key={day} style={styles.section}>
+      <Text style={[styles.day, { color: colors.fg }]}>{day}</Text>
+      {dayMatches.map((match) => (
+        <MatchCard
+          key={match.id}
+          match={match}
+          dateTag={dateTag}
+          subtitle={match.tournament.name}
+          onPress={() =>
+            router.push({
+              pathname: '/tournaments/[slug]/schedule',
+              params: { slug: match.tournament.slug, name: match.tournament.name },
+            })
+          }
+        />
+      ))}
+    </View>
+  ));
+}
+
 function Empty({ title, text }: { title: string; text: string }) {
   const colors = useColors();
   return (
@@ -142,160 +236,6 @@ function Empty({ title, text }: { title: string; text: string }) {
       <Text style={[styles.emptyText, { color: colors.heroMuted }]}>{text}</Text>
     </View>
   );
-}
-
-function EntryCard({
-  entry,
-  dateTag,
-  onChanged,
-}: {
-  entry: MyEntry;
-  dateTag: string;
-  onChanged: () => void;
-}) {
-  const [busy, setBusy] = useState(false);
-  const colors = useColors();
-  const t = useT();
-  const dates = formatRange(entry.tournament.startsOn, entry.tournament.endsOn, dateTag);
-  const { locale } = useLocale();
-  const category = categoryLabel(entry.event, locale, t);
-  const partner = entry.partner
-    ? t('With {name}', { name: entry.partner.name })
-    : entry.pendingInvite
-      ? t('Invite sent to {name}', { name: entry.pendingInvite.to })
-      : entry.doubles
-        ? t('No partner yet')
-        : null;
-  return (
-    <Card>
-      <Pressable
-        accessibilityRole="button"
-        onPress={() =>
-          router.push({ pathname: '/tournaments/[slug]', params: { slug: entry.tournament.slug } })
-        }
-        style={styles.card}
-      >
-        <View style={styles.cardTop}>
-          <Text style={[styles.time, { color: colors.primary }]}>{dates}</Text>
-          <Text style={[styles.badge, { color: colors.primary, borderColor: colors.primary }]}>
-            {entryStatus(entry, t)}
-          </Text>
-        </View>
-        <Text style={[styles.player, { color: colors.fg }]}>{entry.tournament.name}</Text>
-        <Hint>{[category, partner].filter(Boolean).join(' · ')}</Hint>
-      </Pressable>
-      {entry.canPay || entry.canWithdraw ? (
-        <View style={styles.actions}>
-          {entry.canPay && entry.paymentStatus === 'UNPAID' ? (
-            <View style={styles.action}>
-              <Button
-                title={
-                  busy
-                    ? t('Opening…')
-                    : entry.amountDueCents
-                      ? t('Pay {amount}', { amount: formatCents(entry.amountDueCents, locale) })
-                      : t('Pay')
-                }
-                disabled={busy}
-                onPress={() => void pay()}
-              />
-            </View>
-          ) : null}
-          {entry.canWithdraw ? (
-            <View style={styles.action}>
-              <Button
-                title={t('Withdraw')}
-                variant="destructive"
-                disabled={busy}
-                onPress={withdraw}
-              />
-            </View>
-          ) : null}
-        </View>
-      ) : null}
-    </Card>
-  );
-
-  async function pay() {
-    setBusy(true);
-    try {
-      const outcome = await payShares([entry.participantId]);
-      if (outcome !== 'canceled') {
-        Alert.alert(
-          outcome === 'processing' ? t('Payment received') : t('Paid'),
-          outcome === 'processing'
-            ? t('Your bank is still confirming the payment. Your entry updates by itself.')
-            : t('Thank you. You get a receipt by email.'),
-        );
-        onChanged();
-      }
-    } catch (caught) {
-      Alert.alert(
-        t('Payment not finished'),
-        caught instanceof Error ? caught.message : t('Something went wrong. Try again.'),
-      );
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  function withdraw() {
-    Alert.alert(
-      t('Withdraw from {name}?', { name: entry.tournament.name }),
-      t('Your place goes to the next player. Any refund follows the tournament’s refund rules.'),
-      [
-        { text: t('Keep my entry'), style: 'cancel' },
-        {
-          text: t('Withdraw'),
-          style: 'destructive',
-          onPress: async () => {
-            setBusy(true);
-            try {
-              await withdrawEntry(entry.id);
-              onChanged();
-            } catch (caught) {
-              Alert.alert(
-                t('Not withdrawn'),
-                caught instanceof Error ? caught.message : t('Something went wrong. Try again.'),
-              );
-            } finally {
-              setBusy(false);
-            }
-          },
-        },
-      ],
-    );
-  }
-}
-
-function entryStatus(entry: MyEntry, t: TranslateFn): string {
-  if (entry.status === 'WAITLISTED') {
-    return entry.waitlistPosition
-      ? t('Waiting list #{n}', { n: entry.waitlistPosition })
-      : t('Waiting list');
-  }
-  if (entry.status === 'PENDING') return t('To pay');
-  return t('Confirmed');
-}
-
-function categoryLabel(event: MyEntry['event'], locale: string, t: TranslateFn): string {
-  const custom = pickLocale(event.name, locale);
-  if (custom) return custom;
-  const option = disciplineOptions.find((item) => item.code === event.discipline);
-  return [
-    option ? t(option.label) : event.discipline,
-    event.ageCategory?.code,
-    event.levelClass?.code,
-  ]
-    .filter(Boolean)
-    .join(' ');
-}
-
-function formatRange(from: string, to: string, dateTag: string): string {
-  const opts: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short' };
-  const start = new Date(from).toLocaleDateString(dateTag, opts);
-  if (from.slice(0, 10) === to.slice(0, 10)) return start;
-  return `${start} – ${new Date(to).toLocaleDateString(dateTag, opts)}`;
 }
 
 /** Matches per day, in order; matches without a time go last under their own heading. */
@@ -317,6 +257,9 @@ function groupByDay(matches: MyMatch[], dateTag: string, t: TranslateFn): [strin
 const styles = StyleSheet.create({
   fill: { flex: 1 },
   content: { padding: 24, gap: 16 },
+  title: { gap: 4 },
+  block: { gap: 12 },
+  blockTitle: { fontSize: 20, fontFamily: font.semibold },
   section: { gap: 10 },
   day: { fontSize: 17, fontFamily: font.semibold },
   card: { padding: 14, gap: 4 },
@@ -334,8 +277,6 @@ const styles = StyleSheet.create({
   player: { fontSize: 16, fontFamily: font.medium },
   winner: { fontFamily: font.bold },
   score: { fontSize: 15, fontFamily: font.semibold },
-  actions: { flexDirection: 'row', gap: 10, paddingHorizontal: 14, paddingBottom: 14 },
-  action: { flex: 1 },
   empty: { borderRadius: 20, borderWidth: 1, padding: 18, gap: 8 },
   emptyTitle: { fontSize: 22, fontFamily: font.display },
   emptyText: { fontSize: 15, lineHeight: 21 },

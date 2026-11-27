@@ -1,12 +1,24 @@
-import { useEffect, useState, type ReactNode } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
-import { router } from 'expo-router';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
+import {
+  Alert,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  Text,
+  View,
+} from 'react-native';
+import { router, useFocusEffect } from 'expo-router';
 
+import { EntryCard } from '@/components/EntryCard';
+import { PlayerRow } from '@/components/PlayerRow';
 import { MenuSheet } from '@/components/MenuSheet';
 import { Button, Card, Chip, Field, Hint, IconButton, Row, Screen } from '@/components/ui';
 import { ApiError, apiGet } from '@/lib/api';
-import { useT } from '@/lib/i18n';
+import { dateLocaleTag, useLocale, useT } from '@/lib/i18n';
 import { disciplineOptions, disciplinesFor } from '@/lib/links';
+import { fetchFollowing, fetchMyEntries, type MyEntry, type PublicPlayer } from '@/lib/me';
 import { useSession, type LevelRef, type Profile } from '@/lib/session';
 import { font, useColors } from '@/theme';
 
@@ -114,12 +126,10 @@ export default function ProfileScreen() {
           })}
         </View>
 
-        {tab !== 'Details' ? (
-          <Text style={{ color: colors.muted, fontSize: 15, paddingTop: 16 }}>
-            {tab === 'My entries'
-              ? t('Your tournament entries will show here soon.')
-              : t('Players you follow will show here soon.')}
-          </Text>
+        {tab === 'My entries' ? (
+          <MyEntries />
+        ) : tab === 'Followed' ? (
+          <FollowedPlayers />
         ) : (
           <ScrollView
             contentContainerStyle={styles.scrollContent}
@@ -149,6 +159,123 @@ export default function ProfileScreen() {
         ]}
       />
     </Screen>
+  );
+}
+
+/** My entries: upcoming tournaments first, then past ones. Reloads when the tab opens. */
+function MyEntries() {
+  const colors = useColors();
+  const t = useT();
+  const { locale } = useLocale();
+  const dateTag = dateLocaleTag(locale);
+  const [entries, setEntries] = useState<MyEntry[] | null>(null);
+  const [failed, setFailed] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const load = useCallback(async () => {
+    try {
+      setEntries(await fetchMyEntries());
+      setFailed(false);
+    } catch {
+      setFailed(true);
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      void load();
+    }, [load]),
+  );
+
+  async function refresh() {
+    setRefreshing(true);
+    await load();
+    setRefreshing(false);
+  }
+
+  const upcoming = (entries ?? []).filter((e) => !e.past);
+  const past = (entries ?? []).filter((e) => e.past);
+  const card = (entry: MyEntry) => (
+    <EntryCard key={entry.id} entry={entry} dateTag={dateTag} onChanged={() => void load()} />
+  );
+
+  return (
+    <ScrollView
+      contentContainerStyle={[styles.scrollContent, styles.entries]}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}
+    >
+      {failed ? (
+        <Text style={{ color: colors.destructive }}>
+          {t('Your entries could not be loaded. Pull down to try again.')}
+        </Text>
+      ) : null}
+      {!entries && !failed ? <Hint>{t('Loading…')}</Hint> : null}
+      {entries && entries.length === 0 ? (
+        <View style={styles.entriesSection}>
+          <Text style={[styles.entriesTitle, { color: colors.fg }]}>{t('No entries yet')}</Text>
+          <Hint>{t('Tournaments you enter show here.')}</Hint>
+        </View>
+      ) : null}
+      {upcoming.length > 0 ? <View style={styles.entriesSection}>{upcoming.map(card)}</View> : null}
+      {past.length > 0 ? (
+        <View style={styles.entriesSection}>
+          <Text style={[styles.entriesTitle, { color: colors.muted }]}>
+            {t('Past tournaments')}
+          </Text>
+          {past.map(card)}
+        </View>
+      ) : null}
+    </ScrollView>
+  );
+}
+
+/** Players I follow; tapping one opens their page and matches. Reloads when the tab opens. */
+function FollowedPlayers() {
+  const colors = useColors();
+  const t = useT();
+  const [players, setPlayers] = useState<PublicPlayer[] | null>(null);
+  const [failed, setFailed] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const load = useCallback(async () => {
+    try {
+      setPlayers(await fetchFollowing());
+      setFailed(false);
+    } catch {
+      setFailed(true);
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      void load();
+    }, [load]),
+  );
+
+  async function refresh() {
+    setRefreshing(true);
+    await load();
+    setRefreshing(false);
+  }
+
+  return (
+    <ScrollView
+      contentContainerStyle={[styles.scrollContent, styles.followed]}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}
+    >
+      {failed ? (
+        <Text style={{ color: colors.destructive }}>
+          {t('The players you follow could not be loaded. Pull down to try again.')}
+        </Text>
+      ) : null}
+      {!players && !failed ? <Hint>{t('Loading…')}</Hint> : null}
+      {players && players.length === 0 ? (
+        <Hint>{t('You don’t follow anyone yet. Search for a player and tap Follow.')}</Hint>
+      ) : null}
+      {(players ?? []).map((player) => (
+        <PlayerRow key={player.memberNumber} player={player} />
+      ))}
+    </ScrollView>
   );
 }
 
@@ -695,6 +822,10 @@ function PublicEdit({ profile, onCancel, onSave }: EditProps) {
 }
 
 const styles = StyleSheet.create({
+  entries: { paddingTop: 16, gap: 20 },
+  followed: { paddingTop: 16, gap: 10 },
+  entriesSection: { gap: 10 },
+  entriesTitle: { fontSize: 17, fontFamily: font.semibold },
   container: { flex: 1, paddingHorizontal: 20, paddingTop: 16 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   title: { fontSize: 32, fontFamily: font.display },

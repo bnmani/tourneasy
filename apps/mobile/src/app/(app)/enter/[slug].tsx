@@ -126,7 +126,9 @@ export default function EnterScreen() {
         <Body>{text}</Body>
         <Button
           title={t('See my entries')}
-          onPress={() => router.replace('/(app)/(tabs)/schedule')}
+          onPress={() =>
+            router.replace({ pathname: '/(app)/(tabs)/schedule', params: { view: 'entries' } })
+          }
         />
         <TextLink title={t('Back to the tournament')} onPress={() => router.back()} />
       </Screen>
