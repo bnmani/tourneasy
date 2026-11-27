@@ -80,7 +80,7 @@ export function PlayerForm({
     <form action={action} className="space-y-6" noValidate>
       <FormError state={state} />
       <FormSection title={tp('sectionPersonal')}>
-        <div className="grid gap-4 sm:grid-cols-[1fr_8rem]">
+        <div className="grid gap-4 sm:grid-cols-[1fr_minmax(8rem,auto)]">
           <TextField
             name="firstName"
             label={tr('firstName')}
