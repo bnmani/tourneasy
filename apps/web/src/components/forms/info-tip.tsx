@@ -34,7 +34,7 @@ export function InfoTip({ id, text }: { id: string; text: string }) {
         id={id}
         aria-hidden="true"
         className={cn(
-          'invisible absolute top-full left-0 z-30 mt-1 w-full max-w-sm rounded-md border bg-card px-3 py-2 text-sm font-normal text-card-foreground opacity-0 shadow-md transition-opacity group-focus-within:visible group-focus-within:opacity-100 group-hover:visible group-hover:opacity-100',
+          'pointer-events-none invisible absolute top-full left-0 z-30 mt-1 w-full max-w-sm rounded-md border bg-card px-3 py-2 text-sm font-normal text-card-foreground opacity-0 shadow-md transition-opacity group-focus-within:visible group-focus-within:opacity-100 group-hover:visible group-hover:opacity-100',
           open && 'visible opacity-100',
         )}
       >
