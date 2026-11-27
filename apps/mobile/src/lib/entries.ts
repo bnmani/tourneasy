@@ -78,7 +78,9 @@ export async function enterTournament(slug: string, events: EntryChoice[]): Prom
 }
 
 export async function withdrawEntry(registrationId: string): Promise<void> {
-  await signedIn('DELETE', `/me/registrations/${encodeURIComponent(registrationId)}`);
+  // Send an empty object rather than no body: iOS adds Content-Length: 0 to a bodyless DELETE,
+  // which older servers read as an invalid body.
+  await signedIn('DELETE', `/me/registrations/${encodeURIComponent(registrationId)}`, {});
 }
 
 type Checkout = {
