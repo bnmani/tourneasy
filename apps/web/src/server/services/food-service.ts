@@ -606,6 +606,19 @@ export async function foodOrders(actor: Actor, tournamentId: string, now = new D
  * Orders still to hand out, for the Food & drink tab: paid, or to pay at pickup. Orders with an
  * online payment still under way don't count yet.
  */
+/**
+ * Who a "your food is ready" message goes to: account holders with an order that still has to
+ * be handed out. Desk orders for a guest belong to the organiser who added them, so not those.
+ */
+export async function foodMessageRecipients(tournamentId: string, now = new Date()) {
+  const rows = await prisma.foodOrder.findMany({
+    where: { tournamentId, collectedAt: null, guestName: null, ...liveOrder(now) },
+    distinct: ['userId'],
+    select: { userId: true },
+  });
+  return rows.map((r) => r.userId);
+}
+
 export async function foodToCollectCount(actor: Actor, tournamentId: string) {
   await assertCanManageTournament(actor, tournamentId);
   return prisma.foodOrder.count({

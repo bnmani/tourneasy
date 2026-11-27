@@ -111,6 +111,7 @@
   },
   "Errors": {
     "required": "This field is required.",
+    "confirmSend": "Tick the box to confirm you checked the test.",
     "tooLong": "This is too long.",
     "taken": "This is already in use.",
     "tooShort": "This is too short.",
@@ -625,6 +626,7 @@
     "navClubs": "Clubs",
     "navPlayers": "Players",
     "navAudit": "Audit log",
+    "navMessages": "App message",
     "navHelp": "Help",
     "new": "New",
     "edit": "Edit",
@@ -1441,7 +1443,7 @@
     "news": {
       "title": "News",
       "heading": "News: {tournament}",
-      "intro": "Messages on the tournament page, optionally emailed to all participants too.",
+      "intro": "Messages on the tournament page, optionally emailed to all participants and sent to the app on their phones too.",
       "new": "New message",
       "list": "Messages",
       "empty": "No messages yet.",
@@ -1450,11 +1452,11 @@
       "bodyNl": "Message (Dutch)",
       "bodyEn": "Message (English)",
       "publishNow": "Publish on the tournament page now",
-      "emailNow": "Also email all participants",
+      "emailNow": "Also email all participants and send it to their phones",
       "save": "Save",
       "publish": "Publish",
       "unpublish": "Unpublish",
-      "email": "Email participants",
+      "email": "Email and notify participants",
       "delete": "Delete",
       "publishedAt": "Published {date}",
       "emailedAt": "emailed {date}",
@@ -2630,6 +2632,32 @@
     "toPortal": "Go to your portal",
     "login": "Log in to get started",
     "code": "Discount code"
+  },
+  "PushMessage": {
+    "title": "Title",
+    "body": "Message",
+    "send": "Send",
+    "sent": "Sent to {count, plural, one {# person} other {# people}}. It shows on phones with push on, and in everyone's notification list in the app.",
+    "pushNotSetUp": "Saved in the notification list in the app. Phones don't get a push yet: push is not set up on this server.",
+    "food": {
+      "heading": "Message to people waiting for food",
+      "intro": "Goes to the app of everyone whose order hasn't been handed out yet: {count, plural, =0 {nobody right now} one {# person} other {# people}}. Desk orders for someone without an account don't get it.",
+      "titleDefault": "Your food is ready",
+      "bodyDefault": "Pick it up at the food stand. Show your order code.",
+      "nobody": "Nobody is waiting for food right now."
+    },
+    "all": {
+      "title": "App message",
+      "heading": "Message to all app users",
+      "intro": "A push message to everyone who uses the Tourneasy app ({count, plural, one {# person} other {# people}}), also kept in their notification list. Tapping it opens that list. It can't be taken back: send a test to yourself first.",
+      "test": "Send a test to me",
+      "testSent": "Test sent. Check it in the app (and as a push if your phone has the app with push on), then send it to everyone.",
+      "confirm": "I checked the test. Send this to all {count, plural, one {# person} other {# people}}.",
+      "sendAll": "Send to everyone",
+      "history": "Sent before",
+      "none": "No messages sent yet.",
+      "sentBy": "{date} by {name}, to {count, plural, one {# person} other {# people}}"
+    }
   },
   "Food": {
     "allergens": {

@@ -6,6 +6,9 @@
  *
  * - MATCH_SCHEDULED                 my matches: schedule published or changed, on court now
  * - FOLLOWED_PLAYER_MATCH_SCHEDULED players I follow: on court now
+ * - ANNOUNCEMENT                    news from organisers, and messages from the Tourneasy team
+ *
+ * Messages about something the player ordered (food ready to pick up) can't be switched off.
  *
  * Sending never throws and never blocks the action that triggered it.
  */
@@ -19,6 +22,7 @@ import type { Actor } from './session-service';
 export const PUSH_TYPES = [
   'MATCH_SCHEDULED',
   'FOLLOWED_PLAYER_MATCH_SCHEDULED',
+  'ANNOUNCEMENT',
 ] as const satisfies readonly NotificationType[];
 export type PushType = (typeof PUSH_TYPES)[number];
 
@@ -85,12 +89,14 @@ type Locale = 'nl' | 'en';
 /**
  * Sends a message, written per user language, to every phone of the given users that hasn't
  * switched this kind off. Tokens Apple rejects for good are removed. Every user also gets it in
- * their notification list in the app, whether or not a push went out.
+ * their notification list in the app, whether or not a push went out. `always` ignores the
+ * switches, for messages about the player's own order.
  */
 export async function pushToUsers(
   userIds: string[],
-  type: PushType,
+  type: NotificationType,
   message: (locale: Locale) => PushMessage,
+  options: { always?: boolean } = {},
 ) {
   try {
     const unique = [...new Set(userIds)];
@@ -103,10 +109,12 @@ export async function pushToUsers(
         where: { userId: { in: unique } },
         select: { token: true, user: { select: { id: true, locale: true } } },
       }),
-      prisma.notificationPreference.findMany({
-        where: { userId: { in: unique }, type, channel: 'PUSH', enabled: false },
-        select: { userId: true },
-      }),
+      options.always
+        ? []
+        : prisma.notificationPreference.findMany({
+            where: { userId: { in: unique }, type, channel: 'PUSH', enabled: false },
+            select: { userId: true },
+          }),
     ]);
     const muted = new Set(off.map((o) => o.userId));
     const byLocale = new Map<Locale, string[]>();

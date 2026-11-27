@@ -82,6 +82,7 @@ describe('sending', () => {
     expect(await getMyPushPreferences(actorOf(off.userId))).toEqual([
       { type: 'MATCH_SCHEDULED', enabled: false },
       { type: 'FOLLOWED_PLAYER_MATCH_SCHEDULED', enabled: true },
+      { type: 'ANNOUNCEMENT', enabled: true },
     ]);
   });
 
