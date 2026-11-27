@@ -15,6 +15,7 @@ import { enqueueEmails } from './notification-service';
 import { assertCanManageTournament } from './permissions';
 import type { Actor } from './session-service';
 import { emailLogo } from './logo-service';
+import { pushToUsers } from './push-service';
 
 type Localized = { nl?: string; en?: string };
 const pick = (v: unknown, locale: AppLocale) => {
@@ -113,7 +114,14 @@ async function loadNews(newsId: string) {
   return news;
 }
 
-/** Emails a published news item once to everyone entered in the tournament. */
+/** A push shows a few lines; the full message is on the tournament page. */
+const shorten = (text: string, max = 180) =>
+  text.length <= max ? text : `${text.slice(0, max - 1).trimEnd()}…`;
+
+/**
+ * Emails a published news item once to everyone entered in the tournament, and sends it to
+ * their phones (the app) as a push and in their notification list.
+ */
 export async function emailNews(actor: Actor, newsId: string, meta: RequestMeta) {
   const news = await loadNews(newsId);
   await assertCanManageTournament(actor, news.tournamentId!);
@@ -152,6 +160,16 @@ export async function emailNews(actor: Actor, newsId: string, meta: RequestMeta)
         url: appUrl(locale, `/tournaments/${t.slug}#news`),
       }),
     })),
+  );
+  await pushToUsers(
+    players.map((p) => p.userId!),
+    'ANNOUNCEMENT',
+    (locale) => ({
+      title: pick(news.title, locale),
+      body: `${t.name}: ${shorten(pick(news.body, locale))}`,
+      data: { url: `/tournaments/${t.slug}` },
+      collapseId: `news:${news.id}`,
+    }),
   );
   await prisma.announcement.update({ where: { id: newsId }, data: { emailSentAt: new Date() } });
   await writeAudit(prisma, {

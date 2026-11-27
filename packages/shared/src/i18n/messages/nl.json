@@ -111,6 +111,7 @@
   },
   "Errors": {
     "required": "Dit veld is verplicht.",
+    "confirmSend": "Vink aan dat je de test hebt bekeken.",
     "tooLong": "Deze invoer is te lang.",
     "taken": "Dit is al in gebruik.",
     "tooShort": "Dit is te kort.",
@@ -625,6 +626,7 @@
     "navClubs": "Clubs",
     "navPlayers": "Spelers",
     "navAudit": "Auditlog",
+    "navMessages": "App-bericht",
     "navHelp": "Help",
     "new": "Nieuw",
     "edit": "Bewerken",
@@ -1441,7 +1443,7 @@
     "news": {
       "title": "Nieuws",
       "heading": "Nieuws: {tournament}",
-      "intro": "Berichten op de toernooipagina, desgewenst ook per e-mail naar alle deelnemers.",
+      "intro": "Berichten op de toernooipagina, desgewenst ook per e-mail en als melding in de app naar alle deelnemers.",
       "new": "Nieuw bericht",
       "list": "Berichten",
       "empty": "Nog geen berichten.",
@@ -1450,11 +1452,11 @@
       "bodyNl": "Bericht (Nederlands)",
       "bodyEn": "Bericht (Engels)",
       "publishNow": "Meteen publiceren op de toernooipagina",
-      "emailNow": "Ook mailen naar alle deelnemers",
+      "emailNow": "Ook mailen en als melding op de telefoon sturen naar alle deelnemers",
       "save": "Opslaan",
       "publish": "Publiceren",
       "unpublish": "Offline halen",
-      "email": "Mailen naar deelnemers",
+      "email": "Mailen en melden aan deelnemers",
       "delete": "Verwijderen",
       "publishedAt": "Gepubliceerd {date}",
       "emailedAt": "gemaild {date}",
@@ -2634,6 +2636,32 @@
     "toPortal": "Naar je portaal",
     "login": "Log in om te beginnen",
     "code": "Kortingscode"
+  },
+  "PushMessage": {
+    "title": "Titel",
+    "body": "Bericht",
+    "send": "Versturen",
+    "sent": "Verstuurd naar {count, plural, one {# persoon} other {# personen}}. Het verschijnt op telefoons met meldingen aan, en in ieders meldingenlijst in de app.",
+    "pushNotSetUp": "Bewaard in de meldingenlijst in de app. Telefoons krijgen nog geen pushmelding: push is op deze server nog niet ingesteld.",
+    "food": {
+      "heading": "Bericht aan wie op eten wacht",
+      "intro": "Gaat naar de app van iedereen van wie de bestelling nog niet is meegegeven: {count, plural, =0 {nu niemand} one {# persoon} other {# personen}}. Baliebestellingen voor iemand zonder account krijgen het niet.",
+      "titleDefault": "Je eten staat klaar",
+      "bodyDefault": "Haal het op bij de foodstand. Laat je bestelcode zien.",
+      "nobody": "Er wacht nu niemand op eten."
+    },
+    "all": {
+      "title": "App-bericht",
+      "heading": "Bericht aan alle app-gebruikers",
+      "intro": "Een pushmelding aan iedereen die de Tourneasy-app gebruikt ({count, plural, one {# persoon} other {# personen}}), ook bewaard in hun meldingenlijst. Erop tikken opent die lijst. Het kan niet worden teruggedraaid: stuur eerst een test naar jezelf.",
+      "test": "Stuur een test naar mij",
+      "testSent": "Test verstuurd. Bekijk hem in de app (en als pushmelding als je telefoon de app met meldingen aan heeft) en stuur hem dan naar iedereen.",
+      "confirm": "Ik heb de test bekeken. Verstuur dit naar alle {count, plural, one {# persoon} other {# personen}}.",
+      "sendAll": "Naar iedereen sturen",
+      "history": "Eerder verstuurd",
+      "none": "Nog geen berichten verstuurd.",
+      "sentBy": "{date} door {name}, naar {count, plural, one {# persoon} other {# personen}}"
+    }
   },
   "Food": {
     "allergens": {
