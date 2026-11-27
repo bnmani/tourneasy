@@ -65,7 +65,7 @@ export function VenueForm({
             required
             defaultValue={values.name}
           />
-          <div className="grid gap-4 sm:grid-cols-[1fr_8rem]">
+          <div className="grid gap-4 sm:grid-cols-[1fr_minmax(8rem,auto)]">
             <TextField
               name="street"
               label={t('street')}
@@ -216,7 +216,7 @@ export function ClubForm({
     <form action={action} className="space-y-6" noValidate>
       <FormError state={state} />
       <FormSection title={t('name')}>
-        <div className="grid gap-4 sm:grid-cols-[1fr_10rem]">
+        <div className="grid gap-4 sm:grid-cols-[1fr_minmax(10rem,auto)]">
           <TextField
             name="name"
             label={t('name')}
