@@ -7,6 +7,7 @@ import { generateDraw, publishDraws } from './draw-service';
 import { deadlineReminders, resultsSummaries, tournamentReminders } from './jobs-service';
 import { GET as logoGet } from '@/app/api/v1/tournament-logos/[id]/route';
 import { imageInfo, removeTournamentLogo, setTournamentLogo, tournamentLogo } from './logo-service';
+import { listMyNotifications } from './inbox-service';
 import { createNews } from './news-service';
 import {
   deliverQueued,
@@ -212,6 +213,21 @@ describe('notifications (D62)', () => {
     await deliverQueued();
     expect(sentTo('p0@example.test').map((m) => m.subject)).toEqual(['Parkeren – Utrecht Open']);
     expect(sentTo('p2@example.test')).toHaveLength(0);
+    // It also goes to the app (push and notification list); that has its own switch.
+    for (const p of [players[0]!, players[2]!]) {
+      const { items } = await listMyNotifications(await actorFor(p.userId));
+      expect(items).toEqual([
+        expect.objectContaining({
+          type: 'ANNOUNCEMENT',
+          title: { nl: 'Parkeren', en: 'Parking' },
+          body: {
+            nl: 'Utrecht Open: Parkeer bij de achteringang.',
+            en: 'Utrecht Open: Park at the back entrance.',
+          },
+          url: `/tournaments/${t.slug}`,
+        }),
+      ]);
+    }
   });
 
   it('reminds players of open items before the entry deadline', async () => {

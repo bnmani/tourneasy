@@ -5,6 +5,7 @@ import { ChevronDown } from 'lucide-react';
 import { DeskOrderForm, FoodItemForm, FoodSettingsForm } from '@/components/admin/food-forms';
 import { FoodOrderList, type FoodOrderGroup } from '@/components/admin/food-order-list';
 import { FoodScanner } from '@/components/admin/food-scanner';
+import { PushMessageForm } from '@/components/admin/push-message-form';
 import { Badge, PageHeader, StatusNotice } from '@/components/admin/ui';
 import { Button } from '@/components/ui/button';
 import { Link } from '@/i18n/navigation';
@@ -16,8 +17,10 @@ import {
   undoCollectedAction,
   undoDeskFoodPaidAction,
 } from '@/server/actions/pricing-food-actions';
+import { messageFoodWaitingAction } from '@/server/actions/message-actions';
 import { requirePortal } from '@/server/auth/web';
 import { ALLERGENS, foodOrders, foodSettings } from '@/server/services/food-service';
+import { foodMessageAudience } from '@/server/services/message-service';
 
 type Props = { params: Promise<{ locale: string; id: string }>; searchParams: SearchParams };
 
@@ -38,6 +41,7 @@ export default async function FoodAdminPage({ params, searchParams }: Props) {
   const query = await searchParams;
   const settings = await foodSettings(actor, id);
   const t = await getTranslations('Food.admin');
+  const tm = await getTranslations('PushMessage.food');
   const ta = await getTranslations('Food.allergens');
 
   if (!settings.allowed)
@@ -48,7 +52,10 @@ export default async function FoodAdminPage({ params, searchParams }: Props) {
       </>
     );
 
-  const list = await foodOrders(actor, id);
+  const [list, waiting] = await Promise.all([
+    foodOrders(actor, id),
+    foodMessageAudience(actor, id),
+  ]);
   const toHandOut = list.orders.filter((o) => !o.collectedAt);
   const collected = list.orders.filter((o) => o.collectedAt);
   const euro = (c: number) => formatEuro(c, locale);
@@ -308,6 +315,22 @@ export default async function FoodAdminPage({ params, searchParams }: Props) {
               </span>
             </div>
           )}
+          {/* "Your food is ready": a push to everyone still waiting for their order. */}
+          <details className="rounded-md border p-3 sm:p-4">
+            <summary className="cursor-pointer font-medium">{tm('heading')}</summary>
+            <p className="mt-2 mb-4 text-sm text-muted-foreground">
+              {tm('intro', { count: waiting })}
+            </p>
+            {waiting === 0 ? (
+              <p className="text-sm">{tm('nobody')}</p>
+            ) : (
+              <PushMessageForm
+                action={messageFoodWaitingAction.bind(null, locale, id)}
+                count={waiting}
+                defaults={{ title: tm('titleDefault'), body: tm('bodyDefault') }}
+              />
+            )}
+          </details>
           {deskItems.length > 0 && (
             <details className="rounded-md border p-3 sm:p-4">
               <summary className="cursor-pointer font-medium">{t('deskTitle')}</summary>

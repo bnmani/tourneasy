@@ -18,6 +18,7 @@ export function AdminNav({ isAdmin, isOwner }: { isAdmin: boolean; isOwner: bool
           { href: '/admin/clubs', label: t('navClubs') },
           { href: '/admin/payments', label: t('navPayments') },
           { href: '/admin/users', label: t('users') },
+          { href: '/admin/messages', label: t('navMessages') },
         ]
       : []),
     // Site-wide settings and the full log are for owners (D79).
