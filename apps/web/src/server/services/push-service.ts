@@ -13,6 +13,7 @@ import { prisma, type NotificationType } from '@tourneasy/db';
 import { z } from 'zod';
 import { apnsConfig, isDeadToken, sendApns, type PushMessage } from '../push/apns';
 import { parseInput } from '../lib/validation';
+import { saveToInbox } from './inbox-service';
 import type { Actor } from './session-service';
 
 export const PUSH_TYPES = [
@@ -83,7 +84,8 @@ type Locale = 'nl' | 'en';
 
 /**
  * Sends a message, written per user language, to every phone of the given users that hasn't
- * switched this kind off. Tokens Apple rejects for good are removed.
+ * switched this kind off. Tokens Apple rejects for good are removed. Every user also gets it in
+ * their notification list in the app, whether or not a push went out.
  */
 export async function pushToUsers(
   userIds: string[],
@@ -91,9 +93,11 @@ export async function pushToUsers(
   message: (locale: Locale) => PushMessage,
 ) {
   try {
-    const config = apnsConfig();
     const unique = [...new Set(userIds)];
-    if (!config || unique.length === 0) return;
+    if (unique.length === 0) return;
+    await saveToInbox(unique, type, message);
+    const config = apnsConfig();
+    if (!config) return;
     const [devices, off] = await Promise.all([
       prisma.pushDevice.findMany({
         where: { userId: { in: unique } },
