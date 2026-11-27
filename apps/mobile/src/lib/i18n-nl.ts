@@ -204,6 +204,8 @@ export const nl: Record<string, string> = {
   'Past tournaments': 'Eerdere toernooien',
   'Time to follow': 'Tijd volgt',
   'Court {court}': 'Baan {court}',
+  Court: 'Baan',
+  Live: 'Live',
   New: 'Nieuw',
   Changed: 'Gewijzigd',
   Called: 'Opgeroepen',
