@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
+import { SymbolView } from 'expo-symbols';
 
 import { MenuSheet } from '@/components/MenuSheet';
 import { Button, Card, Hint, IconButton, Screen } from '@/components/ui';
 import { dateLocaleTag, useLocale, useT } from '@/lib/i18n';
 import { courtName, fetchMyMatches, type MyMatch } from '@/lib/me';
+import { fetchInbox } from '@/lib/notifications';
 import { useSession } from '@/lib/session';
 import { fetchTournaments, type TournamentSummary } from '@/lib/tournaments';
 import { font, useColors } from '@/theme';
@@ -20,6 +22,7 @@ export default function HomeScreen() {
   const [upcoming, setUpcoming] = useState<TournamentSummary[] | null>(null);
   const [failed, setFailed] = useState(false);
   const [nextMatch, setNextMatch] = useState<MyMatch | null>(null);
+  const [unread, setUnread] = useState(0);
   const dateTag = dateLocaleTag(locale);
   const today = new Date().toLocaleDateString(dateTag, {
     weekday: 'long',
@@ -41,7 +44,7 @@ export default function HomeScreen() {
     };
   }, []);
 
-  // The next match still to play, refreshed whenever Home opens.
+  // The next match still to play and the bell's count, refreshed whenever Home opens.
   useFocusEffect(
     useCallback(() => {
       let active = true;
@@ -51,6 +54,11 @@ export default function HomeScreen() {
             ['SCHEDULED', 'CALLED', 'IN_PROGRESS'].includes(m.status),
           );
           if (active) setNextMatch(next ?? null);
+        })
+        .catch(() => null);
+      fetchInbox()
+        .then((inbox) => {
+          if (active) setUnread(inbox.unread);
         })
         .catch(() => null);
       return () => {
@@ -68,9 +76,35 @@ export default function HomeScreen() {
             {t('Hello, {name}', { name: profile?.firstName ?? t('there') })}
           </Text>
         </View>
-        <IconButton label={t('Menu')} onPress={() => setMenuOpen(true)}>
-          <Text style={[styles.dots, { color: colors.fg }]}>⋯</Text>
-        </IconButton>
+        <View style={styles.actions}>
+          <View>
+            <IconButton
+              label={
+                unread > 0 ? t('Notifications, {count} new', { count: unread }) : t('Notifications')
+              }
+              onPress={() => router.push('/notifications')}
+            >
+              {/* The icon is a native view that would take the tap; let it reach the button. */}
+              <View pointerEvents="none">
+                <SymbolView name="bell" size={20} tintColor={colors.fg} />
+              </View>
+            </IconButton>
+            {unread > 0 ? (
+              <View
+                testID="bell-badge"
+                pointerEvents="none"
+                style={[styles.badge, { backgroundColor: colors.fg, borderColor: colors.bg }]}
+              >
+                <Text style={[styles.badgeText, { color: colors.bg }]}>
+                  {unread > 9 ? '9+' : unread}
+                </Text>
+              </View>
+            ) : null}
+          </View>
+          <IconButton label={t('Menu')} onPress={() => setMenuOpen(true)}>
+            <Text style={[styles.dots, { color: colors.fg }]}>⋯</Text>
+          </IconButton>
+        </View>
       </View>
 
       <Pressable
@@ -181,7 +215,21 @@ const styles = StyleSheet.create({
   greeting: { flex: 1, gap: 2 },
   date: { fontSize: 14 },
   hello: { fontSize: 32, fontFamily: font.display },
+  actions: { flexDirection: 'row', gap: 10 },
   dots: { fontSize: 20, fontFamily: font.bold },
+  badge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    minWidth: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    paddingHorizontal: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  badgeText: { fontSize: 11, fontFamily: font.bold },
   hero: { borderRadius: 20, borderWidth: 1, padding: 18, gap: 8 },
   heroLabel: { fontSize: 13, fontFamily: font.semibold, letterSpacing: 0.5 },
   heroTitle: { fontSize: 22, fontFamily: font.display },

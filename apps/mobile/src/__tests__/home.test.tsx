@@ -1,22 +1,28 @@
 import { render, screen } from '@testing-library/react-native';
 
-import SplashScreen from '@/app/index';
-import { SessionProvider } from '@/lib/session';
-import { ThemeProvider } from '@/theme';
+import Start from '@/app/index';
+import { useSession } from '@/lib/session';
 
 jest.mock('expo-router', () => ({
-  router: { replace: jest.fn(), push: jest.fn(), back: jest.fn() },
+  Redirect: ({ href }: { href: string }) => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { Text: T } = require('react-native');
+    return <T testID="redirect">{href}</T>;
+  },
 }));
 
-describe('SplashScreen', () => {
-  it('shows the static brand logo', () => {
-    render(
-      <ThemeProvider>
-        <SessionProvider>
-          <SplashScreen />
-        </SessionProvider>
-      </ThemeProvider>,
-    );
-    expect(screen.getByTestId('splash-logo')).toBeTruthy();
+jest.mock('@/lib/session', () => ({ useSession: jest.fn() }));
+
+describe('Start', () => {
+  it('goes to Welcome when signed out', () => {
+    jest.mocked(useSession).mockReturnValue({ profile: null } as never);
+    render(<Start />);
+    expect(screen.getByTestId('redirect')).toHaveTextContent('/welcome');
+  });
+
+  it('goes to Home when signed in', () => {
+    jest.mocked(useSession).mockReturnValue({ profile: { id: 'p1' } } as never);
+    render(<Start />);
+    expect(screen.getByTestId('redirect')).toHaveTextContent('/(app)/(tabs)');
   });
 });

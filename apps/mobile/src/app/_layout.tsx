@@ -10,8 +10,9 @@ import {
 } from '@expo-google-fonts/inter';
 import { Fraunces_700Bold, useFonts as useFraunces } from '@expo-google-fonts/fraunces';
 import { Stack } from 'expo-router';
+import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { Linking } from 'react-native';
+import { Linking, View } from 'react-native';
 import { handleURLCallback } from '@stripe/stripe-react-native';
 
 import { AppLockProvider } from '@/lib/app-lock';
@@ -26,19 +27,28 @@ function ThemedStatusBar() {
   return <StatusBar style={colors.dark ? 'light' : 'dark'} />;
 }
 
-/** The screen stack, with the theme's background behind every screen so transitions never flash. */
+// Keep the native launch screen up until the first screen has drawn. Otherwise it goes as soon as
+// React starts, and the phone shows an empty black window while fonts and the login load.
+void SplashScreen.preventAutoHideAsync();
+
+/**
+ * The screen stack, with the theme's background behind every screen so transitions never flash.
+ * Its first layout hands over from the native launch screen.
+ */
 function ThemedStack({ children }: { children: ReactNode }) {
   const colors = useColors();
   return (
-    <Stack
-      screenOptions={{
-        headerShown: false,
-        animation: 'fade',
-        contentStyle: { backgroundColor: colors.bg },
-      }}
-    >
-      {children}
-    </Stack>
+    <View style={{ flex: 1, backgroundColor: colors.bg }} onLayout={() => SplashScreen.hide()}>
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          animation: 'fade',
+          contentStyle: { backgroundColor: colors.bg },
+        }}
+      >
+        {children}
+      </Stack>
+    </View>
   );
 }
 

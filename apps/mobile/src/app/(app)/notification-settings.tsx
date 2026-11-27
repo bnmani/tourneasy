@@ -37,6 +37,10 @@ const pushLabels: Record<string, { title: string; hint: string }> = {
     title: 'Players I follow',
     hint: 'When a player you follow goes on court.',
   },
+  ANNOUNCEMENT: {
+    title: 'News from the organisers',
+    hint: 'News from tournaments you entered, and messages from the Tourneasy team.',
+  },
 };
 
 /** Push on this phone, and which emails and pushes I get. Saved to my account. */

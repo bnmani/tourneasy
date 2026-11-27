@@ -267,6 +267,8 @@ export const nl: Record<string, string> = {
   'Results after a tournament': 'Uitslagen na een toernooi',
   'Your matches and placings afterwards.': 'Je wedstrijden en plaatsen na afloop.',
   'News from the organisers': 'Nieuws van de organisatie',
+  'News from tournaments you entered, and messages from the Tourneasy team.':
+    'Nieuws van toernooien waaraan je meedoet, en berichten van het Tourneasy-team.',
   'Messages from the organisers of tournaments you entered.':
     'Berichten van de organisatie van toernooien waarvoor je bent ingeschreven.',
   'Entry confirmations, partner invitations, receipts, refunds, password and account messages, and your match times (also when they change).':
@@ -461,4 +463,8 @@ export const nl: Record<string, string> = {
   'Your data could not be downloaded. Try again.':
     'Je gegevens konden niet worden gedownload. Probeer het opnieuw.',
   'The categories could not be loaded.': 'De onderdelen konden niet worden geladen.',
+  'Notifications, {count} new': 'Meldingen, {count} nieuw',
+  'Your notifications could not be loaded.': 'Je meldingen konden niet worden geladen.',
+  'Nothing yet. When your schedule is out, your match goes on court or a player you follow plays, it shows here.':
+    'Nog niets. Als je schema online staat, je wedstrijd begint of een speler die je volgt speelt, zie je het hier.',
 };
