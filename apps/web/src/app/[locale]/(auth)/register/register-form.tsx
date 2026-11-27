@@ -51,7 +51,7 @@ export function RegisterForm({
       <FormError state={state} />
 
       <FormSection title={t('sectionPersonal')}>
-        <div className="grid gap-4 sm:grid-cols-[1fr_8rem]">
+        <div className="grid gap-4 sm:grid-cols-[1fr_minmax(8rem,auto)]">
           <TextField
             name="firstName"
             label={t('firstName')}
