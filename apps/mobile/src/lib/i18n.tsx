@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
 
 import { nl } from '@/lib/i18n-nl';
+import { LOCALE_KEY, readPref, writePref } from '@/lib/prefs';
 
 export type Locale = 'en' | 'nl';
 
@@ -12,13 +13,16 @@ type LocaleValue = {
 // Without a provider (for example in isolated tests) the app stays in English.
 const LocaleContext = createContext<LocaleValue>({ locale: 'en', setLocale: () => {} });
 
-/**
- * Language choice for the whole app. Held in memory for now, so it resets on
- * restart; it moves to stored preferences with the rest of the settings.
- */
+/** Language choice for the whole app, kept on this phone between launches. */
 export function LocaleProvider({ children }: { children: ReactNode }) {
-  const [locale, setLocale] = useState<Locale>('en');
-  const value = useMemo(() => ({ locale, setLocale }), [locale]);
+  const [locale, setLocaleState] = useState<Locale>(
+    () => readPref(LOCALE_KEY, ['en', 'nl'] as const) ?? 'en',
+  );
+  const setLocale = useCallback((value: Locale) => {
+    setLocaleState(value);
+    writePref(LOCALE_KEY, value);
+  }, []);
+  const value = useMemo(() => ({ locale, setLocale }), [locale, setLocale]);
   return <LocaleContext.Provider value={value}>{children}</LocaleContext.Provider>;
 }
 

@@ -1,5 +1,15 @@
-import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
-import { useColorScheme } from 'react-native';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from 'react';
+import { Appearance, useColorScheme } from 'react-native';
+
+import { readPref, THEME_KEY, writePref } from '@/lib/prefs';
 
 /** Colour tokens. */
 export type Colors = {
@@ -90,12 +100,24 @@ const ThemeContext = createContext<ThemeValue | null>(null);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const system = useColorScheme();
-  const [preference, setPreference] = useState<ThemePreference>('system');
+  // The saved choice, read before the first screen draws.
+  const [preference, setPreferenceState] = useState<ThemePreference>(
+    () => readPref(THEME_KEY, ['light', 'dark', 'system'] as const) ?? 'system',
+  );
+  const setPreference = useCallback((value: ThemePreference) => {
+    setPreferenceState(value);
+    writePref(THEME_KEY, value);
+  }, []);
+
+  // iOS pop-ups, the keyboard and the share sheet follow the app's choice too.
+  useEffect(() => {
+    Appearance.setColorScheme(preference === 'system' ? 'auto' : preference);
+  }, [preference]);
 
   const value = useMemo<ThemeValue>(() => {
     const scheme = preference === 'system' ? (system === 'light' ? 'light' : 'dark') : preference;
     return { preference, setPreference, colors: scheme === 'light' ? light : dark };
-  }, [preference, system]);
+  }, [preference, setPreference, system]);
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }
@@ -123,6 +145,3 @@ export const font = {
   semibold: 'Inter_600SemiBold',
   bold: 'Inter_700Bold',
 } as const;
-
-/** Splash background: the logo's own teal, behind the brand video. */
-export const splashBackground = '#11464c';
