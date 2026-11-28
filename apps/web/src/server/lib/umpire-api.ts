@@ -48,7 +48,7 @@ export function umpireError(error: unknown): Response {
     console.error('[umpire-api] unmapped error code', { requestId, code: error.code });
     status = error.status || 500;
   }
-  if (status >= 500) {
+  if (status < 400 || status >= 500) {
     return Response.json({ error: { code: 'UNEXPECTED', requestId } }, { status: 500, headers });
   }
   const retryAfter = error.details.retryAfterSeconds;
