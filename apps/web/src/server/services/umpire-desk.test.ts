@@ -102,6 +102,10 @@ async function setup(publish = true) {
   return { actor, tournament, court1, court2, event, match };
 }
 
+/** The match version the desk page would have rendered. */
+const ver = async (s: { match: { id: string } }) =>
+  (await prisma.match.findUniqueOrThrow({ where: { id: s.match.id } })).version;
+
 let n = 0;
 async function umpire(tournamentId: string, name: string) {
   n += 1;
@@ -146,7 +150,7 @@ describe('desk confirmation', () => {
     const before = await prisma.match.findUniqueOrThrow({ where: { id: s.match.id } });
     expect(before.status).toBe('AWAITING_DESK');
 
-    await confirmMatchResult(s.actor, s.match.id, meta);
+    await confirmMatchResult(s.actor, s.match.id, meta, await ver(s));
 
     const after = await prisma.match.findUniqueOrThrow({
       where: { id: s.match.id },
@@ -168,15 +172,24 @@ describe('desk confirmation', () => {
 
   it('refuses a match that is not waiting for the desk', async () => {
     const s = await setup();
-    await expect(confirmMatchResult(s.actor, s.match.id, meta)).rejects.toMatchObject({
-      code: 'statusTransition',
-    });
+    await expect(confirmMatchResult(s.actor, s.match.id, meta, await ver(s))).rejects.toMatchObject(
+      {
+        code: 'statusTransition',
+      },
+    );
   });
 
   it('confirm after a correction records the corrected score', async () => {
     const s = await sentToDesk();
-    await correctMatchScore(s.actor, s.match.id, [[4, 2]], 'Umpire missed a point', meta);
-    await confirmMatchResult(s.actor, s.match.id, meta);
+    await correctMatchScore(
+      s.actor,
+      s.match.id,
+      [[4, 2]],
+      'Umpire missed a point',
+      meta,
+      await ver(s),
+    );
+    await confirmMatchResult(s.actor, s.match.id, meta, await ver(s));
     const sets = await prisma.matchSet.findMany({ where: { matchId: s.match.id } });
     expect(sets.map((x) => [x.scoreA, x.scoreB])).toEqual([[4, 2]]);
   });
@@ -187,7 +200,7 @@ describe('desk correction', () => {
     const s = await sentToDesk();
     for (const reason of ['', '   ']) {
       await expect(
-        correctMatchScore(s.actor, s.match.id, [[3, 1]], reason, meta),
+        correctMatchScore(s.actor, s.match.id, [[3, 1]], reason, meta, await ver(s)),
       ).rejects.toMatchObject({ code: 'validation' });
     }
     expect(await prisma.auditLog.count({ where: { action: 'match.umpireCorrect' } })).toBe(0);
@@ -201,7 +214,14 @@ describe('desk correction', () => {
       where: { matchId: s.match.id },
       orderBy: { seq: 'asc' },
     });
-    await correctMatchScore(s.actor, s.match.id, [[3, 1]], '  Wrong side tapped  ', meta);
+    await correctMatchScore(
+      s.actor,
+      s.match.id,
+      [[3, 1]],
+      '  Wrong side tapped  ',
+      meta,
+      await ver(s),
+    );
 
     const [entry] = await prisma.auditLog.findMany({ where: { action: 'match.umpireCorrect' } });
     expect(entry).toMatchObject({
@@ -230,14 +250,80 @@ describe('desk correction', () => {
 
   it('refuses an invalid score and a match that is not waiting for the desk', async () => {
     const s = await sentToDesk();
-    await expect(correctMatchScore(s.actor, s.match.id, [[2, 1]], 'x', meta)).rejects.toMatchObject(
-      { code: 'validation' },
-    );
-    expect(await prisma.auditLog.count({ where: { action: 'match.umpireCorrect' } })).toBe(0);
-    await confirmMatchResult(s.actor, s.match.id, meta);
     await expect(
-      correctMatchScore(s.actor, s.match.id, [[3, 1]], 'Too late', meta),
+      correctMatchScore(s.actor, s.match.id, [[2, 1]], 'x', meta, await ver(s)),
+    ).rejects.toMatchObject({ code: 'validation' });
+    expect(await prisma.auditLog.count({ where: { action: 'match.umpireCorrect' } })).toBe(0);
+    await confirmMatchResult(s.actor, s.match.id, meta, await ver(s));
+    await expect(
+      correctMatchScore(s.actor, s.match.id, [[3, 1]], 'Too late', meta, await ver(s)),
     ).rejects.toMatchObject({ code: 'statusTransition' });
+  });
+});
+
+describe('rendered version', () => {
+  it('a correction after the page rendered makes a confirm with the old version refused', async () => {
+    const s = await sentToDesk();
+    const rendered = await ver(s);
+    await correctMatchScore(s.actor, s.match.id, [[3, 1]], 'Wrong side', meta, rendered);
+    await expect(confirmMatchResult(s.actor, s.match.id, meta, rendered)).rejects.toMatchObject({
+      code: 'resultConflict',
+    });
+    expect((await prisma.match.findUniqueOrThrow({ where: { id: s.match.id } })).status).toBe(
+      'AWAITING_DESK',
+    );
+    expect(await prisma.matchSet.count({ where: { matchId: s.match.id } })).toBe(0);
+    expect(await prisma.auditLog.count({ where: { action: 'match.result' } })).toBe(0);
+    // The same stale version cannot correct either, and nothing more is logged.
+    await expect(
+      correctMatchScore(s.actor, s.match.id, [[3, 2]], 'Again', meta, rendered),
+    ).rejects.toMatchObject({ code: 'resultConflict' });
+    expect(await prisma.auditLog.count({ where: { action: 'match.umpireCorrect' } })).toBe(1);
+    // With the current version it goes through.
+    await confirmMatchResult(s.actor, s.match.id, meta, await ver(s));
+  });
+
+  it('the desk score is the correction with the highest stored version, even at the same time', async () => {
+    const s = await sentToDesk();
+    const at = new Date();
+    const row = (id: string, games: number[][], version?: number) =>
+      prisma.auditLog.create({
+        data: {
+          id,
+          actorId: s.actor.userId,
+          action: 'match.umpireCorrect',
+          entityType: 'Match',
+          entityId: s.match.id,
+          createdAt: at,
+          after: { games, reason: 'x', ...(version ? { version } : {}) },
+        },
+      });
+    // The newer correction (version 5) has the smaller id, so id order alone would pick wrongly.
+    await row('ffffffff-0000-4000-8000-000000000001', [[3, 1]], 4);
+    await row('00000000-0000-4000-8000-000000000002', [[3, 2]], 5);
+    expect((await umpireDeskReview(s.actor, s.match.id)).games).toEqual([[3, 2]]);
+  });
+
+  it('rows without a version fall back to time, then id', async () => {
+    const s = await sentToDesk();
+    const at = new Date();
+    for (const [id, games] of [
+      ['00000000-0000-4000-8000-0000000000aa', [[3, 1]]],
+      ['00000000-0000-4000-8000-0000000000bb', [[3, 2]]],
+    ] as const) {
+      await prisma.auditLog.create({
+        data: {
+          id,
+          actorId: s.actor.userId,
+          action: 'match.umpireCorrect',
+          entityType: 'Match',
+          entityId: s.match.id,
+          createdAt: at,
+          after: { games: games as unknown as number[][], reason: 'x' },
+        },
+      });
+    }
+    expect((await umpireDeskReview(s.actor, s.match.id)).games).toEqual([[3, 2]]);
   });
 });
 
@@ -295,6 +381,51 @@ describe('desk alerts', () => {
       (await prisma.courtHold.findUniqueOrThrow({ where: { courtId: s.court2.id } })).umpireId,
     ).toBe(s.cora.id);
     expect(await prisma.auditLog.count({ where: { action: 'deskAlert.resolve' } })).toBe(1);
+  });
+
+  it("another tournament's match on the shared court never shows in the alert", async () => {
+    const s = await alertSetup();
+    const venueId = s.tournament.venueId!;
+    const other = await prisma.tournament.create({
+      data: {
+        name: 'Ander toernooi',
+        slug: 'ander-toernooi',
+        startsOn: new Date('2027-03-13'),
+        endsOn: new Date('2027-03-13'),
+        registrationOpensAt: new Date('2026-01-01'),
+        registrationClosesAt: new Date('2026-02-01'),
+        entryDeadline: new Date('2026-02-01'),
+        withdrawalDeadline: new Date('2026-02-01'),
+        venueId,
+      },
+    });
+    const event = await prisma.tournamentEvent.create({
+      data: {
+        tournamentId: other.id,
+        discipline: 'DE',
+        feeCents: 0,
+        bestOf: 1,
+        pointsToWin: 3,
+        pointsCap: 5,
+      },
+    });
+    const draw = await prisma.draw.create({
+      data: { eventId: event.id, type: 'KNOCKOUT', size: 2, status: 'PUBLISHED' },
+    });
+    const foreign = await prisma.match.create({
+      data: { drawId: draw.id, round: 1, matchNumber: 1, status: 'IN_PROGRESS' },
+    });
+    await prisma.courtSlot.create({
+      data: {
+        tournamentId: other.id,
+        courtId: s.court2.id,
+        matchId: foreign.id,
+        startsAt: new Date('2027-03-13T09:00:00Z'),
+        endsAt: new Date('2027-03-13T10:00:00Z'),
+      },
+    });
+    const [alert] = await deskAlerts(s.actor, s.tournament.id);
+    expect(alert).toMatchObject({ id: s.alert.id, matchId: null, games: [] });
   });
 
   it('keeping the current umpire leaves the hold alone', async () => {
