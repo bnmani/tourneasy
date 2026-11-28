@@ -108,7 +108,10 @@ export async function notifyPaper(
   meta: RequestMeta = {},
 ): Promise<void> {
   await transaction(async (tx) => {
-    await loadForUmpire(tx, umpireId, matchId);
+    const { match } = await loadForUmpire(tx, umpireId, matchId);
+    if (match.status !== 'IN_PROGRESS' && match.status !== 'AWAITING_DESK') {
+      throw new AppError('statusTransition');
+    }
     await writeAudit(tx, {
       actorId: null,
       action: 'umpire.paper',
