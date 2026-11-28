@@ -40,6 +40,15 @@ const get = apiGet as jest.Mock;
 const post = apiPost as jest.Mock;
 const M = '11111111-1111-4111-8111-111111111111';
 
+const serverState = (over: Record<string, unknown> = {}) => ({
+  status: 'IN_PROGRESS',
+  version: 1,
+  games: [],
+  serving: 'A',
+  lastSeq: 0,
+  ...over,
+});
+
 function renderScreen(ui: ReactElement) {
   return render(
     <LocaleProvider>
@@ -55,6 +64,7 @@ function renderScreen(ui: ReactElement) {
 beforeEach(async () => {
   await AsyncStorage.clear();
   get.mockReset();
+  get.mockResolvedValue(serverState());
   post.mockReset();
   mockRouter.replace.mockReset();
   mockRouter.push.mockReset();
@@ -121,6 +131,53 @@ describe('serve choice', () => {
     fireEvent.press(screen.getByText('Start scoring'));
     expect(await screen.findByText('Could not start the match. Try again.')).toBeTruthy();
     expect(mockRouter.replace).not.toHaveBeenCalled();
+  });
+});
+
+describe('server-driven score', () => {
+  const point = { id: 'p1', seq: 1, kind: 'POINT' as const, side: 'A' as const };
+
+  it('shows the server score and replaces it when a reply carries a different one', async () => {
+    mockParams = { matchId: M };
+    get.mockResolvedValue(serverState({ games: [[3, 2]], lastSeq: 5 }));
+    await enqueue(M, { ...point, seq: 6 });
+    post.mockResolvedValue({ applied: 1, serving: 'B', games: [[9, 4]], version: 2, lastSeq: 6 });
+    renderScreen(<ScoringScreen />);
+    await waitFor(() => expect(screen.getAllByText('9').length).toBeGreaterThan(0));
+    expect(screen.getAllByText('4').length).toBeGreaterThan(0);
+    expect(screen.queryByText('3')).toBeNull();
+  });
+
+  it('a new phone with an empty counter numbers the first tap above the server lastSeq', async () => {
+    mockParams = { matchId: M };
+    get.mockResolvedValue(serverState({ lastSeq: 7 }));
+    post.mockRejectedValue(Object.assign(new Error('x'), { status: null }));
+    renderScreen(<ScoringScreen />);
+    await waitFor(() =>
+      expect(screen.getByLabelText('Point for side A').props.accessibilityState.disabled).toBe(
+        false,
+      ),
+    );
+    fireEvent.press(screen.getByLabelText('Point for side A'));
+    await screen.findByText(/1 waiting to sync/);
+    const queued = JSON.parse((await AsyncStorage.getItem(`score-queue:${M}`)) as string);
+    expect(queued[0].seq).toBe(8);
+  });
+
+  it('does not let a tap in before the server state is known', async () => {
+    mockParams = { matchId: M };
+    get.mockRejectedValue(new Error('offline'));
+    renderScreen(<ScoringScreen />);
+    expect(await screen.findByText(/Cannot reach the server/)).toBeTruthy();
+    expect(screen.getByLabelText('Point for side A').props.accessibilityState.disabled).toBe(true);
+  });
+
+  it('the confirm popup shows the server games', async () => {
+    mockParams = { matchId: M };
+    get.mockResolvedValue(serverState({ games: [[21, 18]] }));
+    renderScreen(<FinishScreen />);
+    expect(await screen.findByText('21')).toBeTruthy();
+    expect(screen.getByText('18')).toBeTruthy();
   });
 });
 

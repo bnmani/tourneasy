@@ -7,6 +7,7 @@ import { claimCourt } from '@/server/services/umpire-court-service';
 import { POST as signIn } from './sign-in/route';
 import { GET as listCourts } from './courts/route';
 import { DELETE as release, POST as claim } from './courts/[courtId]/claim/route';
+import { GET as matchState } from './matches/[matchId]/route';
 import { POST as start } from './matches/[matchId]/start/route';
 import { POST as events } from './matches/[matchId]/events/route';
 import { POST as finish } from './matches/[matchId]/finish/route';
@@ -223,13 +224,35 @@ describe('matches', () => {
       'applied',
       'duplicates',
       'games',
+      'lastSeq',
       'serving',
       'version',
     ]);
     expect(body.applied).toBe(3);
+    expect(body.lastSeq).toBe(3);
     const fin = await finish(req('/f', { ...as(s.anna) }), m(s.match.id));
     expect(fin.status).toBe(200);
     expect((await fin.json()).status).toBe('AWAITING_DESK');
+  });
+  it('GET match state returns the score and the highest seq, only to the holder', async () => {
+    const s = await setup();
+    await claimCourt(s.anna.row.id, s.court1.id);
+    await start(req('/s', { ...as(s.anna), body: { serving: 'B' } }), m(s.match.id));
+    await events(
+      req('/e', { ...as(s.anna), body: { events: [point(5, 'A'), point(7, 'B')] } }),
+      m(s.match.id),
+    );
+    const res = await matchState(req('/m', { method: 'GET', ...as(s.anna) }), m(s.match.id));
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body).toMatchObject({ status: 'IN_PROGRESS', games: [[1, 1]], lastSeq: 7 });
+    expect(['A', 'B']).toContain(body.serving);
+    expect(typeof body.version).toBe('number');
+    const other = await matchState(req('/m', { method: 'GET', ...as(s.bram) }), m(s.match.id));
+    expect(other.status).toBe(409);
+    expect(
+      (await matchState(req('/m', { method: 'GET' }), m(s.match.id))).status,
+    ).toBe(401);
   });
   it('finish before the match is decided is 409', async () => {
     const s = await setup();

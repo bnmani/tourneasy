@@ -320,4 +320,7 @@ export const nl: Record<string, string> = {
   'Change court': 'Andere baan',
   Court: 'Baan',
   'Umpire sign-in': 'Inloggen als scheidsrechter',
+  'Cannot reach the server to start scoring. Check your connection.':
+    'De server is niet bereikbaar om te beginnen met scoren. Controleer je verbinding.',
+  'Try again': 'Probeer opnieuw',
 };

@@ -3,13 +3,12 @@ import { View, StyleSheet, Text } from 'react-native';
 
 import { UButton, UCard, UPill, UScreen, UText, usePalette } from '@/components/umpire-ui';
 import { useT } from '@/lib/i18n';
-import type { GameScore } from '@/lib/local-score';
 import { font } from '@/theme';
 
-function parseGames(raw: string | undefined): GameScore[] {
+function parseGames(raw: string | undefined): [number, number][] {
   try {
     const value = JSON.parse(raw ?? '[]') as unknown;
-    return Array.isArray(value) ? (value as GameScore[]) : [];
+    return Array.isArray(value) ? (value as [number, number][]) : [];
   } catch {
     return [];
   }

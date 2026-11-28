@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { randomUUID } from 'expo-crypto';
 import { ApiError, apiPost } from '@/lib/api';
+import { recordServerState } from '@/lib/match-state';
 
 /** One tap, as the server expects it. `seq` orders the events within a match. */
 export type QueuedEvent =
@@ -200,6 +201,8 @@ async function doFlush(matchId: string, token: string): Promise<FlushResult> {
       return done({ blocked, ...(corrupt ? { corrupt: true } : {}) }, list.length);
     }
     const reason = (response as { rejected?: unknown } | null)?.rejected;
+    // The server's score and highest seq are what the screens show; losing them is not fatal.
+    await recordServerState(matchId, response).catch(() => undefined);
     await exclusive(async () => {
       if (typeof reason === 'string') {
         const record = [...(await rejectedEvents(matchId)), { event: next, reason }];

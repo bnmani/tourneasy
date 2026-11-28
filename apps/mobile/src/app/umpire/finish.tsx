@@ -5,8 +5,7 @@ import { StyleSheet, View } from 'react-native';
 import { UButton, UCard, UScreen, UText, usePalette } from '@/components/umpire-ui';
 import { ApiError } from '@/lib/api';
 import { useT } from '@/lib/i18n';
-import { displayScore, type GameScore } from '@/lib/local-score';
-import { readTapLog } from '@/lib/seq';
+import { loadMatchState } from '@/lib/match-state';
 import { finishMatch, isUnauthorized } from '@/lib/umpire-api';
 import { useMatchSync } from '@/lib/use-match-sync';
 import { useUmpireAuth } from '@/lib/use-umpire-auth';
@@ -21,15 +20,24 @@ export default function FinishScreen() {
   const matchId = params.matchId;
   const { token, toSignIn } = useUmpireAuth();
   const sync = useMatchSync(matchId, token, toSignIn);
-  const [games, setGames] = useState<GameScore[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
+  // Ask the server for the score again, so the popup shows what the desk will receive.
   useEffect(() => {
-    void readTapLog(matchId).then((log) => setGames(displayScore(log).games));
-  }, [matchId]);
+    if (!token) return;
+    let current = true;
+    loadMatchState(matchId, token)
+      .catch(() => undefined)
+      .then(() => (current ? sync.refresh() : undefined));
+    return () => {
+      current = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [matchId, token]);
+  // The server's score, as last reported by the match read or an events reply.
+  const games = sync.score?.games ?? [];
 
-  const blocked = !sync.loaded || !sync.finishable || sync.waiting > 0;
+  const blocked = !sync.loaded || !sync.score || !sync.finishable || sync.waiting > 0;
 
   const confirm = async () => {
     if (!token || blocked || busy) return;

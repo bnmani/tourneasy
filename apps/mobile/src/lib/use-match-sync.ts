@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 
+import { readMatchState, type MatchState } from '@/lib/match-state';
 import {
   canFinish,
   corruptCount,
@@ -20,6 +21,8 @@ export type MatchSync = {
   rejected: RejectedEvent[];
   corrupt: number;
   finishable: boolean;
+  /** The score as the server last reported it, or null before the first read. */
+  score: MatchState | null;
   /** What the last failed send needs: sign in, the desk, or just the connection. */
   problem: BlockedAction | null;
   /** Reads the queue and tries to send what is waiting. */
@@ -44,6 +47,7 @@ export function useMatchSync(
     rejected: [] as RejectedEvent[],
     corrupt: 0,
     finishable: false,
+    score: null as MatchState | null,
   });
   const [problem, setProblem] = useState<BlockedAction | null>(null);
   const alive = useRef(true);
@@ -53,14 +57,15 @@ export function useMatchSync(
   });
 
   const refresh = useCallback(async () => {
-    const [list, rejected, corrupt, finishable] = await Promise.all([
+    const [list, rejected, corrupt, finishable, score] = await Promise.all([
       pending(matchId),
       rejectedEvents(matchId),
       corruptCount(matchId),
       canFinish(matchId),
+      readMatchState(matchId),
     ]);
     if (alive.current)
-      setState({ loaded: true, waiting: list.length, rejected, corrupt, finishable });
+      setState({ loaded: true, waiting: list.length, rejected, corrupt, finishable, score });
   }, [matchId]);
 
   const sync = useCallback(async () => {

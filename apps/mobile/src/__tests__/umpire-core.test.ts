@@ -1,8 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getDeviceId } from '@/lib/device';
-import { displayScore } from '@/lib/local-score';
 import { extractQrToken } from '@/lib/qr';
-import { nextSeq, recordTap, type Tap } from '@/lib/seq';
+import { nextSeq, recordTap, seedSeq } from '@/lib/seq';
+import { appendTap } from '@/lib/tap-log';
 import { enqueue, pending } from '@/lib/score-queue';
 import { blockedAction } from '@/lib/umpire-sync';
 
@@ -20,10 +20,16 @@ jest.mock('@/lib/score-queue', () => {
   return { ...actual, enqueue: jest.fn(actual.enqueue) };
 });
 
+jest.mock('@/lib/tap-log', () => {
+  const actual = jest.requireActual('@/lib/tap-log');
+  return { ...actual, appendTap: jest.fn(actual.appendTap) };
+});
+
 const M = 'match-1';
 
 beforeEach(async () => {
   await AsyncStorage.clear();
+  (enqueue as jest.Mock).mockClear();
 });
 
 describe('seq counter', () => {
@@ -66,6 +72,29 @@ describe('seq counter', () => {
   });
 });
 
+describe('seeding from the server', () => {
+  it('a new phone with an empty counter and server lastSeq 7 sends seq 8 next', async () => {
+    await seedSeq(M, 7);
+    const event = await recordTap(M, { kind: 'POINT', side: 'A' });
+    expect(event.seq).toBe(8);
+  });
+  it('never lowers the counter', async () => {
+    await AsyncStorage.setItem(`seq-counter:${M}`, '20');
+    await seedSeq(M, 7);
+    expect(await nextSeq(M)).toBe(21);
+  });
+});
+
+describe('saved means queued', () => {
+  it('a failing display-log write still reports saved and does not enqueue twice', async () => {
+    (appendTap as jest.Mock).mockRejectedValueOnce(new Error('disk full'));
+    const event = await recordTap(M, { kind: 'POINT', side: 'A' });
+    expect(event.seq).toBe(1);
+    expect((await pending(M)).map((e) => e.id)).toEqual([event.id]);
+    expect(enqueue).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe('device id', () => {
   it('is generated once and then stored', async () => {
     const first = await getDeviceId();
@@ -97,27 +126,5 @@ describe('QR token', () => {
   });
   it('is null when the link has none', () => {
     expect(extractQrToken('https://tourneasy.com/umpire')).toBeNull();
-  });
-});
-
-describe('local score display', () => {
-  it('counts points, serving and undo', () => {
-    const taps: Tap[] = [
-      { kind: 'POINT', side: 'A' },
-      { kind: 'POINT', side: 'B' },
-      { kind: 'POINT', side: 'B' },
-      { kind: 'UNDO' },
-    ];
-    expect(displayScore(taps)).toEqual({ games: [[1, 1]], serving: 'B' });
-  });
-  it('starts a new game after 21 with a 2 point lead', () => {
-    const taps: Tap[] = [
-      ...Array.from({ length: 21 }, () => ({ kind: 'POINT', side: 'A' }) as Tap),
-      { kind: 'POINT', side: 'B' },
-    ];
-    expect(displayScore(taps).games).toEqual([
-      [21, 0],
-      [0, 1],
-    ]);
   });
 });
