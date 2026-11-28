@@ -2884,5 +2884,13 @@
     "expired": "Deze uitnodiging is ongeldig, verlopen of al gebruikt. Vraag de beheerder om een nieuwe.",
     "done": "Je bent nu organisator van {tournament}. Stel inloggen in twee stappen in als het beheer daarom vraagt; daarna vind je het toernooi onder Toernooien.",
     "toPortal": "Naar het beheer"
+  },
+  "UmpireSignIn": {
+    "title": "Inloggen als scheidsrechter",
+    "intro": "Scheidsrechters loggen in via de Tourneasy-app, niet in de browser.",
+    "step1": "Installeer de Tourneasy-app via de App Store of TestFlight.",
+    "step2": "Open de app en kies Inloggen als scheidsrechter.",
+    "step3": "Scan de QR-code van de wedstrijdtafel met de app, of typ de pincode van 6 cijfers.",
+    "noCode": "Nog geen pincode of QR-code? Vraag het de toernooibeheerder."
   }
 }

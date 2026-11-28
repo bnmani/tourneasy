@@ -2880,5 +2880,13 @@
     "expired": "This invitation is invalid, has expired or has already been used. Ask the administrator for a new one.",
     "done": "You're now an organiser of {tournament}. Set up two-step login when the portal asks, then you'll find the tournament under Tournaments.",
     "toPortal": "Go to the portal"
+  },
+  "UmpireSignIn": {
+    "title": "Umpire sign-in",
+    "intro": "Umpires sign in inside the Tourneasy app, not in the browser.",
+    "step1": "Install the Tourneasy app from the App Store or TestFlight.",
+    "step2": "Open the app and choose Umpire sign-in.",
+    "step3": "Scan the QR code from the tournament desk with the app, or type the 6-digit PIN.",
+    "noCode": "No PIN or QR code yet? Ask the tournament admin."
   }
 }
