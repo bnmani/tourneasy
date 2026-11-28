@@ -3,7 +3,7 @@ import { prisma } from '@tourneasy/db';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { resetDatabase } from '@/test/db';
 import { claimCourt, listCourts, releaseCourt } from './umpire-court-service';
-import { finishMatch, postEvents, startMatch } from './umpire-scoring-service';
+import { finishMatch, notifyPaper, postEvents, startMatch } from './umpire-scoring-service';
 
 beforeEach(resetDatabase);
 
@@ -150,6 +150,7 @@ describe('court holds', () => {
       holderName: 'Anna',
       match: { id: s.match.id, status: 'CALLED' },
     });
+    expect(forBram[0]!.match).toMatchObject({ sideA: null, sideB: null });
     expect(forBram[1]).toMatchObject({ status: 'FREE', holderName: null, match: null });
     const forAnna = await listCourts(s.tournament.id, s.anna.id);
     expect(forAnna[0]!.status).toBe('HELD_BY_ME');
@@ -341,5 +342,23 @@ describe('finish', () => {
     const s = await started();
     await postEvents(s.anna.id, s.match.id, [point('A'), point('A'), point('A')]);
     await expect(finishMatch(s.bram.id, s.match.id)).rejects.toMatchObject({ status: 409 });
+  });
+});
+
+describe('paper notice', () => {
+  it('is refused before the match has started and writes nothing', async () => {
+    const s = await setup();
+    await claimCourt(s.anna.id, s.court1.id);
+    await expect(notifyPaper(s.anna.id, s.match.id)).rejects.toMatchObject({
+      code: 'statusTransition',
+      status: 409,
+    });
+    expect(await prisma.auditLog.count({ where: { action: 'umpire.paper' } })).toBe(0);
+  });
+
+  it('is recorded once the match is in progress', async () => {
+    const s = await started();
+    await notifyPaper(s.anna.id, s.match.id);
+    expect(await prisma.auditLog.count({ where: { action: 'umpire.paper' } })).toBe(1);
   });
 });

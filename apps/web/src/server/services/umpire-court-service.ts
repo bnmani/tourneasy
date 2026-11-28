@@ -92,10 +92,10 @@ const sideSelect = {
 } satisfies Prisma.DrawEntrySelect;
 
 type SideRow = Prisma.DrawEntryGetPayload<{ select: typeof sideSelect }> | null;
-const sideLabel = (entry: SideRow) =>
-  entry?.registration
-    ? entry.registration.participants.map((p) => fullName(p.player)).join(' / ')
-    : null;
+const sideLabel = (entry: SideRow) => {
+  const names = entry?.registration?.participants.map((p) => fullName(p.player)) ?? [];
+  return names.length > 0 ? names.join(' / ') : null;
+};
 
 function currentMatch(m: {
   id: string;
