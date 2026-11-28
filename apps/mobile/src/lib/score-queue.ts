@@ -26,6 +26,8 @@ export type FlushResult = {
 const keyFor = (matchId: string) => `score-queue:${matchId}`;
 const rejectedKeyFor = (matchId: string) => `score-queue-rejected:${matchId}`;
 const corruptKeyFor = (matchId: string) => `score-queue-corrupt:${matchId}`;
+// Further unreadable values after the first are kept here, so none is dropped silently.
+const corruptExtraKeyFor = (matchId: string) => `score-queue-corrupt-extra:${matchId}`;
 
 /** A new client-generated event id. */
 export function newEventId(): string {
@@ -51,9 +53,24 @@ async function readState(matchId: string): Promise<{ list: QueuedEvent[]; corrup
   } catch {
     if ((await AsyncStorage.getItem(corruptKeyFor(matchId))) === null) {
       await AsyncStorage.setItem(corruptKeyFor(matchId), raw);
+    } else {
+      const extra = await readExtraCorrupt(matchId);
+      extra.push(raw);
+      await AsyncStorage.setItem(corruptExtraKeyFor(matchId), JSON.stringify(extra));
     }
     await AsyncStorage.removeItem(keyFor(matchId));
     return { list: [], corrupt: true };
+  }
+}
+
+async function readExtraCorrupt(matchId: string): Promise<string[]> {
+  const raw = await AsyncStorage.getItem(corruptExtraKeyFor(matchId));
+  if (!raw) return [];
+  try {
+    const list = JSON.parse(raw) as unknown;
+    return Array.isArray(list) ? list.filter((v): v is string => typeof v === 'string') : [];
+  } catch {
+    return [];
   }
 }
 
@@ -103,6 +120,34 @@ export function hasCorruptQueue(matchId: string): Promise<boolean> {
   return exclusive(async () => (await readState(matchId)).corrupt);
 }
 
+/** How many unreadable stored values were found for this match (0 when the queue is healthy). */
+export function corruptCount(matchId: string): Promise<number> {
+  return exclusive(async () => {
+    const first = (await AsyncStorage.getItem(corruptKeyFor(matchId))) === null ? 0 : 1;
+    return first + (await readExtraCorrupt(matchId)).length;
+  });
+}
+
+/**
+ * Removes the unreadable records so the match can be finished. The caller asks the umpire to
+ * confirm they have noted the count first. Readable pending taps are not touched. Returns how
+ * many unreadable values were removed.
+ */
+export function clearCorrupt(matchId: string): Promise<number> {
+  return exclusive(async () => {
+    const first = (await AsyncStorage.getItem(corruptKeyFor(matchId))) === null ? 0 : 1;
+    const count = first + (await readExtraCorrupt(matchId)).length;
+    await AsyncStorage.removeItem(corruptKeyFor(matchId));
+    await AsyncStorage.removeItem(corruptExtraKeyFor(matchId));
+    return count;
+  });
+}
+
+/** Forgets the rejected taps the umpire has seen. */
+export function dismissRejected(matchId: string): Promise<void> {
+  return exclusive(() => AsyncStorage.removeItem(rejectedKeyFor(matchId)));
+}
+
 /** Finishing is allowed only when nothing is waiting to be sent and the queue is readable. */
 export async function canFinish(matchId: string): Promise<boolean> {
   return exclusive(async () => {
@@ -142,7 +187,11 @@ async function doFlush(matchId: string, token: string): Promise<FlushResult> {
     if (!next) return done(corrupt ? { corrupt: true } : {}, 0);
     let response: unknown;
     try {
-      response = await apiPost(`/api/v1/umpire/matches/${matchId}/events`, { events: [next] }, token);
+      response = await apiPost(
+        `/api/v1/umpire/matches/${matchId}/events`,
+        { events: [next] },
+        token,
+      );
     } catch (error) {
       const blocked: BlockedInfo =
         error instanceof ApiError

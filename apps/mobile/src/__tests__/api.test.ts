@@ -1,5 +1,14 @@
 import { ApiError, apiGet, apiPost } from '@/lib/api';
 
+jest.mock('expo-crypto', () => {
+  let n = 0;
+  return { randomUUID: () => `00000000-0000-4000-8000-${String(++n).padStart(12, '0')}` };
+});
+
+jest.mock('@react-native-async-storage/async-storage', () =>
+  jest.requireActual('@react-native-async-storage/async-storage/jest/async-storage-mock'),
+);
+
 function mockFetch(status: number, body: unknown) {
   const fn = jest.fn().mockResolvedValue({
     ok: status >= 200 && status < 300,
@@ -38,5 +47,30 @@ describe('api client', () => {
     expect(init.method).toBe('GET');
     expect(init.body).toBeUndefined();
     expect(init.headers.Authorization).toBeUndefined();
+  });
+});
+
+describe('api client device header', () => {
+  it('sends X-Device-Id with the bearer token, the same stored id every time', async () => {
+    const fetchMock = mockFetch(200, { ok: true });
+    await apiPost('/api/x', {}, 'tok');
+    await apiGet('/api/y', 'tok');
+    const first = fetchMock.mock.calls[0][1].headers['X-Device-Id'];
+    const second = fetchMock.mock.calls[1][1].headers['X-Device-Id'];
+    expect(typeof first).toBe('string');
+    expect(first.length).toBeGreaterThan(8);
+    expect(second).toBe(first);
+  });
+
+  it('sends no device header without a token', async () => {
+    const fetchMock = mockFetch(200, { ok: true });
+    await apiGet('/api/y');
+    expect(fetchMock.mock.calls[0][1].headers['X-Device-Id']).toBeUndefined();
+  });
+
+  it('reads the error code from the umpire error body', async () => {
+    mockFetch(409, { error: { code: 'COURT_HELD', details: {}, requestId: 'r' } });
+    const err = (await apiPost('/api/x', {}, 'tok').catch((e: unknown) => e)) as ApiError;
+    expect(err.code).toBe('COURT_HELD');
   });
 });

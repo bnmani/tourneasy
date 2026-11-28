@@ -1,6 +1,15 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ApiError, apiPost } from '@/lib/api';
-import { canFinish, enqueue, flush, hasCorruptQueue, pending, rejectedEvents } from '@/lib/score-queue';
+import {
+  canFinish,
+  clearCorrupt,
+  corruptCount,
+  enqueue,
+  flush,
+  hasCorruptQueue,
+  pending,
+  rejectedEvents,
+} from '@/lib/score-queue';
 
 jest.mock('@react-native-async-storage/async-storage', () =>
   jest.requireActual('@react-native-async-storage/async-storage/jest/async-storage-mock'),
@@ -12,7 +21,12 @@ jest.mock('@/lib/api', () => ({
 
 const post = apiPost as jest.Mock;
 const M = 'match-1';
-const point = (seq: number) => ({ id: `id-${seq}`, seq, kind: 'POINT' as const, side: 'A' as const });
+const point = (seq: number) => ({
+  id: `id-${seq}`,
+  seq,
+  kind: 'POINT' as const,
+  side: 'A' as const,
+});
 
 beforeEach(async () => {
   await AsyncStorage.clear();
@@ -139,5 +153,33 @@ describe('score queue', () => {
     const result = await flush(M, 'tok');
     expect(result.corrupt).toBe(true);
     expect(await canFinish(M)).toBe(false);
+  });
+});
+
+describe('clearing a corrupt queue', () => {
+  it('counts every corrupt value, not only the first', async () => {
+    await AsyncStorage.setItem(`score-queue:${M}`, '{bad one');
+    expect(await pending(M)).toEqual([]);
+    await AsyncStorage.setItem(`score-queue:${M}`, '{bad two');
+    expect(await pending(M)).toEqual([]);
+    expect(await corruptCount(M)).toBe(2);
+  });
+
+  it('clearCorrupt removes the corrupt record and lets finish work again', async () => {
+    await AsyncStorage.setItem(`score-queue:${M}`, '{bad');
+    await pending(M);
+    expect(await canFinish(M)).toBe(false);
+    expect(await clearCorrupt(M)).toBe(1);
+    expect(await corruptCount(M)).toBe(0);
+    expect(await hasCorruptQueue(M)).toBe(false);
+    expect(await canFinish(M)).toBe(true);
+    expect(await AsyncStorage.getItem(`score-queue-corrupt:${M}`)).toBeNull();
+  });
+
+  it('clearCorrupt keeps the pending taps', async () => {
+    await enqueue(M, point(1));
+    await AsyncStorage.setItem(`score-queue-corrupt:${M}`, '{old');
+    await clearCorrupt(M);
+    expect((await pending(M)).map((e) => e.id)).toEqual(['id-1']);
   });
 });
