@@ -138,14 +138,14 @@ describe('sign-in', () => {
     );
     expect(res.status).toBe(200);
   });
-  it('401 for a wrong PIN, 400 for a bad shape or both credentials', async () => {
+  it('401 for a wrong PIN, 422 for a bad shape or both credentials', async () => {
     await setup();
     expect(
       (await signIn(req('/sign-in', { body: { pin: '000000', deviceId: 'd' } }), undefined)).status,
     ).toBe(401);
     expect(
       (await signIn(req('/sign-in', { body: { pin: 'abc', deviceId: 'd' } }), undefined)).status,
-    ).toBe(400);
+    ).toBe(422);
     expect(
       (
         await signIn(
@@ -153,9 +153,9 @@ describe('sign-in', () => {
           undefined,
         )
       ).status,
-    ).toBe(400);
+    ).toBe(422);
     expect((await signIn(req('/sign-in', { body: { pin: '123456' } }), undefined)).status).toBe(
-      400,
+      422,
     );
   });
 });
@@ -189,14 +189,14 @@ describe('courts', () => {
     expect(res.status).toBe(200);
     expect((await res.json()).courts).toHaveLength(2);
   });
-  it('claims a court; 409 when held by another; 400 for a bad id; release works', async () => {
+  it('claims a court; 409 when held by another; 422 for a bad id; release works', async () => {
     const s = await setup();
     const c = (id: string) => ctx({ courtId: id });
     expect((await claim(req('/x', { ...as(s.anna) }), c(s.court1.id))).status).toBe(200);
     const taken = await claim(req('/x', { ...as(s.bram) }), c(s.court1.id));
     expect(taken.status).toBe(409);
     expect((await taken.json()).error.code).toBe('COURT_HELD');
-    expect((await claim(req('/x', { ...as(s.bram) }), c('not-a-uuid'))).status).toBe(400);
+    expect((await claim(req('/x', { ...as(s.bram) }), c('not-a-uuid'))).status).toBe(422);
     expect(
       (await release(req('/x', { method: 'DELETE', ...as(s.anna) }), c(s.court1.id))).status,
     ).toBe(200);
@@ -252,13 +252,13 @@ describe('matches', () => {
     );
     expect(none.status).toBe(403);
   });
-  it('400 for bad ids and bad shapes, before the service', async () => {
+  it('422 for bad ids and bad shapes, before the service', async () => {
     const s = await setup();
     await claimCourt(s.anna.row.id, s.court1.id);
     const a = as(s.anna);
-    expect((await start(req('/s', { ...a, body: { serving: 'A' } }), m('nope'))).status).toBe(400);
+    expect((await start(req('/s', { ...a, body: { serving: 'A' } }), m('nope'))).status).toBe(422);
     expect((await start(req('/s', { ...a, body: { serving: 'C' } }), m(s.match.id))).status).toBe(
-      400,
+      422,
     );
     expect(
       (
@@ -267,7 +267,7 @@ describe('matches', () => {
           m(s.match.id),
         )
       ).status,
-    ).toBe(400);
+    ).toBe(422);
     expect(
       (
         await events(
@@ -275,7 +275,7 @@ describe('matches', () => {
           m(s.match.id),
         )
       ).status,
-    ).toBe(400);
+    ).toBe(422);
     expect(
       (
         await events(
@@ -283,7 +283,7 @@ describe('matches', () => {
           m(s.match.id),
         )
       ).status,
-    ).toBe(400);
+    ).toBe(422);
     expect(
       (
         await events(
@@ -294,7 +294,7 @@ describe('matches', () => {
           m(s.match.id),
         )
       ).status,
-    ).toBe(400);
+    ).toBe(422);
     expect(
       (
         await events(
@@ -302,8 +302,8 @@ describe('matches', () => {
           m(s.match.id),
         )
       ).status,
-    ).toBe(400);
-    expect((await finish(req('/f', { ...a }), m('nope'))).status).toBe(400);
+    ).toBe(422);
+    expect((await finish(req('/f', { ...a }), m('nope'))).status).toBe(422);
   });
 });
 
@@ -313,7 +313,7 @@ describe('takeovers', () => {
     await claimCourt(s.anna.row.id, s.court1.id);
     expect(
       (await takeover(req('/t', { ...as(s.bram), body: { courtId: 'nope' } }), undefined)).status,
-    ).toBe(400);
+    ).toBe(422);
     expect(
       (await takeover(req('/t', { ...as(s.anna), body: { courtId: s.court1.id } }), undefined))
         .status,
@@ -326,8 +326,8 @@ describe('takeovers', () => {
     const { id } = await made.json();
     const a = (u: typeof s.anna, body: unknown, rid = id) =>
       answer(req('/a', { ...as(u), body }), ctx({ requestId: rid }));
-    expect((await a(s.anna, { answer: 'MAYBE' })).status).toBe(400);
-    expect((await a(s.anna, { answer: 'ACCEPT' }, 'nope')).status).toBe(400);
+    expect((await a(s.anna, { answer: 'MAYBE' })).status).toBe(422);
+    expect((await a(s.anna, { answer: 'ACCEPT' }, 'nope')).status).toBe(422);
     expect((await a(s.bram, { answer: 'ACCEPT' })).status).toBe(403);
     expect((await a(s.anna, { answer: 'ACCEPT' })).status).toBe(200);
     expect((await a(s.anna, { answer: 'ACCEPT' })).status).toBe(409);
@@ -335,6 +335,26 @@ describe('takeovers', () => {
 });
 
 describe('errors', () => {
+  it('validation is 422 VALIDATION with details.fields', async () => {
+    const s = await setup();
+    const res = await claim(req('/x', { ...as(s.anna) }), ctx({ courtId: 'nope' }));
+    expect(res.status).toBe(422);
+    const body = await res.json();
+    expect(body.error.code).toBe('VALIDATION');
+    expect(body.error.details.fields).toEqual({ id: 'invalid' });
+  });
+  it('an unmapped AppError is logged by code and uses its own status', async () => {
+    const { umpireError } = await import('@/server/lib/umpire-api');
+    const { AppError } = await import('@/server/lib/errors');
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const res = umpireError(new AppError('emailTaken'));
+    expect(res.status).toBe(409);
+    expect(spy).toHaveBeenCalledWith(
+      '[umpire-api] unmapped error code',
+      expect.objectContaining({ code: 'emailTaken' }),
+    );
+    spy.mockRestore();
+  });
   it('a 500 carries no internal detail', async () => {
     const { umpireError } = await import('@/server/lib/umpire-api');
     const res = umpireError(new Error('secret db detail postgres://user:pass@host'));
