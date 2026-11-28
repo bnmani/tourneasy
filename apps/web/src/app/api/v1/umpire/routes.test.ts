@@ -1,7 +1,7 @@
 import { createHmac } from 'node:crypto';
 import { prisma } from '@tourneasy/db';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { resetDatabase } from '@/test/db';
+import { createPlayer, resetDatabase } from '@/test/db';
 import { signInUmpire } from '@/server/services/umpire-service';
 import { claimCourt } from '@/server/services/umpire-court-service';
 import { POST as signIn } from './sign-in/route';
@@ -13,6 +13,9 @@ import { POST as events } from './matches/[matchId]/events/route';
 import { POST as finish } from './matches/[matchId]/finish/route';
 import { POST as takeover } from './takeovers/route';
 import { POST as answer } from './takeovers/[requestId]/answer/route';
+import { GET as incoming } from './takeovers/incoming/route';
+import { POST as cancel } from './takeovers/[requestId]/cancel/route';
+import { POST as paper } from './matches/[matchId]/paper/route';
 
 vi.mock('server-only', () => ({}));
 
@@ -402,5 +405,141 @@ describe('errors', () => {
     const res = umpireError(new Error('secret db detail postgres://user:pass@host'));
     expect(res.status).toBe(500);
     expect(JSON.stringify(await res.json())).not.toMatch(/secret|postgres/);
+  });
+});
+
+describe('takeover discovery, cancel, paper notice and names', () => {
+  const m = (id: string) => ctx({ matchId: id });
+  it('sign-in returns the displayName and no device or token hashes', async () => {
+    const s = await setup();
+    const res = await signIn(
+      req('/sign-in', { body: { pin: s.anna.pin, deviceId: 'dev-anna' } }),
+      undefined,
+    );
+    const body = await res.json();
+    expect(body.displayName).toBe('Anna');
+    expect(Object.keys(body).sort()).toEqual(['displayName', 'expiresAt', 'sessionToken', 'umpireId']);
+  });
+
+  it('incoming lists only pending requests for courts I hold, with no umpire ids', async () => {
+    const s = await setup();
+    await claimCourt(s.anna.row.id, s.court1.id);
+    await claimCourt(s.bram.row.id, s.court2.id);
+    const made = await takeover(
+      req('/t', { ...as(s.bram), body: { courtId: s.court1.id } }),
+      undefined,
+    );
+    const { id } = await made.json();
+    expect((await incoming(req('/i', { method: 'GET' }), undefined)).status).toBe(401);
+    const mine = await incoming(req('/i', { method: 'GET', ...as(s.anna) }), undefined);
+    expect(mine.status).toBe(200);
+    const body = await mine.json();
+    expect(body.requests).toHaveLength(1);
+    expect(body.requests[0]).toEqual({
+      requestId: id,
+      courtNumber: 1,
+      requesterDisplayName: 'Bram',
+      expiresAt: expect.any(String),
+    });
+    expect(JSON.stringify(body)).not.toContain(s.bram.row.id);
+    expect(JSON.stringify(body)).not.toContain(s.anna.row.id);
+    // The requester holds no incoming request, and Bram holds court 2 which nobody asked for.
+    const theirs = await incoming(req('/i', { method: 'GET', ...as(s.bram) }), undefined);
+    expect((await theirs.json()).requests).toEqual([]);
+    // Once it is answered, it is no longer listed.
+    await answer(req('/a', { ...as(s.anna), body: { answer: 'DECLINE' } }), ctx({ requestId: id }));
+    const after = await incoming(req('/i', { method: 'GET', ...as(s.anna) }), undefined);
+    expect((await after.json()).requests).toEqual([]);
+  });
+
+  it('cancel: the requester can, someone else cannot, bad ids are 422', async () => {
+    const s = await setup();
+    await claimCourt(s.anna.row.id, s.court1.id);
+    const made = await takeover(
+      req('/t', { ...as(s.bram), body: { courtId: s.court1.id } }),
+      undefined,
+    );
+    const { id } = await made.json();
+    const c = (u: typeof s.anna | null, rid: string) =>
+      cancel(req('/c', u ? { ...as(u) } : {}), ctx({ requestId: rid }));
+    expect((await c(null, id)).status).toBe(401);
+    expect((await c(s.bram, 'nope')).status).toBe(422);
+    expect((await c(s.anna, id)).status).toBe(403);
+    expect((await c(s.bram, id)).status).toBe(200);
+    expect((await c(s.bram, id)).status).toBe(409);
+    expect((await c(s.bram, uuid())).status).toBe(404);
+  });
+
+  it('paper: needs the hold, writes one audit entry, returns 204', async () => {
+    const s = await setup();
+    const p = (u: typeof s.anna | null, mid: string) =>
+      paper(req('/p', u ? { ...as(u) } : {}), m(mid));
+    expect((await p(null, s.match.id)).status).toBe(401);
+    expect((await p(s.anna, 'nope')).status).toBe(422);
+    expect((await p(s.anna, s.match.id)).status).toBe(403);
+    await claimCourt(s.anna.row.id, s.court1.id);
+    expect((await p(s.bram, s.match.id)).status).toBe(409);
+    expect(await prisma.auditLog.count({ where: { action: 'umpire.paper' } })).toBe(0);
+    const ok = await p(s.anna, s.match.id);
+    expect(ok.status).toBe(204);
+    const rows = await prisma.auditLog.findMany({ where: { action: 'umpire.paper' } });
+    expect(rows).toHaveLength(1);
+    expect(rows[0]!.entityId).toBe(s.match.id);
+    expect(JSON.stringify(rows[0]!.after)).toContain(s.anna.row.id);
+    expect(JSON.stringify(rows[0])).not.toContain('dev-anna');
+    expect(JSON.stringify(rows[0])).not.toContain(s.anna.token);
+    expect(await prisma.deskAlert.count()).toBe(0);
+  });
+
+  it('courts include sideA and sideB names, with no player ids', async () => {
+    const s = await setup();
+    const regs: string[] = [];
+    for (const [first, prefix, last] of [
+      ['Anna', 'de', 'Vries'],
+      ['Bram', null, 'Jansen'],
+    ] as const) {
+      const pl = await createPlayer();
+      const profile = await prisma.playerProfile.update({
+        where: { userId: pl.userId },
+        data: { firstName: first, lastNamePrefix: prefix, lastName: last },
+      });
+      const draw = await prisma.match.findUniqueOrThrow({
+        where: { id: s.match.id },
+        select: { drawId: true, draw: { select: { eventId: true } } },
+      });
+      const reg = await prisma.registration.create({
+        data: {
+          eventId: draw.draw.eventId,
+          status: 'CONFIRMED',
+          participants: {
+            create: {
+              eventId: draw.draw.eventId,
+              playerId: profile.id,
+              role: 'PRIMARY',
+              checkInToken: `tok-${first}`,
+            },
+          },
+        },
+      });
+      regs.push(reg.id);
+    }
+    const m0 = await prisma.match.findUniqueOrThrow({ where: { id: s.match.id } });
+    const a = await prisma.drawEntry.create({
+      data: { drawId: m0.drawId, registrationId: regs[0]!, position: 1 },
+    });
+    const b = await prisma.drawEntry.create({
+      data: { drawId: m0.drawId, registrationId: regs[1]!, position: 2 },
+    });
+    await prisma.match.update({ where: { id: m0.id }, data: { entryAId: a.id, entryBId: b.id } });
+    const res = await listCourts(req('/courts', { method: 'GET', ...as(s.anna) }), undefined);
+    const body = await res.json();
+    const withMatch = body.courts.find((c: { match: unknown }) => c.match);
+    expect(withMatch.match.sideA).toBe('Anna de Vries');
+    expect(withMatch.match.sideB).toBe('Bram Jansen');
+    expect(withMatch.match.matchNumber).toBe(1);
+    const text = JSON.stringify(body);
+    expect(text).not.toContain(regs[0]!);
+    expect(text).not.toContain(a.id);
+    expect(text).not.toContain('playerId');
   });
 });

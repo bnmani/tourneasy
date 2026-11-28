@@ -242,7 +242,7 @@ export async function signInUmpire(
   input: { pin: string } | { qrToken: string },
   deviceId: string,
   meta: RequestMeta = {},
-): Promise<{ umpireId: string; sessionToken: string; expiresAt: Date }> {
+): Promise<{ umpireId: string; displayName: string; sessionToken: string; expiresAt: Date }> {
   secret();
   if (!deviceId || deviceId.length > 200) throw validationError({ deviceId: 'required' });
   // Fail closed: without an address all callers share the 'unknown' bucket, still limited.
@@ -293,6 +293,7 @@ export async function signInUmpire(
   const expiresAt = new Date(Math.min(found.expiresAt.getTime(), endOfToday(new Date()).getTime()));
   return {
     umpireId: found.id,
+    displayName: found.displayName,
     expiresAt,
     sessionToken: sign({
       umpireId: found.id,

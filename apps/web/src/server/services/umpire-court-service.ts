@@ -4,6 +4,7 @@
  */
 import { Prisma, prisma } from '@tourneasy/db';
 import { AppError } from '../lib/errors';
+import { fullName } from './registration-service';
 
 /** The umpire if their profile still works (not revoked, not expired); otherwise unauthorized. */
 export async function activeUmpire(umpireId: string, db: Prisma.TransactionClient = prisma) {
@@ -66,9 +67,53 @@ export type CourtListItem = {
   name: string | null;
   status: 'FREE' | 'HELD' | 'HELD_BY_ME';
   holderName: string | null;
-  /** Only the court's current match (called or being played), with no player data. */
-  match: { id: string; status: string; round: number; matchNumber: number } | null;
+  /** Only the court's current match (called or being played); sides are display names only. */
+  match: {
+    id: string;
+    status: string;
+    round: number;
+    matchNumber: number;
+    sideA: string | null;
+    sideB: string | null;
+  } | null;
 };
+
+/** Just the names of a side's players, in the order the desk shows them. */
+const sideSelect = {
+  registration: {
+    select: {
+      participants: {
+        where: { active: true },
+        orderBy: { role: 'asc' },
+        select: { player: { select: { firstName: true, lastNamePrefix: true, lastName: true } } },
+      },
+    },
+  },
+} satisfies Prisma.DrawEntrySelect;
+
+type SideRow = Prisma.DrawEntryGetPayload<{ select: typeof sideSelect }> | null;
+const sideLabel = (entry: SideRow) =>
+  entry?.registration
+    ? entry.registration.participants.map((p) => fullName(p.player)).join(' / ')
+    : null;
+
+function currentMatch(m: {
+  id: string;
+  status: string;
+  round: number;
+  matchNumber: number;
+  entryA: SideRow;
+  entryB: SideRow;
+}) {
+  return {
+    id: m.id,
+    status: m.status,
+    round: m.round,
+    matchNumber: m.matchNumber,
+    sideA: sideLabel(m.entryA),
+    sideB: sideLabel(m.entryB),
+  };
+}
 
 const CURRENT = ['CALLED', 'IN_PROGRESS', 'AWAITING_DESK'] as const;
 
@@ -92,7 +137,18 @@ export async function listCourts(tournamentId: string, umpireId: string): Promis
         where: { tournamentId, match: { status: { in: [...CURRENT] } } },
         orderBy: { startsAt: 'asc' },
         take: 1,
-        select: { match: { select: { id: true, status: true, round: true, matchNumber: true } } },
+        select: {
+          match: {
+            select: {
+              id: true,
+              status: true,
+              round: true,
+              matchNumber: true,
+              entryA: { select: sideSelect },
+              entryB: { select: sideSelect },
+            },
+          },
+        },
       },
     },
   });
@@ -102,7 +158,7 @@ export async function listCourts(tournamentId: string, umpireId: string): Promis
     name: c.name,
     status: !c.hold ? 'FREE' : c.hold.umpireId === umpireId ? 'HELD_BY_ME' : 'HELD',
     holderName: c.hold?.umpire.displayName ?? null,
-    match: c.slots[0]?.match ?? null,
+    match: c.slots[0]?.match ? currentMatch(c.slots[0].match) : null,
   }));
 }
 
@@ -201,4 +257,37 @@ export async function cancelTakeover(reserveUmpireId: string, requestId: string)
     data: { status: 'CANCELLED' },
   });
   if (count === 0) throw new AppError('takeoverClosed');
+}
+
+export type IncomingTakeover = {
+  requestId: string;
+  courtNumber: number;
+  requesterDisplayName: string;
+  expiresAt: Date;
+};
+
+/** Open requests (pending, not expired) addressed to this umpire, who holds the court. */
+export async function listIncomingTakeovers(umpireId: string): Promise<IncomingTakeover[]> {
+  await activeUmpire(umpireId);
+  const rows = await prisma.takeoverRequest.findMany({
+    where: {
+      toUmpireId: umpireId,
+      status: 'PENDING',
+      expiresAt: { gt: new Date() },
+      court: { hold: { umpireId } },
+    },
+    orderBy: { createdAt: 'asc' },
+    select: {
+      id: true,
+      expiresAt: true,
+      court: { select: { number: true } },
+      fromUmpire: { select: { displayName: true } },
+    },
+  });
+  return rows.map((r) => ({
+    requestId: r.id,
+    courtNumber: r.court.number,
+    requesterDisplayName: r.fromUmpire.displayName,
+    expiresAt: r.expiresAt,
+  }));
 }

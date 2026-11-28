@@ -98,6 +98,28 @@ async function loadForUmpire(tx: Tx, umpireId: string, matchId: string) {
   return { match, courtId, rules };
 }
 
+/**
+ * The umpire says the match is being scored on paper. Only the court's holder can. One audit
+ * entry records who and when; nothing else changes and no desk alert is made.
+ */
+export async function notifyPaper(
+  umpireId: string,
+  matchId: string,
+  meta: RequestMeta = {},
+): Promise<void> {
+  await transaction(async (tx) => {
+    await loadForUmpire(tx, umpireId, matchId);
+    await writeAudit(tx, {
+      actorId: null,
+      action: 'umpire.paper',
+      entityType: 'Match',
+      entityId: matchId,
+      after: { umpireId, matchId, at: new Date().toISOString() },
+      meta,
+    });
+  });
+}
+
 /** Moves the match version on by one, but only if nobody changed it since it was read. */
 async function bumpVersion(
   tx: Tx,
