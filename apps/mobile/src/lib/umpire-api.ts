@@ -1,4 +1,7 @@
-import { ApiError, apiDelete, apiGet, apiPost } from '@/lib/api';
+import { ApiError, apiGet, apiPost, apiSend } from '@/lib/api';
+
+const del = <T,>(path: string, token: string) =>
+  apiSend<T>('DELETE', path, undefined, token) as Promise<T>;
 
 export type CourtItem = {
   id: string;
@@ -15,13 +18,13 @@ export type TakeoverCreated = { id: string; courtId: string; status: string; exp
 const base = '/api/v1/umpire';
 
 export const fetchCourts = (token: string) =>
-  apiGet<{ courts: CourtItem[] }>(`${base}/courts`, token).then((r) => r.courts);
+  apiGet<{ courts: CourtItem[] }>(`${base}/courts`, undefined, token).then((r) => r.courts);
 
 export const claimCourt = (token: string, courtId: string) =>
   apiPost<{ ok: true }>(`${base}/courts/${courtId}/claim`, {}, token);
 
 export const releaseCourt = (token: string, courtId: string) =>
-  apiDelete<{ ok: true }>(`${base}/courts/${courtId}/claim`, token);
+  del<{ ok: true }>(`${base}/courts/${courtId}/claim`, token);
 
 export const startMatch = (token: string, matchId: string, serving: 'A' | 'B') =>
   apiPost<{ ok: true }>(`${base}/matches/${matchId}/start`, { serving }, token);

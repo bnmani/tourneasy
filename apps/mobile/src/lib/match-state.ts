@@ -50,7 +50,7 @@ export async function recordServerState(matchId: string, reply: unknown): Promis
  * seq. Call it when a match screen opens and before the first tap.
  */
 export async function loadMatchState(matchId: string, token: string): Promise<MatchState> {
-  const reply = await apiGet<MatchState>(`/api/v1/umpire/matches/${matchId}`, token);
+  const reply = await apiGet<MatchState>(`/api/v1/umpire/matches/${matchId}`, undefined, token);
   await recordServerState(matchId, reply);
   return (await readMatchState(matchId)) ?? reply;
 }

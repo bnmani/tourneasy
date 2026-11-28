@@ -81,10 +81,14 @@ export async function apiGet<T>(
 }
 
 /** POST a JSON body and return the parsed answer. */
-export async function apiPost<T>(path: string, body: unknown): Promise<T> {
+export async function apiPost<T>(path: string, body: unknown, token?: string): Promise<T> {
+  const headers: Record<string, string> = { Accept: "application/json", "Content-Type": "application/json" };
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
   const response = await fetch(withQuery(path), {
-    method: 'POST',
-    headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+    method: "POST",
+    headers,
     body: JSON.stringify(body),
   });
   if (!response.ok) {

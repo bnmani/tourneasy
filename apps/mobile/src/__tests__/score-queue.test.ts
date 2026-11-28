@@ -79,7 +79,7 @@ describe('score queue', () => {
     await enqueue(M, point(3));
     post
       .mockResolvedValueOnce({ applied: 1 })
-      .mockRejectedValueOnce(new ApiError(503, 'UNKNOWN'))
+      .mockRejectedValueOnce(new ApiError(503, 'UNKNOWN', 'UNKNOWN'))
       .mockResolvedValue({ applied: 1 });
     const result = await flush(M, 'tok');
     expect(post).toHaveBeenCalledTimes(2); // did not skip ahead to seq 3
@@ -120,7 +120,7 @@ describe('score queue', () => {
   ])('a %i is reported as blocked and the event stays pending', async (status, code) => {
     await enqueue(M, point(1));
     await enqueue(M, point(2));
-    post.mockRejectedValue(new ApiError(status, code));
+    post.mockRejectedValue(new ApiError(status, code, code));
     const result = await flush(M, 'tok');
     expect(result.blocked).toEqual({ event: point(1), status, code });
     expect(result).toMatchObject({ sent: 0, remaining: 2 });

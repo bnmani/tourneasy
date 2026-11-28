@@ -521,7 +521,6 @@ export const nl: Record<string, string> = {
   'Clear unreadable records': 'Wis onleesbare records',
   'That tap was not saved. Tap again.': 'Die tik is niet opgeslagen. Tik opnieuw.',
   'Saved on this phone': 'Opgeslagen op deze telefoon',
-  Live: 'Live',
   'Point for side {side}': 'Punt voor kant {side}',
   'Undo last point': 'Laatste punt ongedaan maken',
   'Finish match': 'Wedstrijd afronden',
@@ -600,7 +599,6 @@ export const nl: Record<string, string> = {
   'Continue scoring': 'Verder met scoren',
   'Start match': 'Start wedstrijd',
   'Change court': 'Andere baan',
-  Court: 'Baan',
   'Umpire sign-in': 'Inloggen als scheidsrechter',
   'Cannot reach the server to start scoring. Check your connection.':
     'De server is niet bereikbaar om te beginnen met scoren. Controleer je verbinding.',

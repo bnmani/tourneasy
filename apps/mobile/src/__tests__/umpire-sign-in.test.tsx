@@ -72,7 +72,7 @@ describe('umpire sign-in', () => {
 
   it('shows a message when the PIN is not accepted', async () => {
     const { ApiError } = jest.requireActual('@/lib/api') as typeof import('@/lib/api');
-    post.mockRejectedValue(new ApiError(401, 'INVALID_CREDENTIALS'));
+    post.mockRejectedValue(new ApiError(401, 'INVALID_CREDENTIALS', 'INVALID_CREDENTIALS'));
     renderSignIn();
     for (const key of ['1', '2', '3', '4', '5', '6']) fireEvent.press(screen.getByLabelText(key));
     fireEvent.press(screen.getByLabelText('Sign in'));

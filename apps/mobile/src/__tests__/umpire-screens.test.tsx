@@ -102,7 +102,7 @@ describe('court picker', () => {
     expect(screen.getAllByText('Waiting for the desk')).toHaveLength(1);
     expect(screen.getByText('Match #15')).toBeTruthy();
     // The courts call sends the session token only as a bearer, nothing in the path.
-    expect(get).toHaveBeenCalledWith('/api/v1/umpire/courts', 'sess');
+    expect(get).toHaveBeenCalledWith('/api/v1/umpire/courts', undefined, 'sess');
   });
 });
 
@@ -229,7 +229,7 @@ describe('scoring and finishing', () => {
     mockParams = { matchId: M };
     await enqueue(M, point);
     const { ApiError } = jest.requireActual('@/lib/api') as typeof import('@/lib/api');
-    post.mockRejectedValue(new ApiError(401, 'UNAUTHORIZED'));
+    post.mockRejectedValue(new ApiError(401, 'UNAUTHORIZED', 'UNAUTHORIZED'));
     renderScreen(<ScoringScreen />);
     await waitFor(() => expect(mockRouter.replace).toHaveBeenCalledWith('/umpire/sign-in'));
   });
@@ -238,7 +238,7 @@ describe('scoring and finishing', () => {
     mockParams = { matchId: M };
     await enqueue(M, point);
     const { ApiError } = jest.requireActual('@/lib/api') as typeof import('@/lib/api');
-    post.mockRejectedValue(new ApiError(409, 'RESULT_CONFLICT'));
+    post.mockRejectedValue(new ApiError(409, 'RESULT_CONFLICT', 'RESULT_CONFLICT'));
     renderScreen(<ScoringScreen />);
     expect(await screen.findByText(/cannot be synced, contact the desk/)).toBeTruthy();
     expect(await AsyncStorage.getItem(`score-queue:${M}`)).not.toBeNull();
