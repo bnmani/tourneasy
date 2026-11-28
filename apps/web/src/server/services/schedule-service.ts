@@ -754,7 +754,8 @@ export function knockoutRoundName(
 
 export type ScheduleItem = ReturnType<typeof toItem>;
 
-type LiveScore = { games: Game[]; serving: 'A' | 'B' };
+/** Null when the match has no stored start server: the replay can't be trusted then. */
+type LiveScore = { games: Game[] | null; serving: 'A' | 'B' | null };
 
 /**
  * Current score and server of the matches umpires are scoring (in progress, or sent to the
@@ -770,12 +771,27 @@ async function liveScores(matches: MatchRow[]): Promise<Map<string, LiveScore>> 
     orderBy: [{ matchId: 'asc' }, { seq: 'asc' }],
     select: { id: true, matchId: true, kind: true, side: true },
   });
+  const byMatch = new Map<string, ScoreEvent[]>();
+  for (const r of rows) {
+    const log = byMatch.get(r.matchId) ?? [];
+    log.push({ id: r.id, kind: r.kind, ...(r.side ? { side: r.side } : {}) });
+    byMatch.set(r.matchId, log);
+  }
   for (const m of scoring) {
-    const log: ScoreEvent[] = rows
-      .filter((r) => r.matchId === m.id)
-      .map((r) => ({ id: r.id, kind: r.kind, ...(r.side ? { side: r.side } : {}) }));
+    // No start server stored: showing a guessed server and a score built on it would mislead.
+    if (!m.umpireStartServer) {
+      out.set(m.id, { games: null, serving: null });
+      continue;
+    }
     const rules = rulesForMatch(m.draw.event, { ...m.draw, round: m.round, bracket: m.bracket });
-    const { games, serving } = applyEvents([], log, rules, m.umpireStartServer ?? 'A');
+    const { games, serving, rejected } = applyEvents(
+      [],
+      byMatch.get(m.id) ?? [],
+      rules,
+      m.umpireStartServer,
+    );
+    // A stored log the rules refuse is corrupt: say so (match id and reason only), keep the score.
+    if (rejected) console.warn('[live] umpire log rejected', { matchId: m.id, reason: rejected });
     out.set(m.id, { games, serving });
   }
   return out;
@@ -820,7 +836,9 @@ function toItem(
     games:
       m.status === 'COMPLETED'
         ? m.sets.map((x): Game => [x.scoreA, x.scoreB])
-        : (liveScore?.games ?? []),
+        : liveScore
+          ? liveScore.games
+          : [],
     serving: m.status === 'COMPLETED' ? null : (liveScore?.serving ?? null),
     players: [...sidePlayers(m.entryA), ...sidePlayers(m.entryB)],
     court: m.slot?.court ?? null,
