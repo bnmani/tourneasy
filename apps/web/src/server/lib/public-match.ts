@@ -21,6 +21,8 @@ export function publicMatch(m: Item) {
     bEntryId: m.bEntryId,
     winnerEntryId: m.winnerEntryId,
     sets: m.sets,
+    games: m.games,
+    serving: m.serving,
     court: m.court,
     startsAt: m.startsAt,
     endsAt: m.endsAt,
