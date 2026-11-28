@@ -9,7 +9,10 @@ beforeEach(resetDatabase);
 
 let n = 0;
 /** A published tournament on 2027-03-13 with one match on court 1 and one umpire. */
-async function setup(status: 'IN_PROGRESS' | 'AWAITING_DESK' | 'COMPLETED', startServer = 'B') {
+async function setup(
+  status: 'IN_PROGRESS' | 'AWAITING_DESK' | 'COMPLETED',
+  startServer: 'A' | 'B' | null = 'B',
+) {
   n += 1;
   const venue = await prisma.venue.create({
     data: {
@@ -58,7 +61,7 @@ async function setup(status: 'IN_PROGRESS' | 'AWAITING_DESK' | 'COMPLETED', star
       round: 1,
       matchNumber: 1,
       status,
-      umpireStartServer: startServer as 'A' | 'B',
+      umpireStartServer: startServer,
     },
   });
   await prisma.courtSlot.create({
@@ -116,6 +119,16 @@ describe('live fields', () => {
     const s = await setup('IN_PROGRESS', 'B');
     const schedule = await publicSchedule(s.tournament.slug, 'nl');
     expect(schedule.items[0]).toMatchObject({ games: [], serving: 'B' });
+  });
+
+  it('no start server: serving and games are null, never a guessed A', async () => {
+    const s = await setup('IN_PROGRESS', null);
+    await s.points(['A', 'A', 'B']);
+    const schedule = await publicSchedule(s.tournament.slug, 'nl');
+    expect(schedule.items[0]!.serving).toBeNull();
+    expect(schedule.items[0]!.games).toBeNull();
+    const live = await liveMatches('nl', s.tournament.slug, now);
+    expect(live[0]!.onCourt[0]).toMatchObject({ games: null, serving: null });
   });
 
   it('a match awaiting the desk still shows the umpire score', async () => {
