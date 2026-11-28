@@ -39,4 +39,25 @@ describe('umpire scoring schema', () => {
       true,
     );
   });
+
+  it('Umpire.qrTokenHash is unique', () => {
+    expect(isUnique(model('Umpire'), 'qrTokenHash')).toBe(true);
+  });
+
+  it('stores no plain pin or token column', () => {
+    const names = ['Umpire', 'UmpireEvent', 'CourtHold', 'TakeoverRequest', 'DeskAlert'].flatMap(
+      (m) => model(m).fields.map((f) => f.name.toLowerCase()),
+    );
+    const secrets = names.filter((n) => /(pin|token)/.test(n) && !n.endsWith('hash'));
+    expect(secrets).toEqual([]);
+  });
+
+  it('a match delete cannot erase the umpire audit log', () => {
+    const rel = model('UmpireEvent').fields.find((f) => f.name === 'match');
+    expect(rel?.relationOnDelete).toBe('Restrict');
+  });
+
+  it('one desk alert per take-over request', () => {
+    expect(isUnique(model('DeskAlert'), 'takeoverRequestId')).toBe(true);
+  });
 });
