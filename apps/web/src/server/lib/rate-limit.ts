@@ -21,6 +21,8 @@ export const LIMITS = {
   partnerInvitePerAddress: { limit: 3, windowSeconds: 24 * 60 * 60 },
   // Organisers find players to enter; enough for a busy day, too few to list everyone.
   entrySearchPerUser: { limit: 300, windowSeconds: 15 * 60 },
+  // Umpire PIN sign-in: a 6-digit PIN must not be guessable by trying them all.
+  umpireSignInPerIp: { limit: 20, windowSeconds: 15 * 60 },
 } satisfies Record<string, RateLimit>;
 
 /**

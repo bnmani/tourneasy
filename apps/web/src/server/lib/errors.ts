@@ -78,7 +78,8 @@ export type ErrorCode =
   | 'enteredAgain'
   | 'refundInProgress'
   | 'codeInvalid'
-  | 'codeUsed';
+  | 'codeUsed'
+  | 'deviceBound';
 
 const HTTP_STATUS: Record<ErrorCode, number> = {
   enteredAgain: 409,
@@ -156,6 +157,7 @@ const HTTP_STATUS: Record<ErrorCode, number> = {
   foodSoldOut: 409,
   codeInvalid: 422,
   codeUsed: 409,
+  deviceBound: 409,
   emptyOrder: 422,
 };
 

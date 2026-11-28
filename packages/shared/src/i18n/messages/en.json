@@ -224,6 +224,7 @@
     "foodSoldOut": "Not enough left of one of the items. Lower the quantity and try again.",
     "codeInvalid": "This discount code is not valid for this tournament, has expired or has been used up.",
     "codeUsed": "You have already used this discount code.",
+    "deviceBound": "This umpire is already linked to another device.",
     "emptyOrder": "Choose at least one item.",
     "allergensRequired": "Tick the allergens, or tick \"Contains none of these allergens\".",
     "codeTaken": "This code is already used for another club.",
