@@ -1278,6 +1278,8 @@ model Match {
   lockedById         String?     @db.Uuid
   /// The owner unlocked the score only (check-in stays closed): set until the owner locks again.
   scoreUnlockedAt    DateTime?
+  /// Who served first, chosen by the umpire when the match starts; the live score replay starts from it.
+  umpireStartServer  UmpireSide?
   version            Int         @default(0) // optimistic locking for concurrent score entry
   createdAt          DateTime    @default(now())
   updatedAt          DateTime    @updatedAt
