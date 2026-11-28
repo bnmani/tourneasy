@@ -1,14 +1,27 @@
-import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
-import { useColorScheme } from 'react-native';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from 'react';
+import { Appearance, useColorScheme } from 'react-native';
 
-/** Colour tokens from the approved Phase 1 mock-ups (light and dark). */
+import { readPref, THEME_KEY, writePref } from '@/lib/prefs';
+
+/** Colour tokens. */
 export type Colors = {
+  /** True for the dark theme: light status bar text, the logo in its own colours. */
+  dark: boolean;
   bg: string;
   fg: string;
   card: string;
   muted: string;
   border: string;
   inputBorder: string;
+  /** Accent: links, times, switches, selected chips and live badges. */
   primary: string;
   primaryFg: string;
   destructive: string;
@@ -16,38 +29,63 @@ export type Colors = {
   hero: string;
   heroFg: string;
   heroMuted: string;
+  /** Shadows that lift buttons and cards on the left, right and underneath. */
+  lift: string;
+  liftPressed: string;
+  liftSmall: string;
 };
 
-const light: Colors = {
-  bg: '#f3fafb',
-  fg: '#003135',
-  card: '#ffffff',
-  muted: '#3b5f63',
-  border: '#afdde5',
-  inputBorder: '#9fd0d9',
-  primary: '#024950',
-  primaryFg: '#ffffff',
-  destructive: '#a3402e',
-  scrim: 'rgba(0, 49, 53, 0.45)',
-  hero: '#003135',
-  heroFg: '#f3fafb',
-  heroMuted: '#afdde5',
-};
+function shadows(color: string, soft: string) {
+  return {
+    lift: `-14px 10px 22px -10px ${color}, 14px 10px 22px -10px ${color}, 0px 16px 26px -8px ${color}, 0px 2px 4px 0px ${soft}`,
+    liftPressed: `-8px 5px 12px -8px ${color}, 8px 5px 12px -8px ${color}, 0px 6px 12px -6px ${color}`,
+    liftSmall: `-6px 4px 10px -6px ${color}, 6px 4px 10px -6px ${color}, 0px 5px 10px -4px ${color}`,
+  };
+}
 
+/**
+ * Theme 3, the approved design: ink-navy background #293541 with #EDEAE3 text and #BEB196 for
+ * labels. Buttons and cards are the background colour too, set apart by a thin light outline
+ * and a shadow on both sides so they float.
+ */
 const dark: Colors = {
-  bg: '#003135',
-  fg: '#f3fafb',
-  card: '#024950',
-  muted: '#afdde5',
-  border: '#0fa4af',
-  inputBorder: '#0fa4af',
-  primary: '#0fa4af',
-  primaryFg: '#003135',
+  dark: true,
+  bg: '#293541',
+  fg: '#edeae3',
+  card: '#293541',
+  muted: '#beb196',
+  border: 'rgba(190, 177, 150, 0.5)',
+  inputBorder: 'rgba(190, 177, 150, 0.6)',
+  primary: '#beb196',
+  primaryFg: '#293541',
   destructive: '#f0a293',
-  scrim: 'rgba(0, 0, 0, 0.5)',
-  hero: '#024950',
-  heroFg: '#f3fafb',
-  heroMuted: '#afdde5',
+  scrim: 'rgba(0, 0, 0, 0.55)',
+  hero: '#293541',
+  heroFg: '#edeae3',
+  heroMuted: '#beb196',
+  ...shadows('rgba(0, 0, 0, 0.45)', 'rgba(0, 0, 0, 0.22)'),
+};
+
+/**
+ * Theme 3 light (option 1): sand background #D8CFBC with #293541 text and walnut #594235 for
+ * labels. The same floating pills, with a dark outline and a softer navy shadow.
+ */
+const light: Colors = {
+  dark: false,
+  bg: '#d8cfbc',
+  fg: '#293541',
+  card: '#d8cfbc',
+  muted: '#594235',
+  border: 'rgba(41, 53, 65, 0.35)',
+  inputBorder: 'rgba(41, 53, 65, 0.45)',
+  primary: '#594235',
+  primaryFg: '#edeae3',
+  destructive: '#a3402e',
+  scrim: 'rgba(41, 53, 65, 0.45)',
+  hero: '#d8cfbc',
+  heroFg: '#293541',
+  heroMuted: '#594235',
+  ...shadows('rgba(41, 53, 65, 0.32)', 'rgba(41, 53, 65, 0.15)'),
 };
 
 export type ThemePreference = 'light' | 'dark' | 'system';
@@ -62,12 +100,24 @@ const ThemeContext = createContext<ThemeValue | null>(null);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const system = useColorScheme();
-  const [preference, setPreference] = useState<ThemePreference>('system');
+  // The saved choice, read before the first screen draws.
+  const [preference, setPreferenceState] = useState<ThemePreference>(
+    () => readPref(THEME_KEY, ['light', 'dark', 'system'] as const) ?? 'system',
+  );
+  const setPreference = useCallback((value: ThemePreference) => {
+    setPreferenceState(value);
+    writePref(THEME_KEY, value);
+  }, []);
+
+  // iOS pop-ups, the keyboard and the share sheet follow the app's choice too.
+  useEffect(() => {
+    Appearance.setColorScheme(preference === 'system' ? 'auto' : preference);
+  }, [preference]);
 
   const value = useMemo<ThemeValue>(() => {
-    const scheme = preference === 'system' ? (system === 'dark' ? 'dark' : 'light') : preference;
-    return { preference, setPreference, colors: scheme === 'dark' ? dark : light };
-  }, [preference, system]);
+    const scheme = preference === 'system' ? (system === 'light' ? 'light' : 'dark') : preference;
+    return { preference, setPreference, colors: scheme === 'light' ? light : dark };
+  }, [preference, setPreference, system]);
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }
@@ -95,6 +145,3 @@ export const font = {
   semibold: 'Inter_600SemiBold',
   bold: 'Inter_700Bold',
 } as const;
-
-/** Splash background: the logo's own teal, the same in both themes. */
-export const splashBackground = '#024950';

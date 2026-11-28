@@ -78,7 +78,16 @@ export type ErrorCode =
   | 'enteredAgain'
   | 'refundInProgress'
   | 'codeInvalid'
-  | 'codeUsed';
+  | 'codeUsed'
+  | 'courtHeld'
+  | 'matchNotDecided'
+  | 'takeoverClosed'
+  | 'takeoverPending'
+  | 'courtNotHeld'
+  | 'alreadyHolder'
+  | 'eventIdInUse'
+  | 'matchHasUmpireEvents'
+  | 'alertResolved';
 
 const HTTP_STATUS: Record<ErrorCode, number> = {
   enteredAgain: 409,
@@ -157,6 +166,15 @@ const HTTP_STATUS: Record<ErrorCode, number> = {
   codeInvalid: 422,
   codeUsed: 409,
   emptyOrder: 422,
+  courtHeld: 409,
+  matchNotDecided: 409,
+  takeoverClosed: 409,
+  takeoverPending: 409,
+  courtNotHeld: 409,
+  alreadyHolder: 409,
+  eventIdInUse: 409,
+  matchHasUmpireEvents: 409,
+  alertResolved: 409,
 };
 
 export class AppError extends Error {

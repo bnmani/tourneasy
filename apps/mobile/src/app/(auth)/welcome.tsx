@@ -1,31 +1,51 @@
-import { Alert, Image, StyleSheet, Text, View } from 'react-native';
+import { Image, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { router } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Body, Button, Heading, Screen, TextLink } from '@/components/ui';
+import { Button, TextLink } from '@/components/ui';
 import { useT } from '@/lib/i18n';
 import { font, useColors } from '@/theme';
 
+// The transparent logo artwork is 800 x 536 px.
+const LOGO_ASPECT = 800 / 536;
+
+/**
+ * Welcome, as in the approved mock-up: the logo with the wordmark and tagline, the welcome
+ * text right under it, and the buttons at the bottom.
+ */
 export default function WelcomeScreen() {
-  const colors = useColors();
   const t = useT();
+  const colors = useColors();
+  // 70% of the content width, as in the mock-up.
+  const logoWidth = Math.min(300, (useWindowDimensions().width - 48) * 0.7);
   return (
-    <Screen>
+    <SafeAreaView edges={['top', 'bottom']} style={[styles.screen, { backgroundColor: colors.bg }]}>
       <View style={styles.container}>
-        <View style={styles.header}>
+        <View style={styles.brand}>
           <Image
             accessibilityLabel={t('Tourneasy logo')}
-            source={require('../../../assets/brand/logo.jpg')}
-            style={styles.logo}
+            source={require('../../../assets/brand/logo-transparent.png')}
+            // In the light theme the logo is drawn in the text colour.
+            style={{
+              width: logoWidth,
+              height: logoWidth / LOGO_ASPECT,
+              tintColor: colors.dark ? undefined : colors.fg,
+            }}
+            resizeMode="contain"
           />
+          <Text style={[styles.wordmark, { color: colors.fg }]}>TOURNEASY</Text>
+          <Text style={[styles.tagline, { color: colors.muted }]}>{t('Tournament made easy')}</Text>
         </View>
         <View style={styles.copy}>
           <Text style={[styles.eyebrow, { color: colors.muted }]}>{t('Welcome')}</Text>
-          <Heading>{t('Enter tournaments and follow your matches')}</Heading>
-          <Body>
+          <Text style={[styles.heading, { color: colors.fg }]}>
+            {t('Enter tournaments and follow your matches')}
+          </Text>
+          <Text style={[styles.body, { color: colors.muted }]}>
             {t(
               'Find a badminton tournament near you, see your schedule on court, and get a message when you are called.',
             )}
-          </Body>
+          </Text>
         </View>
         <View style={styles.actions}>
           <Button title={t('Sign in')} onPress={() => router.push('/signin')} />
@@ -34,23 +54,38 @@ export default function WelcomeScreen() {
             variant="secondary"
             onPress={() => router.push('/signup/name')}
           />
+          <TextLink title={t('Umpire sign-in')} onPress={() => router.push('/umpire/sign-in')} />
           <TextLink
             title={t('Browse tournaments without an account')}
-            onPress={() =>
-              Alert.alert(t('Coming soon'), t('Public tournaments arrive in a later update.'))
-            }
+            center
+            onPress={() => router.push('/tournaments')}
           />
         </View>
       </View>
-    </Screen>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 24, gap: 24 },
-  header: { marginTop: 32 },
-  logo: { width: 72, height: 72, borderRadius: 16 },
-  copy: { gap: 12 },
-  eyebrow: { fontSize: 14, fontFamily: font.semibold },
-  actions: { flex: 1, justifyContent: 'flex-end', gap: 12 },
+  screen: { flex: 1 },
+  container: { flex: 1, paddingHorizontal: 24, paddingBottom: 16, gap: 20 },
+  brand: { alignItems: 'center', paddingTop: 12 },
+  wordmark: { fontSize: 30, fontFamily: font.display, letterSpacing: 4.2, marginTop: -4 },
+  tagline: {
+    fontSize: 12,
+    fontFamily: font.regular,
+    letterSpacing: 2.4,
+    textTransform: 'uppercase',
+    marginTop: 2,
+  },
+  copy: { gap: 10 },
+  eyebrow: {
+    fontSize: 13,
+    fontFamily: font.semibold,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+  },
+  heading: { fontSize: 30, lineHeight: 35, fontFamily: font.display },
+  body: { fontSize: 15, lineHeight: 22, fontFamily: font.regular },
+  actions: { flex: 1, justifyContent: 'flex-end', gap: 16 },
 });

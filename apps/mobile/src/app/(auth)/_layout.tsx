@@ -8,5 +8,5 @@ export default function AuthLayout() {
   if (profile) {
     return <Redirect href="/(app)/(tabs)" />;
   }
-  return <Stack screenOptions={{ headerShown: false }} />;
+  return <Stack screenOptions={{ headerShown: false, animation: 'fade' }} />;
 }

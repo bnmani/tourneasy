@@ -5,3 +5,4 @@ export * from './schemas/auth';
 export * from './schemas/admin';
 export * from './schemas/public';
 export * from './schemas/registration';
+export * from './schemas/umpire';

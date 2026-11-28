@@ -25,6 +25,7 @@ import { z } from 'zod';
 import { writeAudit } from '../lib/audit';
 import { AppError, validationError } from '../lib/errors';
 import type { RequestMeta } from '../lib/request-meta';
+import { assertNoUmpireEvents } from '../lib/umpire-delete-guard';
 import { parseInput } from '../lib/validation';
 import { assertCanManageTournament } from './permissions';
 import { eventText, fullName } from './registration-service';
@@ -473,6 +474,7 @@ export async function generateDraw(
 
   await prisma.$transaction(
     async (tx) => {
+      await assertNoUmpireEvents(tx, { draw: { eventId } });
       await tx.draw.deleteMany({ where: { eventId } });
       if (type === 'KNOCKOUT' || type === 'DOUBLE_KNOCKOUT') {
         await createKnockout(tx, eventId, type, placeKnockout(candidates, seeded, rng), seedOf);
@@ -661,6 +663,7 @@ async function rebuildMatches(tx: Tx, drawId: string) {
     },
   });
   if (draw.type === 'KNOCKOUT' || draw.type === 'DOUBLE_KNOCKOUT') {
+    await assertNoUmpireEvents(tx, { drawId });
     await tx.match.deleteMany({ where: { drawId } });
     const plan = draw.type === 'KNOCKOUT' ? knockoutPlan(draw.size) : doubleKnockoutPlan(draw.size);
     await createPlannedMatches(
@@ -671,6 +674,7 @@ async function rebuildMatches(tx: Tx, drawId: string) {
     );
     await resolveByes(tx, drawId);
   } else if (draw.type === 'ROUND_ROBIN' || draw.type === 'GROUPS_KNOCKOUT') {
+    await assertNoUmpireEvents(tx, { drawId });
     await tx.match.deleteMany({ where: { drawId } });
     let number = 0;
     for (const [r, pairs] of roundRobinRounds(draw.entries.map((e) => e.id)).entries()) {
@@ -731,6 +735,7 @@ export async function deleteDraft(actor: Actor, eventId: string, meta: RequestMe
   await assertCanManageTournament(actor, event.tournamentId);
   await assertDraft(eventId);
   await prisma.$transaction(async (tx) => {
+    await assertNoUmpireEvents(tx, { draw: { eventId } });
     await tx.draw.deleteMany({ where: { eventId } });
     await writeAudit(tx, {
       actorId: actor.userId,

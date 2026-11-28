@@ -15,7 +15,8 @@
     "db:studio": "dotenv -e ../../.env -- prisma studio",
     "owner:grant": "dotenv -e ../../.env -- tsx prisma/grant-owner.ts",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
@@ -32,6 +33,7 @@
     "prisma": "^6.1.0",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2",
-    "typescript-eslint": "^8.73.0"
+    "typescript-eslint": "^8.73.0",
+    "vitest": "^4.1.12"
   }
 }

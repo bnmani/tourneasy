@@ -1,5 +1,22 @@
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from 'react';
 
+import * as SecureStore from 'expo-secure-store';
+
+import { ApiError, apiGet, apiPost, apiSend } from '@/lib/api';
+import { isoFromDisplayDate } from '@/lib/signup';
+
+/** A skill level as the website names it: the id to save, and the code to show. */
+export type LevelRef = { id: string; code: string } | null;
+
+/** The player profile, with the same fields as the website profile form. */
 export type Profile = {
   memberNumber: string;
   firstName: string;
@@ -8,19 +25,69 @@ export type Profile = {
   dateOfBirth: string;
   email: string;
   mobile: string;
-  preferredEvents: string[];
+  /** 'MALE', 'FEMALE', or '' when not set yet. */
+  gender: string;
+  /** Two-letter country code, or ''. */
+  nationality: string;
+  federationId: string;
+  club: { id: string; name: string } | null;
+  levelSingles: LevelRef;
+  levelDoubles: LevelRef;
+  levelMixed: LevelRef;
+  emergencyName: string;
+  emergencyPhone: string;
+  locale: 'nl' | 'en';
+  publicProfile: boolean;
+  /** Discipline codes the website stores: HE, DE, HD, DD, GD. */
+  preferredDisciplines: string[];
 };
 
-export type SignUpInput = Omit<Profile, 'memberNumber'> & {
+export type SignUpInput = {
+  firstName: string;
+  prefix: string;
+  lastName: string;
+  dateOfBirth: string;
+  gender: string;
+  preferredDisciplines: string[];
+  email: string;
+  mobile: string;
   password: string;
+  /** Unticked: tournament reminders are switched off at the first sign-in. */
   reminders: boolean;
+  /** The app's language, which also becomes the account's email language. */
+  locale?: 'nl' | 'en';
+  /** Only for players under 16. */
+  guardianName?: string;
+  parentalConsent?: boolean;
 };
 
-/** The account API, as the screens use it. Wired to the website API later (SCOPE.md section 7). */
+/** The account API, as the screens use it. */
+/** A passkey answer for the second login step (from /auth/passkey-options and the phone). */
+export type PasskeyAnswer = { pendingId: string; response: Record<string, unknown> };
+
+/** Which second steps an account has, as the website reports with MFA_REQUIRED. */
+export type TwoStepMethods = { app: boolean; passkey: boolean };
+
 export interface AuthApi {
-  signIn(identifier: string, password: string): Promise<Profile>;
+  signIn(
+    identifier: string,
+    password: string,
+    code?: string,
+    passkey?: PasskeyAnswer,
+  ): Promise<Profile>;
+  /** Starts a passkey login: checks the password and returns what the phone must sign. */
+  passkeyOptions?(
+    identifier: string,
+    password: string,
+  ): Promise<{ pendingId: string; options: Record<string, unknown> }>;
   signUp(input: SignUpInput): Promise<void>;
   deleteAccount(password: string): Promise<void>;
+  /** Saves the changed fields and returns the profile as the server now holds it. */
+  saveProfile(patch: Partial<Profile>): Promise<Profile>;
+  /** Signs back in from a stored login, or returns null when there is none. */
+  restore?(): Promise<Profile | null>;
+  /** Ends the login on the server and clears it from this phone. */
+  signOut?(): Promise<void>;
 }
 
 export const demoProfile: Profile = {
@@ -28,15 +95,26 @@ export const demoProfile: Profile = {
   firstName: 'Sam',
   prefix: '',
   lastName: 'Jansen',
-  dateOfBirth: '12-03-1998',
+  dateOfBirth: '1998-03-12',
   email: 'sam.jansen@example.com',
   mobile: '+31 6 12345678',
-  preferredEvents: ['Open singles', 'Open doubles'],
+  gender: 'MALE',
+  nationality: 'NL',
+  federationId: '',
+  club: null,
+  levelSingles: null,
+  levelDoubles: null,
+  levelMixed: null,
+  emergencyName: '',
+  emergencyPhone: '',
+  locale: 'nl',
+  publicProfile: false,
+  preferredDisciplines: ['HE', 'HD'],
 };
 
 const pause = () => new Promise<void>((resolve) => setTimeout(resolve, 300));
 
-/** Stand-in until the API client exists. It accepts any non-empty input. */
+/** Stand-in used by tests. It accepts any non-empty input. */
 export const demoAuth: AuthApi = {
   async signIn(identifier, password) {
     await pause();
@@ -54,38 +132,387 @@ export const demoAuth: AuthApi = {
       throw new Error('Enter your password to confirm.');
     }
   },
+  async saveProfile(patch) {
+    await pause();
+    return { ...demoProfile, ...patch };
+  },
+};
+
+type TokenPair = {
+  tokenType: string;
+  accessToken: string;
+  expiresIn: number;
+  refreshToken: string;
+};
+
+type AccountResponse = {
+  email: string;
+  name: string;
+  locale: 'nl' | 'en';
+  profile: null | {
+    memberNumber: string;
+    firstName: string;
+    /** Null when the player has no name prefix. */
+    lastNamePrefix: string | null;
+    lastName: string;
+    dateOfBirth: string;
+    phone: string;
+    gender: string;
+    nationality: string | null;
+    federationId: string | null;
+    club: { id: string; name: string } | null;
+    levelSingles: LevelRef;
+    levelDoubles: LevelRef;
+    levelMixed: LevelRef;
+    emergencyName: string | null;
+    emergencyPhone: string | null;
+    preferredDisciplines: string[];
+    publicProfile: boolean;
+  };
+};
+
+/** Access token for signed-in requests. Short-lived, so it's renewed from the stored refresh token. */
+let accessToken: string | null = null;
+
+const REFRESH_KEY = 'tourneasy.refreshToken';
+/** The APNs token this phone registered for push, so sign-out can remove it from the account. */
+export const PUSH_TOKEN_KEY = 'tourneasy.pushToken';
+/** Email of a new account that unticked "remind me", until its first sign-in applies it. */
+export const REMINDERS_OFF_KEY = 'tourneasy.remindersOff';
+
+function toProfile(account: AccountResponse): Profile {
+  const p = account.profile!;
+  return {
+    memberNumber: p.memberNumber,
+    firstName: p.firstName,
+    // The website sends null without a prefix but only accepts text back, so use ''.
+    prefix: p.lastNamePrefix ?? '',
+    lastName: p.lastName,
+    dateOfBirth: p.dateOfBirth,
+    email: account.email,
+    mobile: p.phone,
+    gender: p.gender ?? '',
+    nationality: p.nationality ?? '',
+    federationId: p.federationId ?? '',
+    club: p.club,
+    levelSingles: p.levelSingles,
+    levelDoubles: p.levelDoubles,
+    levelMixed: p.levelMixed,
+    emergencyName: p.emergencyName ?? '',
+    emergencyPhone: p.emergencyPhone ?? '',
+    locale: account.locale,
+    publicProfile: p.publicProfile,
+    preferredDisciplines: p.preferredDisciplines,
+  };
+}
+
+/** Trades the stored refresh token for new tokens and loads the account. Null when the login is gone. */
+async function renewSession(): Promise<AccountResponse | null> {
+  const refreshToken = await SecureStore.getItemAsync(REFRESH_KEY);
+  if (!refreshToken) return null;
+  try {
+    const tokens = await apiSend<TokenPair>('POST', '/auth/refresh', { refreshToken });
+    if (!tokens) return null;
+    accessToken = tokens.accessToken;
+    await SecureStore.setItemAsync(REFRESH_KEY, tokens.refreshToken);
+    return await apiGet<AccountResponse>('/me', undefined, tokens.accessToken);
+  } catch {
+    // The stored login is no longer valid, so forget it.
+    accessToken = null;
+    await SecureStore.deleteItemAsync(REFRESH_KEY);
+    return null;
+  }
+}
+
+/** The sign-in token for later signed-in requests, or null when nobody is signed in. */
+export function currentAccessToken(): string | null {
+  return accessToken;
+}
+
+/**
+ * A signed-in request. The access token is short-lived, so on a 401 the login is renewed
+ * once from the stored refresh token and the request is tried again.
+ */
+export async function signedIn<T>(
+  method: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE',
+  path: string,
+  body?: unknown,
+): Promise<T | null> {
+  const run = (token: string) =>
+    method === 'GET' ? apiGet<T>(path, undefined, token) : apiSend<T>(method, path, body, token);
+  if (accessToken) {
+    try {
+      return await run(accessToken);
+    } catch (error) {
+      if (!(error instanceof ApiError) || error.status !== 401) throw error;
+    }
+  }
+  await renewSession();
+  if (!accessToken) {
+    throw new Error('Sign in again to continue.');
+  }
+  return run(accessToken);
+}
+
+/** Sign-in against the Tourneasy API. Sign-up and account deletion still use the stand-in until they're wired. */
+export const apiAuth: AuthApi = {
+  async signIn(identifier, password, code, passkey) {
+    if (!identifier.trim() || !password) {
+      throw new Error('Enter your email or member number and your password.');
+    }
+    // MFA_REQUIRED and MFA_APP_REQUIRED are handled by the session, which asks for the second step.
+    const tokens = await apiPost<TokenPair>('/auth/token', {
+      identifier: identifier.trim(),
+      password,
+      ...(code ? { code } : {}),
+      ...(passkey ? { passkey } : {}),
+      deviceName: 'Tourneasy app',
+    });
+    const account = await apiGet<AccountResponse>('/me', undefined, tokens.accessToken);
+    if (!account.profile) {
+      throw new Error('This account has no player profile. The app is for players.');
+    }
+    accessToken = tokens.accessToken;
+    await SecureStore.setItemAsync(REFRESH_KEY, tokens.refreshToken);
+    return toProfile(account);
+  },
+
+  async passkeyOptions(identifier, password) {
+    return apiPost<{ pendingId: string; options: Record<string, unknown> }>(
+      '/auth/passkey-options',
+      { identifier: identifier.trim(), password },
+    );
+  },
+
+  async signUp(input) {
+    const dateOfBirth = isoFromDisplayDate(input.dateOfBirth);
+    if (!dateOfBirth) {
+      throw new Error('Enter a valid date of birth as DD-MM-YYYY.');
+    }
+    // The contact screen asks for both consents in one tick box, so both are sent together.
+    await apiPost('/auth/register', {
+      firstName: input.firstName,
+      lastNamePrefix: input.prefix,
+      lastName: input.lastName,
+      email: input.email,
+      phone: input.mobile,
+      password: input.password,
+      dateOfBirth,
+      gender: input.gender,
+      preferredDisciplines: input.preferredDisciplines,
+      locale: input.locale ?? 'nl',
+      acceptTerms: true,
+      acceptPrivacy: true,
+      ...(input.parentalConsent !== undefined
+        ? { parentalConsent: input.parentalConsent, guardianName: input.guardianName ?? '' }
+        : {}),
+    });
+    // Preferences can only be saved once signed in, so remember the choice until then.
+    if (!input.reminders) {
+      await SecureStore.setItemAsync(REMINDERS_OFF_KEY, input.email.trim().toLowerCase());
+    }
+  },
+
+  async saveProfile(patch) {
+    if (!accessToken) {
+      throw new Error('Sign in again to continue.');
+    }
+    // Reload first, so the save doesn't overwrite anything changed on the website meanwhile.
+    const current = toProfile(await apiGet<AccountResponse>('/me', undefined, accessToken));
+    const next = { ...current, ...patch };
+    // The website validates the whole profile on every save, so send every field.
+    // Email is not part of this save; it changes through its own check.
+    const account = await apiSend<AccountResponse>(
+      'PATCH',
+      '/me',
+      {
+        firstName: next.firstName,
+        lastNamePrefix: next.prefix,
+        lastName: next.lastName,
+        phone: next.mobile,
+        dateOfBirth: next.dateOfBirth,
+        gender: next.gender,
+        nationality: next.nationality,
+        clubId: next.club?.id ?? '',
+        federationId: next.federationId,
+        levelSinglesId: next.levelSingles?.id ?? '',
+        levelDoublesId: next.levelDoubles?.id ?? '',
+        levelMixedId: next.levelMixed?.id ?? '',
+        emergencyName: next.emergencyName,
+        emergencyPhone: next.emergencyPhone,
+        preferredDisciplines: next.preferredDisciplines,
+        locale: next.locale,
+        publicProfile: next.publicProfile,
+      },
+      accessToken,
+    );
+    if (!account?.profile) {
+      throw new Error('The profile could not be saved. Try again.');
+    }
+    return toProfile(account);
+  },
+
+  async deleteAccount(password) {
+    if (!password) {
+      throw new Error('Enter your password to confirm.');
+    }
+    const account = await renewSession();
+    if (!account || !accessToken) {
+      throw new Error('Sign in again to continue.');
+    }
+    await apiSend('DELETE', '/me', { password, confirm: true }, accessToken);
+    accessToken = null;
+    await SecureStore.deleteItemAsync(REFRESH_KEY);
+  },
+
+  async restore() {
+    const account = await renewSession();
+    if (!account?.profile) return null;
+    return toProfile(account);
+  },
+
+  async signOut() {
+    const token = accessToken;
+    accessToken = null;
+    await SecureStore.deleteItemAsync(REFRESH_KEY);
+    // Stop pushes for this account on this phone before the login ends.
+    const pushToken = await SecureStore.getItemAsync(PUSH_TOKEN_KEY);
+    await SecureStore.deleteItemAsync(PUSH_TOKEN_KEY);
+    if (token && pushToken) {
+      await apiSend('DELETE', `/me/push-devices/${pushToken}`, undefined, token).catch(() => null);
+    }
+    if (token) {
+      await apiSend('POST', '/auth/logout', undefined, token).catch(() => null);
+    }
+  },
 };
 
 type SessionValue = {
   profile: Profile | null;
-  signIn: (identifier: string, password: string) => Promise<void>;
+  /** False until the stored login has been checked on launch. */
+  ready: boolean;
+  /** 'twoStep' means the account needs its authenticator code: call completeTwoStep next. */
+  signIn: (identifier: string, password: string) => Promise<'signedIn' | 'twoStep'>;
+  /** True while the app waits for the authenticator or recovery code. */
+  pendingTwoStep: boolean;
+  /** The second steps the pending account can use. */
+  twoStepMethods: TwoStepMethods | null;
+  completeTwoStep: (code: string) => Promise<void>;
+  completeWithPasskey: () => Promise<void>;
+  cancelTwoStep: () => void;
   signUp: (input: SignUpInput) => Promise<void>;
   signOut: () => void;
   deleteAccount: (password: string) => Promise<void>;
-  updateProfile: (patch: Partial<Profile>) => void;
+  /** Saves the changed fields to the server. Rejects with the server's message when it can't. */
+  updateProfile: (patch: Partial<Profile>) => Promise<void>;
 };
 
 const SessionContext = createContext<SessionValue | null>(null);
 
 export function SessionProvider({
   children,
-  api = demoAuth,
+  api = apiAuth,
 }: {
   children: ReactNode;
   api?: AuthApi;
 }) {
   const [profile, setProfile] = useState<Profile | null>(null);
+  // Until the stored login has been checked, the app shows nothing, so nobody is sent to Welcome by mistake.
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    const restored = api.restore ? api.restore() : Promise.resolve(null);
+    restored
+      .catch(() => null)
+      .then((found) => {
+        if (active) {
+          setProfile(found);
+          setReady(true);
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, [api]);
+
+  // Credentials wait here, in memory only, while the two-step code is entered.
+  const [pending, setPending] = useState<{
+    identifier: string;
+    password: string;
+    methods: TwoStepMethods;
+  } | null>(null);
 
   const signIn = useCallback(
     async (identifier: string, password: string) => {
-      setProfile(await api.signIn(identifier, password));
+      try {
+        setProfile(await api.signIn(identifier, password));
+        setPending(null);
+        return 'signedIn' as const;
+      } catch (error) {
+        if (
+          error instanceof ApiError &&
+          (error.code === 'MFA_REQUIRED' || error.code === 'MFA_APP_REQUIRED')
+        ) {
+          // Older servers don't list the methods: MFA_APP_REQUIRED then means passkey only.
+          const methods = (error.details.methods as TwoStepMethods | undefined) ?? {
+            app: error.code === 'MFA_REQUIRED',
+            passkey: error.code === 'MFA_APP_REQUIRED',
+          };
+          setPending({ identifier: identifier.trim(), password, methods });
+          return 'twoStep' as const;
+        }
+        throw error;
+      }
     },
     [api],
   );
 
+  const completeTwoStep = useCallback(
+    async (code: string) => {
+      if (!pending) {
+        throw new Error('Sign in again to continue.');
+      }
+      setProfile(await api.signIn(pending.identifier, pending.password, code.trim()));
+      setPending(null);
+    },
+    [api, pending],
+  );
+
+  // Second step with a passkey: the website checks the password and sends a challenge, the
+  // phone signs it with Face ID or Touch ID, and the website checks the answer.
+  const completeWithPasskey = useCallback(async () => {
+    if (!pending || !api.passkeyOptions) {
+      throw new Error('Sign in again to continue.');
+    }
+    const { pendingId, options } = await api.passkeyOptions(pending.identifier, pending.password);
+    const { Passkey } = await import('react-native-passkey');
+    let result;
+    try {
+      result = await Passkey.get(options as unknown as Parameters<typeof Passkey.get>[0]);
+    } catch {
+      throw new Error('The passkey was not used. Try again, or use a code.');
+    }
+    const response = {
+      ...result,
+      rawId: result.rawId ?? result.id,
+      type: result.type ?? 'public-key',
+      clientExtensionResults: result.clientExtensionResults ?? {},
+    };
+    setProfile(
+      await api.signIn(pending.identifier, pending.password, undefined, { pendingId, response }),
+    );
+    setPending(null);
+  }, [api, pending]);
+
+  const cancelTwoStep = useCallback(() => setPending(null), []);
+
   const signUp = useCallback((input: SignUpInput) => api.signUp(input), [api]);
 
-  const signOut = useCallback(() => setProfile(null), []);
+  const signOut = useCallback(() => {
+    setProfile(null);
+    void api.signOut?.();
+  }, [api]);
 
   const deleteAccount = useCallback(
     async (password: string) => {
@@ -95,13 +522,41 @@ export function SessionProvider({
     [api],
   );
 
-  const updateProfile = useCallback((patch: Partial<Profile>) => {
-    setProfile((current) => (current ? { ...current, ...patch } : current));
-  }, []);
+  const updateProfile = useCallback(
+    async (patch: Partial<Profile>) => {
+      setProfile(await api.saveProfile(patch));
+    },
+    [api],
+  );
 
   const value = useMemo<SessionValue>(
-    () => ({ profile, signIn, signUp, signOut, deleteAccount, updateProfile }),
-    [profile, signIn, signUp, signOut, deleteAccount, updateProfile],
+    () => ({
+      profile,
+      ready,
+      signIn,
+      pendingTwoStep: pending !== null,
+      twoStepMethods: pending?.methods ?? null,
+      completeTwoStep,
+      completeWithPasskey,
+      cancelTwoStep,
+      signUp,
+      signOut,
+      deleteAccount,
+      updateProfile,
+    }),
+    [
+      profile,
+      ready,
+      pending,
+      signIn,
+      completeTwoStep,
+      completeWithPasskey,
+      cancelTwoStep,
+      signUp,
+      signOut,
+      deleteAccount,
+      updateProfile,
+    ],
   );
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;

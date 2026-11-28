@@ -8,5 +8,5 @@ export default function AppLayout() {
   if (!profile) {
     return <Redirect href="/welcome" />;
   }
-  return <Stack screenOptions={{ headerShown: false }} />;
+  return <Stack screenOptions={{ headerShown: false, animation: 'fade' }} />;
 }

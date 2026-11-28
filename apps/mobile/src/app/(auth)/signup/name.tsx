@@ -4,13 +4,20 @@ import { router } from 'expo-router';
 
 import { Button, Chip, Field, Heading, ProgressBar, Screen, TextLink } from '@/components/ui';
 import { useT } from '@/lib/i18n';
-import { preferredEventOptions } from '@/lib/links';
-import { useSignUpDraft } from '@/lib/signup';
+import { disciplinesFor } from '@/lib/links';
+import { isoFromDisplayDate, useSignUpDraft } from '@/lib/signup';
 import { font, useColors } from '@/theme';
 
-const genders = ['Female', 'Male', 'Other'];
+const genders = [
+  { code: 'MALE', label: 'Male' },
+  { code: 'FEMALE', label: 'Female' },
+];
 
-/** Sign-up step 1 of 2: name, date of birth, gender and preferred events. */
+function genderLabel(code: string): string {
+  return genders.find((option) => option.code === code)?.label ?? code;
+}
+
+/** Sign-up step 1 of 2: name, date of birth, gender and preferred disciplines. */
 export default function SignUpNameScreen() {
   const colors = useColors();
   const t = useT();
@@ -20,29 +27,44 @@ export default function SignUpNameScreen() {
   const [lastName, setLastName] = useState(stepOne.lastName);
   const [dateOfBirth, setDateOfBirth] = useState(stepOne.dateOfBirth);
   const [gender, setGender] = useState(stepOne.gender);
-  const [events, setEvents] = useState<string[]>(stepOne.preferredEvents);
+  const [disciplines, setDisciplines] = useState<string[]>(stepOne.preferredDisciplines);
 
   const canContinue =
     firstName.trim() !== '' &&
     lastName.trim() !== '' &&
-    dateOfBirth.trim() !== '' &&
-    events.length > 0;
+    isoFromDisplayDate(dateOfBirth) !== null &&
+    disciplines.length > 0;
 
-  function toggleEvent(event: string) {
-    setEvents((current) =>
-      current.includes(event) ? current.filter((item) => item !== event) : [...current, event],
+  function toggleDiscipline(code: string) {
+    setDisciplines((current) =>
+      current.includes(code) ? current.filter((item) => item !== code) : [...current, code],
     );
   }
 
   function pickGender() {
     Alert.alert(t('Gender'), undefined, [
-      ...genders.map((option) => ({ text: t(option), onPress: () => setGender(option) })),
+      ...genders.map((option) => ({
+        text: t(option.label),
+        onPress: () => {
+          setGender(option.code);
+          // Drop any discipline that doesn't fit the new gender.
+          const allowed = disciplinesFor(option.code).map((d) => d.code as string);
+          setDisciplines((current) => current.filter((code) => allowed.includes(code)));
+        },
+      })),
       { text: t('Cancel'), style: 'cancel' as const },
     ]);
   }
 
   function next() {
-    setStepOne({ firstName, prefix, lastName, dateOfBirth, gender, preferredEvents: events });
+    setStepOne({
+      firstName,
+      prefix,
+      lastName,
+      dateOfBirth,
+      gender,
+      preferredDisciplines: disciplines,
+    });
     router.push('/signup/contact');
   }
 
@@ -54,14 +76,14 @@ export default function SignUpNameScreen() {
           <Text style={{ color: colors.muted, fontSize: 14 }}>{t('Step 1 of 2')}</Text>
         </View>
         <ProgressBar fraction={0.5} />
-        <ScrollView style={styles.fields} contentContainerStyle={styles.fieldsContent}>
+        <ScrollView
+          style={styles.fields}
+          contentContainerStyle={styles.fieldsContent}
+          keyboardShouldPersistTaps="handled"
+          automaticallyAdjustKeyboardInsets
+        >
           <Heading>{t('Create your account')}</Heading>
-          <Field
-            label={t('First name')}
-            placeholder={t('As on your membership card')}
-            value={firstName}
-            onChangeText={setFirstName}
-          />
+          <Field label={t('First name')} value={firstName} onChangeText={setFirstName} />
           <Field
             label={t('Name prefix (optional)')}
             placeholder={t('e.g. van, de')}
@@ -81,7 +103,9 @@ export default function SignUpNameScreen() {
             <Text style={[styles.label, { color: colors.fg }]}>{t('Gender')}</Text>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={t('Gender, {value}', { value: gender ? t(gender) : t('Choose') })}
+              accessibilityLabel={t('Gender, {value}', {
+                value: gender ? t(genderLabel(gender)) : t('Choose'),
+              })}
               onPress={pickGender}
               style={[
                 styles.select,
@@ -89,21 +113,21 @@ export default function SignUpNameScreen() {
               ]}
             >
               <Text style={{ color: gender ? colors.fg : colors.muted, fontSize: 16 }}>
-                {gender ? t(gender) : t('Choose')}
+                {gender ? t(genderLabel(gender)) : t('Choose')}
               </Text>
               <Text style={{ color: colors.muted, fontSize: 18 }}>›</Text>
             </Pressable>
           </View>
           <View style={styles.field}>
-            <Text style={[styles.label, { color: colors.fg }]}>{t('Preferred events')}</Text>
+            <Text style={[styles.label, { color: colors.fg }]}>{t('Preferred disciplines')}</Text>
             <Text style={{ color: colors.muted, fontSize: 13 }}>{t('Pick at least one.')}</Text>
             <View style={styles.chips}>
-              {preferredEventOptions.map((event) => (
+              {disciplinesFor(gender).map((option) => (
                 <Chip
-                  key={event}
-                  label={t(event)}
-                  selected={events.includes(event)}
-                  onPress={() => toggleEvent(event)}
+                  key={option.code}
+                  label={t(option.label)}
+                  selected={disciplines.includes(option.code)}
+                  onPress={() => toggleDiscipline(option.code)}
                 />
               ))}
             </View>

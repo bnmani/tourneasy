@@ -6,6 +6,7 @@
 import { prisma, type Prisma } from '@tourneasy/db';
 import {
   amsterdamLocalToUtc,
+  applyEvents,
   defaultRestMinutes,
   slotMinutes,
   utcToAmsterdamLocal,
@@ -16,7 +17,9 @@ import {
   restConflicts,
   rulesForMatch,
   type FixedSlot,
+  type Game,
   type ScheduleMatch,
+  type ScoreEvent,
 } from '@tourneasy/shared';
 import { messages } from '@tourneasy/shared/i18n';
 import { z } from 'zod';
@@ -78,6 +81,7 @@ export const matchSelect = {
   loserNextMatchId: true,
   loserNextMatchSlot: true,
   winnerEntryId: true,
+  umpireStartServer: true,
   startedAt: true,
   completedAt: true,
   lockedAt: true,
@@ -750,6 +754,49 @@ export function knockoutRoundName(
 
 export type ScheduleItem = ReturnType<typeof toItem>;
 
+/** Null when the match has no stored start server: the replay can't be trusted then. */
+type LiveScore = { games: Game[] | null; serving: 'A' | 'B' | null };
+
+/**
+ * Current score and server of the matches umpires are scoring (in progress, or sent to the
+ * desk but not confirmed yet): the full stored log replayed from [] with the chosen first server.
+ * Only games and serving leave this function; the rows carry no umpire or event id.
+ */
+async function liveScores(matches: MatchRow[]): Promise<Map<string, LiveScore>> {
+  const scoring = matches.filter((m) => m.status === 'IN_PROGRESS' || m.status === 'AWAITING_DESK');
+  const out = new Map<string, LiveScore>();
+  if (scoring.length === 0) return out;
+  const rows = await prisma.umpireEvent.findMany({
+    where: { matchId: { in: scoring.map((m) => m.id) } },
+    orderBy: [{ matchId: 'asc' }, { seq: 'asc' }],
+    select: { id: true, matchId: true, kind: true, side: true },
+  });
+  const byMatch = new Map<string, ScoreEvent[]>();
+  for (const r of rows) {
+    const log = byMatch.get(r.matchId) ?? [];
+    log.push({ id: r.id, kind: r.kind, ...(r.side ? { side: r.side } : {}) });
+    byMatch.set(r.matchId, log);
+  }
+  for (const m of scoring) {
+    // No start server stored: showing a guessed server and a score built on it would mislead.
+    if (!m.umpireStartServer) {
+      out.set(m.id, { games: null, serving: null });
+      continue;
+    }
+    const rules = rulesForMatch(m.draw.event, { ...m.draw, round: m.round, bracket: m.bracket });
+    const { games, serving, rejected } = applyEvents(
+      [],
+      byMatch.get(m.id) ?? [],
+      rules,
+      m.umpireStartServer,
+    );
+    // A stored log the rules refuse is corrupt: say so (match id and reason only), keep the score.
+    if (rejected) console.warn('[live] umpire log rejected', { matchId: m.id, reason: rejected });
+    out.set(m.id, { games, serving });
+  }
+  return out;
+}
+
 function toItem(
   m: MatchRow,
   locale: 'nl' | 'en',
@@ -759,7 +806,10 @@ function toItem(
   firstDay?: string,
   /** For public pages and dashboards: under-16s by first name and initial (D83). */
   publicView = false,
+  /** Replayed umpire scores by match id, for matches still being scored. */
+  live?: Map<string, LiveScore>,
 ) {
+  const liveScore = live?.get(m.id);
   const placeholder = (slot: 'A' | 'B') => {
     const feeder = nums.feeders.get(`${m.id}${slot}`);
     const n = feeder ? nums.numberOf.get(feeder.matchId) : undefined;
@@ -782,6 +832,14 @@ function toItem(
     bEntryId: m.entryB?.id ?? null,
     winnerEntryId: m.winnerEntryId,
     sets: m.sets,
+    // Live fields: a confirmed match shows only the desk's MatchSet, never the umpire log.
+    games:
+      m.status === 'COMPLETED'
+        ? m.sets.map((x): Game => [x.scoreA, x.scoreB])
+        : liveScore
+          ? liveScore.games
+          : [],
+    serving: m.status === 'COMPLETED' ? null : (liveScore?.serving ?? null),
     players: [...sidePlayers(m.entryA), ...sidePlayers(m.entryB)],
     court: m.slot?.court ?? null,
     startsAt: m.slot?.startsAt ?? null,
@@ -921,7 +979,9 @@ export async function publicSchedule(slug: string, locale: 'nl' | 'en') {
   if (!t) throw new AppError('notFound');
   if (!t.schedulePublishedAt) return { published: false as const, items: [], unplanned: [] };
   const [matches, feeders] = await Promise.all([tournamentMatches(t.id), numbering(t.id)]);
-  const item = (m: MatchRow) => toItem(m, locale, t.schedulePublishedAt, feeders, undefined, true);
+  const live = await liveScores(matches);
+  const item = (m: MatchRow) =>
+    toItem(m, locale, t.schedulePublishedAt, feeders, undefined, true, live);
   return {
     published: true as const,
     items: matches.filter((m) => m.slot).map(item),
@@ -1107,7 +1167,10 @@ export async function deskMatches(
     view === 'now'
       ? // On court: by court number, then by time, so the courts always read in the same order.
         withSwap
-          .filter((i) => i.status === 'IN_PROGRESS' || i.status === 'CALLED')
+          .filter(
+            (i) =>
+              i.status === 'IN_PROGRESS' || i.status === 'CALLED' || i.status === 'AWAITING_DESK',
+          )
           .sort(
             (a, b) =>
               (a.court?.number ?? Number.MAX_SAFE_INTEGER) -
@@ -1157,8 +1220,9 @@ export async function liveMatches(locale: 'nl' | 'en', slug?: string, now = new 
   const out = [];
   for (const t of tournaments) {
     const [matches, feeders] = await Promise.all([tournamentMatches(t.id), numbering(t.id)]);
+    const live = await liveScores(matches);
     const items = matches.map((m) =>
-      toItem(m, locale, t.schedulePublishedAt, feeders, undefined, true),
+      toItem(m, locale, t.schedulePublishedAt, feeders, undefined, true, live),
     );
     const onCourt = items.filter((i) => i.status === 'IN_PROGRESS' || i.status === 'CALLED');
     const next = items

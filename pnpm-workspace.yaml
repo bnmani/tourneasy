@@ -35,3 +35,9 @@ allowBuilds:
   unrs-resolver: false
   # Sentry CLI downloads a binary; only needed later for uploading source maps (approve then).
   '@sentry/cli': false
+
+minimumReleaseAgeExclude:
+  - '@expo/config-plugins@58.0.14'
+  - expo-file-system@58.0.15
+  - expo-notifications@58.1.10
+  - expo-sharing@58.0.24
