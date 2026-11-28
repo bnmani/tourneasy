@@ -181,11 +181,7 @@ function Side({
       {games.map(([own, other], i) => (
         <Text
           key={i}
-          style={[
-            styles.game,
-            { color: colors.fg },
-            own > other ? styles.bold : styles.dimGame,
-          ]}
+          style={[styles.game, { color: colors.fg }, own > other ? styles.bold : styles.dimGame]}
         >
           {own}
         </Text>
@@ -226,7 +222,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 2,
   },
-  tileLabel: { fontSize: 9, fontFamily: font.semibold, letterSpacing: 0.8, textTransform: 'uppercase' },
+  tileLabel: {
+    fontSize: 9,
+    fontFamily: font.semibold,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+  },
   tileNumber: { fontSize: 20, lineHeight: 22, fontFamily: font.bold },
   tileName: { fontSize: 13, lineHeight: 16, fontFamily: font.bold },
   info: { flex: 1, minWidth: 0, gap: 3 },

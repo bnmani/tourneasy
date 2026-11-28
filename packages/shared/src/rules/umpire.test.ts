@@ -16,7 +16,10 @@ describe('applyEvents', () => {
 
   it('ends a game at 21 with a two-point lead and starts the next one', () => {
     const r = applyEvents([], [...points('A', 21), point('B')], rules);
-    expect(r.games).toEqual([[21, 0], [0, 1]]);
+    expect(r.games).toEqual([
+      [21, 0],
+      [0, 1],
+    ]);
     expect(r.finished).toBe(false);
   });
 
@@ -31,14 +34,27 @@ describe('applyEvents', () => {
 
   it('finishes the match with two games won', () => {
     const r = applyEvents([], [...points('A', 21), ...points('A', 21)], rules);
-    expect(r.games).toEqual([[21, 0], [21, 0]]);
+    expect(r.games).toEqual([
+      [21, 0],
+      [21, 0],
+    ]);
     expect(r.finished).toBe(true);
   });
 
   it('rejects a point after the match is finished', () => {
-    const r = applyEvents([[21, 5], [21, 5]], [point('A')], rules);
+    const r = applyEvents(
+      [
+        [21, 5],
+        [21, 5],
+      ],
+      [point('A')],
+      rules,
+    );
     expect(r.rejected).toBeTruthy();
-    expect(r.games).toEqual([[21, 5], [21, 5]]);
+    expect(r.games).toEqual([
+      [21, 5],
+      [21, 5],
+    ]);
     expect(r.finished).toBe(true);
   });
 
@@ -63,7 +79,12 @@ describe('applyEvents', () => {
 
   it('cannot undo points that are already in current', () => {
     const r = applyEvents([[3, 2]], [point('A'), undo(), undo()], rules, 'B');
-    expect(r).toEqual({ games: [[3, 2]], serving: 'B', finished: false, rejected: 'nothingToUndo' });
+    expect(r).toEqual({
+      games: [[3, 2]],
+      serving: 'B',
+      finished: false,
+      rejected: 'nothingToUndo',
+    });
   });
 
   it('starts from the given initial server', () => {
@@ -75,12 +96,17 @@ describe('applyEvents', () => {
     const r = applyEvents([], [...points('A', 42), undo()], rules);
     expect(r.rejected).toBeTruthy();
     expect(r.finished).toBe(true);
-    expect(r.games).toEqual([[21, 0], [21, 0]]);
+    expect(r.games).toEqual([
+      [21, 0],
+      [21, 0],
+    ]);
   });
 
   it('rejects a point without a side and an undo with a side', () => {
     expect(applyEvents([], [{ id: 'x', kind: 'POINT' }], rules).rejected).toBeTruthy();
-    expect(applyEvents([], [point('A'), { id: 'y', kind: 'UNDO', side: 'A' }], rules)).toMatchObject({
+    expect(
+      applyEvents([], [point('A'), { id: 'y', kind: 'UNDO', side: 'A' }], rules),
+    ).toMatchObject({
       rejected: expect.any(String),
       games: [[1, 0]],
     });

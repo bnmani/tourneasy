@@ -258,9 +258,7 @@ describe('matches', () => {
     expect(typeof body.version).toBe('number');
     const other = await matchState(req('/m', { method: 'GET', ...as(s.bram) }), m(s.match.id));
     expect(other.status).toBe(409);
-    expect(
-      (await matchState(req('/m', { method: 'GET' }), m(s.match.id))).status,
-    ).toBe(401);
+    expect((await matchState(req('/m', { method: 'GET' }), m(s.match.id))).status).toBe(401);
   });
   it('finish before the match is decided is 409', async () => {
     const s = await setup();
@@ -448,7 +446,12 @@ describe('takeover discovery, cancel, paper notice and names', () => {
     );
     const body = await res.json();
     expect(body.displayName).toBe('Anna');
-    expect(Object.keys(body).sort()).toEqual(['displayName', 'expiresAt', 'sessionToken', 'umpireId']);
+    expect(Object.keys(body).sort()).toEqual([
+      'displayName',
+      'expiresAt',
+      'sessionToken',
+      'umpireId',
+    ]);
   });
 
   it('incoming lists only pending requests for courts I hold, with no umpire ids', async () => {

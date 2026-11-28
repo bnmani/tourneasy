@@ -1,6 +1,6 @@
 import { ApiError, apiGet, apiPost, apiSend } from '@/lib/api';
 
-const del = <T,>(path: string, token: string) =>
+const del = <T>(path: string, token: string) =>
   apiSend<T>('DELETE', path, undefined, token) as Promise<T>;
 
 export type CourtItem = {

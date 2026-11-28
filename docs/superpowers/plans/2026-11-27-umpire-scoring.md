@@ -44,11 +44,13 @@
 Today `apps/mobile/src/lib/session.tsx` uses `demoAuth` and `demoProfile` stubs (its comment says "wired to the website API later"). Every umpire task calls the website API, so this comes first.
 
 **Files:**
+
 - Create: `apps/mobile/src/lib/api.ts`
 - Modify: `apps/mobile/src/lib/session.tsx` (use the client for the existing sign-in only where it is already in scope; players' stubs stay as they are for 1.0 sign-in until Phase 1 lands)
 - Test: `apps/mobile/src/__tests__/api.test.ts`
 
 **Interfaces:**
+
 - Produces: `apiPost<T>(path: string, body: unknown, token?: string): Promise<T>`, `apiGet<T>(path: string, token?: string): Promise<T>`, `ApiError` with `status: number` and `code: string`.
 
 - [ ] **Step 1: Write the failing test.** `apiPost` sends JSON and throws `ApiError` with `status` 409 when the server returns 409 and body `{ "code": "COURT_HELD" }`.
@@ -62,11 +64,13 @@ Today `apps/mobile/src/lib/session.tsx` uses `demoAuth` and `demoProfile` stubs 
 ### Task 1: Database models
 
 **Files:**
+
 - Modify: `packages/db/prisma/schema.prisma`
 - Create: `packages/db/prisma/migrations/<timestamp>_umpire_scoring/migration.sql` (generated)
 - Test: `packages/db/src/__tests__/umpire-schema.test.ts` (checks the models and the unique keys exist after migrate)
 
 **Interfaces:**
+
 - Produces: `Umpire { id, tournamentId, displayName, pinHash, qrTokenHash, expiresAt, revokedAt?, deviceId? }`; `UmpireEvent { id (client uuid, unique), matchId, courtId, umpireId, seq, kind (POINT | UNDO), side (A | B)?, createdAt }`; `CourtHold { courtId (unique), umpireId, since }`; `TakeoverRequest { id, courtId, fromUmpireId, toUmpireId, status (PENDING | ACCEPTED | DECLINED | TIMED_OUT), expiresAt }`; `DeskAlert { id, courtId, takeoverRequestId, status (OPEN | RESOLVED), createdAt }`. Match gets a status value `AWAITING_DESK` (umpire has sent the final score; not yet confirmed).
 
 - [ ] **Step 1: Write the failing test.** The test asserts `UmpireEvent.id` is unique, `CourtHold.courtId` is unique, and `Match.status` accepts `AWAITING_DESK`.
@@ -80,10 +84,12 @@ Today `apps/mobile/src/lib/session.tsx` uses `demoAuth` and `demoProfile` stubs 
 ### Task 2: Shared sync and serve rules
 
 **Files:**
+
 - Create: `packages/shared/src/rules/umpire.ts`, `packages/shared/src/schemas/umpire.ts`
 - Test: `packages/shared/src/rules/umpire.test.ts`
 
 **Interfaces:**
+
 - Produces: `applyEvents(current: Game[], events: ScoreEvent[], rules: ScoringRules): { games: Game[]; serving: 'A' | 'B'; finished: boolean; rejected?: string }`, where `ScoreEvent = { id: string; kind: 'POINT' | 'UNDO'; side?: 'A' | 'B' }`. Reuses `gameWinner` and `checkMatchScore` from `scoring.ts`.
 - Produces: `umpireEventSchema` (zod, same style as `packages/shared/src/schemas/*.ts`).
 
@@ -98,10 +104,12 @@ Today `apps/mobile/src/lib/session.tsx` uses `demoAuth` and `demoProfile` stubs 
 ### Task 3: Umpire profiles, PIN and QR sign-in
 
 **Files:**
+
 - Create: `apps/web/src/server/services/umpire-service.ts`
 - Test: `apps/web/src/server/services/umpire-service.test.ts`
 
 **Interfaces:**
+
 - Produces: `createUmpire(actor, { tournamentId, displayName }, meta) → { pin: string; qrUrl: string }` (plain values returned once); `signInUmpire({ pin } | { qrToken }, deviceId) → { umpireId, sessionToken, expiresAt }`; `revokeUmpire(actor, umpireId, meta)`; `resetUmpireAccess(actor, umpireId, meta) → { pin, qrUrl }`.
 - Session expires at the end of the tournament day (the venue's local day).
 
@@ -116,11 +124,13 @@ Today `apps/mobile/src/lib/session.tsx` uses `demoAuth` and `demoProfile` stubs 
 ### Task 3b: Admin umpire page on the website
 
 **Files:**
+
 - Create: `apps/web/src/app/[locale]/admin/tournaments/[id]/umpires/page.tsx` (list, add, reset, revoke)
 - Create: `apps/web/src/app/[locale]/admin/tournaments/[id]/umpires/actions.ts` (server actions that call `umpire-service.ts`)
 - Test: `apps/web/src/app/[locale]/admin/tournaments/[id]/umpires/umpires-page.test.tsx`
 
 **Interfaces:**
+
 - Consumes: `createUmpire`, `resetUmpireAccess`, `revokeUmpire` (Task 3).
 - Produces: a list of umpires with status (active, expired, revoked) and the "Umpires" tab in the tournament admin navigation.
 - Shows the new PIN and QR code once, after create or reset. It is never shown again; the list shows only the name and status.
@@ -136,10 +146,12 @@ Today `apps/mobile/src/lib/session.tsx` uses `demoAuth` and `demoProfile` stubs 
 ### Task 4: Court holds and scoring events
 
 **Files:**
+
 - Create: `apps/web/src/server/services/umpire-court-service.ts` (holds), `apps/web/src/server/services/umpire-scoring-service.ts` (events and finish)
 - Test: `apps/web/src/server/services/umpire-scoring-service.test.ts`
 
 **Interfaces:**
+
 - Produces: `claimCourt(umpireId, courtId)` (throws `COURT_HELD`, HTTP 409, if another umpire holds it); `releaseCourt(umpireId, courtId)`; `listCourts(tournamentId, umpireId)` (court number, status, holder display name, match summary only for the court's current match).
 - Produces: `postEvents(umpireId, matchId, events: ScoreEvent[]) → { applied: number; duplicates: number; serving; games; version }`. Events are applied in `seq` order; events whose `id` already exists are counted as duplicates and not applied; the Match `version` is checked (optimistic locking).
 - Produces: `finishMatch(umpireId, matchId)` → status `AWAITING_DESK`; refused if the match is not finished under `checkMatchScore`.
@@ -155,11 +167,13 @@ Today `apps/mobile/src/lib/session.tsx` uses `demoAuth` and `demoProfile` stubs 
 ### Task 5: Take-over with a 2-minute window
 
 **Files:**
+
 - Modify: `apps/web/src/server/services/umpire-court-service.ts`
 - Create: `apps/web/src/server/jobs/takeover-timeout.ts` (uses the existing jobs runner in `apps/web/src/server/services/jobs-service.ts`)
 - Test: `apps/web/src/server/services/umpire-takeover.test.ts`
 
 **Interfaces:**
+
 - Produces: `requestTakeover(reserveUmpireId, courtId) → TakeoverRequest` (`expiresAt = now + 2 minutes`); `answerTakeover(currentUmpireId, requestId, 'ACCEPT' | 'DECLINE')`; `cancelTakeover(reserveUmpireId, requestId)`.
 - Timeout job: marks PENDING requests past `expiresAt` as TIMED_OUT and opens one `DeskAlert`.
 
@@ -174,10 +188,12 @@ Today `apps/mobile/src/lib/session.tsx` uses `demoAuth` and `demoProfile` stubs 
 ### Task 6: Umpire API routes
 
 **Files:**
+
 - Create: `apps/web/src/app/api/v1/umpire/sign-in/route.ts`, `apps/web/src/app/api/v1/umpire/courts/route.ts`, `apps/web/src/app/api/v1/umpire/courts/[courtId]/claim/route.ts`, `apps/web/src/app/api/v1/umpire/matches/[matchId]/events/route.ts`, `apps/web/src/app/api/v1/umpire/matches/[matchId]/finish/route.ts`, `apps/web/src/app/api/v1/umpire/takeovers/route.ts`, `apps/web/src/app/api/v1/umpire/takeovers/[requestId]/answer/route.ts`
 - Test: `apps/web/src/app/api/v1/umpire/routes.test.ts`
 
 **Interfaces:**
+
 - Each route returns the service result as JSON and maps `COURT_HELD` to 409, unknown or expired token to 401, and a wrong umpire on a match to 403.
 
 - [ ] **Step 1: Write the failing tests.** One request per route with the expected status code.
@@ -191,11 +207,13 @@ Today `apps/mobile/src/lib/session.tsx` uses `demoAuth` and `demoProfile` stubs 
 ### Task 7: Desk on the website: check, correct, confirm, alerts
 
 **Files:**
+
 - Modify: `apps/web/src/server/services/umpire-scoring-service.ts` (add `correctMatchScore`, `confirmMatchResult`, `resolveDeskAlert`)
 - Modify: `apps/web/src/app/[locale]/admin/tournaments/[id]/matches` (desk screen: umpire entry, change log, correct, confirm; badge and alert panel)
 - Test: `apps/web/src/server/services/umpire-desk.test.ts`
 
 **Interfaces:**
+
 - `confirmMatchResult(actor, matchId, meta)` calls the existing `recordResult` in `apps/web/src/server/services/results-service.ts` so draws, standings and results email follow the existing path.
 - `correctMatchScore(actor, matchId, games, reason, meta)` logs the old and new score and the reason.
 - `resolveDeskAlert(actor, alertId, 'KEEP_CURRENT' | 'ASSIGN_RESERVE', meta)`.
@@ -211,10 +229,12 @@ Today `apps/mobile/src/lib/session.tsx` uses `demoAuth` and `demoProfile` stubs 
 ### Task 8: Live score on the public site
 
 **Files:**
+
 - Modify: `apps/web/src/server/services/schedule-service.ts` (the public schedule endpoint `GET /api/v1/tournaments/{slug}/schedule`; there is no separate live route)
 - Test: `apps/web/src/server/services/schedule-live.test.ts`
 
 **Interfaces:**
+
 - Adds to each live match: `games` (current scores), `serving` (`A` | `B`), `status` (`IN_PROGRESS` | `AWAITING_DESK` | `COMPLETED`).
 
 - [ ] **Step 1: Write the failing test.** A match with umpire events shows the current game score and the server.
@@ -228,10 +248,12 @@ Today `apps/mobile/src/lib/session.tsx` uses `demoAuth` and `demoProfile` stubs 
 ### Task 9: On-phone queue for offline taps
 
 **Files:**
+
 - Create: `apps/mobile/src/lib/score-queue.ts`
 - Test: `apps/mobile/src/__tests__/score-queue.test.ts`
 
 **Interfaces:**
+
 - Produces: `enqueue(matchId, event)` (writes to local storage before returning); `pending(matchId): ScoreEvent[]`; `flush(matchId, token)` (sends in `seq` order via `apiPost`, removes an event only after the server acknowledges it); `canFinish(matchId): boolean` (true only when `pending` is empty).
 - Uses local storage from the app's existing dependency list (check `apps/mobile/package.json`; add `@react-native-async-storage/async-storage` with Expo's `npx expo install` if missing).
 
@@ -246,10 +268,12 @@ Today `apps/mobile/src/lib/session.tsx` uses `demoAuth` and `demoProfile` stubs 
 ### Task 10: Umpire screens in the mobile app
 
 **Files:**
+
 - Create: `apps/mobile/src/app/umpire/sign-in.tsx`, `courts.tsx`, `match/[matchId].tsx` (match with start), `serve.tsx`, `scoring.tsx` (scoring, undo, offline banner, paper link), `takeover.tsx` (request and answer), `finish.tsx` (confirm popup), `waiting.tsx`, `paper.tsx`
 - Test: `apps/mobile/src/__tests__/umpire-screens.test.tsx` (render and the key button states from the mock-ups)
 
 **Interfaces:**
+
 - Consumes: `apiGet`, `apiPost` (Task 0), `enqueue`, `flush`, `canFinish` (Task 9).
 - Each screen follows the approved mock-ups; the screen names match the artboards in the canvas (Main, Courts, CourtMatch, StartMatch, Scoring, TakeoverRequest, TakeoverPending, ConfirmFinal, Waiting, PaperFallback, Offline).
 - QR scan uses the camera permission and the app's existing scanner dependency if one is present; otherwise add `expo-camera` with `npx expo install`.
