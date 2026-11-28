@@ -78,7 +78,9 @@ export type ErrorCode =
   | 'enteredAgain'
   | 'refundInProgress'
   | 'codeInvalid'
-  | 'codeUsed';
+  | 'codeUsed'
+  | 'courtHeld'
+  | 'matchNotDecided';
 
 const HTTP_STATUS: Record<ErrorCode, number> = {
   enteredAgain: 409,
@@ -157,6 +159,8 @@ const HTTP_STATUS: Record<ErrorCode, number> = {
   codeInvalid: 422,
   codeUsed: 409,
   emptyOrder: 422,
+  courtHeld: 409,
+  matchNotDecided: 409,
 };
 
 export class AppError extends Error {
