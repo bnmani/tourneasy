@@ -18,7 +18,14 @@ import {
   type ScoreEvent,
 } from '@tourneasy/shared';
 import { Prisma, prisma } from '@tourneasy/db';
-import { AppError } from '../lib/errors';
+import { z } from 'zod';
+import { writeAudit } from '../lib/audit';
+import { AppError, validationError } from '../lib/errors';
+import type { RequestMeta } from '../lib/request-meta';
+import { parseInput } from '../lib/validation';
+import { assertCanManageTournament } from './permissions';
+import { recordResult } from './results-service';
+import type { Actor } from './session-service';
 import { activeUmpire } from './umpire-court-service';
 
 type Tx = Prisma.TransactionClient;
@@ -266,5 +273,301 @@ export async function finishMatch(
     if (!checkMatchScore(games, rules).ok) throw new AppError('matchNotDecided');
     await bumpVersion(tx, matchId, match.version, { status: 'AWAITING_DESK' });
     return { status: 'AWAITING_DESK', games };
+  });
+}
+
+// ---------------------------------------------------------------------------------------------
+// The match desk. The umpire's log is never changed here: a desk correction is an audit entry
+// (old score, new score, reason, actor, time) and the desk score is the latest correction, or
+// the replay of the log when nobody corrected it. Confirming hands that score to `recordResult`,
+// the same path a typed-in result takes (draws, standings, results email).
+// ---------------------------------------------------------------------------------------------
+
+const CORRECT_ACTION = 'match.umpireCorrect';
+const RESOLVE_ACTION = 'deskAlert.resolve';
+
+const gamesSchema = z
+  .array(z.tuple([z.coerce.number().int().min(0).max(99), z.coerce.number().int().min(0).max(99)]))
+  .max(5);
+
+/** The match with what the rules need, for the desk. */
+async function loadDeskMatch(db: Tx | typeof prisma, matchId: string) {
+  const match = await db.match.findUnique({
+    where: { id: matchId },
+    select: {
+      id: true,
+      status: true,
+      version: true,
+      round: true,
+      bracket: true,
+      umpireStartServer: true,
+      draw: {
+        select: {
+          stage: true,
+          type: true,
+          size: true,
+          event: {
+            select: {
+              tournamentId: true,
+              bestOf: true,
+              pointsToWin: true,
+              pointsCap: true,
+              koScoringFrom: true,
+              koBestOf: true,
+              koPointsToWin: true,
+              koPointsCap: true,
+            },
+          },
+        },
+      },
+    },
+  });
+  if (!match) throw new AppError('notFound');
+  const rules = rulesForMatch(match.draw.event, {
+    ...match.draw,
+    round: match.round,
+    bracket: match.bracket,
+  });
+  return { match, rules };
+}
+type DeskMatch = Awaited<ReturnType<typeof loadDeskMatch>>;
+
+/** What the umpire's log adds up to. */
+async function umpireGames(tx: Tx | typeof prisma, { match, rules }: DeskMatch): Promise<Game[]> {
+  const rows = await tx.umpireEvent.findMany({
+    where: { matchId: match.id },
+    orderBy: { seq: 'asc' },
+    select: { id: true, kind: true, side: true },
+  });
+  const log: ScoreEvent[] = rows.map((r) => ({
+    id: r.id,
+    kind: r.kind,
+    ...(r.side ? { side: r.side } : {}),
+  }));
+  return applyEvents([], log, rules, match.umpireStartServer ?? 'A').games;
+}
+
+/** The score the desk is looking at: the latest correction, else the umpire's. */
+async function deskGames(tx: Tx | typeof prisma, desk: DeskMatch): Promise<Game[]> {
+  const latest = await tx.auditLog.findFirst({
+    where: { action: CORRECT_ACTION, entityType: 'Match', entityId: desk.match.id },
+    orderBy: { createdAt: 'desc' },
+    select: { after: true },
+  });
+  const after = latest?.after as { games?: Game[] } | null | undefined;
+  return after?.games ?? (await umpireGames(tx, desk));
+}
+
+/** The desk fixes the score before confirming it. A reason is required; the umpire log stays. */
+export async function correctMatchScore(
+  actor: Actor,
+  matchId: string,
+  games: unknown,
+  reason: string,
+  meta: RequestMeta,
+): Promise<void> {
+  const why = typeof reason === 'string' ? reason.trim() : '';
+  if (!why) throw validationError({ reason: 'required' });
+  const next = parseInput(gamesSchema, games) as Game[];
+  await transaction(async (tx) => {
+    const desk = await loadDeskMatch(tx, matchId);
+    await assertCanManageTournament(actor, desk.match.draw.event.tournamentId);
+    if (desk.match.status !== 'AWAITING_DESK') throw new AppError('statusTransition');
+    const check = checkMatchScore(next, desk.rules);
+    if (!check.ok) {
+      throw validationError({
+        games: check.error,
+        ...(check.game ? { game: String(check.game) } : {}),
+      });
+    }
+    const before = await deskGames(tx, desk);
+    await bumpVersion(tx, matchId, desk.match.version);
+    await writeAudit(tx, {
+      actorId: actor.userId,
+      action: CORRECT_ACTION,
+      entityType: 'Match',
+      entityId: matchId,
+      before: { games: before },
+      after: { games: next, reason: why },
+      meta,
+    });
+  });
+}
+
+/** The desk accepts the score. It goes through the normal result path, then the match is final. */
+export async function confirmMatchResult(
+  actor: Actor,
+  matchId: string,
+  meta: RequestMeta,
+): Promise<void> {
+  const desk = await loadDeskMatch(prisma, matchId);
+  await assertCanManageTournament(actor, desk.match.draw.event.tournamentId);
+  if (desk.match.status !== 'AWAITING_DESK') throw new AppError('statusTransition');
+  const games = await deskGames(prisma, desk);
+  await recordResult(actor, matchId, { games, version: desk.match.version }, meta);
+}
+
+export type DeskChangeLogEntry = {
+  at: Date;
+  by: string;
+  kind: 'sent' | 'correct' | 'confirmed';
+  before?: Game[];
+  after?: Game[];
+  reason?: string;
+};
+
+/** What the desk sees for a match waiting on it: the umpire's entry, the desk score and the log. */
+export async function umpireDeskReview(actor: Actor, matchId: string) {
+  const desk = await loadDeskMatch(prisma, matchId);
+  await assertCanManageTournament(actor, desk.match.draw.event.tournamentId);
+  const [games, current, last, audit] = await Promise.all([
+    umpireGames(prisma, desk),
+    deskGames(prisma, desk),
+    prisma.umpireEvent.findFirst({
+      where: { matchId },
+      orderBy: { seq: 'desc' },
+      select: { createdAt: true, umpire: { select: { displayName: true } } },
+    }),
+    prisma.auditLog.findMany({
+      where: {
+        entityType: 'Match',
+        entityId: matchId,
+        action: { in: [CORRECT_ACTION, 'match.result'] },
+      },
+      orderBy: { createdAt: 'asc' },
+      select: {
+        action: true,
+        createdAt: true,
+        before: true,
+        after: true,
+        actor: { select: { name: true } },
+      },
+    }),
+  ]);
+  const changeLog: DeskChangeLogEntry[] = [];
+  if (last) {
+    changeLog.push({ at: last.createdAt, by: last.umpire.displayName, kind: 'sent' });
+  }
+  for (const row of audit) {
+    const before = row.before as { games?: Game[] } | null;
+    const after = row.after as { games?: Game[]; reason?: string } | null;
+    changeLog.push({
+      at: row.createdAt,
+      by: row.actor?.name ?? '',
+      kind: row.action === CORRECT_ACTION ? 'correct' : 'confirmed',
+      ...(before?.games ? { before: before.games } : {}),
+      ...(after?.games ? { after: after.games } : {}),
+      ...(after?.reason ? { reason: after.reason } : {}),
+    });
+  }
+  return {
+    status: desk.match.status,
+    version: desk.match.version,
+    umpire: { name: last?.umpire.displayName ?? '', games, sentAt: last?.createdAt ?? null },
+    games: current,
+    corrected: audit.some((a) => a.action === CORRECT_ACTION),
+    changeLog,
+  };
+}
+
+/** Open take-over alerts of a tournament, for the desk badge and panel. */
+export async function deskAlerts(actor: Actor, tournamentId: string) {
+  await assertCanManageTournament(actor, tournamentId);
+  const alerts = await prisma.deskAlert.findMany({
+    where: { status: 'OPEN', takeoverRequest: { fromUmpire: { tournamentId } } },
+    orderBy: { createdAt: 'asc' },
+    select: {
+      id: true,
+      createdAt: true,
+      court: {
+        select: {
+          number: true,
+          slots: {
+            where: { match: { status: 'IN_PROGRESS' } },
+            take: 1,
+            select: { matchId: true },
+          },
+        },
+      },
+      takeoverRequest: {
+        select: {
+          createdAt: true,
+          fromUmpire: { select: { displayName: true } },
+          toUmpire: { select: { displayName: true } },
+        },
+      },
+    },
+  });
+  return Promise.all(
+    alerts.map(async (a) => {
+      const matchId = a.court.slots[0]?.matchId ?? null;
+      const games = matchId ? await umpireGames(prisma, await loadDeskMatch(prisma, matchId)) : [];
+      return {
+        id: a.id,
+        courtNumber: a.court.number,
+        requestedAt: a.takeoverRequest.createdAt,
+        requester: a.takeoverRequest.fromUmpire.displayName,
+        holder: a.takeoverRequest.toUmpire.displayName,
+        matchId,
+        games,
+      };
+    }),
+  );
+}
+
+/**
+ * The desk decides a timed-out take-over: keep the umpire who holds the court, or give it to
+ * the one who asked. An alert resolves once; the second attempt is refused and changes nothing.
+ */
+export async function resolveDeskAlert(
+  actor: Actor,
+  alertId: string,
+  resolution: 'KEEP_CURRENT' | 'ASSIGN_RESERVE',
+  meta: RequestMeta,
+): Promise<void> {
+  if (resolution !== 'KEEP_CURRENT' && resolution !== 'ASSIGN_RESERVE') {
+    throw new AppError('validation');
+  }
+  const alert = await prisma.deskAlert.findUnique({
+    where: { id: alertId },
+    select: {
+      id: true,
+      courtId: true,
+      takeoverRequest: {
+        select: { fromUmpireId: true, fromUmpire: { select: { tournamentId: true } } },
+      },
+    },
+  });
+  if (!alert) throw new AppError('notFound');
+  await assertCanManageTournament(actor, alert.takeoverRequest.fromUmpire.tournamentId);
+  await transaction(async (tx) => {
+    // The status flip is the lock: only one caller can move OPEN to RESOLVED.
+    const { count } = await tx.deskAlert.updateMany({
+      where: { id: alertId, status: 'OPEN' },
+      data: { status: 'RESOLVED' },
+    });
+    if (count === 0) throw new AppError('alertResolved');
+    if (resolution === 'ASSIGN_RESERVE') {
+      const requesterId = alert.takeoverRequest.fromUmpireId;
+      try {
+        await activeUmpire(requesterId, tx);
+      } catch {
+        // The requester can no longer score: the alert stays open for another decision.
+        throw new AppError('statusTransition');
+      }
+      await tx.courtHold.upsert({
+        where: { courtId: alert.courtId },
+        create: { courtId: alert.courtId, umpireId: requesterId },
+        update: { umpireId: requesterId, since: new Date() },
+      });
+    }
+    await writeAudit(tx, {
+      actorId: actor.userId,
+      action: RESOLVE_ACTION,
+      entityType: 'DeskAlert',
+      entityId: alertId,
+      after: { resolution, courtId: alert.courtId },
+      meta,
+    });
   });
 }

@@ -84,7 +84,9 @@ export type ErrorCode =
   | 'takeoverClosed'
   | 'takeoverPending'
   | 'courtNotHeld'
-  | 'alreadyHolder';
+  | 'alreadyHolder'
+  | 'matchHasUmpireEvents'
+  | 'alertResolved';
 
 const HTTP_STATUS: Record<ErrorCode, number> = {
   enteredAgain: 409,
@@ -169,6 +171,8 @@ const HTTP_STATUS: Record<ErrorCode, number> = {
   takeoverPending: 409,
   courtNotHeld: 409,
   alreadyHolder: 409,
+  matchHasUmpireEvents: 409,
+  alertResolved: 409,
 };
 
 export class AppError extends Error {
