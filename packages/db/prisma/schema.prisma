@@ -204,6 +204,8 @@ enum MatchStatus {
   SCHEDULED
   CALLED
   IN_PROGRESS
+  /// The umpire has sent the final score; the desk has not confirmed it yet.
+  AWAITING_DESK
   COMPLETED
   WALKOVER
   RETIRED
@@ -773,6 +775,7 @@ model Tournament {
   feedback         TournamentFeedback[]
   orders           Order[]
   courtSlots       CourtSlot[]
+  umpires          Umpire[]
   logo             TournamentLogo?
   packagePurchase  PackagePurchase?      @relation("TournamentPackage", fields: [packagePurchaseId], references: [id], onDelete: SetNull)
   purchases        PackagePurchase[]     @relation("PurchaseFor")
@@ -1197,8 +1200,12 @@ model Court {
   name      String?
   createdAt DateTime @default(now())
 
-  venue Venue       @relation(fields: [venueId], references: [id], onDelete: Cascade)
-  slots CourtSlot[]
+  venue            Venue             @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  slots            CourtSlot[]
+  umpireEvents     UmpireEvent[]
+  hold             CourtHold?
+  takeoverRequests TakeoverRequest[]
+  deskAlerts       DeskAlert[]
 
   @@unique([venueId, number])
 }
@@ -1275,16 +1282,17 @@ model Match {
   createdAt          DateTime    @default(now())
   updatedAt          DateTime    @updatedAt
 
-  draw         Draw       @relation(fields: [drawId], references: [id], onDelete: Cascade)
-  entryA       DrawEntry? @relation("EntryA", fields: [entryAId], references: [id], onDelete: SetNull)
-  entryB       DrawEntry? @relation("EntryB", fields: [entryBId], references: [id], onDelete: SetNull)
-  winner       DrawEntry? @relation("Winner", fields: [winnerEntryId], references: [id], onDelete: SetNull)
-  nextMatch    Match?     @relation("Advance", fields: [nextMatchId], references: [id], onDelete: SetNull)
-  feeders      Match[]    @relation("Advance")
-  loserNext    Match?     @relation("LoserAdvance", fields: [loserNextMatchId], references: [id], onDelete: SetNull)
-  loserFeeders Match[]    @relation("LoserAdvance")
+  draw         Draw          @relation(fields: [drawId], references: [id], onDelete: Cascade)
+  entryA       DrawEntry?    @relation("EntryA", fields: [entryAId], references: [id], onDelete: SetNull)
+  entryB       DrawEntry?    @relation("EntryB", fields: [entryBId], references: [id], onDelete: SetNull)
+  winner       DrawEntry?    @relation("Winner", fields: [winnerEntryId], references: [id], onDelete: SetNull)
+  nextMatch    Match?        @relation("Advance", fields: [nextMatchId], references: [id], onDelete: SetNull)
+  feeders      Match[]       @relation("Advance")
+  loserNext    Match?        @relation("LoserAdvance", fields: [loserNextMatchId], references: [id], onDelete: SetNull)
+  loserFeeders Match[]       @relation("LoserAdvance")
   sets         MatchSet[]
   slot         CourtSlot?
+  umpireEvents UmpireEvent[]
 
   @@unique([drawId, matchNumber])
   @@index([drawId, round])
@@ -1615,5 +1623,119 @@ model TournamentFeedback {
   player     PlayerProfile @relation(fields: [playerId], references: [id], onDelete: Cascade)
 
   @@unique([tournamentId, playerId])
+  @@index([status])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Umpire scoring
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum UmpireEventKind {
+  POINT
+  UNDO
+}
+
+enum UmpireSide {
+  A
+  B
+}
+
+enum TakeoverStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  TIMED_OUT
+}
+
+enum DeskAlertStatus {
+  OPEN
+  RESOLVED
+}
+
+/// A volunteer who scores matches for one tournament. Signs in with a PIN or a QR token (both stored hashed).
+model Umpire {
+  id           String    @id @default(uuid()) @db.Uuid
+  tournamentId String    @db.Uuid
+  displayName  String
+  pinHash      String
+  qrTokenHash  String
+  expiresAt    DateTime
+  revokedAt    DateTime?
+  /// The phone this umpire is bound to (set at first sign-in).
+  deviceId     String?
+  createdAt    DateTime  @default(now())
+
+  tournament    Tournament        @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  events        UmpireEvent[]
+  holds         CourtHold[]
+  takeoversFrom TakeoverRequest[] @relation("TakeoverFrom")
+  takeoversTo   TakeoverRequest[] @relation("TakeoverTo")
+
+  @@unique([qrTokenHash])
+  @@index([tournamentId])
+}
+
+/// One point (or undo) sent by an umpire. `id` is a client-made uuid, so a retried upload is ignored.
+model UmpireEvent {
+  id        String          @id @db.Uuid
+  matchId   String          @db.Uuid
+  courtId   String          @db.Uuid
+  umpireId  String          @db.Uuid
+  /// Order of the event within the match, counted by the client.
+  seq       Int
+  kind      UmpireEventKind
+  /// Who won the point. Null for UNDO.
+  side      UmpireSide?
+  createdAt DateTime        @default(now())
+
+  match  Match  @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  court  Court  @relation(fields: [courtId], references: [id], onDelete: Restrict)
+  umpire Umpire @relation(fields: [umpireId], references: [id], onDelete: Restrict)
+
+  @@unique([matchId, seq])
+  @@index([umpireId])
+}
+
+/// Which umpire holds a court right now. One row per court, so two umpires cannot score the same court.
+model CourtHold {
+  courtId  String   @id @db.Uuid
+  umpireId String   @db.Uuid
+  since    DateTime @default(now())
+
+  court  Court  @relation(fields: [courtId], references: [id], onDelete: Cascade)
+  umpire Umpire @relation(fields: [umpireId], references: [id], onDelete: Cascade)
+
+  @@index([umpireId])
+}
+
+/// An umpire asks to take over a court another umpire holds.
+model TakeoverRequest {
+  id           String         @id @default(uuid()) @db.Uuid
+  courtId      String         @db.Uuid
+  fromUmpireId String         @db.Uuid
+  toUmpireId   String         @db.Uuid
+  status       TakeoverStatus @default(PENDING)
+  expiresAt    DateTime
+  createdAt    DateTime       @default(now())
+
+  court      Court       @relation(fields: [courtId], references: [id], onDelete: Cascade)
+  fromUmpire Umpire      @relation("TakeoverFrom", fields: [fromUmpireId], references: [id], onDelete: Cascade)
+  toUmpire   Umpire      @relation("TakeoverTo", fields: [toUmpireId], references: [id], onDelete: Cascade)
+  deskAlerts DeskAlert[]
+
+  @@index([courtId, status])
+}
+
+/// Raised for the desk when a take-over times out, so the desk can sort out the court.
+model DeskAlert {
+  id                String          @id @default(uuid()) @db.Uuid
+  courtId           String          @db.Uuid
+  takeoverRequestId String          @db.Uuid
+  status            DeskAlertStatus @default(OPEN)
+  createdAt         DateTime        @default(now())
+
+  court           Court           @relation(fields: [courtId], references: [id], onDelete: Cascade)
+  takeoverRequest TakeoverRequest @relation(fields: [takeoverRequestId], references: [id], onDelete: Cascade)
+
   @@index([status])
 }
