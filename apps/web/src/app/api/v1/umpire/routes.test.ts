@@ -480,6 +480,8 @@ describe('takeover discovery, cancel, paper notice and names', () => {
     await claimCourt(s.anna.row.id, s.court1.id);
     expect((await p(s.bram, s.match.id)).status).toBe(409);
     expect(await prisma.auditLog.count({ where: { action: 'umpire.paper' } })).toBe(0);
+    expect((await p(s.anna, s.match.id)).status).toBe(409);
+    await prisma.match.update({ where: { id: s.match.id }, data: { status: 'IN_PROGRESS' } });
     const ok = await p(s.anna, s.match.id);
     expect(ok.status).toBe(204);
     const rows = await prisma.auditLog.findMany({ where: { action: 'umpire.paper' } });
