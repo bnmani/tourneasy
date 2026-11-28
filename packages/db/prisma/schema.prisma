@@ -1647,6 +1647,7 @@ enum TakeoverStatus {
   ACCEPTED
   DECLINED
   TIMED_OUT
+  CANCELLED
 }
 
 enum DeskAlertStatus {
@@ -1732,6 +1733,7 @@ model TakeoverRequest {
   @@index([courtId, status])
   @@index([fromUmpireId])
   @@index([toUmpireId])
+  @@index([status, expiresAt])
 }
 
 /// Raised for the desk when a take-over times out, so the desk can sort out the court.

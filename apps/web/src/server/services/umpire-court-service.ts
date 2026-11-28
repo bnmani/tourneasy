@@ -35,10 +35,27 @@ export async function claimCourt(umpireId: string, courtId: string): Promise<voi
   }
 }
 
+/** Closes the PENDING requests addressed to a holder who no longer holds the court. */
+async function cancelOpenRequests(
+  tx: Prisma.TransactionClient,
+  courtId: string,
+  toUmpireId: string,
+) {
+  await tx.takeoverRequest.updateMany({
+    where: { courtId, toUmpireId, status: 'PENDING' },
+    data: { status: 'CANCELLED' },
+  });
+}
+
 /** Gives the court up. Only the holder can; releasing a free court does nothing. */
 export async function releaseCourt(umpireId: string, courtId: string): Promise<void> {
   await activeUmpire(umpireId);
-  const { count } = await prisma.courtHold.deleteMany({ where: { courtId, umpireId } });
+  const count = await prisma.$transaction(async (tx) => {
+    const { count } = await tx.courtHold.deleteMany({ where: { courtId, umpireId } });
+    // Requests still waiting on the old holder have nobody to answer them now.
+    if (count > 0) await cancelOpenRequests(tx, courtId, umpireId);
+    return count;
+  });
   if (count > 0) return;
   if (await prisma.courtHold.findUnique({ where: { courtId } })) throw new AppError('forbidden');
 }
@@ -153,30 +170,35 @@ export async function answerTakeover(
     if (count === 0) throw new AppError('takeoverClosed');
     if (answer === 'DECLINE') return;
     // The reserve's profile must still work, and the hold must still be the answerer's.
-    await activeUmpire(request.fromUmpireId, tx).catch(() => {
-      throw new AppError('takeoverClosed');
+    await activeUmpire(request.fromUmpireId, tx).catch((error: unknown) => {
+      if (error instanceof AppError && error.code === 'unauthorized') {
+        throw new AppError('takeoverClosed');
+      }
+      throw error;
     });
     const moved = await tx.courtHold.updateMany({
       where: { courtId: request.courtId, umpireId: currentUmpireId },
       data: { umpireId: request.fromUmpireId, since: now },
     });
     if (moved.count === 0) throw new AppError('takeoverClosed');
+    await cancelOpenRequests(tx, request.courtId, currentUmpireId);
   });
 }
 
-/** The reserve withdraws an open request. It is deleted (no desk alert); late cancels are refused. */
+/** The reserve withdraws an open request. It becomes CANCELLED (no desk alert); late cancels are refused. */
 export async function cancelTakeover(reserveUmpireId: string, requestId: string): Promise<void> {
   await activeUmpire(reserveUmpireId);
   const request = await prisma.takeoverRequest.findUnique({ where: { id: requestId } });
   if (!request) throw new AppError('notFound');
   if (request.fromUmpireId !== reserveUmpireId) throw new AppError('forbidden');
-  const { count } = await prisma.takeoverRequest.deleteMany({
+  const { count } = await prisma.takeoverRequest.updateMany({
     where: {
       id: requestId,
       fromUmpireId: reserveUmpireId,
       status: 'PENDING',
       expiresAt: { gt: new Date() },
     },
+    data: { status: 'CANCELLED' },
   });
   if (count === 0) throw new AppError('takeoverClosed');
 }

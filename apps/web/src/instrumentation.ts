@@ -41,6 +41,11 @@ export async function register() {
       running = false;
     }
   };
+  // The take-over desk alert must follow the 2 minute window, so it gets its own 10 second sweep
+  // (housekeeping above stays as the backstop).
+  const { createTakeoverTicker, TAKEOVER_SWEEP_MS } = await import('./server/jobs/takeover-sweep');
+  const sweepTakeovers = createTakeoverTicker();
+  setInterval(() => void sweepTakeovers(), TAKEOVER_SWEEP_MS).unref();
   // unref: never keeps the process alive on its own.
   setTimeout(() => {
     void tick();

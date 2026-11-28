@@ -6,6 +6,7 @@ import {
   answerTakeover,
   cancelTakeover,
   claimCourt,
+  releaseCourt,
   requestTakeover,
   TAKEOVER_WINDOW_SECONDS,
 } from './umpire-court-service';
@@ -228,16 +229,61 @@ describe('answering a take-over', () => {
   });
 });
 
+describe('take-over races and cleanup', () => {
+  it('accept and a timeout run on the same request give exactly one outcome', async () => {
+    const s = await setup();
+    const r = await requestTakeover(s.bram.id, s.court1.id);
+    // Expire it just after the answer's own clock reading would still be valid: run both at once
+    // against a request that is expired for the job but answered by the holder.
+    await expire(r.id);
+    const results = await Promise.allSettled([
+      answerTakeover(s.anna.id, r.id, 'ACCEPT'),
+      timeoutTakeovers(),
+    ]);
+    const status = (await prisma.takeoverRequest.findUniqueOrThrow({ where: { id: r.id } })).status;
+    expect(status).toBe('TIMED_OUT');
+    expect(results[0].status).toBe('rejected');
+    expect(await prisma.deskAlert.count()).toBe(1);
+    expect(await holder(s.court1.id)).toBe(s.anna.id);
+  });
+
+  it('a request left open after the hold is released is closed, not turned into an alert', async () => {
+    const s = await setup();
+    const r = await requestTakeover(s.bram.id, s.court1.id);
+    await releaseCourt(s.anna.id, s.court1.id);
+    expect((await prisma.takeoverRequest.findUniqueOrThrow({ where: { id: r.id } })).status).toBe(
+      'CANCELLED',
+    );
+    await expire(r.id);
+    expect(await timeoutTakeovers()).toBe(0);
+    expect(await prisma.deskAlert.count()).toBe(0);
+  });
+
+  it('only a real inactive-profile failure closes an accept; other errors pass through', async () => {
+    const s = await setup();
+    const r = await requestTakeover(s.bram.id, s.court1.id);
+    await prisma.umpire.update({ where: { id: s.bram.id }, data: { revokedAt: new Date() } });
+    await expect(answerTakeover(s.anna.id, r.id, 'ACCEPT')).rejects.toMatchObject({
+      code: 'takeoverClosed',
+    });
+    expect(await holder(s.court1.id)).toBe(s.anna.id);
+  });
+});
+
 describe('cancelling a take-over', () => {
   it('the requester can withdraw an open request; nobody else can', async () => {
     const s = await setup();
     const r = await requestTakeover(s.bram.id, s.court1.id);
     await expect(cancelTakeover(s.cora.id, r.id)).rejects.toMatchObject({ code: 'forbidden' });
     await cancelTakeover(s.bram.id, r.id);
-    expect(await prisma.takeoverRequest.count()).toBe(0);
+    expect((await prisma.takeoverRequest.findUniqueOrThrow({ where: { id: r.id } })).status).toBe(
+      'CANCELLED',
+    );
     await expect(answerTakeover(s.anna.id, r.id, 'ACCEPT')).rejects.toMatchObject({
-      code: 'notFound',
+      code: 'takeoverClosed',
     });
+    await expect(cancelTakeover(s.bram.id, r.id)).rejects.toMatchObject({ code: 'takeoverClosed' });
+    expect(await prisma.deskAlert.count()).toBe(0);
     expect(await holder(s.court1.id)).toBe(s.anna.id);
   });
 
