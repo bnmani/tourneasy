@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import {
@@ -12,6 +12,7 @@ import {
   UText,
 } from '@/components/umpire-ui';
 import { useT } from '@/lib/i18n';
+import { loadMatchState } from '@/lib/match-state';
 import { isUnauthorized, releaseCourt } from '@/lib/umpire-api';
 import { useUmpireAuth } from '@/lib/use-umpire-auth';
 
@@ -31,6 +32,10 @@ export default function MatchScreen() {
   const { token, toSignIn } = useUmpireAuth();
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  // Read the server's state now, so the seq counter is lifted before any tap.
+  useEffect(() => {
+    if (token) loadMatchState(params.matchId, token).catch(() => undefined);
+  }, [token, params.matchId]);
   const live = params.status === 'IN_PROGRESS';
 
   const carry = {

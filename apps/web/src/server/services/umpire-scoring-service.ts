@@ -40,6 +40,8 @@ export type PostEventsResult = {
   games: Game[];
   /** The match version after this call. */
   version: number;
+  /** The highest stored seq for the match, or 0. A phone starts its counter above this. */
+  lastSeq: number;
   /** Set when the rules refused an event; it and the events after it were not written. */
   rejected?: RejectReason;
 };
@@ -197,6 +199,7 @@ export async function postEvents(
     }
     fresh.sort((a, b) => a.seq - b.seq);
 
+    let highestSeq = lastSeq;
     const state = (applied: number, rejected?: RejectReason): PostEventsResult => {
       const result = applyEvents([], log, rules, initialServing);
       return {
@@ -205,6 +208,7 @@ export async function postEvents(
         serving: result.serving,
         games: result.games,
         version: match.version,
+        lastSeq: highestSeq,
         ...(rejected ? { rejected } : {}),
       };
     };
@@ -236,6 +240,7 @@ export async function postEvents(
       }
       log.push(scoreEvent);
       accepted.push(event);
+      highestSeq = event.seq;
     }
 
     let version = match.version;
@@ -254,6 +259,30 @@ export async function postEvents(
       });
     }
     return { ...state(accepted.length, rejected), version };
+  });
+}
+
+export type MatchState = {
+  status: string;
+  version: number;
+  games: Game[];
+  serving: 'A' | 'B';
+  lastSeq: number;
+};
+
+/** The score as the server has it, for the umpire who holds the court. */
+export async function getMatchState(umpireId: string, matchId: string): Promise<MatchState> {
+  return transaction(async (tx) => {
+    const { match, rules } = await loadForUmpire(tx, umpireId, matchId);
+    const { log, lastSeq } = await storedLog(tx, matchId);
+    const result = applyEvents([], log, rules, match.umpireStartServer ?? 'A');
+    return {
+      status: match.status,
+      version: match.version,
+      games: result.games,
+      serving: result.serving,
+      lastSeq,
+    };
   });
 }
 

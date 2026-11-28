@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import {
@@ -13,10 +13,11 @@ import {
   usePalette,
 } from '@/components/umpire-ui';
 import { useT } from '@/lib/i18n';
-import { displayScore, type GameScore } from '@/lib/local-score';
+import { loadMatchState } from '@/lib/match-state';
 import { clearCorrupt, dismissRejected } from '@/lib/score-queue';
-import { readTapLog, recordTap } from '@/lib/seq';
+import { recordTap } from '@/lib/seq';
 import { useMatchSync } from '@/lib/use-match-sync';
+import { isUnauthorized } from '@/lib/umpire-api';
 import { useUmpireAuth } from '@/lib/use-umpire-auth';
 import { font } from '@/theme';
 
@@ -29,29 +30,30 @@ export default function ScoringScreen() {
   const matchId = params.matchId;
   const { token, toSignIn } = useUmpireAuth();
   const sync = useMatchSync(matchId, token, toSignIn);
-  const [games, setGames] = useState<GameScore[]>([]);
-  const [serving, setServing] = useState<'A' | 'B' | null>(null);
   const [noted, setNoted] = useState(false);
   const [saveError, setSaveError] = useState(false);
+  const [reloads, setReloads] = useState(0);
 
-  const loadScore = useCallback(async () => {
-    const shown = displayScore(await readTapLog(matchId));
-    setGames(shown.games);
-    setServing(shown.serving);
-  }, [matchId]);
-
+  // Read the match from the server first: it gives the score and lifts the seq counter above
+  // the server's highest seq, so no tap is numbered below what the server already has.
   useEffect(() => {
+    if (!token) return;
     let current = true;
-    void readTapLog(matchId).then((log) => {
-      if (!current) return;
-      const shown = displayScore(log);
-      setGames(shown.games);
-      setServing(shown.serving);
-    });
+    loadMatchState(matchId, token)
+      .catch((e: unknown) => {
+        if (current && isUnauthorized(e)) toSignIn();
+        // Offline: a score stored earlier (which also seeded the counter) is enough.
+      })
+      .then(() => (current ? sync.refresh() : undefined));
     return () => {
       current = false;
     };
-  }, [matchId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [matchId, token, reloads]);
+
+  const games = sync.score?.games ?? [];
+  const serving = sync.score?.serving ?? null;
+  const ready = sync.score !== null;
 
   const tap = async (kind: 'A' | 'B' | 'UNDO') => {
     setSaveError(false);
@@ -62,7 +64,6 @@ export default function ScoringScreen() {
       setSaveError(true);
       return;
     }
-    await loadScore();
     await sync.refresh();
     void sync.sync();
   };
@@ -70,6 +71,7 @@ export default function ScoringScreen() {
   const finishDisabled = !sync.loaded || !sync.finishable || sync.waiting > 0;
   const current = games[games.length - 1] ?? [0, 0];
   const gameNumber = Math.max(games.length, 1);
+  const needsServer = sync.loaded && !ready;
   const offline = sync.problem === 'retry' && sync.waiting > 0;
   const carry = {
     matchId,
@@ -91,7 +93,7 @@ export default function ScoringScreen() {
             </UText>
           ) : null}
         </View>
-        {(games.length ? games : [[0, 0] as GameScore]).map((g, i) => (
+        {(games.length ? games : [[0, 0] as [number, number]]).map((g, i) => (
           <Text
             key={i}
             style={[
@@ -199,6 +201,13 @@ export default function ScoringScreen() {
         </UNotice>
       ) : null}
 
+      {needsServer ? (
+        <UNotice tone="warn">
+          <UText>{t('Cannot reach the server to start scoring. Check your connection.')}</UText>
+          <UButton title={t('Try again')} small onPress={() => setReloads((n) => n + 1)} />
+        </UNotice>
+      ) : null}
+
       {saveError ? (
         <UNotice tone="warn">
           <UText>{t('That tap was not saved. Tap again.')}</UText>
@@ -232,6 +241,7 @@ export default function ScoringScreen() {
             key={side}
             accessibilityRole="button"
             accessibilityLabel={t('Point for side {side}', { side })}
+            disabled={!ready}
             onPress={() => void tap(side)}
             style={({ pressed }) => [
               styles.tap,
@@ -251,7 +261,7 @@ export default function ScoringScreen() {
       <UButton
         title={t('Undo last point')}
         onPress={() => void tap('UNDO')}
-        disabled={games.length === 0}
+        disabled={!ready || games.length === 0}
       />
       <UButton
         variant="text"
