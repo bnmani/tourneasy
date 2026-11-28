@@ -1,15 +1,31 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { randomUUID } from 'expo-crypto';
-import { apiPost } from '@/lib/api';
+import { ApiError, apiPost } from '@/lib/api';
 
 /** One tap, as the server expects it. `seq` orders the events within a match. */
 export type QueuedEvent =
   | { id: string; seq: number; kind: 'POINT'; side: 'A' | 'B' }
   | { id: string; seq: number; kind: 'UNDO' };
 
-export type FlushResult = { sent: number; remaining: number };
+/** An event the server answered 2xx but refused to apply (for example `matchFinished`). */
+export type RejectedEvent = { event: QueuedEvent; reason: string };
+
+export type BlockedInfo = { event: QueuedEvent; status: number | null; code: string };
+
+export type FlushResult = {
+  sent: number;
+  remaining: number;
+  /** Events the server refused during this flush; also kept in the rejected record. */
+  rejected?: RejectedEvent[];
+  /** The event that stopped the flush. It stays pending. */
+  blocked?: BlockedInfo;
+  /** The stored queue could not be read; the raw value is kept under the corrupt key. */
+  corrupt?: boolean;
+};
 
 const keyFor = (matchId: string) => `score-queue:${matchId}`;
+const rejectedKeyFor = (matchId: string) => `score-queue-rejected:${matchId}`;
+const corruptKeyFor = (matchId: string) => `score-queue-corrupt:${matchId}`;
 
 /** A new client-generated event id. */
 export function newEventId(): string {
@@ -24,20 +40,46 @@ function exclusive<T>(task: () => Promise<T>): Promise<T> {
   return run;
 }
 
-async function read(matchId: string): Promise<QueuedEvent[]> {
+/** A value that cannot be parsed is moved to the corrupt key (never dropped), and reported. */
+async function readState(matchId: string): Promise<{ list: QueuedEvent[]; corrupt: boolean }> {
   const raw = await AsyncStorage.getItem(keyFor(matchId));
-  if (!raw) return [];
+  if (!raw) return { list: [], corrupt: await isCorrupt(matchId) };
   try {
     const list = JSON.parse(raw) as QueuedEvent[];
-    return Array.isArray(list) ? list : [];
+    if (!Array.isArray(list)) throw new Error('not a list');
+    return { list, corrupt: await isCorrupt(matchId) };
   } catch {
-    return [];
+    if ((await AsyncStorage.getItem(corruptKeyFor(matchId))) === null) {
+      await AsyncStorage.setItem(corruptKeyFor(matchId), raw);
+    }
+    await AsyncStorage.removeItem(keyFor(matchId));
+    return { list: [], corrupt: true };
   }
+}
+
+async function isCorrupt(matchId: string): Promise<boolean> {
+  return (await AsyncStorage.getItem(corruptKeyFor(matchId))) !== null;
+}
+
+async function read(matchId: string): Promise<QueuedEvent[]> {
+  return (await readState(matchId)).list;
 }
 
 async function write(matchId: string, list: QueuedEvent[]): Promise<void> {
   if (list.length === 0) await AsyncStorage.removeItem(keyFor(matchId));
   else await AsyncStorage.setItem(keyFor(matchId), JSON.stringify(list));
+}
+
+/** Events the server refused, with the reason. They no longer block finishing. */
+export async function rejectedEvents(matchId: string): Promise<RejectedEvent[]> {
+  const raw = await AsyncStorage.getItem(rejectedKeyFor(matchId));
+  if (!raw) return [];
+  try {
+    const list = JSON.parse(raw) as RejectedEvent[];
+    return Array.isArray(list) ? list : [];
+  } catch {
+    return [];
+  }
 }
 
 /** Saves the tap to storage. It resolves only after the write, so a point is never memory-only. */
@@ -56,32 +98,71 @@ export function pending(matchId: string): Promise<QueuedEvent[]> {
   return exclusive(() => read(matchId));
 }
 
-/** Finishing is allowed only when nothing is waiting to be sent. */
-export async function canFinish(matchId: string): Promise<boolean> {
-  return (await pending(matchId)).length === 0;
+/** Whether the stored queue was unreadable. The raw value is kept under the corrupt key. */
+export function hasCorruptQueue(matchId: string): Promise<boolean> {
+  return exclusive(async () => (await readState(matchId)).corrupt);
 }
 
+/** Finishing is allowed only when nothing is waiting to be sent and the queue is readable. */
+export async function canFinish(matchId: string): Promise<boolean> {
+  return exclusive(async () => {
+    const { list, corrupt } = await readState(matchId);
+    return list.length === 0 && !corrupt;
+  });
+}
+
+const running = new Map<string, Promise<FlushResult>>();
+
 /**
- * Sends pending events one at a time in seq order. An event leaves storage only after the server
- * answers 2xx. The first failure stops the flush so later events are never sent ahead of it.
+ * Sends pending events one at a time in seq order. An event leaves pending only after the server
+ * answers 2xx: applied or duplicate events are dropped, refused ones move to the rejected record.
+ * A failure stops the flush and is reported in `blocked`; the event stays pending.
+ * A second call for the same match while one runs gets the running promise.
  */
-export async function flush(matchId: string, token: string): Promise<FlushResult> {
+export function flush(matchId: string, token: string): Promise<FlushResult> {
+  const active = running.get(matchId);
+  if (active) return active;
+  const run = doFlush(matchId, token).finally(() => running.delete(matchId));
+  running.set(matchId, run);
+  return run;
+}
+
+async function doFlush(matchId: string, token: string): Promise<FlushResult> {
   let sent = 0;
+  const rejected: RejectedEvent[] = [];
+  const done = (extra: Partial<FlushResult>, remaining: number): FlushResult => ({
+    sent,
+    remaining,
+    ...(rejected.length ? { rejected } : {}),
+    ...extra,
+  });
   for (;;) {
-    const [next] = await pending(matchId);
-    if (!next) return { sent, remaining: 0 };
+    const { list, corrupt } = await exclusive(() => readState(matchId));
+    const [next] = list;
+    if (!next) return done(corrupt ? { corrupt: true } : {}, 0);
+    let response: unknown;
     try {
-      await apiPost(`/api/v1/umpire/matches/${matchId}/events`, { events: [next] }, token);
-    } catch {
-      return { sent, remaining: (await pending(matchId)).length };
+      response = await apiPost(`/api/v1/umpire/matches/${matchId}/events`, { events: [next] }, token);
+    } catch (error) {
+      const blocked: BlockedInfo =
+        error instanceof ApiError
+          ? { event: next, status: error.status, code: error.code }
+          : { event: next, status: null, code: 'NETWORK' };
+      return done({ blocked, ...(corrupt ? { corrupt: true } : {}) }, list.length);
     }
+    const reason = (response as { rejected?: unknown } | null)?.rejected;
     await exclusive(async () => {
-      const list = await read(matchId);
+      if (typeof reason === 'string') {
+        const record = [...(await rejectedEvents(matchId)), { event: next, reason }];
+        await AsyncStorage.setItem(rejectedKeyFor(matchId), JSON.stringify(record));
+        rejected.push({ event: next, reason });
+      }
+      const current = await read(matchId);
       await write(
         matchId,
-        list.filter((e) => e.id !== next.id),
+        current.filter((e) => e.id !== next.id),
       );
     });
-    sent += 1;
+    if (typeof reason !== 'string') sent += 1;
   }
 }
