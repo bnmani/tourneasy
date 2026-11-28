@@ -54,6 +54,7 @@ export default function WelcomeScreen() {
             variant="secondary"
             onPress={() => router.push('/signup/name')}
           />
+          <TextLink title={t('Umpire sign-in')} onPress={() => router.push('/umpire/sign-in')} />
           <TextLink
             title={t('Browse tournaments without an account')}
             center
