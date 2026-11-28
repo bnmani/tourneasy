@@ -21,6 +21,7 @@ const STATUS: Partial<Record<ErrorCode, number>> = {
   takeoverPending: 409,
   courtNotHeld: 409,
   alreadyHolder: 409,
+  eventIdInUse: 409,
   matchNotDecided: 409,
   resultConflict: 409,
   statusTransition: 409,

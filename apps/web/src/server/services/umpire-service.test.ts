@@ -2,6 +2,7 @@ import { randomInt } from 'node:crypto';
 import { prisma, Role } from '@tourneasy/db';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createPlayer, meta, resetDatabase } from '@/test/db';
+import { claimCourt, requestTakeover } from './umpire-court-service';
 import { actorFromWebToken, createWebSession } from './session-service';
 import {
   createUmpire,
@@ -56,7 +57,7 @@ async function tournament(endsOn = '2027-03-13', organiserId?: string) {
 }
 
 function qrTokenOf(qrUrl: string) {
-  return new URL(qrUrl).searchParams.get('token')!;
+  return new URLSearchParams(new URL(qrUrl).hash.slice(1)).get('token')!;
 }
 
 async function setup(endsOn?: string) {
@@ -68,6 +69,19 @@ async function setup(endsOn?: string) {
 }
 
 describe('umpire profiles and sign-in', () => {
+  it('the QR link carries the token in the fragment, never in the query string', async () => {
+    const { created } = await setup();
+    const url = new URL(created.qrUrl);
+    expect(url.pathname).toBe('/umpire/sign-in');
+    expect(url.search).toBe('');
+    expect(url.hash).toMatch(/^#token=[A-Za-z0-9_-]+$/);
+    // Signing in does not rotate the token: a second phone can still use the same link
+    // once the first one is freed.
+    const token = qrTokenOf(created.qrUrl);
+    await signInUmpire({ qrToken: token }, 'device-1', meta);
+    await expect(signInUmpire({ qrToken: token }, 'device-1', meta)).resolves.toBeTruthy();
+  });
+
   it('PIN and QR are stored only as hashes', async () => {
     const { created, row, admin } = await setup();
     const token = qrTokenOf(created.qrUrl);
@@ -313,6 +327,57 @@ describe('umpire profiles and sign-in', () => {
     await expect(
       signInUmpire({ qrToken: qrTokenOf(created.qrUrl) }, 'd', { ip: '203.0.113.200' }),
     ).resolves.toBeTruthy();
+  });
+
+  it('parallel wrong PINs: every attempt after the limit is refused', async () => {
+    const { created } = await setup();
+    const wrong = created.pin === '000000' ? '000001' : '000000';
+    const results = await Promise.allSettled(
+      Array.from({ length: 40 }, (_, i) =>
+        signInUmpire({ pin: wrong }, 'd', { ip: `198.18.0.${i}` }),
+      ),
+    );
+    const codes = results.map((r) => (r.status === 'rejected' ? r.reason.code : 'ok'));
+    expect(codes.filter((c) => c === 'invalidCredentials')).toHaveLength(30);
+    expect(codes.filter((c) => c === 'rateLimited')).toHaveLength(10);
+  });
+
+  it('a correct PIN does not use up the failed-PIN limit', async () => {
+    const { created, admin, t } = await setup();
+    for (let i = 0; i < 40; i++) {
+      await expect(
+        signInUmpire({ pin: created.pin }, 'device-1', { ip: `198.18.1.${i}` }),
+      ).resolves.toBeTruthy();
+    }
+    const other = await createUmpire(admin, { tournamentId: t.id, displayName: 'Bea' }, meta);
+    await expect(
+      signInUmpire({ pin: other.pin }, 'device-2', { ip: '198.18.2.1' }),
+    ).resolves.toBeTruthy();
+  });
+
+  it('revoking frees the court and cancels open take-overs in the same step', async () => {
+    const { admin, t, row: anna } = await setup();
+    const court = await prisma.court.create({ data: { venueId: t.venueId!, number: 1 } });
+    const court2 = await prisma.court.create({ data: { venueId: t.venueId!, number: 2 } });
+    await createUmpire(admin, { tournamentId: t.id, displayName: 'Bram' }, meta);
+    await createUmpire(admin, { tournamentId: t.id, displayName: 'Cora' }, meta);
+    const bram = await prisma.umpire.findFirstOrThrow({ where: { displayName: 'Bram' } });
+    const cora = await prisma.umpire.findFirstOrThrow({ where: { displayName: 'Cora' } });
+    await claimCourt(anna.id, court.id);
+    await claimCourt(cora.id, court2.id);
+    const toAnna = await requestTakeover(bram.id, court.id);
+    const fromAnna = await requestTakeover(anna.id, court2.id);
+    await revokeUmpire(admin, anna.id, meta);
+    expect(await prisma.courtHold.findUnique({ where: { courtId: court.id } })).toBeNull();
+    const status = async (id: string) =>
+      (await prisma.takeoverRequest.findUniqueOrThrow({ where: { id } })).status;
+    expect(await status(toAnna.id)).toBe('CANCELLED');
+    expect(await status(fromAnna.id)).toBe('CANCELLED');
+    // Cora keeps her court; the free court can be claimed again.
+    expect((await prisma.courtHold.findUnique({ where: { courtId: court2.id } }))?.umpireId).toBe(
+      cora.id,
+    );
+    await expect(claimCourt(bram.id, court.id)).resolves.toBeUndefined();
   });
 
   it('only admins and the tournament organisers manage umpires', async () => {

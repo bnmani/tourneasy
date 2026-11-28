@@ -41,11 +41,14 @@ export async function register() {
       running = false;
     }
   };
-  // The take-over desk alert must follow the 2 minute window, so it gets its own 10 second sweep
-  // (housekeeping above stays as the backstop).
-  const { createTakeoverTicker, TAKEOVER_SWEEP_MS } = await import('./server/jobs/takeover-sweep');
-  const sweepTakeovers = createTakeoverTicker();
-  setInterval(() => void sweepTakeovers(), TAKEOVER_SWEEP_MS).unref();
+  // The take-over desk alert must follow the 2 minute window, so it gets its own 10 second sweep,
+  // but only while a request is PENDING: a new request arms it and it stops when none are left,
+  // so the database can still sleep (D94). Housekeeping above stays as the backstop.
+  const { takeoverSweeper } = await import('./server/jobs/takeover-sweep');
+  takeoverSweeper.enable();
+  void takeoverSweeper.armIfPending().catch((error) => {
+    console.error('[takeover-sweep] start check failed', error);
+  });
   // unref: never keeps the process alive on its own.
   setTimeout(() => {
     void tick();

@@ -62,18 +62,16 @@ export async function hit(
   };
 }
 
-/** Whether this key has already used up its limit in the current window (does not count a hit). */
-export async function isExhausted(
-  key: string,
-  { limit, windowSeconds }: RateLimit,
-  now = new Date(),
-): Promise<boolean> {
+/**
+ * Gives back one hit counted at `now` (same window), e.g. when the attempt turned out fine.
+ * Never goes below zero.
+ */
+export async function refund(key: string, { windowSeconds }: RateLimit, now: Date): Promise<void> {
   const windowMs = windowSeconds * 1000;
   const windowStart = new Date(Math.floor(now.getTime() / windowMs) * windowMs);
-  const bucket = await prisma.rateLimitBucket.findUnique({
-    where: { key_windowStart: { key, windowStart } },
-  });
-  return (bucket?.count ?? 0) >= limit;
+  await prisma.$executeRaw`
+    UPDATE "RateLimitBucket" SET "count" = "count" - 1
+    WHERE "key" = ${key} AND "windowStart" = ${windowStart} AND "count" > 0`;
 }
 
 export async function enforce(key: string, rule: RateLimit): Promise<void> {

@@ -3,6 +3,7 @@
  * court, so claiming is a single atomic insert and two umpires can never both get it.
  */
 import { Prisma, prisma } from '@tourneasy/db';
+import { armTakeoverSweep } from '../jobs/takeover-sweep';
 import { AppError } from '../lib/errors';
 import { fullName } from './registration-service';
 
@@ -15,7 +16,11 @@ export async function activeUmpire(umpireId: string, db: Prisma.TransactionClien
   return umpire;
 }
 
-/** Takes the court. Claiming a court you already hold is fine; another umpire's court is 409. */
+/**
+ * Takes the court. Claiming a court you already hold is fine; another umpire's court is 409
+ * `courtHeld`. An umpire holds at most one court: holding a different one is 409 `alreadyHolder`.
+ * The umpire's row is locked, so two claims by one umpire at once cannot both pass the check.
+ */
 export async function claimCourt(umpireId: string, courtId: string): Promise<void> {
   const umpire = await activeUmpire(umpireId);
   // The court must belong to the venue of the umpire's tournament.
@@ -24,16 +29,23 @@ export async function claimCourt(umpireId: string, courtId: string): Promise<voi
     select: { id: true },
   });
   if (!court) throw new AppError('notFound');
-  try {
-    await prisma.courtHold.create({ data: { courtId, umpireId } });
-  } catch (error) {
-    if (!(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== 'P2002') {
-      throw error;
-    }
-    const hold = await prisma.courtHold.findUnique({ where: { courtId } });
+  await prisma.$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT 1 FROM "Umpire" WHERE "id" = ${umpireId}::uuid FOR UPDATE`;
+    const other = await tx.courtHold.findFirst({
+      where: { umpireId, courtId: { not: courtId } },
+      select: { courtId: true },
+    });
+    if (other) throw new AppError('alreadyHolder');
+    // ON CONFLICT DO NOTHING: a court someone else got first is read back, not an error.
+    const { count } = await tx.courtHold.createMany({
+      data: [{ courtId, umpireId }],
+      skipDuplicates: true,
+    });
+    if (count > 0) return;
+    const hold = await tx.courtHold.findUnique({ where: { courtId } });
     // No hold now means it was released between the insert and the read: the claim lost the race.
     if (hold?.umpireId !== umpireId) throw new AppError('courtHeld');
-  }
+  });
 }
 
 /** Closes the PENDING requests addressed to a holder who no longer holds the court. */
@@ -172,7 +184,7 @@ export const TAKEOVER_WINDOW_SECONDS = 120;
  */
 export async function requestTakeover(reserveUmpireId: string, courtId: string) {
   const reserve = await activeUmpire(reserveUmpireId);
-  return prisma.$transaction(async (tx) => {
+  const request = await prisma.$transaction(async (tx) => {
     await tx.$queryRaw`SELECT 1 FROM "CourtHold" WHERE "courtId" = ${courtId}::uuid FOR UPDATE`;
     const hold = await tx.courtHold.findUnique({
       where: { courtId },
@@ -196,6 +208,9 @@ export async function requestTakeover(reserveUmpireId: string, courtId: string) 
       },
     });
   });
+  // The request is stored: make sure the 10 second sweep runs until it is answered or timed out.
+  armTakeoverSweep();
+  return request;
 }
 
 /**

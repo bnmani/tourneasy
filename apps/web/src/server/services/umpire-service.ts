@@ -18,7 +18,7 @@ import { z } from 'zod';
 import { writeAudit } from '../lib/audit';
 import { randomToken } from '../lib/crypto';
 import { AppError, validationError } from '../lib/errors';
-import { enforce, hit, isExhausted, LIMITS } from '../lib/rate-limit';
+import { enforce, hit, LIMITS, refund } from '../lib/rate-limit';
 import type { RequestMeta } from '../lib/request-meta';
 import { siteUrl } from '../lib/urls';
 import { parseInput } from '../lib/validation';
@@ -121,8 +121,14 @@ function credentials() {
   return { qrToken, qrTokenHash: hmac('qr', qrToken) };
 }
 
+/**
+ * The token goes in the fragment (`#token=`), never the query string: a browser does not send
+ * the fragment to the server, so it stays out of access logs and Referer headers. The token is
+ * not rotated on sign-in, so the same printed link still works for a second phone once the
+ * first is freed (reset is the way to end it).
+ */
 const qrUrlFor = (qrToken: string) =>
-  siteUrl(`/umpire/sign-in?token=${encodeURIComponent(qrToken)}`);
+  siteUrl(`/umpire/sign-in#token=${encodeURIComponent(qrToken)}`);
 
 export async function createUmpire(
   actor: Actor | null,
@@ -181,9 +187,21 @@ export async function revokeUmpire(
 ): Promise<void> {
   const umpire = await manageable(actor, umpireId);
   if (umpire.revokedAt) return;
-  await prisma.umpire.update({
-    where: { id: umpire.id },
-    data: { revokedAt: new Date(), pinHash: null },
+  // One step: the profile ends, its PIN is freed, its court is free again, and its open
+  // take-overs (asked by or sent to it) are closed, so none can turn into a desk alert.
+  await prisma.$transaction(async (tx) => {
+    await tx.umpire.update({
+      where: { id: umpire.id },
+      data: { revokedAt: new Date(), pinHash: null },
+    });
+    await tx.courtHold.deleteMany({ where: { umpireId: umpire.id } });
+    await tx.takeoverRequest.updateMany({
+      where: {
+        status: 'PENDING',
+        OR: [{ fromUmpireId: umpire.id }, { toUmpireId: umpire.id }],
+      },
+      data: { status: 'CANCELLED' },
+    });
   });
   await writeAudit(prisma, {
     actorId: actor!.userId,
@@ -251,10 +269,14 @@ export async function signInUmpire(
   if (!parsed.success) throw new AppError('invalidCredentials');
 
   const byPin = 'pin' in parsed.data;
-  if (byPin && (await isExhausted(FAILED_PIN_KEY, LIMITS.umpireFailedPinGlobal))) {
-    throw new AppError('rateLimited', {
-      retryAfterSeconds: LIMITS.umpireFailedPinGlobal.windowSeconds,
-    });
+  // Global failed-PIN limit: count the attempt first (one atomic upsert), then refuse when over,
+  // so parallel guesses cannot all slip past a check. A PIN that works gives its count back.
+  const attemptAt = new Date();
+  if (byPin) {
+    const counted = await hit(FAILED_PIN_KEY, LIMITS.umpireFailedPinGlobal, attemptAt);
+    if (!counted.allowed) {
+      throw new AppError('rateLimited', { retryAfterSeconds: counted.retryAfterSeconds });
+    }
   }
   const candidate = await prisma.umpire.findUnique({
     where:
@@ -277,10 +299,8 @@ export async function signInUmpire(
         data: { deviceId },
       })
     : { count: 0 };
-  if (!candidate || claimed.count === 0) {
-    if (byPin) await hit(FAILED_PIN_KEY, LIMITS.umpireFailedPinGlobal);
-    throw new AppError('invalidCredentials');
-  }
+  if (!candidate || claimed.count === 0) throw new AppError('invalidCredentials');
+  if (byPin) await refund(FAILED_PIN_KEY, LIMITS.umpireFailedPinGlobal, attemptAt);
   const found = candidate;
   await writeAudit(prisma, {
     actorId: null,

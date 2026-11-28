@@ -134,6 +134,7 @@ async function sentToDesk() {
     },
   });
   await claimCourt(anna.id, s.court1.id);
+  await prisma.match.update({ where: { id: s.match.id }, data: { status: 'IN_PROGRESS' } });
   await startMatch(anna.id, s.match.id, 'A');
   await postEvents(
     anna.id,
