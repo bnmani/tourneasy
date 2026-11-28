@@ -335,6 +335,25 @@ describe('takeovers', () => {
 });
 
 describe('errors', () => {
+  it('a valid token without X-Device-Id is 401', async () => {
+    const s = await setup();
+    const res = await listCourts(
+      req('/courts', { method: 'GET', token: s.anna.token, device: '' }),
+      undefined,
+    );
+    expect(res.status).toBe(401);
+  });
+  it('an unmapped error with a status below 400 becomes a generic 500', async () => {
+    const { umpireError } = await import('@/server/lib/umpire-api');
+    const { AppError } = await import('@/server/lib/errors');
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const odd = new AppError('emailTaken');
+    Object.defineProperty(odd, 'status', { value: 200 });
+    const res = umpireError(odd);
+    expect(res.status).toBe(500);
+    expect((await res.json()).error.code).toBe('UNEXPECTED');
+    spy.mockRestore();
+  });
   it('validation is 422 VALIDATION with details.fields', async () => {
     const s = await setup();
     const res = await claim(req('/x', { ...as(s.anna) }), ctx({ courtId: 'nope' }));
