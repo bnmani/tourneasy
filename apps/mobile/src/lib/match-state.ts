@@ -9,6 +9,8 @@ export type MatchState = {
   games: [number, number][];
   serving: 'A' | 'B';
   lastSeq: number;
+  /** The serve choice stored on the server, or null while none was made. */
+  umpireStartServer?: 'A' | 'B' | null;
 };
 
 const key = (matchId: string) => `match-state:${matchId}`;
@@ -36,6 +38,8 @@ export async function recordServerState(matchId: string, reply: unknown): Promis
     games: r.games,
     serving: r.serving,
     lastSeq: typeof r.lastSeq === 'number' ? r.lastSeq : (before?.lastSeq ?? 0),
+    umpireStartServer:
+      r.umpireStartServer === undefined ? before?.umpireStartServer : r.umpireStartServer,
   };
   await AsyncStorage.setItem(key(matchId), JSON.stringify(next));
   await seedSeq(matchId, next.lastSeq);

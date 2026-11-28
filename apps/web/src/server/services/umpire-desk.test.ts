@@ -347,6 +347,24 @@ describe('desk alerts', () => {
     return { ...s, bram, cora, alert };
   }
 
+  it('ASSIGN_RESERVE refuses a reserve who already holds another court, and changes nothing', async () => {
+    const s = await alertSetup();
+    const court3 = await prisma.court.create({
+      data: { venueId: s.court2.venueId, number: 3 },
+    });
+    await claimCourt(s.cora.id, court3.id);
+    await expect(
+      resolveDeskAlert(s.actor, s.alert.id, 'ASSIGN_RESERVE', meta),
+    ).rejects.toMatchObject({ code: 'alreadyHolder' });
+    expect((await prisma.deskAlert.findUniqueOrThrow({ where: { id: s.alert.id } })).status).toBe(
+      'OPEN',
+    );
+    expect(
+      (await prisma.courtHold.findUniqueOrThrow({ where: { courtId: s.court2.id } })).umpireId,
+    ).toBe(s.bram.id);
+    expect(await prisma.auditLog.count({ where: { action: 'deskAlert.resolve' } })).toBe(0);
+  });
+
   it('desk alert resolves once', async () => {
     const s = await alertSetup();
     const open = await deskAlerts(s.actor, s.tournament.id);

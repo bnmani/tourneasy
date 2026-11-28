@@ -17,6 +17,23 @@ export async function activeUmpire(umpireId: string, db: Prisma.TransactionClien
 }
 
 /**
+ * Locks the umpire's row, then refuses with `alreadyHolder` when they hold a court other than
+ * `exceptCourtId`. Used where a court is given to an umpire, so one umpire never holds two.
+ */
+export async function assertNoOtherHold(
+  tx: Prisma.TransactionClient,
+  umpireId: string,
+  exceptCourtId: string,
+): Promise<void> {
+  await tx.$queryRaw`SELECT 1 FROM "Umpire" WHERE "id" = ${umpireId}::uuid FOR UPDATE`;
+  const other = await tx.courtHold.findFirst({
+    where: { umpireId, courtId: { not: exceptCourtId } },
+    select: { courtId: true },
+  });
+  if (other) throw new AppError('alreadyHolder');
+}
+
+/**
  * Takes the court. Claiming a court you already hold is fine; another umpire's court is 409
  * `courtHeld`. An umpire holds at most one court: holding a different one is 409 `alreadyHolder`.
  * The umpire's row is locked, so two claims by one umpire at once cannot both pass the check.
@@ -30,12 +47,7 @@ export async function claimCourt(umpireId: string, courtId: string): Promise<voi
   });
   if (!court) throw new AppError('notFound');
   await prisma.$transaction(async (tx) => {
-    await tx.$queryRaw`SELECT 1 FROM "Umpire" WHERE "id" = ${umpireId}::uuid FOR UPDATE`;
-    const other = await tx.courtHold.findFirst({
-      where: { umpireId, courtId: { not: courtId } },
-      select: { courtId: true },
-    });
-    if (other) throw new AppError('alreadyHolder');
+    await assertNoOtherHold(tx, umpireId, courtId);
     // ON CONFLICT DO NOTHING: a court someone else got first is read back, not an error.
     const { count } = await tx.courtHold.createMany({
       data: [{ courtId, umpireId }],
@@ -247,6 +259,7 @@ export async function answerTakeover(
       }
       throw error;
     });
+    await assertNoOtherHold(tx, request.fromUmpireId, request.courtId);
     const moved = await tx.courtHold.updateMany({
       where: { courtId: request.courtId, umpireId: currentUmpireId },
       data: { umpireId: request.fromUmpireId, since: now },
