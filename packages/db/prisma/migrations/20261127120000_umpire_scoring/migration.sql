@@ -11,7 +11,7 @@ CREATE TYPE "TakeoverStatus" AS ENUM ('PENDING', 'ACCEPTED', 'DECLINED', 'TIMED_
 CREATE TYPE "DeskAlertStatus" AS ENUM ('OPEN', 'RESOLVED');
 
 -- AlterEnum
-ALTER TYPE "MatchStatus" ADD VALUE 'AWAITING_DESK';
+ALTER TYPE "MatchStatus" ADD VALUE 'AWAITING_DESK' BEFORE 'COMPLETED';
 
 -- CreateTable
 CREATE TABLE "Umpire" (
@@ -85,6 +85,9 @@ CREATE UNIQUE INDEX "Umpire_qrTokenHash_key" ON "Umpire"("qrTokenHash");
 CREATE INDEX "UmpireEvent_umpireId_idx" ON "UmpireEvent"("umpireId");
 
 -- CreateIndex
+CREATE INDEX "UmpireEvent_courtId_idx" ON "UmpireEvent"("courtId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "UmpireEvent_matchId_seq_key" ON "UmpireEvent"("matchId", "seq");
 
 -- CreateIndex
@@ -94,13 +97,25 @@ CREATE INDEX "CourtHold_umpireId_idx" ON "CourtHold"("umpireId");
 CREATE INDEX "TakeoverRequest_courtId_status_idx" ON "TakeoverRequest"("courtId", "status");
 
 -- CreateIndex
+CREATE INDEX "TakeoverRequest_fromUmpireId_idx" ON "TakeoverRequest"("fromUmpireId");
+
+-- CreateIndex
+CREATE INDEX "TakeoverRequest_toUmpireId_idx" ON "TakeoverRequest"("toUmpireId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "DeskAlert_takeoverRequestId_key" ON "DeskAlert"("takeoverRequestId");
+
+-- CreateIndex
 CREATE INDEX "DeskAlert_status_idx" ON "DeskAlert"("status");
+
+-- CreateIndex
+CREATE INDEX "DeskAlert_courtId_idx" ON "DeskAlert"("courtId");
 
 -- AddForeignKey
 ALTER TABLE "Umpire" ADD CONSTRAINT "Umpire_tournamentId_fkey" FOREIGN KEY ("tournamentId") REFERENCES "Tournament"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "UmpireEvent" ADD CONSTRAINT "UmpireEvent_matchId_fkey" FOREIGN KEY ("matchId") REFERENCES "Match"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "UmpireEvent" ADD CONSTRAINT "UmpireEvent_matchId_fkey" FOREIGN KEY ("matchId") REFERENCES "Match"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "UmpireEvent" ADD CONSTRAINT "UmpireEvent_courtId_fkey" FOREIGN KEY ("courtId") REFERENCES "Court"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

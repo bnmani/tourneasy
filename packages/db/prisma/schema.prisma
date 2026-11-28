@@ -1688,12 +1688,13 @@ model UmpireEvent {
   side      UmpireSide?
   createdAt DateTime        @default(now())
 
-  match  Match  @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  match  Match  @relation(fields: [matchId], references: [id], onDelete: Restrict)
   court  Court  @relation(fields: [courtId], references: [id], onDelete: Restrict)
   umpire Umpire @relation(fields: [umpireId], references: [id], onDelete: Restrict)
 
   @@unique([matchId, seq])
   @@index([umpireId])
+  @@index([courtId])
 }
 
 /// Which umpire holds a court right now. One row per court, so two umpires cannot score the same court.
@@ -1724,13 +1725,15 @@ model TakeoverRequest {
   deskAlerts DeskAlert[]
 
   @@index([courtId, status])
+  @@index([fromUmpireId])
+  @@index([toUmpireId])
 }
 
 /// Raised for the desk when a take-over times out, so the desk can sort out the court.
 model DeskAlert {
   id                String          @id @default(uuid()) @db.Uuid
   courtId           String          @db.Uuid
-  takeoverRequestId String          @db.Uuid
+  takeoverRequestId String          @unique @db.Uuid
   status            DeskAlertStatus @default(OPEN)
   createdAt         DateTime        @default(now())
 
@@ -1738,4 +1741,5 @@ model DeskAlert {
   takeoverRequest TakeoverRequest @relation(fields: [takeoverRequestId], references: [id], onDelete: Cascade)
 
   @@index([status])
+  @@index([courtId])
 }
