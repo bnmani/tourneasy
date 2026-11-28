@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { applyEvents, type ScoreEvent } from './umpire';
-
 import { umpireEventSchema } from '../schemas/umpire';
+import { applyEvents, type ScoreEvent } from './umpire';
 const rules = { bestOf: 3, pointsToWin: 21, pointsCap: 30 };
+
 let n = 0;
 const point = (side: 'A' | 'B'): ScoreEvent => ({ id: `e${n++}`, kind: 'POINT', side });
 const undo = (): ScoreEvent => ({ id: `e${n++}`, kind: 'UNDO' });
@@ -59,6 +59,16 @@ describe('applyEvents', () => {
     const r = applyEvents([], [undo()], rules);
     expect(r.rejected).toBeTruthy();
     expect(r.games).toEqual([]);
+  });
+
+  it('cannot undo points that are already in current', () => {
+    const r = applyEvents([[3, 2]], [point('A'), undo(), undo()], rules, 'B');
+    expect(r).toEqual({ games: [[3, 2]], serving: 'B', finished: false, rejected: 'nothingToUndo' });
+  });
+
+  it('starts from the given initial server', () => {
+    expect(applyEvents([], [], rules, 'B').serving).toBe('B');
+    expect(applyEvents([], [point('A')], rules, 'B').serving).toBe('A');
   });
 
   it('rejects an undo once the match is finished', () => {

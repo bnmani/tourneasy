@@ -7,31 +7,38 @@ import { checkMatchScore, gameWinner, type Game, type ScoringRules } from './sco
 
 export type ScoreEvent = { id: string; kind: 'POINT' | 'UNDO'; side?: 'A' | 'B' };
 
+export type RejectReason = 'pointNeedsSide' | 'undoHasSide' | 'matchFinished' | 'nothingToUndo';
+
 export type ApplyResult = {
   games: Game[];
   serving: 'A' | 'B';
   finished: boolean;
   /** Why the events could not all be applied; the other fields hold the state before that event. */
-  rejected?: string;
+  rejected?: RejectReason;
 };
 
 /**
  * Applies events in order to `current` (finished games, plus a game in progress as last entry).
- * The rally winner serves next. An undo removes the last point scored in `events`, only while
- * the match is in progress; with no such point it is rejected. Processing stops at the first
- * rejected event.
+ *
+ * Replay contract: the caller replays the full stored event log from `[]` on every call. An
+ * undo can only remove points present in `events`, so it cannot reach points already in
+ * `current`; with no such point it is rejected as `nothingToUndo`. Undo is also rejected once
+ * the match is finished. The rally winner serves next; `initialServing` is the server before
+ * the first point and defaults to 'A' only when omitted. `event.id` is not used for
+ * deduplication; that is the caller's job. Processing stops at the first rejected event.
  */
 export function applyEvents(
   current: Game[],
   events: ScoreEvent[],
   rules: ScoringRules,
+  initialServing: 'A' | 'B' = 'A',
 ): ApplyResult {
   const games = current.map(([a, b]): Game => [a, b]);
   const scored: ('A' | 'B')[] = [];
   const isFinished = () => checkMatchScore(games, rules).ok;
-  const state = (rejected?: string): ApplyResult => ({
+  const state = (rejected?: RejectReason): ApplyResult => ({
     games: games.map(([a, b]): Game => [a, b]),
-    serving: scored[scored.length - 1] ?? 'A',
+    serving: scored[scored.length - 1] ?? initialServing,
     finished: isFinished(),
     ...(rejected ? { rejected } : {}),
   });
