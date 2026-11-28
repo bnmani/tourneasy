@@ -1657,6 +1657,7 @@ model Umpire {
   id           String    @id @default(uuid()) @db.Uuid
   tournamentId String    @db.Uuid
   displayName  String
+  /// HMAC-SHA256 of the 6-digit PIN keyed with a server secret; unique so one lookup finds the umpire.
   pinHash      String
   qrTokenHash  String
   expiresAt    DateTime
@@ -1672,6 +1673,7 @@ model Umpire {
   takeoversTo   TakeoverRequest[] @relation("TakeoverTo")
 
   @@unique([qrTokenHash])
+  @@unique([pinHash])
   @@index([tournamentId])
 }
 

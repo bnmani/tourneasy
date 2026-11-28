@@ -3,29 +3,22 @@
  * signs in on one phone with a 6-digit PIN or a QR link. Plain PIN and QR are returned once
  * and never stored or logged.
  *
- * Hashing: the PIN uses scrypt with a random salt (slow, since a PIN has few combinations).
- * The QR token is 256 bits of randomness, so it uses HMAC-SHA256 keyed with
- * UMPIRE_TOKEN_SECRET: deterministic, so `qrTokenHash` can be unique and looked up directly.
- * Without the secret nothing works (fail closed).
+ * Hashing: both the PIN and the QR token are stored as HMAC-SHA256 keyed with
+ * UMPIRE_TOKEN_SECRET: deterministic, so `pinHash` and `qrTokenHash` are unique and a sign-in is
+ * one indexed lookup. A PIN has only 10^6 values, so guessing is stopped by rate limits (per
+ * address and, for failed PINs, global), not by a slow hash. Without the secret nothing works.
  *
  * The session token is stateless and signed (umpire, expiry, device and a stamp of the
  * current credentials), and is checked against the profile on every use, so revoking,
  * resetting or expiring a profile ends the session at once.
  */
-import {
-  createHmac,
-  randomBytes,
-  randomInt,
-  scrypt,
-  type ScryptOptions,
-  timingSafeEqual,
-} from 'node:crypto';
-import { prisma } from '@tourneasy/db';
+import { createHmac, randomInt, timingSafeEqual } from 'node:crypto';
+import { Prisma, prisma } from '@tourneasy/db';
 import { z } from 'zod';
 import { writeAudit } from '../lib/audit';
 import { randomToken } from '../lib/crypto';
 import { AppError, validationError } from '../lib/errors';
-import { enforce, LIMITS } from '../lib/rate-limit';
+import { enforce, hit, isExhausted, LIMITS } from '../lib/rate-limit';
 import type { RequestMeta } from '../lib/request-meta';
 import { siteUrl } from '../lib/urls';
 import { parseInput } from '../lib/validation';
@@ -48,28 +41,6 @@ function secret(): string {
 
 function hmac(purpose: string, value: string): string {
   return createHmac('sha256', secret()).update(`${purpose}:${value}`).digest('base64url');
-}
-
-function scryptAsync(pin: string, salt: Buffer, options: ScryptOptions): Promise<Buffer> {
-  return new Promise((resolve, reject) =>
-    scrypt(pin, salt, 32, options, (err, key) => (err ? reject(err) : resolve(key))),
-  );
-}
-
-const SCRYPT = { N: 16384, r: 8, p: 1 } as const;
-
-async function hashPin(pin: string): Promise<string> {
-  const salt = randomBytes(16);
-  const key = await scryptAsync(pin, salt, SCRYPT);
-  return `scrypt$${salt.toString('base64url')}$${key.toString('base64url')}`;
-}
-
-async function verifyPin(pin: string, stored: string): Promise<boolean> {
-  const [kind, salt, key] = stored.split('$');
-  if (kind !== 'scrypt' || !salt || !key) return false;
-  const expected = Buffer.from(key, 'base64url');
-  const actual = await scryptAsync(pin, Buffer.from(salt, 'base64url'), SCRYPT);
-  return expected.length === actual.length && timingSafeEqual(expected, actual);
 }
 
 function safeEqual(a: string, b: string): boolean {
@@ -110,19 +81,37 @@ export function endOfDay(day: Date, timeZone = VENUE_TIME_ZONE): Date {
   return new Date(result);
 }
 
+/** The first instant after today (the calendar day it is now in the time zone). */
+function endOfToday(now: Date, timeZone = VENUE_TIME_ZONE): Date {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric',
+  }).formatToParts(now);
+  const get = (t: string) => Number(parts.find((p) => p.type === t)?.value);
+  return endOfDay(new Date(Date.UTC(get('year'), get('month') - 1, get('day'))), timeZone);
+}
+
 const isActive = (u: { revokedAt: Date | null; expiresAt: Date }, now = new Date()) =>
   u.revokedAt === null && u.expiresAt > now;
 
-/** A new 6-digit PIN that no currently active umpire uses, so a PIN alone finds one profile. */
-async function freshPin(): Promise<string> {
-  const active = await prisma.umpire.findMany({
-    where: { revokedAt: null, expiresAt: { gt: new Date() } },
-    select: { pinHash: true },
-  });
+/**
+ * Writes with a new 6-digit PIN. A PIN already held by another profile (active or not) is
+ * refused by the unique `pinHash`, and a new one is tried, so a PIN alone finds one profile.
+ */
+async function withFreshPin<T>(write: (pin: string, pinHash: string) => Promise<T>): Promise<T> {
   for (let attempt = 0; attempt < 20; attempt++) {
     const pin = String(randomInt(0, 1_000_000)).padStart(6, '0');
-    const taken = await Promise.all(active.map((u) => verifyPin(pin, u.pinHash)));
-    if (!taken.includes(true)) return pin;
+    try {
+      return await write(pin, hmac('pin', pin));
+    } catch (error) {
+      const taken =
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002' &&
+        JSON.stringify(error.meta?.target ?? '').includes('pinHash');
+      if (!taken) throw error;
+    }
   }
   throw new AppError('unexpected');
 }
@@ -149,17 +138,19 @@ export async function createUmpire(
   });
   if (!tournament) throw new AppError('notFound');
 
-  const pin = await freshPin();
   const { qrToken, qrTokenHash } = credentials();
-  const umpire = await prisma.umpire.create({
-    data: {
-      tournamentId: data.tournamentId,
-      displayName: data.displayName,
-      pinHash: await hashPin(pin),
-      qrTokenHash,
-      expiresAt: endOfDay(tournament.endsOn),
-    },
-  });
+  const { pin, umpire } = await withFreshPin(async (pin, pinHash) => ({
+    pin,
+    umpire: await prisma.umpire.create({
+      data: {
+        tournamentId: data.tournamentId,
+        displayName: data.displayName,
+        pinHash,
+        qrTokenHash,
+        expiresAt: endOfDay(tournament.endsOn),
+      },
+    }),
+  }));
   await writeAudit(prisma, {
     actorId: actor!.userId,
     action: 'umpire.create',
@@ -209,11 +200,13 @@ export async function resetUmpireAccess(
   secret();
   const umpire = await manageable(actor, umpireId);
   if (umpire.revokedAt) throw new AppError('notFound');
-  const pin = await freshPin();
   const { qrToken, qrTokenHash } = credentials();
-  await prisma.umpire.update({
-    where: { id: umpire.id },
-    data: { pinHash: await hashPin(pin), qrTokenHash, deviceId: null },
+  const pin = await withFreshPin(async (pin, pinHash) => {
+    await prisma.umpire.update({
+      where: { id: umpire.id },
+      data: { pinHash, qrTokenHash, deviceId: null },
+    });
+    return pin;
   });
   await writeAudit(prisma, {
     actorId: actor!.userId,
@@ -224,6 +217,8 @@ export async function resetUmpireAccess(
   });
   return { pin, qrUrl: qrUrlFor(qrToken) };
 }
+
+const FAILED_PIN_KEY = 'umpire-failed-pin:global';
 
 const signInSchema = z.union([
   z.object({ pin: z.string().regex(/^\d{6}$/) }),
@@ -247,41 +242,43 @@ export async function signInUmpire(
 ): Promise<{ umpireId: string; sessionToken: string; expiresAt: Date }> {
   secret();
   if (!deviceId || deviceId.length > 200) throw validationError({ deviceId: 'required' });
-  if (meta.ip) await enforce(`umpire-sign-in:ip:${meta.ip}`, LIMITS.umpireSignInPerIp);
+  // Fail closed: without an address all callers share the 'unknown' bucket, still limited.
+  await enforce(`umpire-sign-in:ip:${meta.ip ?? 'unknown'}`, LIMITS.umpireSignInPerIp);
   const parsed = signInSchema.safeParse(input);
   if (!parsed.success) throw new AppError('invalidCredentials');
 
-  let found: Awaited<ReturnType<typeof prisma.umpire.findFirst>> = null;
-  if ('qrToken' in parsed.data) {
-    const candidate = await prisma.umpire.findUnique({
-      where: { qrTokenHash: hmac('qr', parsed.data.qrToken) },
+  const byPin = 'pin' in parsed.data;
+  if (byPin && (await isExhausted(FAILED_PIN_KEY, LIMITS.umpireFailedPinGlobal))) {
+    throw new AppError('rateLimited', {
+      retryAfterSeconds: LIMITS.umpireFailedPinGlobal.windowSeconds,
     });
-    if (candidate && isActive(candidate)) found = candidate;
-  } else {
-    const pin = parsed.data.pin;
-    const active = await prisma.umpire.findMany({
-      where: { revokedAt: null, expiresAt: { gt: new Date() } },
-    });
-    const matches = await Promise.all(active.map((u) => verifyPin(pin, u.pinHash)));
-    found = active.find((_, i) => matches[i]) ?? null;
   }
-  if (!found) throw new AppError('invalidCredentials');
+  const candidate = await prisma.umpire.findUnique({
+    where:
+      'pin' in parsed.data
+        ? { pinHash: hmac('pin', parsed.data.pin) }
+        : { qrTokenHash: hmac('qr', parsed.data.qrToken) },
+  });
 
   // Claim the profile for this phone only if it is free or already this phone, in one step.
-  const claimed = await prisma.umpire.updateMany({
-    where: {
-      id: found.id,
-      revokedAt: null,
-      expiresAt: { gt: new Date() },
-      OR: [{ deviceId: null }, { deviceId }],
-    },
-    data: { deviceId },
-  });
-  if (claimed.count === 0) {
-    const now = await prisma.umpire.findUnique({ where: { id: found.id } });
-    if (now && isActive(now) && now.deviceId !== deviceId) throw new AppError('deviceBound');
+  // Wrong credentials, ended profiles and a profile held by another phone all answer the same,
+  // so a caller can't tell which PINs belong to a profile.
+  const claimed = candidate
+    ? await prisma.umpire.updateMany({
+        where: {
+          id: candidate.id,
+          revokedAt: null,
+          expiresAt: { gt: new Date() },
+          OR: [{ deviceId: null }, { deviceId }],
+        },
+        data: { deviceId },
+      })
+    : { count: 0 };
+  if (!candidate || claimed.count === 0) {
+    if (byPin) await hit(FAILED_PIN_KEY, LIMITS.umpireFailedPinGlobal);
     throw new AppError('invalidCredentials');
   }
+  const found = candidate;
   await writeAudit(prisma, {
     actorId: null,
     action: 'umpire.sign-in',
@@ -289,12 +286,14 @@ export async function signInUmpire(
     entityId: found.id,
     meta,
   });
+  // A session ends with the day it was started on, or sooner if the profile ends sooner.
+  const expiresAt = new Date(Math.min(found.expiresAt.getTime(), endOfToday(new Date()).getTime()));
   return {
     umpireId: found.id,
-    expiresAt: found.expiresAt,
+    expiresAt,
     sessionToken: sign({
       umpireId: found.id,
-      exp: found.expiresAt.getTime(),
+      exp: expiresAt.getTime(),
       deviceId,
       stamp: stampOf(found.qrTokenHash),
     }),
@@ -328,6 +327,6 @@ export async function verifyUmpireSession(
     umpireId: umpire.id,
     tournamentId: umpire.tournamentId,
     displayName: umpire.displayName,
-    expiresAt: umpire.expiresAt,
+    expiresAt: new Date(Math.min(umpire.expiresAt.getTime(), claims.exp)),
   };
 }

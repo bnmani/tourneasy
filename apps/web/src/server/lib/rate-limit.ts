@@ -23,6 +23,11 @@ export const LIMITS = {
   entrySearchPerUser: { limit: 300, windowSeconds: 15 * 60 },
   // Umpire PIN sign-in: a 6-digit PIN must not be guessable by trying them all.
   umpireSignInPerIp: { limit: 20, windowSeconds: 15 * 60 },
+  // Failed umpire PINs from all addresses together: 6 digits are few, so an attacker spreading
+  // over many addresses is stopped here. 30 per 15 min allows a busy desk's typos (many umpires
+  // signing in at once rarely fail more than a few times) but caps guessing at about 2,900 a day.
+  // While tripped PIN sign-in is closed for everyone; the QR link still works.
+  umpireFailedPinGlobal: { limit: 30, windowSeconds: 15 * 60 },
 } satisfies Record<string, RateLimit>;
 
 /**
@@ -55,6 +60,20 @@ export async function hit(
     allowed: count <= limit,
     retryAfterSeconds: Math.max(1, Math.ceil((expiresAt.getTime() - now.getTime()) / 1000)),
   };
+}
+
+/** Whether this key has already used up its limit in the current window (does not count a hit). */
+export async function isExhausted(
+  key: string,
+  { limit, windowSeconds }: RateLimit,
+  now = new Date(),
+): Promise<boolean> {
+  const windowMs = windowSeconds * 1000;
+  const windowStart = new Date(Math.floor(now.getTime() / windowMs) * windowMs);
+  const bucket = await prisma.rateLimitBucket.findUnique({
+    where: { key_windowStart: { key, windowStart } },
+  });
+  return (bucket?.count ?? 0) >= limit;
 }
 
 export async function enforce(key: string, rule: RateLimit): Promise<void> {
