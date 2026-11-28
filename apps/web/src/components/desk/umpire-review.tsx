@@ -108,6 +108,7 @@ export async function UmpireReview({
       <details className="rounded-md border p-2">
         <summary className="cursor-pointer text-sm font-medium">{t('umpire.correctScore')}</summary>
         <ScoreForm id={formId} save={quickCorrectUmpireScoreAction.bind(null, matchId)}>
+          <input type="hidden" name="version" value={review.version} />
           {header}
           {(['A', 'B'] as const).map((side) => (
             <div key={side} className="flex items-center gap-2">
@@ -142,7 +143,7 @@ export async function UmpireReview({
       <div className="flex justify-end">
         <QuickButton
           size="sm"
-          action={quickConfirmUmpireResultAction.bind(null, matchId)}
+          action={quickConfirmUmpireResultAction.bind(null, matchId, review.version)}
           confirm={t('umpire.confirmQuestion', { score: scoreText(review.games) })}
         >
           {t('umpire.confirmResult')}

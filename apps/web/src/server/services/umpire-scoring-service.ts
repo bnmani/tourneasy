@@ -349,12 +349,20 @@ async function umpireGames(tx: Tx | typeof prisma, { match, rules }: DeskMatch):
 
 /** The score the desk is looking at: the latest correction, else the umpire's. */
 async function deskGames(tx: Tx | typeof prisma, desk: DeskMatch): Promise<Game[]> {
-  const latest = await tx.auditLog.findFirst({
+  const rows = await tx.auditLog.findMany({
     where: { action: CORRECT_ACTION, entityType: 'Match', entityId: desk.match.id },
-    orderBy: { createdAt: 'desc' },
-    select: { after: true },
+    select: { id: true, createdAt: true, after: true },
   });
-  const after = latest?.after as { games?: Game[] } | null | undefined;
+  // Highest stored match version wins; rows without one (older) fall back to time, then id.
+  const versionOf = (r: (typeof rows)[number]) =>
+    (r.after as { version?: number } | null)?.version ?? -1;
+  rows.sort(
+    (a, b) =>
+      versionOf(b) - versionOf(a) ||
+      b.createdAt.getTime() - a.createdAt.getTime() ||
+      (a.id < b.id ? 1 : a.id > b.id ? -1 : 0),
+  );
+  const after = rows[0]?.after as { games?: Game[] } | null | undefined;
   return after?.games ?? (await umpireGames(tx, desk));
 }
 
@@ -365,6 +373,7 @@ export async function correctMatchScore(
   games: unknown,
   reason: string,
   meta: RequestMeta,
+  version: number,
 ): Promise<void> {
   const why = typeof reason === 'string' ? reason.trim() : '';
   if (!why) throw validationError({ reason: 'required' });
@@ -373,6 +382,8 @@ export async function correctMatchScore(
     const desk = await loadDeskMatch(tx, matchId);
     await assertCanManageTournament(actor, desk.match.draw.event.tournamentId);
     if (desk.match.status !== 'AWAITING_DESK') throw new AppError('statusTransition');
+    // The desk must have seen the current state: refuse before any write.
+    if (version !== desk.match.version) throw new AppError('resultConflict');
     const check = checkMatchScore(next, desk.rules);
     if (!check.ok) {
       throw validationError({
@@ -381,14 +392,14 @@ export async function correctMatchScore(
       });
     }
     const before = await deskGames(tx, desk);
-    await bumpVersion(tx, matchId, desk.match.version);
+    const stored = await bumpVersion(tx, matchId, desk.match.version);
     await writeAudit(tx, {
       actorId: actor.userId,
       action: CORRECT_ACTION,
       entityType: 'Match',
       entityId: matchId,
       before: { games: before },
-      after: { games: next, reason: why },
+      after: { games: next, reason: why, version: stored },
       meta,
     });
   });
@@ -399,12 +410,15 @@ export async function confirmMatchResult(
   actor: Actor,
   matchId: string,
   meta: RequestMeta,
+  version: number,
 ): Promise<void> {
   const desk = await loadDeskMatch(prisma, matchId);
   await assertCanManageTournament(actor, desk.match.draw.event.tournamentId);
   if (desk.match.status !== 'AWAITING_DESK') throw new AppError('statusTransition');
+  // Only the version the desk was shown can be confirmed (recordResult checks it again).
+  if (version !== desk.match.version) throw new AppError('resultConflict');
   const games = await deskGames(prisma, desk);
-  await recordResult(actor, matchId, { games, version: desk.match.version }, meta);
+  await recordResult(actor, matchId, { games, version }, meta);
 }
 
 export type DeskChangeLogEntry = {
@@ -483,7 +497,7 @@ export async function deskAlerts(actor: Actor, tournamentId: string) {
         select: {
           number: true,
           slots: {
-            where: { match: { status: 'IN_PROGRESS' } },
+            where: { tournamentId, match: { status: 'IN_PROGRESS' } },
             take: 1,
             select: { matchId: true },
           },

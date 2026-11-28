@@ -331,9 +331,9 @@ export async function quickResultAction(matchId: string, formData: FormData) {
 }
 
 /** Desk: accepts the score an umpire sent, through the normal result path. */
-export async function quickConfirmUmpireResultAction(matchId: string) {
+export async function quickConfirmUmpireResultAction(matchId: string, version: number) {
   return quick(async () =>
-    confirmMatchResult(await actorOrThrow(), matchId, await currentRequestMeta()),
+    confirmMatchResult(await actorOrThrow(), matchId, await currentRequestMeta(), version),
   );
 }
 
@@ -346,6 +346,7 @@ export async function quickCorrectUmpireScoreAction(matchId: string, formData: F
       gamesFrom(formData),
       String(formData.get('reason') ?? ''),
       await currentRequestMeta(),
+      Number(formData.get('version')),
     ),
   );
 }
