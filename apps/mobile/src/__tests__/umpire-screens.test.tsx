@@ -281,3 +281,30 @@ describe('scoring and finishing', () => {
     expect(post).toHaveBeenCalledWith(`/api/v1/umpire/matches/${M}/finish`, {}, 'sess');
   });
 });
+
+describe('match screen serve choice', () => {
+  const MatchScreen = require('@/app/umpire/match/[matchId]').default;
+  const open = (over: Record<string, unknown>) => {
+    mockParams = { matchId: M, courtNumber: '2', matchNumber: '12', status: 'IN_PROGRESS' };
+    get.mockResolvedValue(serverState(over));
+    renderScreen(<MatchScreen />);
+  };
+
+  it('offers the serve choice for an IN_PROGRESS match with no start server and no events', async () => {
+    open({ umpireStartServer: null, lastSeq: 0 });
+    expect(await screen.findByText('Start match')).toBeTruthy();
+    expect(screen.queryByText('Continue scoring')).toBeNull();
+  });
+
+  it('skips the serve choice when a start server is stored', async () => {
+    open({ umpireStartServer: 'B', lastSeq: 0 });
+    expect(await screen.findByText('Continue scoring')).toBeTruthy();
+    expect(screen.queryByText('Start match')).toBeNull();
+  });
+
+  it('skips the serve choice when the match has events', async () => {
+    open({ umpireStartServer: null, lastSeq: 3 });
+    expect(await screen.findByText('Continue scoring')).toBeTruthy();
+    expect(screen.queryByText('Start match')).toBeNull();
+  });
+});

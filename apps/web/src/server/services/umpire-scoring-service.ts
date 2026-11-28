@@ -26,7 +26,7 @@ import { parseInput } from '../lib/validation';
 import { assertCanManageTournament } from './permissions';
 import { recordResult } from './results-service';
 import type { Actor } from './session-service';
-import { activeUmpire } from './umpire-court-service';
+import { activeUmpire, assertNoOtherHold } from './umpire-court-service';
 
 type Tx = Prisma.TransactionClient;
 
@@ -296,6 +296,8 @@ export type MatchState = {
   games: Game[];
   serving: 'A' | 'B';
   lastSeq: number;
+  /** The serve choice stored for the match, or null while none was made. */
+  umpireStartServer: 'A' | 'B' | null;
 };
 
 /** The score as the server has it, for the umpire who holds the court. */
@@ -310,6 +312,7 @@ export async function getMatchState(umpireId: string, matchId: string): Promise<
       games: result.games,
       serving: result.serving,
       lastSeq,
+      umpireStartServer: match.umpireStartServer,
     };
   });
 }
@@ -626,6 +629,7 @@ export async function resolveDeskAlert(
         // The requester can no longer score: the alert stays open for another decision.
         throw new AppError('statusTransition');
       }
+      await assertNoOtherHold(tx, requesterId, alert.courtId);
       await tx.courtHold.upsert({
         where: { courtId: alert.courtId },
         create: { courtId: alert.courtId, umpireId: requesterId },

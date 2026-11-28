@@ -131,6 +131,20 @@ describe('requesting a take-over', () => {
 });
 
 describe('answering a take-over', () => {
+  it('refuses to accept when the reserve already holds another court, and changes nothing', async () => {
+    const s = await setup();
+    await claimCourt(s.bram.id, s.court2.id);
+    const r = await requestTakeover(s.bram.id, s.court1.id);
+    await expect(answerTakeover(s.anna.id, r.id, 'ACCEPT')).rejects.toMatchObject({
+      code: 'alreadyHolder',
+    });
+    expect(await holder(s.court1.id)).toBe(s.anna.id);
+    expect(await holder(s.court2.id)).toBe(s.bram.id);
+    expect((await prisma.takeoverRequest.findUniqueOrThrow({ where: { id: r.id } })).status).toBe(
+      'PENDING',
+    );
+  });
+
   it('accepted take-over moves the hold and keeps the score', async () => {
     const s = await setup();
     await prisma.match.update({ where: { id: s.match.id }, data: { status: 'IN_PROGRESS' } });

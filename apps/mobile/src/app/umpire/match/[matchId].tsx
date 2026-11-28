@@ -12,7 +12,7 @@ import {
   UText,
 } from '@/components/umpire-ui';
 import { useT } from '@/lib/i18n';
-import { loadMatchState } from '@/lib/match-state';
+import { loadMatchState, type MatchState } from '@/lib/match-state';
 import { isUnauthorized, releaseCourt } from '@/lib/umpire-api';
 import { useUmpireAuth } from '@/lib/use-umpire-auth';
 
@@ -33,10 +33,24 @@ export default function MatchScreen() {
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   // Read the server's state now, so the seq counter is lifted before any tap.
+  const [state, setState] = useState<MatchState | null>(null);
+  const [loaded, setLoaded] = useState(false);
   useEffect(() => {
-    if (token) loadMatchState(params.matchId, token).catch(() => undefined);
+    if (!token) return;
+    loadMatchState(params.matchId, token)
+      .then(setState)
+      .catch(() => undefined)
+      .finally(() => setLoaded(true));
   }, [token, params.matchId]);
-  const live = params.status === 'IN_PROGRESS';
+  const status = state?.status ?? params.status;
+  // The serve choice is offered when the match is not on court yet, or when it is on court but has
+  // no stored start server and no events. Once it has events, or a start server, it is scoring.
+  const needsServe =
+    status !== 'IN_PROGRESS' ||
+    (state != null && (state.umpireStartServer ?? null) === null && state.lastSeq === 0);
+  // An IN_PROGRESS match waits for the server's answer; if that fails, scoring is the safe default.
+  const ready = status !== 'IN_PROGRESS' || loaded;
+  const live = !needsServe;
 
   const carry = {
     matchId: params.matchId,
@@ -86,7 +100,7 @@ export default function MatchScreen() {
         </UNotice>
       ) : null}
       <View style={styles.actions}>
-        {live ? (
+        {!ready ? null : live ? (
           <UButton
             title={t('Continue scoring')}
             onPress={() => router.replace({ pathname: '/umpire/scoring', params: carry })}
