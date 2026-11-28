@@ -317,6 +317,7 @@ export const nl: Record<string, string> = {
     'De spelers worden door de tafel omgeroepen. Score de kanten als kant A en kant B.',
   'Continue scoring': 'Verder met scoren',
   'Start match': 'Start wedstrijd',
+  'This match is waiting for the desk to start it.': 'Deze wedstrijd wacht tot de tafel hem start.',
   'Change court': 'Andere baan',
   Court: 'Baan',
   'Umpire sign-in': 'Inloggen als scheidsrechter',

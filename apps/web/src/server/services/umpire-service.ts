@@ -189,12 +189,8 @@ export async function revokeUmpire(
   if (umpire.revokedAt) return;
   // One step: the profile ends, its PIN is freed, its court is free again, and its open
   // take-overs (asked by or sent to it) are closed, so none can turn into a desk alert.
+  // Same lock order as answerTakeover: requests, then the umpire, then the court hold.
   await prisma.$transaction(async (tx) => {
-    await tx.umpire.update({
-      where: { id: umpire.id },
-      data: { revokedAt: new Date(), pinHash: null },
-    });
-    await tx.courtHold.deleteMany({ where: { umpireId: umpire.id } });
     await tx.takeoverRequest.updateMany({
       where: {
         status: 'PENDING',
@@ -202,6 +198,11 @@ export async function revokeUmpire(
       },
       data: { status: 'CANCELLED' },
     });
+    await tx.umpire.update({
+      where: { id: umpire.id },
+      data: { revokedAt: new Date(), pinHash: null },
+    });
+    await tx.courtHold.deleteMany({ where: { umpireId: umpire.id } });
   });
   await writeAudit(prisma, {
     actorId: actor!.userId,
