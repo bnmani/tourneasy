@@ -380,6 +380,39 @@ describe('umpire profiles and sign-in', () => {
     await expect(claimCourt(bram.id, court.id)).resolves.toBeUndefined();
   });
 
+  it('a claim for an umpire revoked after the first check writes no court hold', async () => {
+    const { admin, t, row: anna } = await setup();
+    const court = await prisma.court.create({ data: { venueId: t.venueId!, number: 1 } });
+    // The revoke lands between the claim's first check and its transaction.
+    const findFirst = prisma.court.findFirst.bind(prisma.court);
+    const spy = vi.spyOn(prisma.court, 'findFirst').mockImplementationOnce((async (
+      args: Parameters<typeof findFirst>[0],
+    ) => {
+      await revokeUmpire(admin, anna.id, meta);
+      return findFirst(args);
+    }) as never);
+    try {
+      await expect(claimCourt(anna.id, court.id)).rejects.toMatchObject({ code: 'unauthorized' });
+    } finally {
+      spy.mockRestore();
+    }
+    expect(await prisma.courtHold.findUnique({ where: { courtId: court.id } })).toBeNull();
+  });
+
+  it('revoking the holder of a court with a pending request frees it and cancels the request', async () => {
+    const { admin, t, row: anna } = await setup();
+    const court = await prisma.court.create({ data: { venueId: t.venueId!, number: 1 } });
+    await createUmpire(admin, { tournamentId: t.id, displayName: 'Bram' }, meta);
+    const bram = await prisma.umpire.findFirstOrThrow({ where: { displayName: 'Bram' } });
+    await claimCourt(anna.id, court.id);
+    const request = await requestTakeover(bram.id, court.id);
+    await revokeUmpire(admin, anna.id, meta);
+    expect(await prisma.courtHold.findMany({ where: { umpireId: anna.id } })).toEqual([]);
+    expect(
+      (await prisma.takeoverRequest.findUniqueOrThrow({ where: { id: request.id } })).status,
+    ).toBe('CANCELLED');
+  });
+
   it('only admins and the tournament organisers manage umpires', async () => {
     const t = await tournament();
     const stranger = await actorWith(Role.ORGANISER);

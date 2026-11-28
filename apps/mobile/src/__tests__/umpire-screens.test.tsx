@@ -285,7 +285,8 @@ describe('scoring and finishing', () => {
 describe('match screen serve choice', () => {
   const MatchScreen = require('@/app/umpire/match/[matchId]').default;
   const open = (over: Record<string, unknown>) => {
-    mockParams = { matchId: M, courtNumber: '2', matchNumber: '12', status: 'IN_PROGRESS' };
+    const status = String(over.status ?? 'IN_PROGRESS');
+    mockParams = { matchId: M, courtNumber: '2', matchNumber: '12', status };
     get.mockResolvedValue(serverState(over));
     renderScreen(<MatchScreen />);
   };
@@ -305,6 +306,26 @@ describe('match screen serve choice', () => {
   it('skips the serve choice when the match has events', async () => {
     open({ umpireStartServer: null, lastSeq: 3 });
     expect(await screen.findByText('Continue scoring')).toBeTruthy();
+    expect(screen.queryByText('Start match')).toBeNull();
+  });
+
+  it.each(['SCHEDULED', 'CALLED'])(
+    'a %s match waits for the desk and has no Start button',
+    async (status) => {
+      open({ status, umpireStartServer: null, lastSeq: 0 });
+      expect(
+        await screen.findByText('This match is waiting for the desk to start it.'),
+      ).toBeTruthy();
+      await waitFor(() => expect(get).toHaveBeenCalled());
+      expect(screen.queryByText('Start match')).toBeNull();
+      expect(screen.queryByText('Continue scoring')).toBeNull();
+    },
+  );
+
+  it('an AWAITING_DESK match has no Start button', async () => {
+    open({ status: 'AWAITING_DESK', umpireStartServer: null, lastSeq: 0 });
+    await waitFor(() => expect(get).toHaveBeenCalled());
+    expect(await screen.findByText('Change court')).toBeTruthy();
     expect(screen.queryByText('Start match')).toBeNull();
   });
 });

@@ -43,13 +43,18 @@ export default function MatchScreen() {
       .finally(() => setLoaded(true));
   }, [token, params.matchId]);
   const status = state?.status ?? params.status;
-  // The serve choice is offered when the match is not on court yet, or when it is on court but has
-  // no stored start server and no events. Once it has events, or a start server, it is scoring.
+  // Only an IN_PROGRESS match is scored here. The serve choice is offered when it has no stored
+  // start server and no events; once it has either, it is scoring.
+  const inProgress = status === 'IN_PROGRESS';
+  // Scheduled or called: the desk has not started it yet, so there is nothing to start here.
+  const waitingForDesk = status === 'SCHEDULED' || status === 'CALLED';
   const needsServe =
-    status !== 'IN_PROGRESS' ||
-    (state != null && (state.umpireStartServer ?? null) === null && state.lastSeq === 0);
+    inProgress &&
+    state != null &&
+    (state.umpireStartServer ?? null) === null &&
+    state.lastSeq === 0;
   // An IN_PROGRESS match waits for the server's answer; if that fails, scoring is the safe default.
-  const ready = status !== 'IN_PROGRESS' || loaded;
+  const ready = inProgress && loaded;
   const live = !needsServe;
 
   const carry = {
@@ -94,6 +99,11 @@ export default function MatchScreen() {
           {t('Players are announced by the desk. Score the sides as side A and side B.')}
         </UText>
       </UCard>
+      {waitingForDesk ? (
+        <UNotice>
+          <UText>{t('This match is waiting for the desk to start it.')}</UText>
+        </UNotice>
+      ) : null}
       {message ? (
         <UNotice tone="warn">
           <UText>{message}</UText>

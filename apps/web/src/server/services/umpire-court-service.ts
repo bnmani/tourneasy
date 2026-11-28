@@ -19,13 +19,17 @@ export async function activeUmpire(umpireId: string, db: Prisma.TransactionClien
 /**
  * Locks the umpire's row, then refuses with `alreadyHolder` when they hold a court other than
  * `exceptCourtId`. Used where a court is given to an umpire, so one umpire never holds two.
+ * FOR NO KEY UPDATE still serialises one umpire's claims but does not block inserts that
+ * reference the umpire. The umpire is read again under the lock: a revoke that committed while
+ * this waited refuses the claim (unauthorized), so a revoked umpire never gets a court.
  */
 export async function assertNoOtherHold(
   tx: Prisma.TransactionClient,
   umpireId: string,
   exceptCourtId: string,
 ): Promise<void> {
-  await tx.$queryRaw`SELECT 1 FROM "Umpire" WHERE "id" = ${umpireId}::uuid FOR UPDATE`;
+  await tx.$queryRaw`SELECT 1 FROM "Umpire" WHERE "id" = ${umpireId}::uuid FOR NO KEY UPDATE`;
+  await activeUmpire(umpireId, tx);
   const other = await tx.courtHold.findFirst({
     where: { umpireId, courtId: { not: exceptCourtId } },
     select: { courtId: true },
