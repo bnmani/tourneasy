@@ -1,9 +1,9 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ApiError, apiPost } from '@/lib/api';
-import { canFinish, enqueue, flush, pending } from '@/lib/score-queue';
+import { canFinish, enqueue, flush, hasCorruptQueue, pending, rejectedEvents } from '@/lib/score-queue';
 
 jest.mock('@react-native-async-storage/async-storage', () =>
-  require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
+  jest.requireActual('@react-native-async-storage/async-storage/jest/async-storage-mock'),
 );
 jest.mock('@/lib/api', () => ({
   ...jest.requireActual('@/lib/api'),
@@ -69,7 +69,7 @@ describe('score queue', () => {
       .mockResolvedValue({ applied: 1 });
     const result = await flush(M, 'tok');
     expect(post).toHaveBeenCalledTimes(2); // did not skip ahead to seq 3
-    expect(result).toEqual({ sent: 1, remaining: 2 });
+    expect(result).toMatchObject({ sent: 1, remaining: 2, blocked: { status: 503 } });
     expect((await pending(M)).map((e) => e.seq)).toEqual([2, 3]);
     expect(await canFinish(M)).toBe(false);
   });
@@ -85,5 +85,59 @@ describe('score queue', () => {
     await flush(M, 'secret-token');
     const all = JSON.stringify(await AsyncStorage.multiGet(await AsyncStorage.getAllKeys()));
     expect(all).not.toContain('secret-token');
+  });
+
+  it('a rejected event moves to the rejected record and does not block finish', async () => {
+    await enqueue(M, point(1));
+    post.mockResolvedValue({ applied: 0, rejected: 'matchFinished' });
+    const result = await flush(M, 'tok');
+    expect(result.rejected).toEqual([{ event: point(1), reason: 'matchFinished' }]);
+    expect(result.sent).toBe(0);
+    expect(await pending(M)).toEqual([]);
+    expect(await rejectedEvents(M)).toEqual([{ event: point(1), reason: 'matchFinished' }]);
+    const raw = await AsyncStorage.getItem(`score-queue-rejected:${M}`);
+    expect(JSON.parse(raw as string)).toHaveLength(1);
+    expect(await canFinish(M)).toBe(true);
+  });
+
+  it.each([
+    [401, 'UNAUTHORIZED'],
+    [409, 'COURT_HELD'],
+  ])('a %i is reported as blocked and the event stays pending', async (status, code) => {
+    await enqueue(M, point(1));
+    await enqueue(M, point(2));
+    post.mockRejectedValue(new ApiError(status, code));
+    const result = await flush(M, 'tok');
+    expect(result.blocked).toEqual({ event: point(1), status, code });
+    expect(result).toMatchObject({ sent: 0, remaining: 2 });
+    expect(post).toHaveBeenCalledTimes(1);
+    expect((await pending(M)).map((e) => e.seq)).toEqual([1, 2]);
+  });
+
+  it('overlapping flushes send each event once', async () => {
+    await enqueue(M, point(1));
+    await enqueue(M, point(2));
+    post.mockImplementation(async () => {
+      await new Promise((r) => setTimeout(r, 5));
+      return { applied: 1 };
+    });
+    const [a, b] = await Promise.all([flush(M, 'tok'), flush(M, 'tok')]);
+    expect(post).toHaveBeenCalledTimes(2);
+    expect(a).toBe(b);
+    expect(await pending(M)).toEqual([]);
+  });
+
+  it('a corrupt stored value is kept, reported, and blocks finish', async () => {
+    await AsyncStorage.setItem(`score-queue:${M}`, '{not json');
+    expect(await pending(M)).toEqual([]);
+    expect(await AsyncStorage.getItem(`score-queue-corrupt:${M}`)).toBe('{not json');
+    expect(await hasCorruptQueue(M)).toBe(true);
+    expect(await canFinish(M)).toBe(false);
+    await enqueue(M, point(1)); // a new tap does not overwrite the kept raw value
+    expect(await AsyncStorage.getItem(`score-queue-corrupt:${M}`)).toBe('{not json');
+    post.mockResolvedValue({ applied: 1 });
+    const result = await flush(M, 'tok');
+    expect(result.corrupt).toBe(true);
+    expect(await canFinish(M)).toBe(false);
   });
 });
