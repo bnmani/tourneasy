@@ -6,7 +6,7 @@ import { SymbolView } from 'expo-symbols';
 import { MenuSheet } from '@/components/MenuSheet';
 import { Button, Card, Hint, IconButton, Screen } from '@/components/ui';
 import { dateLocaleTag, useLocale, useT } from '@/lib/i18n';
-import { courtName, fetchMyMatches, type MyMatch } from '@/lib/me';
+import { courtName, fetchMyEntries, fetchMyMatches, type MyMatch } from '@/lib/me';
 import { fetchInbox } from '@/lib/notifications';
 import { useSession } from '@/lib/session';
 import { fetchTournaments, type TournamentSummary } from '@/lib/tournaments';
@@ -23,6 +23,8 @@ export default function HomeScreen() {
   const [failed, setFailed] = useState(false);
   const [nextMatch, setNextMatch] = useState<MyMatch | null>(null);
   const [unread, setUnread] = useState(0);
+  // Whether the player has entered any tournament; null until it is known.
+  const [entered, setEntered] = useState<boolean | null>(null);
   const dateTag = dateLocaleTag(locale);
   const today = new Date().toLocaleDateString(dateTag, {
     weekday: 'long',
@@ -54,6 +56,11 @@ export default function HomeScreen() {
             ['SCHEDULED', 'CALLED', 'IN_PROGRESS'].includes(m.status),
           );
           if (active) setNextMatch(next ?? null);
+        })
+        .catch(() => null);
+      fetchMyEntries()
+        .then((list) => {
+          if (active) setEntered(list.length > 0);
         })
         .catch(() => null);
       fetchInbox()
@@ -147,7 +154,9 @@ export default function HomeScreen() {
         ) : (
           <>
             <Text style={[styles.heroTitle, { color: colors.heroFg }]}>
-              {t('No matches planned yet')}
+              {entered === false
+                ? t("You haven't entered a tournament yet.")
+                : t('No matches planned yet')}
             </Text>
             <Text style={[styles.heroMeta, { color: colors.heroMuted }]}>
               {t('Your matches show here once a tournament you entered publishes its schedule.')}

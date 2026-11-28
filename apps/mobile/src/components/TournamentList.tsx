@@ -168,7 +168,11 @@ export function TournamentList() {
                   {phase ? (
                     <Text style={[styles.tag, { color: colors.primary }]}>{t(phase)}</Text>
                   ) : null}
-                  {fee ? <Text style={[styles.tag, { color: colors.fg }]}>{fee}</Text> : null}
+                  {fee && when !== 'past' ? (
+                    <Text style={[styles.tag, styles.fee, { color: colors.fg }]}>
+                      {t('{fee} per participant', { fee })}
+                    </Text>
+                  ) : null}
                 </View>
               </Panel>
             </Pressable>
@@ -185,6 +189,13 @@ const styles = StyleSheet.create({
   filter: { borderWidth: 1, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6 },
   list: { gap: 12, paddingBottom: 24 },
   name: { fontSize: 17, fontFamily: font.bold },
-  meta: { flexDirection: 'row', gap: 12, marginTop: 4, flexWrap: 'wrap' },
+  meta: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 4,
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
   tag: { fontSize: 13, fontFamily: font.semibold },
+  fee: { marginLeft: 'auto' },
 });

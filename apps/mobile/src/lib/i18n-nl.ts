@@ -604,4 +604,11 @@ export const nl: Record<string, string> = {
   'Cannot reach the server to start scoring. Check your connection.':
     'De server is niet bereikbaar om te beginnen met scoren. Controleer je verbinding.',
   'Try again': 'Probeer opnieuw',
+  "Men's singles": 'Herenenkel',
+  "Women's singles": 'Damesenkel',
+  "Men's doubles": 'Herendubbel',
+  "Women's doubles": 'Damesdubbel',
+  "You haven't entered a tournament yet.": 'Je bent nog niet ingeschreven voor een toernooi.',
+  '{fee} per participant': '{fee} per deelnemer',
+  'Get directions': 'Routebeschrijving',
 };

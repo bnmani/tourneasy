@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 
 import { Body, Button, Heading, Hint, Screen } from '@/components/ui';
@@ -13,6 +13,7 @@ import {
   pickLocale,
   type TournamentDetail,
   type TournamentEvent,
+  venueDirectionsUrl,
 } from '@/lib/tournaments';
 import { font, useColors } from '@/theme';
 
@@ -67,20 +68,31 @@ export default function TournamentDetailScreen() {
             </Text>
 
             {tournament.venue ? (
-              <Panel>
-                <Text style={[styles.section, { color: colors.fg }]}>{t('Venue')}</Text>
-                <Text style={{ color: colors.fg, fontSize: 15 }}>{tournament.venue.name}</Text>
-                {tournament.venue.street ? (
-                  <Text style={{ color: colors.muted, fontSize: 14 }}>
-                    {[tournament.venue.street, tournament.venue.houseNumber]
-                      .filter(Boolean)
-                      .join(' ')}
+              <Pressable
+                accessibilityRole="link"
+                accessibilityLabel={`${t('Get directions')}: ${tournament.venue.name}`}
+                onPress={() => void Linking.openURL(venueDirectionsUrl(tournament.venue!))}
+              >
+                <Panel>
+                  <Text style={[styles.section, { color: colors.fg }]}>{t('Venue')}</Text>
+                  <Text style={{ color: colors.fg, fontSize: 15 }}>{tournament.venue.name}</Text>
+                  {tournament.venue.street ? (
+                    <Text style={{ color: colors.muted, fontSize: 14 }}>
+                      {[tournament.venue.street, tournament.venue.houseNumber]
+                        .filter(Boolean)
+                        .join(' ')}
+                    </Text>
+                  ) : null}
+                  {tournament.venue.city ? (
+                    <Text style={{ color: colors.muted, fontSize: 14 }}>
+                      {[tournament.venue.postcode, tournament.venue.city].filter(Boolean).join(' ')}
+                    </Text>
+                  ) : null}
+                  <Text style={{ color: colors.primary, fontSize: 14, fontFamily: font.semibold }}>
+                    {t('Get directions')}
                   </Text>
-                ) : null}
-                {tournament.venue.city ? (
-                  <Text style={{ color: colors.muted, fontSize: 14 }}>{tournament.venue.city}</Text>
-                ) : null}
-              </Panel>
+                </Panel>
+              </Pressable>
             ) : null}
 
             {pickLocale(tournament.description, locale) ? (

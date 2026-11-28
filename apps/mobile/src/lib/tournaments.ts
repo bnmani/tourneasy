@@ -59,10 +59,39 @@ export type TournamentDetail = Omit<TournamentSummary, 'venue'> & {
     name: string;
     street?: string | null;
     houseNumber?: string | null;
+    postcode?: string | null;
     city?: string | null;
+    latitude?: number | null;
+    longitude?: number | null;
   } | null;
   events: TournamentEvent[];
 };
+
+/**
+ * Google Maps directions to a venue, the same link the website uses: coordinates when the venue
+ * has them, otherwise its name and address.
+ */
+export function venueDirectionsUrl(v: {
+  name: string;
+  street?: string | null;
+  houseNumber?: string | null;
+  postcode?: string | null;
+  city?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+}): string {
+  const destination =
+    v.latitude != null && v.longitude != null
+      ? `${v.latitude},${v.longitude}`
+      : [
+          v.name,
+          [v.street, v.houseNumber].filter(Boolean).join(' '),
+          [v.postcode, v.city].filter(Boolean).join(' '),
+        ]
+          .filter(Boolean)
+          .join(', ');
+  return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destination)}`;
+}
 
 export type WhenFilter = 'upcoming' | 'open' | 'past';
 
