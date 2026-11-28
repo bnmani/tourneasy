@@ -3,7 +3,13 @@ import { prisma } from '@tourneasy/db';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { resetDatabase } from '@/test/db';
 import { claimCourt, listCourts, releaseCourt } from './umpire-court-service';
-import { finishMatch, notifyPaper, postEvents, startMatch } from './umpire-scoring-service';
+import {
+  finishMatch,
+  loadForUmpire,
+  notifyPaper,
+  postEvents,
+  startMatch,
+} from './umpire-scoring-service';
 
 beforeEach(resetDatabase);
 
@@ -79,10 +85,15 @@ async function setup(
   return { tournament, court1, court2, match, anna, bram };
 }
 
+/** The desk's "On court": the match is IN_PROGRESS (the desk never sets CALLED). */
+const onCourt = (matchId: string) =>
+  prisma.match.update({ where: { id: matchId }, data: { status: 'IN_PROGRESS' } });
+
 /** An umpire who holds the court and has started the match. */
 async function started(serving: 'A' | 'B' = 'A', scoring?: Parameters<typeof setup>[0]) {
   const s = await setup(scoring);
   await claimCourt(s.anna.id, s.court1.id);
+  await onCourt(s.match.id);
   await startMatch(s.anna.id, s.match.id, serving);
   return s;
 }
@@ -114,6 +125,23 @@ describe('court holds', () => {
     ]);
     expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
     expect(await prisma.courtHold.count()).toBe(1);
+  });
+
+  it('an umpire who holds a court cannot claim a second one', async () => {
+    const s = await setup();
+    await claimCourt(s.anna.id, s.court1.id);
+    await expect(claimCourt(s.anna.id, s.court2.id)).rejects.toMatchObject({
+      code: 'alreadyHolder',
+      status: 409,
+    });
+    expect(await prisma.courtHold.findUnique({ where: { courtId: s.court2.id } })).toBeNull();
+    // Two claims for two courts at the same moment: at most one court is held.
+    await releaseCourt(s.anna.id, s.court1.id);
+    await Promise.allSettled([
+      claimCourt(s.anna.id, s.court1.id),
+      claimCourt(s.anna.id, s.court2.id),
+    ]);
+    expect(await prisma.courtHold.count({ where: { umpireId: s.anna.id } })).toBe(1);
   });
 
   it('claiming again as the holder is fine', async () => {
@@ -360,5 +388,87 @@ describe('paper notice', () => {
     const s = await started();
     await notifyPaper(s.anna.id, s.match.id);
     expect(await prisma.auditLog.count({ where: { action: 'umpire.paper' } })).toBe(1);
+  });
+});
+
+describe('starting a match', () => {
+  it('a SCHEDULED or CALLED match is refused: the desk puts it on court first', async () => {
+    const s = await setup();
+    await claimCourt(s.anna.id, s.court1.id);
+    for (const status of ['SCHEDULED', 'CALLED'] as const) {
+      await prisma.match.update({ where: { id: s.match.id }, data: { status } });
+      await expect(startMatch(s.anna.id, s.match.id, 'A')).rejects.toMatchObject({
+        code: 'statusTransition',
+        status: 409,
+      });
+    }
+    const m = await prisma.match.findUniqueOrThrow({ where: { id: s.match.id } });
+    expect(m).toMatchObject({ status: 'CALLED', umpireStartServer: null, version: 0 });
+  });
+
+  it('an IN_PROGRESS match takes the serve choice', async () => {
+    const s = await setup();
+    await claimCourt(s.anna.id, s.court1.id);
+    await onCourt(s.match.id);
+    await startMatch(s.anna.id, s.match.id, 'B');
+    const m = await prisma.match.findUniqueOrThrow({ where: { id: s.match.id } });
+    expect(m).toMatchObject({ status: 'IN_PROGRESS', umpireStartServer: 'B' });
+  });
+});
+
+describe('the court hold is locked while scoring', () => {
+  it('a hold change waits until the scoring transaction ends', async () => {
+    const s = await started();
+    const order: string[] = [];
+    let locked!: () => void;
+    const hasLock = new Promise<void>((r) => (locked = r));
+    const scoring = prisma.$transaction(
+      async (tx) => {
+        await loadForUmpire(tx, s.anna.id, s.match.id);
+        locked();
+        await new Promise((r) => setTimeout(r, 400));
+        order.push('scoring done');
+      },
+      { timeout: 10_000 },
+    );
+    await hasLock;
+    const release = prisma.courtHold
+      .deleteMany({ where: { courtId: s.court1.id } })
+      .then(() => order.push('hold changed'));
+    await Promise.all([scoring, release]);
+    expect(order).toEqual(['scoring done', 'hold changed']);
+  });
+});
+
+describe('event ids belong to one match', () => {
+  it('an id stored on another match is refused, not counted as a duplicate', async () => {
+    const s = await started();
+    const shared = point('A');
+    await postEvents(s.anna.id, s.match.id, [shared]);
+    // A second match on court 2, held and started by Bram.
+    const draw = await prisma.draw.findFirstOrThrow();
+    const other = await prisma.match.create({
+      data: { drawId: draw.id, round: 1, matchNumber: 2, status: 'IN_PROGRESS' },
+    });
+    await prisma.courtSlot.create({
+      data: {
+        tournamentId: s.tournament.id,
+        courtId: s.court2.id,
+        matchId: other.id,
+        startsAt: new Date('2027-03-13T09:00:00Z'),
+        endsAt: new Date('2027-03-13T10:00:00Z'),
+      },
+    });
+    await claimCourt(s.bram.id, s.court2.id);
+    await startMatch(s.bram.id, other.id, 'A');
+    await expect(
+      postEvents(s.bram.id, other.id, [{ ...shared, seq: 1 }, point('B', 2)]),
+    ).rejects.toMatchObject({ code: 'eventIdInUse', status: 409 });
+    expect(await prisma.umpireEvent.count({ where: { matchId: other.id } })).toBe(0);
+    // The same id re-sent on its own match is still a plain duplicate.
+    await expect(postEvents(s.anna.id, s.match.id, [shared])).resolves.toMatchObject({
+      applied: 0,
+      duplicates: 1,
+    });
   });
 });

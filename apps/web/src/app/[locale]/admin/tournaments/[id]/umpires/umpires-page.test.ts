@@ -82,7 +82,8 @@ describe('admin umpire page', () => {
 
     const state = await createUmpireAction('en', t.id, {}, form({ displayName: 'Anna' }));
     expect(state.reveal?.pin).toMatch(/^\d{6}$/);
-    expect(state.reveal?.qrUrl).toContain('/umpire/sign-in?token=');
+    expect(state.reveal?.qrUrl).toContain('/umpire/sign-in#token=');
+    expect(new URL(state.reveal!.qrUrl).search).toBe('');
     expect(state.reveal?.qrImage).toMatch(/^data:image\/svg\+xml/);
     expect(state.reveal?.displayName).toBe('Anna');
 
@@ -93,7 +94,9 @@ describe('admin umpire page', () => {
     );
     const dump = JSON.stringify(list);
     expect(dump).not.toContain(state.reveal!.pin);
-    expect(dump).not.toContain(new URL(state.reveal!.qrUrl).searchParams.get('token')!);
+    expect(dump).not.toContain(
+      new URLSearchParams(new URL(state.reveal!.qrUrl).hash.slice(1)).get('token')!,
+    );
     expect(list[0]!.status).toBe('active');
 
     for (const spy of logs) {

@@ -1,6 +1,7 @@
 import { prisma } from '@tourneasy/db';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { resetDatabase } from '@/test/db';
+import { takeoverSweeper } from '../jobs/takeover-sweep';
 import { timeoutTakeovers } from '../jobs/takeover-timeout';
 import {
   answerTakeover,
@@ -132,6 +133,7 @@ describe('requesting a take-over', () => {
 describe('answering a take-over', () => {
   it('accepted take-over moves the hold and keeps the score', async () => {
     const s = await setup();
+    await prisma.match.update({ where: { id: s.match.id }, data: { status: 'IN_PROGRESS' } });
     await startMatch(s.anna.id, s.match.id, 'A');
     await postEvents(s.anna.id, s.match.id, [
       { id: crypto.randomUUID(), seq: 1, kind: 'POINT', side: 'A' },
@@ -324,5 +326,21 @@ describe('timeout job', () => {
       'TIMED_OUT',
     );
     expect(await prisma.deskAlert.count()).toBe(1);
+  });
+});
+
+describe('the 10 second sweep follows pending requests', () => {
+  it('a new request arms the sweep (only where it is enabled)', async () => {
+    const s = await setup();
+    takeoverSweeper.stop();
+    expect(takeoverSweeper.isArmed()).toBe(false);
+    takeoverSweeper.enable();
+    try {
+      await requestTakeover(s.bram.id, s.court1.id);
+      expect(takeoverSweeper.isArmed()).toBe(true);
+    } finally {
+      takeoverSweeper.stop();
+      takeoverSweeper.disable();
+    }
   });
 });

@@ -48,8 +48,12 @@ export type PostEventsResult = {
 
 const FINAL = ['AWAITING_DESK', 'COMPLETED', 'WALKOVER', 'RETIRED'];
 
-/** Loads the match for an umpire who holds its court; anyone else is refused. */
-async function loadForUmpire(tx: Tx, umpireId: string, matchId: string) {
+/**
+ * Loads the match for an umpire who holds its court; anyone else is refused. The court's hold
+ * row is read with SELECT ... FOR UPDATE inside the caller's transaction, so a release, claim or
+ * take-over of the court waits until this scoring call has finished (exported for its test).
+ */
+export async function loadForUmpire(tx: Tx, umpireId: string, matchId: string) {
   const umpire = await activeUmpire(umpireId, tx);
   const match = await tx.match.findUnique({
     where: { id: matchId },
@@ -87,7 +91,8 @@ async function loadForUmpire(tx: Tx, umpireId: string, matchId: string) {
   }
   const courtId = match.slot?.courtId;
   if (!courtId) throw new AppError('matchNotScheduled');
-  const hold = await tx.courtHold.findUnique({ where: { courtId } });
+  const [hold] = await tx.$queryRaw<{ umpireId: string }[]>`
+    SELECT "umpireId"::text AS "umpireId" FROM "CourtHold" WHERE "courtId" = ${courtId}::uuid FOR UPDATE`;
   if (!hold) throw new AppError('forbidden');
   if (hold.umpireId !== umpireId) throw new AppError('courtHeld');
   const rules = rulesForMatch(match.draw.event, {
@@ -164,7 +169,13 @@ async function storedLog(tx: Tx, matchId: string) {
   return { log, lastSeq: rows[rows.length - 1]?.seq ?? 0 };
 }
 
-/** The umpire starts the match and chooses who serves first. */
+/**
+ * The umpire chooses who serves first, once the desk has put the match on court. The desk's
+ * "On court" sets IN_PROGRESS directly (nothing in the app sets CALLED), so only an IN_PROGRESS
+ * match is accepted; SCHEDULED, CALLED and anything later are 409 `statusTransition`. The umpire
+ * never moves a match on court by themselves: the desk's clash checks (player or court busy)
+ * stay the only way in.
+ */
 export async function startMatch(
   umpireId: string,
   matchId: string,
@@ -173,19 +184,12 @@ export async function startMatch(
   if (serving !== 'A' && serving !== 'B') throw new AppError('validation');
   await transaction(async (tx) => {
     const { match } = await loadForUmpire(tx, umpireId, matchId);
-    const started = match.status === 'IN_PROGRESS';
-    if (!started && match.status !== 'SCHEDULED' && match.status !== 'CALLED') {
-      throw new AppError('statusTransition');
-    }
+    if (match.status !== 'IN_PROGRESS') throw new AppError('statusTransition');
     // The serve choice can be corrected until the first point; after that the replay depends on it.
-    if (started && (await tx.umpireEvent.count({ where: { matchId } })) > 0) {
+    if ((await tx.umpireEvent.count({ where: { matchId } })) > 0) {
       throw new AppError('statusTransition');
     }
-    await bumpVersion(tx, matchId, match.version, {
-      status: 'IN_PROGRESS',
-      umpireStartServer: serving,
-      ...(started ? {} : { startedAt: new Date() }),
-    });
+    await bumpVersion(tx, matchId, match.version, { umpireStartServer: serving });
   });
 }
 
@@ -203,15 +207,14 @@ export async function postEvents(
     const { log, lastSeq } = await storedLog(tx, matchId);
     const initialServing = match.umpireStartServer ?? 'A';
 
-    // Duplicates: ids already stored, or repeated inside this batch.
-    const known = new Set(
-      (
-        await tx.umpireEvent.findMany({
-          where: { id: { in: events.map((e) => e.id) } },
-          select: { id: true },
-        })
-      ).map((e) => e.id),
-    );
+    // Duplicates: ids already stored for THIS match, or repeated inside this batch. An id stored
+    // on another match is a client bug (or a reused id), not a re-send: refuse the batch.
+    const stored = await tx.umpireEvent.findMany({
+      where: { id: { in: events.map((e) => e.id) } },
+      select: { id: true, matchId: true },
+    });
+    if (stored.some((e) => e.matchId !== matchId)) throw new AppError('eventIdInUse');
+    const known = new Set(stored.map((e) => e.id));
     const fresh: SeqEvent[] = [];
     let duplicates = 0;
     for (const event of events) {

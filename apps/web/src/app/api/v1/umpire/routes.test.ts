@@ -123,6 +123,9 @@ async function setup() {
   return { court1, court2, match, anna, bram };
 }
 const as = (u: { token: string; device: string }) => ({ token: u.token, device: u.device });
+/** The desk's "On court" (it sets IN_PROGRESS; the umpire then chooses the serve). */
+const onCourt = (matchId: string) =>
+  prisma.match.update({ where: { id: matchId }, data: { status: 'IN_PROGRESS' } });
 
 describe('sign-in', () => {
   it('signs in with a PIN in the body', async () => {
@@ -214,6 +217,7 @@ describe('matches', () => {
   it('start, events and finish for the holder', async () => {
     const s = await setup();
     await claimCourt(s.anna.row.id, s.court1.id);
+    await onCourt(s.match.id);
     expect(
       (await start(req('/s', { ...as(s.anna), body: { serving: 'A' } }), m(s.match.id))).status,
     ).toBe(200);
@@ -240,6 +244,7 @@ describe('matches', () => {
   it('GET match state returns the score and the highest seq, only to the holder', async () => {
     const s = await setup();
     await claimCourt(s.anna.row.id, s.court1.id);
+    await onCourt(s.match.id);
     await start(req('/s', { ...as(s.anna), body: { serving: 'B' } }), m(s.match.id));
     await events(
       req('/e', { ...as(s.anna), body: { events: [point(5, 'A'), point(7, 'B')] } }),
@@ -260,6 +265,7 @@ describe('matches', () => {
   it('finish before the match is decided is 409', async () => {
     const s = await setup();
     await claimCourt(s.anna.row.id, s.court1.id);
+    await onCourt(s.match.id);
     await start(req('/s', { ...as(s.anna), body: { serving: 'A' } }), m(s.match.id));
     expect((await finish(req('/f', { ...as(s.anna) }), m(s.match.id))).status).toBe(409);
   });
@@ -330,6 +336,30 @@ describe('matches', () => {
       ).status,
     ).toBe(422);
     expect((await finish(req('/f', { ...a }), m('nope'))).status).toBe(422);
+  });
+
+  it('seq must be an integer from 1 to 2147483647', async () => {
+    const s = await setup();
+    await claimCourt(s.anna.row.id, s.court1.id);
+    await onCourt(s.match.id);
+    const a = as(s.anna);
+    await start(req('/s', { ...a, body: { serving: 'A' } }), m(s.match.id));
+    const send = async (seq: unknown) => {
+      const res = await events(
+        req('/e', { ...a, body: { events: [{ id: uuid(), seq, kind: 'POINT', side: 'A' }] } }),
+        m(s.match.id),
+      );
+      return { status: res.status, body: await res.json() };
+    };
+    for (const bad of [0, -1, 2147483648, 1e20, '1', null]) {
+      const r = await send(bad);
+      expect(r.status, `seq ${String(bad)}`).toBe(422);
+      expect(r.body.error.code).toBe('VALIDATION');
+    }
+    expect(await prisma.umpireEvent.count()).toBe(0);
+    expect((await send(1)).status).toBe(200);
+    expect((await send(2147483647)).status).toBe(200);
+    expect(await prisma.umpireEvent.count()).toBe(2);
   });
 });
 
