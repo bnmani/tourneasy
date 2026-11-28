@@ -35,6 +35,7 @@ import {
   QuickPlaceAction,
   SwapTeamsForm,
 } from '@/components/desk/quick-buttons';
+import { AlertBadge, AlertPanel, UmpireReview } from '@/components/desk/umpire-review';
 import { AutoRefresh } from '@/components/matches/auto-refresh';
 import { amsterdamDay, checkInList } from '@/server/services/checkin-service';
 import type { Actor } from '@/server/services/session-service';
@@ -45,6 +46,7 @@ import { drawOverview } from '@/server/services/draw-service';
 import { stageStatus } from '@/server/services/results-service';
 import { isOwner } from '@/server/services/permissions';
 import { deskCourts, deskMatches } from '@/server/services/schedule-service';
+import { deskAlerts, umpireDeskReview } from '@/server/services/umpire-scoring-service';
 
 type Props = { params: Promise<{ locale: string; id: string }>; searchParams: SearchParams };
 const VIEWS = ['checkin', 'now', 'next', 'done'] as const;
@@ -85,6 +87,15 @@ export default async function DeskPage({ params, searchParams }: Props) {
   );
   const td = await getTranslations('Admin.desk');
   const courts = await deskCourts(actor, id);
+  // Umpire scoring: open take-over alerts, and what each match waiting for the desk holds.
+  const alerts = await deskAlerts(actor, id);
+  const reviews = new Map(
+    await Promise.all(
+      desk.items
+        .filter((i) => i.status === 'AWAITING_DESK')
+        .map(async (i) => [i.id, await umpireDeskReview(actor, i.id)] as const),
+    ),
+  );
   // No-show (D74): this long after the start, someone on a side isn't checked in yet. With
   // exactly one side complete, offer that side the walkover (never automatic).
   // Server component, rendered afresh on every refresh: reading the clock here is intended.
@@ -118,6 +129,7 @@ export default async function DeskPage({ params, searchParams }: Props) {
         intro={td('intro')}
         actions={
           <>
+            <AlertBadge alerts={alerts} />
             <Button asChild variant="outline">
               <Link href={`/admin/tournaments/${id}/schedule`}>{td('schedule')}</Link>
             </Button>
@@ -128,6 +140,8 @@ export default async function DeskPage({ params, searchParams }: Props) {
         status={firstParam(query.status)}
         params={{ game: firstParam(query.game) ?? '' }}
       />
+
+      <AlertPanel alerts={alerts} locale={locale} />
 
       {stages.some((s) => s.canKnockout || s.canNextSwissRound) && (
         <section className="space-y-2 rounded-lg border border-brand/40 bg-brand/10 p-4 text-sm">
@@ -252,7 +266,16 @@ export default async function DeskPage({ params, searchParams }: Props) {
                 const games = Array.from({ length: item.bestOf }, (_, i) => i + 1);
                 return (
                   <MatchLine key={item.id} item={item} locale={locale}>
-                    {item.ready && (
+                    {item.status === 'AWAITING_DESK' && reviews.has(item.id) && (
+                      <UmpireReview
+                        matchId={item.id}
+                        names={{ A: item.a ?? '', B: item.b ?? '' }}
+                        bestOf={item.bestOf}
+                        review={reviews.get(item.id)!}
+                        locale={locale}
+                      />
+                    )}
+                    {item.ready && item.status !== 'AWAITING_DESK' && (
                       <div className="space-y-3 border-t pt-3">
                         {noShow(item) && (
                           <div

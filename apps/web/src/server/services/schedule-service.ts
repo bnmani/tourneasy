@@ -1107,7 +1107,10 @@ export async function deskMatches(
     view === 'now'
       ? // On court: by court number, then by time, so the courts always read in the same order.
         withSwap
-          .filter((i) => i.status === 'IN_PROGRESS' || i.status === 'CALLED')
+          .filter(
+            (i) =>
+              i.status === 'IN_PROGRESS' || i.status === 'CALLED' || i.status === 'AWAITING_DESK',
+          )
           .sort(
             (a, b) =>
               (a.court?.number ?? Number.MAX_SAFE_INTEGER) -
