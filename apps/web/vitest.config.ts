@@ -17,6 +17,7 @@ export default defineConfig({
       DATABASE_URL: TEST_DATABASE_URL,
       EMAIL_TRANSPORT: 'memory',
       AUTH_SECRET: 'test-only-secret-at-least-32-characters-long',
+      UMPIRE_TOKEN_SECRET: 'test-only-umpire-secret-at-least-32-chars',
       APP_URL: 'https://test.example',
     },
   },

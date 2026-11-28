@@ -4,7 +4,7 @@ import type { ReactNode } from 'react';
 import { demoAuth, demoProfile, SessionProvider, useSession } from '@/lib/session';
 
 function wrapper({ children }: { children: ReactNode }) {
-  return <SessionProvider>{children}</SessionProvider>;
+  return <SessionProvider api={demoAuth}>{children}</SessionProvider>;
 }
 
 describe('session', () => {
@@ -29,7 +29,7 @@ describe('session', () => {
   it('merges profile edits into the signed-in profile', async () => {
     const { result } = renderHook(() => useSession(), { wrapper });
     await act(() => result.current.signIn('sam@example.com', 'secret'));
-    act(() => result.current.updateProfile({ mobile: '+31 6 99999999' }));
+    await act(() => result.current.updateProfile({ mobile: '+31 6 99999999' }));
     expect(result.current.profile?.mobile).toBe('+31 6 99999999');
     expect(result.current.profile?.firstName).toBe('Sam');
   });

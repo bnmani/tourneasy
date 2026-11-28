@@ -25,6 +25,7 @@ import { z } from 'zod';
 import { writeAudit } from '../lib/audit';
 import { AppError, validationError } from '../lib/errors';
 import type { RequestMeta } from '../lib/request-meta';
+import { assertNoUmpireEvents } from '../lib/umpire-delete-guard';
 import { parseInput } from '../lib/validation';
 import { advance, resolveByes } from './draw-service';
 import { assertSemisOpen, holdsWinnerForSemis, pairSemis } from './semi-pairing-service';
@@ -722,6 +723,7 @@ export async function removeKnockoutStage(actor: Actor, eventId: string, meta: R
   if (draws.some((d) => d.matches.some((m) => PLAYED.includes(m.status as never))))
     throw new AppError('drawStarted');
   await prisma.$transaction(async (tx) => {
+    await assertNoUmpireEvents(tx, { drawId: { in: draws.map((d) => d.id) } });
     await tx.draw.deleteMany({ where: { id: { in: draws.map((d) => d.id) } } });
     await writeAudit(tx, {
       actorId: actor.userId,
@@ -748,6 +750,7 @@ export async function removeLastSwissRound(actor: Actor, eventId: string, meta: 
   const last = draw.matches.filter((m) => m.round === round);
   if (last.some((m) => PLAYED.includes(m.status as never))) throw new AppError('drawStarted');
   await prisma.$transaction(async (tx) => {
+    await assertNoUmpireEvents(tx, { id: { in: last.map((m) => m.id) } });
     await tx.match.deleteMany({ where: { id: { in: last.map((m) => m.id) } } });
     await writeAudit(tx, {
       actorId: actor.userId,

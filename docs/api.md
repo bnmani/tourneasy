@@ -141,3 +141,29 @@ multi-category discount) and `canPay`.
 Mobile apps show the Stripe Payment Sheet with `clientSecret` and `publishableKey`, then call
 `GET /api/v1/me/orders/{id}`. `clientSecret` is `null` when a discount already covers the amount.
 Errors: `PAYMENTS_UNAVAILABLE` (503) when online payment is not configured.
+
+## Umpire scoring
+
+An umpire signs in with a 6-digit PIN or a QR token and gets a session token. All other calls send
+`Authorization: Bearer <sessionToken>` and `X-Device-Id`. Responses are `private, no-store`. A court has
+one holder at a time; scores are sent as events with a per-match `seq` that must increase.
+
+| Method   | Path                                          | Purpose                                                                                                                                                                                 |
+| -------- | --------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `POST`   | `/api/v1/umpire/sign-in`                      | `{ pin \| qrToken, deviceId }` → `{ umpireId, name, sessionToken, expiresAt }`; rate limited                                                                                            |
+| `GET`    | `/api/v1/umpire/courts`                       | Courts with holder and the current match (side names, `null` when unknown)                                                                                                              |
+| `POST`   | `/api/v1/umpire/courts/{courtId}/claim`       | Hold the court → `{ ok }`; `409 COURT_HELD` when taken, `409 ALREADY_HOLDER` when I hold another                                                                                        |
+| `DELETE` | `/api/v1/umpire/courts/{courtId}/claim`       | Let go of the court → `{ ok }`                                                                                                                                                          |
+| `POST`   | `/api/v1/umpire/matches/{matchId}/start`      | `{ serving: 'A' \| 'B' }`; only once the desk set the match `IN_PROGRESS`, else `409`                                                                                                   |
+| `GET`    | `/api/v1/umpire/matches/{matchId}`            | `{ status, version, games, serving, lastSeq }`                                                                                                                                          |
+| `POST`   | `/api/v1/umpire/matches/{matchId}/events`     | `{ events: [{ id, seq, kind: 'POINT', side } \| { id, seq, kind: 'UNDO' }] }` (max 200); `seq` integer 1–2147483647, else `422`; an `id` used on another match is `409 EVENT_ID_IN_USE` |
+| `POST`   | `/api/v1/umpire/matches/{matchId}/finish`     | Send the score as final → `AWAITING_DESK`; the desk confirms                                                                                                                            |
+| `POST`   | `/api/v1/umpire/matches/{matchId}/paper`      | Scoring on paper → `204`; only while `IN_PROGRESS` or `AWAITING_DESK`, else `409`                                                                                                       |
+| `POST`   | `/api/v1/umpire/takeovers`                    | `{ courtId }` → open request, expires after 120 seconds                                                                                                                                 |
+| `GET`    | `/api/v1/umpire/takeovers/incoming`           | Open requests for courts I hold                                                                                                                                                         |
+| `POST`   | `/api/v1/umpire/takeovers/{requestId}/answer` | `{ answer: 'ACCEPT' \| 'DECLINE' }` → `{ ok }`                                                                                                                                          |
+| `POST`   | `/api/v1/umpire/takeovers/{requestId}/cancel` | The requester withdraws → `{ ok }`                                                                                                                                                      |
+
+Public schedule and live items (`GET /api/v1/tournaments/{slug}/schedule`) have two new fields: `games`
+(game scores so far, e.g. `[[21, 18], [5, 3]]`; `null` when unknown) and `serving` (`A` | `B` | `null`).
+Cancel returns `200 { ok: true }` and paper returns `204` on purpose; do not unify them.

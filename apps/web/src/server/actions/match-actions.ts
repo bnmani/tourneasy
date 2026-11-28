@@ -28,6 +28,11 @@ import {
   swapMatches,
   unscheduleMatch,
 } from '../services/schedule-service';
+import {
+  confirmMatchResult,
+  correctMatchScore,
+  resolveDeskAlert,
+} from '../services/umpire-scoring-service';
 import { payAtDesk, setPlayerCheckIn } from '../services/checkin-service';
 import {
   markShareAsPaid,
@@ -322,6 +327,37 @@ export async function quickResultAction(matchId: string, formData: FormData) {
       { games: gamesFrom(formData), version: formData.get('version') ?? undefined },
       await currentRequestMeta(),
     ),
+  );
+}
+
+/** Desk: accepts the score an umpire sent, through the normal result path. */
+export async function quickConfirmUmpireResultAction(matchId: string, version: number) {
+  return quick(async () =>
+    confirmMatchResult(await actorOrThrow(), matchId, await currentRequestMeta(), version),
+  );
+}
+
+/** Desk: corrects the umpire's score; the reason is required and kept in the change log. */
+export async function quickCorrectUmpireScoreAction(matchId: string, formData: FormData) {
+  return quick(async () =>
+    correctMatchScore(
+      await actorOrThrow(),
+      matchId,
+      gamesFrom(formData),
+      String(formData.get('reason') ?? ''),
+      await currentRequestMeta(),
+      Number(formData.get('version')),
+    ),
+  );
+}
+
+/** Desk: decides a take-over nobody answered. */
+export async function quickResolveAlertAction(
+  alertId: string,
+  resolution: 'KEEP_CURRENT' | 'ASSIGN_RESERVE',
+) {
+  return quick(async () =>
+    resolveDeskAlert(await actorOrThrow(), alertId, resolution, await currentRequestMeta()),
   );
 }
 
