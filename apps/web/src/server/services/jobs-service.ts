@@ -9,6 +9,7 @@ import { prisma } from '@tourneasy/db';
 import { formatDate, formatDayRange, formatTime } from '@tourneasy/shared';
 import type { AppLocale } from '@tourneasy/shared/i18n';
 import { messages } from '@tourneasy/shared/i18n';
+import { timeoutTakeovers } from '../jobs/takeover-timeout';
 import { appUrl } from '../lib/urls';
 import { paymentsEnabled } from '../payments/pricing';
 import { deliverQueued, enqueueEmails, type QueuedEmail } from './notification-service';
@@ -365,6 +366,7 @@ export async function runHousekeeping(now = new Date()) {
   const reminders = await tournamentReminders(now);
   const deadlines = await deadlineReminders(now);
   const results = await resultsSummaries(now);
+  const takeoverAlerts = await timeoutTakeovers(now);
   const delivered = await deliverQueued(500);
-  return { released, reminders, deadlines, results, ...delivered };
+  return { released, reminders, deadlines, results, takeoverAlerts, ...delivered };
 }

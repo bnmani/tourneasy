@@ -88,3 +88,95 @@ export async function listCourts(tournamentId: string, umpireId: string): Promis
     match: c.slots[0]?.match ?? null,
   }));
 }
+
+/** How long the holder has to answer a take-over request, from the server clock at request time. */
+export const TAKEOVER_WINDOW_SECONDS = 120;
+
+/**
+ * A reserve umpire asks the holder to hand the court over. Refused when the court has no holder
+ * (claim it instead), when the requester already holds it, or while another request for the court
+ * is still open. The hold row is locked so two requests at the same moment cannot both pass.
+ */
+export async function requestTakeover(reserveUmpireId: string, courtId: string) {
+  const reserve = await activeUmpire(reserveUmpireId);
+  return prisma.$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT 1 FROM "CourtHold" WHERE "courtId" = ${courtId}::uuid FOR UPDATE`;
+    const hold = await tx.courtHold.findUnique({
+      where: { courtId },
+      select: { umpireId: true, umpire: { select: { tournamentId: true } } },
+    });
+    if (!hold || hold.umpire.tournamentId !== reserve.tournamentId)
+      throw new AppError('courtNotHeld');
+    if (hold.umpireId === reserveUmpireId) throw new AppError('alreadyHolder');
+    const now = new Date();
+    const open = await tx.takeoverRequest.findFirst({
+      where: { courtId, status: 'PENDING', expiresAt: { gt: now } },
+      select: { id: true },
+    });
+    if (open) throw new AppError('takeoverPending');
+    return tx.takeoverRequest.create({
+      data: {
+        courtId,
+        fromUmpireId: reserveUmpireId,
+        toUmpireId: hold.umpireId,
+        expiresAt: new Date(now.getTime() + TAKEOVER_WINDOW_SECONDS * 1000),
+      },
+    });
+  });
+}
+
+/**
+ * The holder accepts or declines. One guarded write (still PENDING, not expired, sent to this
+ * umpire) decides it; whoever loses a race, or answers late, gets `takeoverClosed`. Accepting also
+ * moves the hold in the same transaction. The match and its score are not touched.
+ */
+export async function answerTakeover(
+  currentUmpireId: string,
+  requestId: string,
+  answer: 'ACCEPT' | 'DECLINE',
+): Promise<void> {
+  await activeUmpire(currentUmpireId);
+  const request = await prisma.takeoverRequest.findUnique({ where: { id: requestId } });
+  if (!request) throw new AppError('notFound');
+  if (request.toUmpireId !== currentUmpireId) throw new AppError('forbidden');
+  await prisma.$transaction(async (tx) => {
+    const now = new Date();
+    const { count } = await tx.takeoverRequest.updateMany({
+      where: {
+        id: requestId,
+        toUmpireId: currentUmpireId,
+        status: 'PENDING',
+        expiresAt: { gt: now },
+      },
+      data: { status: answer === 'ACCEPT' ? 'ACCEPTED' : 'DECLINED' },
+    });
+    if (count === 0) throw new AppError('takeoverClosed');
+    if (answer === 'DECLINE') return;
+    // The reserve's profile must still work, and the hold must still be the answerer's.
+    await activeUmpire(request.fromUmpireId, tx).catch(() => {
+      throw new AppError('takeoverClosed');
+    });
+    const moved = await tx.courtHold.updateMany({
+      where: { courtId: request.courtId, umpireId: currentUmpireId },
+      data: { umpireId: request.fromUmpireId, since: now },
+    });
+    if (moved.count === 0) throw new AppError('takeoverClosed');
+  });
+}
+
+/** The reserve withdraws an open request. It is deleted (no desk alert); late cancels are refused. */
+export async function cancelTakeover(reserveUmpireId: string, requestId: string): Promise<void> {
+  await activeUmpire(reserveUmpireId);
+  const request = await prisma.takeoverRequest.findUnique({ where: { id: requestId } });
+  if (!request) throw new AppError('notFound');
+  if (request.fromUmpireId !== reserveUmpireId) throw new AppError('forbidden');
+  const { count } = await prisma.takeoverRequest.deleteMany({
+    where: {
+      id: requestId,
+      fromUmpireId: reserveUmpireId,
+      status: 'PENDING',
+      expiresAt: { gt: new Date() },
+    },
+  });
+  if (count === 0) throw new AppError('takeoverClosed');
+}
