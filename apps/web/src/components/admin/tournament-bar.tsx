@@ -15,6 +15,7 @@ const SECTIONS = [
   'payments',
   'food',
   'news',
+  'umpires',
   'log',
 ] as const;
 type Section = (typeof SECTIONS)[number];
