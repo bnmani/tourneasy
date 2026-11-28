@@ -115,6 +115,21 @@ describe('umpire profiles and sign-in', () => {
     await expect(signInUmpire({ pin: created.pin }, 'device-1', meta)).resolves.toBeTruthy();
   });
 
+  it('revoking frees the PIN: it is null, cannot sign in, and can go to a new profile', async () => {
+    const { created, row, admin, t } = await setup();
+    await revokeUmpire(admin, row.id, meta);
+    expect((await prisma.umpire.findUniqueOrThrow({ where: { id: row.id } })).pinHash).toBeNull();
+    await expect(signInUmpire({ pin: created.pin }, 'd', meta)).rejects.toMatchObject({
+      code: 'invalidCredentials',
+    });
+    const mocked = vi.mocked(randomInt) as unknown as ReturnType<typeof vi.fn>;
+    mocked.mockReturnValueOnce(Number(created.pin));
+    const again = await createUmpire(admin, { tournamentId: t.id, displayName: 'Next' }, meta);
+    expect(again.pin).toBe(created.pin);
+    const fresh = await prisma.umpire.findFirstOrThrow({ where: { displayName: 'Next' } });
+    expect((await signInUmpire({ pin: again.pin }, 'd', meta)).umpireId).toBe(fresh.id);
+  });
+
   it('a wrong PIN and a profile held by another phone answer the same way', async () => {
     const { created } = await setup();
     await signInUmpire({ pin: created.pin }, 'device-1', meta);

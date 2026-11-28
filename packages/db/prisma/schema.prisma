@@ -1658,7 +1658,8 @@ model Umpire {
   tournamentId String    @db.Uuid
   displayName  String
   /// HMAC-SHA256 of the 6-digit PIN keyed with a server secret; unique so one lookup finds the umpire.
-  pinHash      String
+  /// Null once the profile is revoked, which frees the PIN for a new profile.
+  pinHash      String?
   qrTokenHash  String
   expiresAt    DateTime
   revokedAt    DateTime?

@@ -181,7 +181,10 @@ export async function revokeUmpire(
 ): Promise<void> {
   const umpire = await manageable(actor, umpireId);
   if (umpire.revokedAt) return;
-  await prisma.umpire.update({ where: { id: umpire.id }, data: { revokedAt: new Date() } });
+  await prisma.umpire.update({
+    where: { id: umpire.id },
+    data: { revokedAt: new Date(), pinHash: null },
+  });
   await writeAudit(prisma, {
     actorId: actor!.userId,
     action: 'umpire.revoke',
