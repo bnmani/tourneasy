@@ -333,3 +333,17 @@ Not yet mapped to a point: "Expo push" and "early App Store check" (answers 5 an
 - **Crash reporting:** Sentry, on the free Developer plan to start (one user, about 5,000 errors a month). Move to a paid plan when more than one person needs access or error volume exceeds the free limit. The EU data region must be confirmed on the chosen plan. Pricing figures came from third-party sources and must be checked on sentry.io/pricing.
 - **Push notification language:** the player's own language (nl or en), as chosen in the app.
 - **Sign-up in the app:** yes. Players can create an account inside the app. The sign-up endpoint must be checked for the app's fields (section 7).
+
+## 20. Decision: umpire scoring is in version 1.0 (agreed)
+
+This replaces the "players only" rule in sections 17 and 18 for umpires. Staff and players keep the rules in sections 17 and 18.
+
+- **Umpire role:** a new account role, created by the tournament admin on the website. Umpires are not players and do not need a player profile. Each umpire gets a 6-digit PIN and a QR code for their own sign-in; the QR code opens the app's umpire sign-in.
+- **Sign-in:** the umpire signs in first, then picks the court they are standing at. Umpires are not tied to a court.
+- **What an umpire sees:** only the courts at the venue, and on the chosen court only the match the match desk has put there. No other court, no future match, no other screens of the app.
+- **What an umpire can do:** choose who serves first (in doubles, the umpire picks the serving player as well), score the match with point taps and undo, and send the final score to the match desk. The umpire cannot change a score after sending it.
+- **Take-over:** a reserve umpire can request a court that is being scored. The current umpire has 2 minutes to accept or decline. If there is no answer, the match desk is alerted and decides.
+- **Match desk:** checks every final score on the website, can correct it directly with the change logged, and confirms the result. Only a confirmed result counts for draws, standings and the results email.
+- **Network:** offline scoring with sync is in 1.0. Points are saved on the phone as they are tapped and sent when the connection returns; the final score waits until everything has synced. Take-over needs a connection. A paper scoresheet, entered by the desk, is the fallback.
+- **Audit:** every point, undo, take-over request and answer, final score, desk correction and confirmation is logged with the person and the time.
+- **Design reference:** `docs/superpowers/specs/2026-11-27-umpire-scoring-design.md`; mock-ups at https://claude.ai/artifact/PwT4scv6CCrTM8cfAuSQyt.

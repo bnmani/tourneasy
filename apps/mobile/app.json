@@ -42,11 +42,20 @@
           }
         }
       ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Tourneasy uses the camera only to scan the QR code from your tournament admin."
+        }
+      ],
       "@sentry/react-native/expo",
       "expo-font"
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "apiBaseUrl": "https://tourneasy.com"
     }
   }
 }

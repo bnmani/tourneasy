@@ -63,6 +63,7 @@ const SUCCESS = new Set([
   'resultSaved',
   'stageCreated',
   'newsEmailed',
+  'umpireRevoked',
   'packageRequested',
   'packagePaid',
   'refunded',

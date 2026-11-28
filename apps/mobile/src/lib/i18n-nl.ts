@@ -191,4 +191,137 @@ export const nl: Record<string, string> = {
   'Delete my account': 'Verwijder mijn account',
   'Keep my account': 'Behoud mijn account',
   'Could not delete the account. Try again.': 'Account verwijderen mislukt. Probeer het opnieuw.',
+
+  // Umpire scoring
+  'Write each point on the paper sheet for this match. Mark the winning side and the score after every point.':
+    'Schrijf elk punt op het papieren formulier van deze wedstrijd. Markeer na elk punt de winnende kant en de stand.',
+  'Write the final score and sign the sheet.':
+    'Schrijf de eindstand op en onderteken het formulier.',
+  'Hand the sheet to the match desk. The desk enters the score on the website and marks it as entered from paper.':
+    'Geef het formulier aan de wedstrijdtafel. De tafel voert de stand in op de website en markeert die als van papier ingevoerd.',
+  Umpire: 'Scheidsrechter',
+  'Score on paper': 'Score op papier',
+  'Use this only if the phone or the app stops working.':
+    'Gebruik dit alleen als de telefoon of de app niet meer werkt.',
+  'Match #{number}': 'Wedstrijd #{number}',
+  'Court {number}': 'Baan {number}',
+  'Back to scoring': 'Terug naar scoren',
+  'Could not start the match. Try again.': 'De wedstrijd starten is mislukt. Probeer het opnieuw.',
+  'Side {side} serves first': 'Kant {side} serveert eerst',
+  'SERVES FIRST': 'SERVEERT EERST',
+  'RECEIVES FIRST': 'RETOURNEERT EERST',
+  'Side {side}': 'Kant {side}',
+  'Set-up': 'Opzet',
+  'Who serves first?': 'Wie serveert eerst?',
+  'Tap the side that serves first. You can change it until the first point is scored.':
+    'Tik op de kant die eerst serveert. Je kunt dit wijzigen tot het eerste punt is gescoord.',
+  'Start scoring': 'Begin met scoren',
+  'Back to court list': 'Terug naar de banenlijst',
+  serving: 'serveert',
+  'Game {number} of 3': 'Game {number} van 3',
+  Offline: 'Offline',
+  '{count} waiting to sync': '{count} wachten op synchronisatie',
+  'Points keep working. They sync automatically when the signal returns. The final score waits until all points have synced.':
+    'Punten blijven werken. Ze worden automatisch gesynchroniseerd zodra het signaal terugkomt. De eindstand wacht tot alle punten zijn gesynchroniseerd.',
+  'This tap cannot be synced, contact the desk.':
+    'Deze tik kan niet worden gesynchroniseerd, neem contact op met de tafel.',
+  'It stays saved on this phone. Do not finish the match until the desk has looked.':
+    'Hij blijft bewaard op deze telefoon. Rond de wedstrijd pas af als de tafel ernaar heeft gekeken.',
+  'The desk did not accept {count} tap.': 'De tafel heeft {count} tik niet geaccepteerd.',
+  'The desk did not accept {count} taps.': 'De tafel heeft {count} tikken niet geaccepteerd.',
+  'Point {seq}: {reason}': 'Punt {seq}: {reason}',
+  Dismiss: 'Sluiten',
+  '{count} unreadable record on this phone.': '{count} onleesbaar record op deze telefoon.',
+  '{count} unreadable records on this phone.': '{count} onleesbare records op deze telefoon.',
+  'Some points may be missing. Tell the match desk, then clear the record to continue.':
+    'Er kunnen punten ontbreken. Meld het bij de wedstrijdtafel en wis daarna het record om door te gaan.',
+  'I have noted it': 'Ik heb het genoteerd',
+  'Clear unreadable records': 'Wis onleesbare records',
+  'That tap was not saved. Tap again.': 'Die tik is niet opgeslagen. Tik opnieuw.',
+  'Saved on this phone': 'Opgeslagen op deze telefoon',
+  Live: 'Live',
+  'Point for side {side}': 'Punt voor kant {side}',
+  'Undo last point': 'Laatste punt ongedaan maken',
+  'Finish match': 'Wedstrijd afronden',
+  'Waiting to sync. You can finish when every point has synced.':
+    'Wacht op synchronisatie. Je kunt afronden als elk punt is gesynchroniseerd.',
+  'Phone not working? Use paper': 'Telefoon werkt niet? Gebruik papier',
+  'Too many tries. Wait a moment.': 'Te vaak geprobeerd. Wacht even.',
+  'That PIN or QR code was not accepted.': 'Die pincode of QR-code is niet geaccepteerd.',
+  'Could not sign in. Check your connection and try again.':
+    'Inloggen mislukt. Controleer je verbinding en probeer het opnieuw.',
+  'That is not a Tourneasy umpire QR code.': 'Dit is geen Tourneasy-QR-code voor scheidsrechters.',
+  'Allow the camera to scan the QR code, or enter the PIN.':
+    'Geef toegang tot de camera om de QR-code te scannen, of voer de pincode in.',
+  "Scan admin's QR code": 'Scan de QR-code van de beheerder',
+  'Hold the code inside the camera view.': 'Houd de code in beeld van de camera.',
+  'Tourneasy · Umpire': 'Tourneasy · Scheidsrechter',
+  'Sign in to your court': 'Log in bij je baan',
+  'Enter the PIN from your tournament admin, or scan their QR code.':
+    'Voer de pincode van je toernooibeheerder in, of scan zijn of haar QR-code.',
+  '{count} of {total} digits entered': '{count} van {total} cijfers ingevoerd',
+  Clear: 'Wissen',
+  Delete: 'Verwijderen',
+  'No PIN yet? Ask your tournament admin.': 'Nog geen pincode? Vraag het je toernooibeheerder.',
+  'Scores sent to the desk': 'Scores naar de tafel gestuurd',
+  'Waiting for desk': 'Wacht op de tafel',
+  "You can't change this score now. If the desk finds a mistake, they will fix it and let you know.":
+    'Je kunt deze score nu niet meer wijzigen. Als de tafel een fout vindt, past die het aan en laat het je weten.',
+  'The match is not decided yet. Go back and check the score.':
+    'De wedstrijd is nog niet beslist. Ga terug en controleer de stand.',
+  'Could not send the scores. Try again.': 'De scores versturen is mislukt. Probeer het opnieuw.',
+  'Are these scores final?': 'Zijn deze scores definitief?',
+  'Waiting to sync. You can confirm when every point has synced.':
+    'Wacht op synchronisatie. Je kunt bevestigen als elk punt is gesynchroniseerd.',
+  "After you confirm, the desk checks the scores. You can't change them yourself after that.":
+    'Na je bevestiging controleert de tafel de scores. Daarna kun je ze zelf niet meer wijzigen.',
+  'Yes, scores are final': 'Ja, de scores zijn definitief',
+  'No, go back and fix': 'Nee, terug om aan te passen',
+  'Could not load the courts. Check your connection.':
+    'De banen laden is mislukt. Controleer je verbinding.',
+  'Someone else just took this court.': 'Iemand anders heeft deze baan zojuist genomen.',
+  'Could not take this court. Try again.': 'Deze baan nemen is mislukt. Probeer het opnieuw.',
+  'A take-over request for this court is already open.':
+    'Er staat al een verzoek om deze baan over te nemen open.',
+  'Could not send the take-over request. Try again.':
+    'Het overnameverzoek versturen is mislukt. Probeer het opnieuw.',
+  'Pick your court': 'Kies je baan',
+  'Tap the court you are standing at.': 'Tik op de baan waar je staat.',
+  'Loading courts…': 'Banen laden…',
+  'Being scored by {name}': 'Wordt gescoord door {name}',
+  'Round {round}': 'Ronde {round}',
+  'Waiting for the desk': 'Wacht op de tafel',
+  'Your court': 'Jouw baan',
+  'Take over': 'Overnemen',
+  'the umpire': 'de scheidsrechter',
+  'Waiting for {name}': 'Wachten op {name}',
+  'They have 2 minutes to accept your take-over.':
+    'Ze hebben 2 minuten om je overname te accepteren.',
+  '{time} left': '{time} over',
+  'Time is up': 'De tijd is om',
+  'If they do not answer in time, the match desk decides who scores court {number}.':
+    'Als ze niet op tijd antwoorden, beslist de wedstrijdtafel wie baan {number} scoort.',
+  'Could not send your answer. Try again.':
+    'Je antwoord versturen is mislukt. Probeer het opnieuw.',
+  '{name} wants court {number}': '{name} wil baan {number}',
+  'Another umpire': 'Een andere scheidsrechter',
+  'Court {number} stays with you until you accept. You have 2 minutes to answer. If there is no answer, the match desk decides.':
+    'Baan {number} blijft bij jou tot je accepteert. Je hebt 2 minuten om te antwoorden. Zonder antwoord beslist de wedstrijdtafel.',
+  Accept: 'Accepteren',
+  Decline: 'Weigeren',
+  'Could not give up this court. Try again.': 'De baan afstaan is mislukt. Probeer het opnieuw.',
+  'Your match': 'Jouw wedstrijd',
+  'Only the match the desk put on your court is shown.':
+    'Alleen de wedstrijd die de tafel op jouw baan heeft gezet wordt getoond.',
+  'Players are announced by the desk. Score the sides as side A and side B.':
+    'De spelers worden door de tafel omgeroepen. Score de kanten als kant A en kant B.',
+  'Continue scoring': 'Verder met scoren',
+  'Start match': 'Start wedstrijd',
+  'This match is waiting for the desk to start it.': 'Deze wedstrijd wacht tot de tafel hem start.',
+  'Change court': 'Andere baan',
+  Court: 'Baan',
+  'Umpire sign-in': 'Inloggen als scheidsrechter',
+  'Cannot reach the server to start scoring. Check your connection.':
+    'De server is niet bereikbaar om te beginnen met scoren. Controleer je verbinding.',
+  'Try again': 'Probeer opnieuw',
 };
