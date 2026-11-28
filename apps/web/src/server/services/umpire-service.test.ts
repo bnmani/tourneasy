@@ -1,5 +1,6 @@
+import { randomInt } from 'node:crypto';
 import { prisma, Role } from '@tourneasy/db';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createPlayer, meta, resetDatabase } from '@/test/db';
 import { actorFromWebToken, createWebSession } from './session-service';
 import {
@@ -9,6 +10,11 @@ import {
   signInUmpire,
   verifyUmpireSession,
 } from './umpire-service';
+
+vi.mock('node:crypto', async (importOriginal) => {
+  const original = await importOriginal<typeof import('node:crypto')>();
+  return { ...original, randomInt: vi.fn(original.randomInt) };
+});
 
 beforeEach(resetDatabase);
 
@@ -101,12 +107,40 @@ describe('umpire profiles and sign-in', () => {
     const { created } = await setup();
     await signInUmpire({ pin: created.pin }, 'device-1', meta);
     await expect(signInUmpire({ pin: created.pin }, 'device-2', meta)).rejects.toMatchObject({
-      code: 'deviceBound',
+      code: 'invalidCredentials',
     });
     await expect(
       signInUmpire({ qrToken: qrTokenOf(created.qrUrl) }, 'device-2', meta),
-    ).rejects.toMatchObject({ code: 'deviceBound' });
+    ).rejects.toMatchObject({ code: 'invalidCredentials' });
     await expect(signInUmpire({ pin: created.pin }, 'device-1', meta)).resolves.toBeTruthy();
+  });
+
+  it('a wrong PIN and a profile held by another phone answer the same way', async () => {
+    const { created } = await setup();
+    await signInUmpire({ pin: created.pin }, 'device-1', meta);
+    const wrong = created.pin === '000000' ? '000001' : '000000';
+    const a = await signInUmpire({ pin: wrong }, 'device-2', meta).catch((e) => e);
+    const b = await signInUmpire({ pin: created.pin }, 'device-2', meta).catch((e) => e);
+    expect([a.code, a.status, a.details]).toEqual([b.code, b.status, b.details]);
+    expect(b.status).toBe(401);
+  });
+
+  it('finds the profile by PIN without scanning, and create never reuses a PIN', async () => {
+    const admin = await actorWith(Role.ADMIN);
+    const t = await tournament();
+    const mocked = vi.mocked(randomInt) as unknown as ReturnType<typeof vi.fn>;
+    mocked.mockReturnValueOnce(123456);
+    const first = await createUmpire(admin, { tournamentId: t.id, displayName: 'A' }, meta);
+    expect(first.pin).toBe('123456');
+    mocked.mockReturnValueOnce(123456).mockReturnValueOnce(123456).mockReturnValueOnce(654321);
+    const second = await createUmpire(admin, { tournamentId: t.id, displayName: 'B' }, meta);
+    expect(second.pin).toBe('654321');
+    const rows = await prisma.umpire.findMany({ orderBy: { displayName: 'asc' } });
+    expect(rows[0]!.pinHash).not.toBe(rows[1]!.pinHash);
+    expect((await signInUmpire({ pin: '654321' }, 'x', meta)).umpireId).toBe(rows[1]!.id);
+    // A reset also skips a PIN somebody holds.
+    mocked.mockReturnValueOnce(123456).mockReturnValueOnce(777777);
+    expect((await resetUmpireAccess(admin, rows[1]!.id, meta)).pin).toBe('777777');
   });
 
   it('expired or revoked umpire token is refused', async () => {
@@ -169,8 +203,101 @@ describe('umpire profiles and sign-in', () => {
     expect(winter.row.expiresAt.toISOString()).toBe('2027-03-13T23:00:00.000Z');
     const summer = await setup('2027-07-10');
     expect(summer.row.expiresAt.toISOString()).toBe('2027-07-10T22:00:00.000Z');
-    const s = await signInUmpire({ pin: winter.created.pin }, 'd', meta);
-    expect(s.expiresAt.toISOString()).toBe('2027-03-13T23:00:00.000Z');
+  });
+
+  it('a session ends at the end of the day it started, even if the profile lasts longer', async () => {
+    const { created, row } = await setup('2027-03-15');
+    vi.useFakeTimers({ toFake: ['Date'] });
+    try {
+      vi.setSystemTime(new Date('2027-03-13T10:00:00Z'));
+      const s = await signInUmpire({ pin: created.pin }, 'd', meta);
+      expect(row.expiresAt.toISOString()).toBe('2027-03-15T23:00:00.000Z');
+      expect(s.expiresAt.toISOString()).toBe('2027-03-13T23:00:00.000Z');
+      await expect(verifyUmpireSession(s.sessionToken, 'd')).resolves.toBeTruthy();
+      vi.setSystemTime(new Date('2027-03-13T23:00:01Z'));
+      await expect(verifyUmpireSession(s.sessionToken, 'd')).rejects.toMatchObject({
+        code: 'unauthorized',
+      });
+      // Next day: sign in again gets a session for that day.
+      vi.setSystemTime(new Date('2027-03-14T08:00:00Z'));
+      const next = await signInUmpire({ pin: created.pin }, 'd', meta);
+      expect(next.expiresAt.toISOString()).toBe('2027-03-14T23:00:00.000Z');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('a session never outlasts the profile', async () => {
+    const { created } = await setup('2027-03-13');
+    vi.useFakeTimers({ toFake: ['Date'] });
+    try {
+      vi.setSystemTime(new Date('2027-03-13T10:00:00Z'));
+      const s = await signInUmpire({ pin: created.pin }, 'd', meta);
+      expect(s.expiresAt.toISOString()).toBe('2027-03-13T23:00:00.000Z');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('fails closed without a request address: sign-in is still rate limited', async () => {
+    const { created } = await setup();
+    const wrong = created.pin === '000000' ? '000001' : '000000';
+    for (let i = 0; i < 20; i++) {
+      await expect(signInUmpire({ pin: wrong }, 'd', {})).rejects.toMatchObject({
+        code: 'invalidCredentials',
+      });
+    }
+    await expect(signInUmpire({ pin: created.pin }, 'd', {})).rejects.toMatchObject({
+      code: 'rateLimited',
+    });
+    expect(
+      await prisma.rateLimitBucket.count({ where: { key: 'umpire-sign-in:ip:unknown' } }),
+    ).toBe(1);
+    // No limiter is skipped when the address is missing here either.
+    await expect(signInUmpire({ pin: created.pin }, 'd')).rejects.toMatchObject({
+      code: 'rateLimited',
+    });
+  });
+
+  it('verifyUmpireSession refuses a missing token or device', async () => {
+    const { created } = await setup();
+    const s = await signInUmpire({ pin: created.pin }, 'd1', meta);
+    await expect(verifyUmpireSession('', 'd1')).rejects.toMatchObject({ code: 'unauthorized' });
+    await expect(verifyUmpireSession(s.sessionToken, '')).rejects.toMatchObject({
+      code: 'unauthorized',
+    });
+  });
+
+  it('per-address limit trips after 20 attempts from one address only', async () => {
+    const { created } = await setup();
+    const wrongQr = { qrToken: 'x'.repeat(40) };
+    for (let i = 0; i < 20; i++) {
+      await expect(signInUmpire(wrongQr, 'd', meta)).rejects.toMatchObject({
+        code: 'invalidCredentials',
+      });
+    }
+    await expect(signInUmpire(wrongQr, 'd', meta)).rejects.toMatchObject({ code: 'rateLimited' });
+    await expect(
+      signInUmpire({ qrToken: qrTokenOf(created.qrUrl) }, 'd', { ip: '198.51.100.99' }),
+    ).resolves.toBeTruthy();
+  });
+
+  it('30 failed PINs from many addresses close PIN sign-in for everyone, the QR still works', async () => {
+    const { created } = await setup();
+    const wrong = created.pin === '000000' ? '000001' : '000000';
+    for (let i = 0; i < 30; i++) {
+      await expect(signInUmpire({ pin: wrong }, 'd', { ip: `192.0.2.${i}` })).rejects.toMatchObject(
+        {
+          code: 'invalidCredentials',
+        },
+      );
+    }
+    await expect(
+      signInUmpire({ pin: created.pin }, 'd', { ip: '203.0.113.200' }),
+    ).rejects.toMatchObject({ code: 'rateLimited' });
+    await expect(
+      signInUmpire({ qrToken: qrTokenOf(created.qrUrl) }, 'd', { ip: '203.0.113.200' }),
+    ).resolves.toBeTruthy();
   });
 
   it('only admins and the tournament organisers manage umpires', async () => {
