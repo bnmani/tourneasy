@@ -28,7 +28,13 @@ describe('umpire scoring schema', () => {
   });
 
   it('has the take-over and desk alert state values', () => {
-    expect(enumValues('TakeoverStatus')).toEqual(['PENDING', 'ACCEPTED', 'DECLINED', 'TIMED_OUT']);
+    expect(enumValues('TakeoverStatus')).toEqual([
+      'PENDING',
+      'ACCEPTED',
+      'DECLINED',
+      'TIMED_OUT',
+      'CANCELLED',
+    ]);
     expect(enumValues('DeskAlertStatus')).toEqual(['OPEN', 'RESOLVED']);
     expect(enumValues('UmpireEventKind')).toEqual(['POINT', 'UNDO']);
     expect(enumValues('UmpireSide')).toEqual(['A', 'B']);
